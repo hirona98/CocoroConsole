@@ -1,6 +1,6 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
-namespace CocoroDock.Utils
+namespace CocoroConsole.Utils
 {
     /// <summary>
     /// テキストフィルタリング用のヘルパークラス

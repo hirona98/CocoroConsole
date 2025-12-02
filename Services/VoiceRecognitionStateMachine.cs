@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Threading;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     public enum VoiceRecognitionState
     {

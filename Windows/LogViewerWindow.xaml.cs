@@ -1,5 +1,5 @@
-using CocoroDock.Communication;
-using CocoroDock.Services;
+﻿using CocoroConsole.Communication;
+using CocoroConsole.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,7 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Data;
 
-namespace CocoroDock.Windows
+namespace CocoroConsole.Windows
 {
     /// <summary>
     /// ログビューアーウィンドウ
@@ -381,7 +381,7 @@ namespace CocoroDock.Windows
             if (File.Exists(releasePath))
                 return releasePath;
 
-            // デバッグ時のパス（CocoroDockからCocoroCoreMへの相対パス）
+            // デバッグ時のパス（CocoroConsoleからCocoroCoreMへの相対パス）
             var debugPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
                 "..", "CocoroCoreM", "logs", "cocoro_core2.log");
             var fullDebugPath = Path.GetFullPath(debugPath);

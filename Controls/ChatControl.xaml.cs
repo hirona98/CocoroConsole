@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -10,12 +10,12 @@ using System.IO;
 using System.Linq;
 using System.Collections.Specialized;
 using System.Diagnostics;
-using CocoroDock.Windows;
-using CocoroDock.Services;
+using CocoroConsole.Windows;
+using CocoroConsole.Services;
 using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
 
-namespace CocoroDock.Controls
+namespace CocoroConsole.Controls
 {
     /// <summary>
     /// チャットコントロール（バブルデザイン）
@@ -1160,7 +1160,7 @@ namespace CocoroDock.Controls
     }
 }
 
-namespace CocoroDock.Controls
+namespace CocoroConsole.Controls
 {
     public partial class ChatControl
     {

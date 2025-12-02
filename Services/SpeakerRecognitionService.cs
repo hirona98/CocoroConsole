@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -8,7 +8,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     /// <summary>
     /// WeSpeaker話者識別サービス
@@ -59,11 +59,11 @@ namespace CocoroDock.Services
                 try
                 {
                     var assembly = Assembly.GetExecutingAssembly();
-                    var resourceName = "CocoroDock.Resource.wespeaker_resnet34.onnx";
+                    var resourceName = "CocoroConsole.Resource.wespeaker_resnet34.onnx";
 
                     using var stream = assembly.GetManifestResourceStream(resourceName);
                     if (stream == null)
-                        throw new FileNotFoundException($"Embedded resource '{resourceName}' not found. WeSpeaker ONNXモデルをCocoroDock/Resource/に配置してください。");
+                        throw new FileNotFoundException($"Embedded resource '{resourceName}' not found. WeSpeaker ONNXモデルをCocoroConsole/Resource/に配置してください。");
 
                     var modelData = new byte[stream.Length];
                     stream.Read(modelData, 0, modelData.Length);

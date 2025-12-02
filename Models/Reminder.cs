@@ -1,6 +1,6 @@
-using System;
+﻿using System;
 
-namespace CocoroDock.Models
+namespace CocoroConsole.Models
 {
     public class Reminder
     {

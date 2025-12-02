@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,10 +6,10 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Globalization;
 using System.Threading;
-using CocoroDock.Communication;
+using CocoroConsole.Communication;
 using System.Text;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     /// <summary>
     /// ログファイル監視サービス

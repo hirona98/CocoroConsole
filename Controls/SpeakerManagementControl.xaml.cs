@@ -1,14 +1,14 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using CocoroDock.Services;
+using CocoroConsole.Services;
 using NAudio.Wave;
 
-namespace CocoroDock.Controls
+namespace CocoroConsole.Controls
 {
     /// <summary>
     /// SpeakerManagementControl.xaml の相互作用ロジック

@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace CocoroDock.Converters
+namespace CocoroConsole.Converters
 {
     /// <summary>
     /// 数値をパーセンテージ表示に変換するコンバーター

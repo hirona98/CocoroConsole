@@ -1,4 +1,4 @@
-using CocoroDock.Services;
+﻿using CocoroConsole.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Windows.Media.Imaging;
 
-namespace CocoroDock.Communication
+namespace CocoroConsole.Communication
 {
     /// <summary>
     /// 通知API用のRESTサーバー

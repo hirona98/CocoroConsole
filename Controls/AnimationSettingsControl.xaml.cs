@@ -1,5 +1,5 @@
-using CocoroDock.Communication;
-using CocoroDock.Services;
+﻿using CocoroConsole.Communication;
+using CocoroConsole.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 
-namespace CocoroDock.Controls
+namespace CocoroConsole.Controls
 {
     /// <summary>
     /// AnimationSettingsControl.xaml の相互作用ロジック

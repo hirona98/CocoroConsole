@@ -1,4 +1,4 @@
-﻿using CocoroDock.Services;
+﻿using CocoroConsole.Services;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -27,7 +27,7 @@ internal static class NativeMethods
     internal const int SW_RESTORE = 9;
 }
 
-namespace CocoroDock
+namespace CocoroConsole
 {
     /// <summary>
     /// App.xaml の相互作用ロジック
@@ -249,7 +249,7 @@ namespace CocoroDock
             catch
             {
                 // エラーが発生した場合はデフォルト名を返す
-                return "CocoroDockPipe";
+                return "CocoroConsolePipe";
             }
         }
 

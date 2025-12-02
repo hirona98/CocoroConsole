@@ -1,10 +1,10 @@
-using CocoroDock.Services;
-using CocoroDock.ViewModels;
+﻿using CocoroConsole.Services;
+using CocoroConsole.ViewModels;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace CocoroDock.Controls
+namespace CocoroConsole.Controls
 {
     /// <summary>
     /// McpSettingsControl.xaml の相互作用ロジック

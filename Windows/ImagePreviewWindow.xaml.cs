@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
 
-namespace CocoroDock.Windows
+namespace CocoroConsole.Windows
 {
     /// <summary>
     /// 画像プレビューウィンドウ

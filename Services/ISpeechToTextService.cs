@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     /// <summary>
     /// 音声認識サービスの抽象化インターフェース

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -7,9 +7,9 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using CocoroDock.Utils;
+using CocoroConsole.Utils;
 
-namespace CocoroDock.Communication
+namespace CocoroConsole.Communication
 {
     /// <summary>
     /// AivisCloud音声合成クライアント

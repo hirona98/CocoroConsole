@@ -1,4 +1,4 @@
-using CocoroDock.Utilities;
+﻿using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace CocoroDock.Communication
+namespace CocoroConsole.Communication
 {
     /// <summary>
     /// CocoroCoreとの通信を行うクライアントクラス

@@ -1,4 +1,4 @@
-using CocoroDock.Services;
+﻿using CocoroConsole.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -11,12 +11,12 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CocoroDock.Communication
+namespace CocoroConsole.Communication
 {
     /// <summary>
-    /// CocoroDock用REST APIサーバー
+    /// CocoroConsole用REST APIサーバー
     /// </summary>
-    public class CocoroDockApiServer : IDisposable
+    public class CocoroConsoleApiServer : IDisposable
     {
         private IHost? _host;
         private readonly int _port;
@@ -30,7 +30,7 @@ namespace CocoroDock.Communication
 
         public bool IsRunning => _host != null;
 
-        public CocoroDockApiServer(int port, IAppSettings appSettings)
+        public CocoroConsoleApiServer(int port, IAppSettings appSettings)
         {
             _port = port;
             _appSettings = appSettings;
@@ -112,7 +112,7 @@ namespace CocoroDock.Communication
                     }
                 });
 
-                Debug.WriteLine($"CocoroDock APIサーバーを起動しました: http://127.0.0.1:{_port}");
+                Debug.WriteLine($"CocoroConsole APIサーバーを起動しました: http://127.0.0.1:{_port}");
             }
             catch (Exception ex)
             {
@@ -472,7 +472,7 @@ namespace CocoroDock.Communication
                 _cts?.Dispose();
                 _cts = null;
 
-                Debug.WriteLine("CocoroDock APIサーバーを停止しました");
+                Debug.WriteLine("CocoroConsole APIサーバーを停止しました");
             }
             catch (Exception ex)
             {

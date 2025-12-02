@@ -1,6 +1,6 @@
-using CocoroDock.Communication;
-using CocoroDock.Models;
-using CocoroDock.Utilities;
+﻿using CocoroConsole.Communication;
+using CocoroConsole.Models;
+using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,7 +11,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     /// <summary>
     /// アプリケーション設定を管理するクラス
@@ -45,7 +45,7 @@ namespace CocoroDock.Services
         // SystemPromptsディレクトリのパス
         public string SystemPromptsDirectory => Path.Combine(UserDataDirectory, "SystemPrompts");
 
-        public int CocoroDockPort { get; set; } = 55600;
+        public int CocoroConsolePort { get; set; } = 55600;
         public int CocoroCorePort { get; set; } = 55601;
         public int CocoroMemoryPort { get; set; } = 55602;
         public int CocoroMemoryDBPort { get; set; } = 55603;
@@ -157,7 +157,7 @@ namespace CocoroDock.Services
         /// <param name="config">サーバーから受信した設定値</param>
         public void UpdateSettings(ConfigSettings config)
         {
-            CocoroDockPort = config.cocoroDockPort;
+            CocoroConsolePort = config.CocoroConsolePort;
             CocoroCorePort = config.cocoroCorePort;
             CocoroMemoryPort = config.cocoroMemoryPort;
             CocoroMemoryDBPort = config.cocoroMemoryDBPort;
@@ -261,7 +261,7 @@ namespace CocoroDock.Services
         {
             return new ConfigSettings
             {
-                cocoroDockPort = CocoroDockPort,
+                CocoroConsolePort = CocoroConsolePort,
                 cocoroCorePort = CocoroCorePort,
                 cocoroMemoryPort = CocoroMemoryPort,
                 cocoroMemoryDBPort = CocoroMemoryDBPort,

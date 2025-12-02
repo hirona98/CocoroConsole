@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace CocoroDock.Utilities
+namespace CocoroConsole.Utilities
 {
     /// <summary>
     /// UI操作に関するユーティリティメソッドを提供するヘルパークラス

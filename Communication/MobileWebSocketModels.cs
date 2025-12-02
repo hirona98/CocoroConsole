@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace CocoroDock.Communication
+namespace CocoroConsole.Communication
 {
     /// <summary>
     /// モバイルWebSocket通信用メッセージの基底クラス
@@ -17,7 +17,7 @@ namespace CocoroDock.Communication
     }
 
     /// <summary>
-    /// スマートフォンからCocoroDockへのチャットメッセージ
+    /// スマートフォンからCocoroConsoleへのチャットメッセージ
     /// </summary>
     public class MobileChatMessage : MobileWebSocketMessage
     {
@@ -150,7 +150,7 @@ namespace CocoroDock.Communication
     }
 
     /// <summary>
-    /// CocoroDockからスマートフォンへの応答メッセージ
+    /// CocoroConsoleからスマートフォンへの応答メッセージ
     /// </summary>
     public class MobileResponseMessage : MobileWebSocketMessage
     {

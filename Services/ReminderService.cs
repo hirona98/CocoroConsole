@@ -1,4 +1,4 @@
-using CocoroDock.Models;
+﻿using CocoroConsole.Models;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     public class ReminderService : IReminderService
     {

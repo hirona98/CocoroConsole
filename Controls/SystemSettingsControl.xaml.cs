@@ -1,7 +1,7 @@
-using CocoroDock.Communication;
-using CocoroDock.Models;
-using CocoroDock.Services;
-using CocoroDock.Windows;
+﻿using CocoroConsole.Communication;
+using CocoroConsole.Models;
+using CocoroConsole.Services;
+using CocoroConsole.Windows;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace CocoroDock.Controls
+namespace CocoroConsole.Controls
 {
     /// <summary>
     /// SystemSettingsControl.xaml の相互作用ロジック

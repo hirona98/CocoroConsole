@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -6,13 +6,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Navigation;
-using CocoroDock.Communication;
-using CocoroDock.Services;
-using CocoroDock.Utilities;
-using CocoroDock.Windows;
+using CocoroConsole.Communication;
+using CocoroConsole.Services;
+using CocoroConsole.Utilities;
+using CocoroConsole.Windows;
 using Microsoft.Win32;
 
-namespace CocoroDock.Controls
+namespace CocoroConsole.Controls
 {
     public partial class MemorySettingsControl : UserControl
     {

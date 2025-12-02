@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -6,9 +6,9 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using CocoroDock.Services;
+using CocoroConsole.Services;
 
-namespace CocoroDock.Utilities
+namespace CocoroConsole.Utilities
 {
     /// <summary>
     /// プロセス操作の種類を定義する列挙型
@@ -306,7 +306,7 @@ namespace CocoroDock.Utilities
                 var shutdownRequest = new
                 {
                     action = "shutdown",
-                    reason = "CocoroDockからの終了要求"
+                    reason = "CocoroConsoleからの終了要求"
                 };
                 var json = System.Text.Json.JsonSerializer.Serialize(shutdownRequest);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");

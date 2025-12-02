@@ -1,5 +1,5 @@
-{
-  "cocoroDockPort": 55600,
+﻿{
+  "CocoroConsolePort": 55600,
   "cocoroCorePort": 55601,
   "cocoroMemoryPort": 55602,
   "cocoroMemoryDBPort": 55603,

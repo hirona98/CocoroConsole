@@ -1,7 +1,7 @@
-using CocoroDock.Communication;
-using CocoroDock.Services;
-using CocoroDock.Utilities;
-using CocoroDock.ViewModels;
+﻿using CocoroConsole.Communication;
+using CocoroConsole.Services;
+using CocoroConsole.Utilities;
+using CocoroConsole.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,7 +16,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 
-namespace CocoroDock.Controls
+namespace CocoroConsole.Controls
 {
 
     /// <summary>
@@ -669,7 +669,7 @@ namespace CocoroDock.Controls
             {
                 // 埋め込みリソースからライセンステキストを読み込む
                 var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-                var resourceName = "CocoroDock.Resource.License.txt";
+                var resourceName = "CocoroConsole.Resource.License.txt";
 
                 using (var stream = assembly.GetManifestResourceStream(resourceName))
                 {

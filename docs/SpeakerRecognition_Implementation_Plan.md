@@ -1,9 +1,9 @@
-# CocoroDock 話者識別機能 実装計画書
+﻿# CocoroConsole 話者識別機能 実装計画書
 
 ## 📋 プロジェクト概要
 
 ### 目的
-CocoroDockに話者識別（Speaker Recognition）機能を実装し、複数話者の音声を区別して認識できるようにする。
+CocoroConsoleに話者識別（Speaker Recognition）機能を実装し、複数話者の音声を区別して認識できるようにする。
 
 ### 目標
 - リアルタイム音声入力から話者を自動識別
@@ -27,7 +27,7 @@ CocoroDockに話者識別（Speaker Recognition）機能を実装し、複数話
 
 ### 選定理由
 1. **ONNX公式対応**: PyTorchからのエクスポートが容易
-2. **軽量**: CocoroDockの既存ONNX実装（SileroVAD）と同等サイズ
+2. **軽量**: CocoroConsoleの既存ONNX実装（SileroVAD）と同等サイズ
 3. **高精度**: 最新のResNetアーキテクチャ採用
 4. **日本語対応**: 多言語データセットで学習済み
 5. **ライセンス**: CC BY 4.0（商用利用可、クレジット表記必須）
@@ -76,7 +76,7 @@ AmiVoice STT（失敗時は例外スロー → 停止） ← 既存
 
 ### 1. SpeakerRecognitionService.cs（新規作成）
 
-**ファイルパス**: `CocoroDock/Services/SpeakerRecognitionService.cs`
+**ファイルパス**: `CocoroConsole/Services/SpeakerRecognitionService.cs`
 
 #### データベーススキーマ
 
@@ -97,10 +97,10 @@ CREATE INDEX idx_speaker_name ON speakers(speaker_name);
 
 ### 4. UI実装: SpeakerManagementControl.xaml（新規）
 
-**ファイルパス**: `CocoroDock/Controls/SpeakerManagementControl.xaml`
+**ファイルパス**: `CocoroConsole/Controls/SpeakerManagementControl.xaml`
 
 ```xml
-<UserControl x:Class="CocoroDock.Controls.SpeakerManagementControl"
+<UserControl x:Class="CocoroConsole.Controls.SpeakerManagementControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <GroupBox Header="話者識別設定" Margin="10">
@@ -169,7 +169,7 @@ CREATE INDEX idx_speaker_name ON speakers(speaker_name);
 
 ### 5. 設定画面への統合
 
-**ファイルパス**: `CocoroDock/Controls/SystemSettingsControl.xaml`
+**ファイルパス**: `CocoroConsole/Controls/SystemSettingsControl.xaml`
 
 **追加箇所**: 既存のマイク設定セクションの下に追加
 

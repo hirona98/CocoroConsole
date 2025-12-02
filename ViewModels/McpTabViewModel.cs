@@ -1,6 +1,6 @@
-using CocoroDock.Communication;
-using CocoroDock.Services;
-using CocoroDock.Utilities;
+﻿using CocoroConsole.Communication;
+using CocoroConsole.Services;
+using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Threading;
 
-namespace CocoroDock.ViewModels
+namespace CocoroConsole.ViewModels
 {
     /// <summary>
     /// MCPタブのViewModel

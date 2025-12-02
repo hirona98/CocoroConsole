@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     /// <summary>
     /// 定期コマンド実行サービス

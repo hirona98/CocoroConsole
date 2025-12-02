@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,8 +12,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using CocoroDock.Models;
-using CocoroDock.Services;
+using CocoroConsole.Models;
+using CocoroConsole.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -22,7 +22,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace CocoroDock.Communication
+namespace CocoroConsole.Communication
 {
     /// <summary>
     /// モバイルWebSocketサーバー（ASP.NET Core実装）
@@ -256,7 +256,7 @@ namespace CocoroDock.Communication
                 }
 
                 // パスからリソース名を構築
-                var resourceName = $"CocoroDock.wwwroot.{path.Replace('/', '.')}";
+                var resourceName = $"CocoroConsole.wwwroot.{path.Replace('/', '.')}";
 
                 using var stream = assembly.GetManifestResourceStream(resourceName);
                 if (stream != null)
@@ -284,7 +284,7 @@ namespace CocoroDock.Communication
                 // ファイルが見つからない場合、拡張子がない場合はindex.htmlを試す
                 if (!Path.HasExtension(path))
                 {
-                    using var indexStream = assembly.GetManifestResourceStream("CocoroDock.wwwroot.index.html");
+                    using var indexStream = assembly.GetManifestResourceStream("CocoroConsole.wwwroot.index.html");
                     if (indexStream != null)
                     {
                         context.Response.ContentType = "text/html";
@@ -630,7 +630,7 @@ namespace CocoroDock.Communication
                     return;
                 }
 
-                // CocoroDockにモバイルメッセージを通知
+                // CocoroConsoleにモバイルメッセージを通知
                 MobileMessageReceived?.Invoke(this, $"📱 {message.Data.Message}");
 
                 // CocoreCoreM に送信するためのリクエスト作成
@@ -855,7 +855,7 @@ namespace CocoroDock.Communication
                     return;
                 }
 
-                // CocoroDock に画像メッセージを通知
+                // CocoroConsole に画像メッセージを通知
                 string imageMessage = message.Data.Message ?? "";
                 MobileImageMessageReceived?.Invoke(this, (imageMessage, base64ImageData));
 
@@ -1025,7 +1025,7 @@ namespace CocoroDock.Communication
         {
             try
             {
-                // CocoroDockに音声認識結果を通知
+                // CocoroConsoleに音声認識結果を通知
                 MobileMessageReceived?.Invoke(this, $"📱 {recognizedText}");
 
                 // チャットメッセージとして処理

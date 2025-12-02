@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace CocoroDock.Converters
+namespace CocoroConsole.Converters
 {
     /// <summary>
     /// アニメーションタイプの数値を文字列に変換するコンバーター

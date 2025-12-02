@@ -1,9 +1,9 @@
-using CocoroDock.Models;
+﻿using CocoroConsole.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CocoroDock.Communication
+namespace CocoroConsole.Communication
 {
 
     /// <summary>
@@ -345,7 +345,7 @@ namespace CocoroDock.Communication
     /// </summary>
     public class ConfigSettings
     {
-        public int cocoroDockPort { get; set; } = 55600;
+        public int CocoroConsolePort { get; set; } = 55600;
         public int cocoroCorePort { get; set; } = 55601;
         public int cocoroMemoryPort { get; set; } = 55602;
         public int cocoroMemoryDBPort { get; set; } = 55603;
@@ -395,7 +395,7 @@ namespace CocoroDock.Communication
         {
             return new ConfigSettings
             {
-                cocoroDockPort = this.cocoroDockPort,
+                CocoroConsolePort = this.CocoroConsolePort,
                 cocoroCorePort = this.cocoroCorePort,
                 cocoroMemoryPort = this.cocoroMemoryPort,
                 cocoroMemoryDBPort = this.cocoroMemoryDBPort,
@@ -504,7 +504,7 @@ namespace CocoroDock.Communication
     #region REST API ペイロードクラス
 
     /// <summary>
-    /// CocoroDock API: チャットリクエスト
+    /// CocoroConsole API: チャットリクエスト
     /// </summary>
     public class ChatRequest
     {
@@ -517,7 +517,7 @@ namespace CocoroDock.Communication
     }
 
     /// <summary>
-    /// CocoroDock API: 制御コマンドリクエスト
+    /// CocoroConsole API: 制御コマンドリクエスト
     /// </summary>
     public class ControlRequest
     {
@@ -621,7 +621,7 @@ namespace CocoroDock.Communication
     }
 
     /// <summary>
-    /// CocoroDock API: ステータス更新リクエスト
+    /// CocoroConsole API: ステータス更新リクエスト
     /// </summary>
     public class StatusUpdateRequest
     {

@@ -1,11 +1,11 @@
-using CocoroDock.Models;
-using CocoroDock.Services;
+﻿using CocoroConsole.Models;
+using CocoroConsole.Services;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace CocoroDock.Controls
+namespace CocoroConsole.Controls
 {
     /// <summary>
     /// ExtrasControl.xaml の相互作用ロジック

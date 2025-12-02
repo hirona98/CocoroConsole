@@ -1,8 +1,8 @@
-using CocoroDock.Communication;
-using CocoroDock.Controls;
-using CocoroDock.Services;
-using CocoroDock.Utilities;
-using CocoroDock.Windows;
+﻿using CocoroConsole.Communication;
+using CocoroConsole.Controls;
+using CocoroConsole.Services;
+using CocoroConsole.Utilities;
+using CocoroConsole.Windows;
 using CocoroAI.Services;
 using System;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ using System.Windows;
 using System.Windows.Media.Imaging;
 using System.IO;
 
-namespace CocoroDock
+namespace CocoroConsole
 {
 
     /// <summary>
@@ -569,7 +569,7 @@ namespace CocoroDock
         #region 通信サービスイベントハンドラ
 
         /// <summary>
-        /// チャットメッセージ受信時のハンドラ（CocoroDock APIから）
+        /// チャットメッセージ受信時のハンドラ（CocoroConsole APIから）
         /// </summary>
         private void OnChatMessageReceived(object? sender, ChatRequest request)
         {
@@ -601,7 +601,7 @@ namespace CocoroDock
 
 
         /// <summary>
-        /// 制御コマンド受信時のハンドラ（CocoroDock APIから）
+        /// 制御コマンド受信時のハンドラ（CocoroConsole APIから）
         /// </summary>
         private void OnControlCommandReceived(object? sender, ControlRequest request)
         {

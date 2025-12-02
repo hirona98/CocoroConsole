@@ -1,5 +1,5 @@
-using CocoroDock.Communication;
-using CocoroDock.Services;
+﻿using CocoroConsole.Communication;
+using CocoroConsole.Services;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 
-namespace CocoroDock.Controls
+namespace CocoroConsole.Controls
 {
     /// <summary>
     /// CharacterManagementControl.xaml の相互作用ロジック

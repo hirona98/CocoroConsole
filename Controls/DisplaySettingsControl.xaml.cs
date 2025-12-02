@@ -1,6 +1,6 @@
-using CocoroDock.Services;
-using CocoroDock.Communication;
-using CocoroDock.Utilities;
+﻿using CocoroConsole.Services;
+using CocoroConsole.Communication;
+using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 
-namespace CocoroDock.Controls
+namespace CocoroConsole.Controls
 {
     public partial class DisplaySettingsControl : UserControl
     {

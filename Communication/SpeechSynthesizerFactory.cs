@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 
-namespace CocoroDock.Communication
+namespace CocoroConsole.Communication
 {
     /// <summary>
     /// 音声合成クライアントのファクトリー

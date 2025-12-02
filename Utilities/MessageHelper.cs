@@ -1,6 +1,6 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
-namespace CocoroDock.Utilities
+namespace CocoroConsole.Utilities
 {
     /// <summary>
     /// メッセージ処理に関するユーティリティメソッドを提供するヘルパークラス

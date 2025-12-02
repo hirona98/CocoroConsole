@@ -1,10 +1,10 @@
-using CocoroDock.Communication;
+﻿using CocoroConsole.Communication;
 using CocoroAI.Services;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     /// <summary>
     /// ステータス更新用のイベント引数
@@ -27,7 +27,7 @@ namespace CocoroDock.Services
     public interface ICommunicationService : IDisposable
     {
         /// <summary>
-        /// チャットメッセージ受信イベント（CocoroDock APIから）
+        /// チャットメッセージ受信イベント（CocoroConsole APIから）
         /// </summary>
         event EventHandler<ChatRequest>? ChatMessageReceived;
 
@@ -37,7 +37,7 @@ namespace CocoroDock.Services
         event Action<ChatMessagePayload, List<System.Windows.Media.Imaging.BitmapSource>?>? NotificationMessageReceived;
 
         /// <summary>
-        /// 制御コマンド受信イベント（CocoroDock APIから）
+        /// 制御コマンド受信イベント（CocoroConsole APIから）
         /// </summary>
         event EventHandler<ControlRequest>? ControlCommandReceived;
 

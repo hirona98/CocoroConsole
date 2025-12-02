@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace CocoroDock.Communication
+namespace CocoroConsole.Communication
 {
     /// <summary>
     /// 音声合成クライアントの統一インターフェース

@@ -1,5 +1,5 @@
-using CocoroDock.Communication;
-using CocoroDock.Windows;
+﻿using CocoroConsole.Communication;
+using CocoroConsole.Windows;
 using CocoroAI.Services;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     /// <summary>
     /// CocoroAIとの通信を管理するサービスクラス
@@ -17,7 +17,7 @@ namespace CocoroDock.Services
     {
         // リアルタイムストリーミング設定（即座表示方式）
 
-        private readonly CocoroDockApiServer _apiServer;
+        private readonly CocoroConsoleApiServer _apiServer;
         private readonly CocoroShellClient _shellClient;
         private readonly CocoroCoreClient _coreClient;
         private readonly WebSocketChatClient _webSocketClient;
@@ -59,7 +59,7 @@ namespace CocoroDock.Services
             _appSettings = appSettings;
 
             // APIサーバーの初期化
-            _apiServer = new CocoroDockApiServer(_appSettings.CocoroDockPort, _appSettings);
+            _apiServer = new CocoroConsoleApiServer(_appSettings.CocoroConsolePort, _appSettings);
             _apiServer.ChatMessageReceived += (sender, request) => ChatMessageReceived?.Invoke(this, request);
             _apiServer.ControlCommandReceived += (sender, request) => ControlCommandReceived?.Invoke(this, request);
             _apiServer.StatusUpdateReceived += (sender, request) =>
@@ -105,7 +105,7 @@ namespace CocoroDock.Services
         {
             try
             {
-                // CocoroDock APIサーバーを起動
+                // CocoroConsole APIサーバーを起動
                 await _apiServer.StartAsync();
 
                 // 通知APIサーバーを起動（有効な場合）
@@ -135,7 +135,7 @@ namespace CocoroDock.Services
                     await _notificationApiServer.StopAsync();
                 }
 
-                // CocoroDock APIサーバーを停止
+                // CocoroConsole APIサーバーを停止
                 await _apiServer.StopAsync();
             }
             catch (Exception ex)

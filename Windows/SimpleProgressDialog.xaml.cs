@@ -1,6 +1,6 @@
-using System.Windows;
+﻿using System.Windows;
 
-namespace CocoroDock.Windows
+namespace CocoroConsole.Windows
 {
     public partial class SimpleProgressDialog : Window
     {

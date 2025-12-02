@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Linq;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     public class WakeWordDetector
     {

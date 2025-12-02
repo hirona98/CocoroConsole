@@ -1,9 +1,9 @@
-using CocoroDock.Models;
+﻿using CocoroConsole.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     public interface IReminderService
     {

@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Linq;
 using NAudio.Dsp;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     /// <summary>
     /// Mel-frequency bank (Fbank) 特徴量抽出

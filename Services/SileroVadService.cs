@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +9,7 @@ using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using NAudio.Wave;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     /// <summary>
     /// セッション管理型SileroVAD - ONNXモデルは共有、状態は個別管理
@@ -44,7 +44,7 @@ namespace CocoroDock.Services
                 try
                 {
                     var assembly = Assembly.GetExecutingAssembly();
-                    var resourceName = "CocoroDock.Resource.silero_vad.onnx";
+                    var resourceName = "CocoroConsole.Resource.silero_vad.onnx";
 
                     using var stream = assembly.GetManifestResourceStream(resourceName);
                     if (stream == null)

@@ -1,5 +1,5 @@
-using CocoroDock.Communication;
-using CocoroDock.Services;
+﻿using CocoroConsole.Communication;
+using CocoroConsole.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace CocoroDock.Controls
+namespace CocoroConsole.Controls
 {
     /// <summary>
     /// 逃げ先座標設定用のViewModelクラス

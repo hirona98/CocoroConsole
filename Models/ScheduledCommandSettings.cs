@@ -1,4 +1,4 @@
-namespace CocoroDock.Models
+﻿namespace CocoroConsole.Models
 {
     public class ScheduledCommandSettings
     {

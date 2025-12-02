@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NAudio.Wave;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     public class RealtimeVoiceRecognitionService : IDisposable
     {

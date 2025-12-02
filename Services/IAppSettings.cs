@@ -1,7 +1,7 @@
-using CocoroDock.Communication;
+﻿using CocoroConsole.Communication;
 using System.Collections.Generic;
 
-namespace CocoroDock.Services
+namespace CocoroConsole.Services
 {
     /// <summary>
     /// アプリケーション設定のインターフェース
@@ -9,9 +9,9 @@ namespace CocoroDock.Services
     public interface IAppSettings
     {
         /// <summary>
-        /// CocoroDockポート
+        /// CocoroConsoleポート
         /// </summary>
-        int CocoroDockPort { get; set; }
+        int CocoroConsolePort { get; set; }
 
         /// <summary>
         /// CocoroCoreポート
