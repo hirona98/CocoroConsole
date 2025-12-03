@@ -73,21 +73,21 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// UserDataMディレクトリを探索して見つける（AppSettingsのロジックを簡略化して流用）
+        /// UserDataディレクトリを探索して見つける（AppSettingsのロジックを簡略化して流用）
         /// </summary>
-        private string FindUserDataMDirectory()
+        private string FindUserDataDirectory()
         {
             var baseDirectory = AppContext.BaseDirectory;
 
             // 探索するパスの配列
             string[] searchPaths = {
 #if !DEBUG
-                Path.Combine(baseDirectory, "UserDataM"),
+                Path.Combine(baseDirectory, "UserData"),
 #endif
-                Path.Combine(baseDirectory, "..", "UserDataM"),
-                Path.Combine(baseDirectory, "..", "..", "UserDataM"),
-                Path.Combine(baseDirectory, "..", "..", "..", "UserDataM"),
-                Path.Combine(baseDirectory, "..", "..", "..", "..", "UserDataM")
+                Path.Combine(baseDirectory, "..", "UserData"),
+                Path.Combine(baseDirectory, "..", "..", "UserData"),
+                Path.Combine(baseDirectory, "..", "..", "..", "UserData"),
+                Path.Combine(baseDirectory, "..", "..", "..", "..", "UserData")
             };
 
             foreach (var path in searchPaths)
@@ -171,7 +171,7 @@ namespace CocoroConsole.Controls
                     });
 
                     // フォルダパスを取得
-                    string userDataPath = FindUserDataMDirectory();
+                    string userDataPath = FindUserDataDirectory();
                     string baseDirectory = Path.GetDirectoryName(userDataPath) ?? AppContext.BaseDirectory;
                     string backupPath = Path.Combine(baseDirectory, backupDirName);
 
@@ -310,10 +310,10 @@ namespace CocoroConsole.Controls
                 Title = "バックアップフォルダを選択してください"
             };
 
-            // UserDataMと同一階層に初期フォルダを設定
+            // UserDataと同一階層に初期フォルダを設定
             try
             {
-                string userDataPath = FindUserDataMDirectory();
+                string userDataPath = FindUserDataDirectory();
                 string baseDirectory = Path.GetDirectoryName(userDataPath) ?? AppContext.BaseDirectory;
                 dialog.InitialDirectory = baseDirectory;
             }
@@ -423,7 +423,7 @@ namespace CocoroConsole.Controls
                     });
 
                     // 現在のパスを取得
-                    string userDataPath = FindUserDataMDirectory();
+                    string userDataPath = FindUserDataDirectory();
                     string baseDirectory = Path.GetDirectoryName(userDataPath) ?? AppContext.BaseDirectory;
 
                     string currentMemoryPath = Path.Combine(userDataPath, "Memory");
@@ -612,10 +612,10 @@ namespace CocoroConsole.Controls
                     });
 
                     // フォルダを削除（AppSettingsの探索ロジックを簡略化して流用）
-                    string userDataPath = FindUserDataMDirectory();
+                    string userDataPath = FindUserDataDirectory();
                     string memoryPath = Path.Combine(userDataPath, "Memory");
 
-                    // UserDataMと同一階層のCocoroCoreMディレクトリからneo4jパスを取得
+                    // UserDataと同一階層のCocoroCoreMディレクトリからneo4jパスを取得
                     string baseDirectory = Path.GetDirectoryName(userDataPath) ?? AppContext.BaseDirectory;
                     string neo4jDataPath = Path.Combine(baseDirectory, "CocoroCoreM", "neo4j", "data");
 

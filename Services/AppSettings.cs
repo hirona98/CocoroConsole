@@ -25,7 +25,7 @@ namespace CocoroConsole.Services
         /// </summary>
         public static event EventHandler? SettingsSaved;
 
-        // UserDataMディレクトリのパスを取得
+        // UserDataディレクトリのパスを取得
         public string UserDataDirectory => FindUserDataDirectory();
 
         // アプリケーション設定ファイルのパス
@@ -110,9 +110,9 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// UserDataMディレクトリを探索して見つける
+        /// UserDataディレクトリを探索して見つける
         /// </summary>
-        /// <returns>UserDataMディレクトリのパス</returns>
+        /// <returns>UserDataディレクトリのパス</returns>
         private string FindUserDataDirectory()
         {
             var baseDirectory = AppContext.BaseDirectory;
@@ -120,12 +120,12 @@ namespace CocoroConsole.Services
             // 探索するパスの配列
             string[] searchPaths = {
 #if !DEBUG
-                Path.Combine(baseDirectory, "UserDataM"),
+                Path.Combine(baseDirectory, "UserData"),
 #endif
-                Path.Combine(baseDirectory, "..", "UserDataM"),
-                Path.Combine(baseDirectory, "..", "..", "UserDataM"),
-                Path.Combine(baseDirectory, "..", "..", "..", "UserDataM"),
-                Path.Combine(baseDirectory, "..", "..", "..", "..", "UserDataM")
+                Path.Combine(baseDirectory, "..", "UserData"),
+                Path.Combine(baseDirectory, "..", "..", "UserData"),
+                Path.Combine(baseDirectory, "..", "..", "..", "UserData"),
+                Path.Combine(baseDirectory, "..", "..", "..", "..", "UserData")
             };
 
             foreach (var path in searchPaths)
@@ -133,14 +133,14 @@ namespace CocoroConsole.Services
                 var fullPath = Path.GetFullPath(path);
                 if (Directory.Exists(fullPath))
                 {
-                    Debug.WriteLine($"UserDataMディレクトリ: {fullPath}");
+                    Debug.WriteLine($"UserDataディレクトリ: {fullPath}");
                     return fullPath;
                 }
             }
 
             // 見つからない場合は、最初のパスを使用してディレクトリを作成
             var defaultPath = Path.GetFullPath(searchPaths[0]);
-            Debug.WriteLine($"UserDataMが見つからないため作成: {defaultPath}");
+            Debug.WriteLine($"UserDataが見つからないため作成: {defaultPath}");
             Directory.CreateDirectory(defaultPath);
             return defaultPath;
         }

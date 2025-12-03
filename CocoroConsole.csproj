@@ -42,19 +42,19 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <TargetPath>UserDataM\DefaultSetting.json</TargetPath>
+      <TargetPath>UserData\DefaultSetting.json</TargetPath>
     </None>
     <None Include="Resource\DefaultAnimationSettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <TargetPath>UserDataM\DefaultAnimationSettings.json</TargetPath>
+      <TargetPath>UserData\DefaultAnimationSettings.json</TargetPath>
     </None>
     <None Include="Resource\初音ミクSD_26db7924-4efb-50ff-927e-fbeffe9f3e1a.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <TargetPath>UserDataM\SystemPrompts\初音ミクSD_26db7924-4efb-50ff-927e-fbeffe9f3e1a.txt</TargetPath>
+      <TargetPath>UserData\SystemPrompts\初音ミクSD_26db7924-4efb-50ff-927e-fbeffe9f3e1a.txt</TargetPath>
     </None>
     <!-- Silero VAD ONNXモデル（exe内に組み込み） -->
     <EmbeddedResource Include="Resource\silero_vad.onnx" />
