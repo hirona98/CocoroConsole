@@ -355,7 +355,6 @@ namespace CocoroConsole.Communication
         public int cocoroWebPort { get; set; } = 55607;
         public bool isEnableNotificationApi { get; set; } = false;
         public bool isEnableReminder { get; set; } = true;
-        public bool isEnableMcp { get; set; } = false;
         public bool isEnableWebService { get; set; } = false;
         public bool isRestoreWindowPosition { get; set; } = false;
         public bool isTopmost { get; set; }
@@ -405,7 +404,6 @@ namespace CocoroConsole.Communication
                 cocoroWebPort = this.cocoroWebPort,
                 isEnableNotificationApi = this.isEnableNotificationApi,
                 isEnableReminder = this.isEnableReminder,
-                isEnableMcp = this.isEnableMcp,
                 isEnableWebService = this.isEnableWebService,
                 isRestoreWindowPosition = this.isRestoreWindowPosition,
                 isTopmost = this.isTopmost,
@@ -636,36 +634,6 @@ namespace CocoroConsole.Communication
     public class HealthCheckResponse
     {
         public string status { get; set; } = "healthy";
-    }
-
-    /// <summary>
-    /// MCPステータス情報
-    /// </summary>
-    public class McpStatus
-    {
-        public int total_servers { get; set; }
-        public int connected_servers { get; set; }
-        public int total_tools { get; set; }
-        public Dictionary<string, McpServerInfo>? servers { get; set; }
-        public string? error { get; set; }
-    }
-
-    /// <summary>
-    /// MCPサーバー情報
-    /// </summary>
-    public class McpServerInfo
-    {
-        public bool connected { get; set; }
-        public int tool_count { get; set; }
-        public string connection_type { get; set; } = string.Empty;
-    }
-
-    /// <summary>
-    /// MCPツール登録ログレスポンス
-    /// </summary>
-    public class McpToolRegistrationResponse : StandardResponse
-    {
-        public List<string>? logs { get; set; }
     }
 
     /// <summary>

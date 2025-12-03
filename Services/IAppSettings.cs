@@ -49,10 +49,6 @@ namespace CocoroConsole.Services
         bool IsEnableReminder { get; set; }
 
         /// <summary>
-        /// MCP有効/無効
-        /// </summary>
-        bool IsEnableMcp { get; set; }
-        /// <summary>
         /// WebSocketサーバーポート
         /// </summary>
         int CocoroWebPort { get; set; }

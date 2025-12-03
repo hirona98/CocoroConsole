@@ -32,7 +32,6 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Resource\DefaultSetting.json" />
-    <None Remove="Resource\Sample_CocoroAiMcp.json" />
     <None Remove="Resource\DefaultAnimationSettings.json" />
     <None Remove="Resource\初音ミクSD_26db7924-4efb-50ff-927e-fbeffe9f3e1a.txt" />
     <None Remove="Resource\logo.png" />
@@ -44,12 +43,6 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <TargetPath>UserDataM\DefaultSetting.json</TargetPath>
-    </None>
-    <None Include="Resource\Sample_CocoroAiMcp.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <TargetPath>UserDataM\Sample_CocoroAiMcp.json</TargetPath>
     </None>
     <None Include="Resource\DefaultAnimationSettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

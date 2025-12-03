@@ -149,14 +149,6 @@
                     <local:ExternalServicesSettingsControl x:Name="ExternalServicesSettingsControl"/>
                 </Grid>
             </TabItem>
-            <!-- MCP -->
-            <TabItem Header="MCP"
-                     Style="{StaticResource AdminTabItemStyle}"
-                     ToolTip="Model Context Protocol">
-                <Grid Margin="20,20,0,20">
-                    <local:McpSettingsControl x:Name="McpSettingsControl"/>
-                </Grid>
-            </TabItem>
 
             <!-- おまけ -->
             <TabItem Header="おまけ"

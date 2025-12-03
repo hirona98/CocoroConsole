@@ -58,8 +58,6 @@ namespace CocoroConsole.Services
         public bool IsEnableNotificationApi { get; set; } = true;
         // リマインダー設定
         public bool IsEnableReminder { get; set; } = true;
-        // MCP設定
-        public bool IsEnableMcp { get; set; } = false;
         // UI設定
         public bool IsRestoreWindowPosition { get; set; } = false;
         public bool IsTopmost { get; set; } = false;
@@ -167,7 +165,6 @@ namespace CocoroConsole.Services
             CocoroWebPort = config.cocoroWebPort;
             IsEnableNotificationApi = config.isEnableNotificationApi;
             IsEnableReminder = config.isEnableReminder;
-            IsEnableMcp = config.isEnableMcp;
             IsEnableWebService = config.isEnableWebService;
             IsRestoreWindowPosition = config.isRestoreWindowPosition;
             IsTopmost = config.isTopmost;
@@ -271,7 +268,6 @@ namespace CocoroConsole.Services
                 cocoroWebPort = CocoroWebPort,
                 isEnableNotificationApi = IsEnableNotificationApi,
                 isEnableReminder = IsEnableReminder,
-                isEnableMcp = IsEnableMcp,
                 isEnableWebService = IsEnableWebService,
                 isRestoreWindowPosition = IsRestoreWindowPosition,
                 isTopmost = IsTopmost,

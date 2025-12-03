@@ -1,20 +1,12 @@
 ﻿using CocoroConsole.Communication;
 using CocoroConsole.Services;
 using CocoroConsole.Utilities;
-using CocoroConsole.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Interop;
 
 namespace CocoroConsole.Controls
 {
@@ -56,10 +48,6 @@ namespace CocoroConsole.Controls
 
             // キャラクター設定の初期化
             InitializeCharacterSettings();
-
-            // MCPタブの初期化
-            McpSettingsControl.Initialize();
-            McpSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
 
             // システム設定コントロールを初期化
             _ = SystemSettingsControl.InitializeAsync();
@@ -206,7 +194,7 @@ namespace CocoroConsole.Controls
 
 
         // System やその他設定の収集はこのまま AdminWindow 側で実施
-        private Dictionary<string, object> CollectSystemAndMcpSettings()
+        private Dictionary<string, object> CollectSystemSettings()
         {
             var dict = new Dictionary<string, object>();
             dict["IsEnableWebService"] = ExternalServicesSettingsControl.GetIsEnableWebService();
@@ -230,9 +218,6 @@ namespace CocoroConsole.Controls
             dict["GoogleApiKey"] = CocoroCoreMSettings.googleApiKey;
             dict["GoogleSearchEngineId"] = CocoroCoreMSettings.googleSearchEngineId;
             dict["InternetMaxResults"] = CocoroCoreMSettings.internetMaxResults;
-
-            // MCP 有効/無効
-            dict["IsEnableMcp"] = McpSettingsControl.GetMcpEnabled();
 
             // おまけ設定（定期コマンド実行）
             var scheduledCommandSettings = ExtrasControl.GetScheduledCommandSettings();
@@ -401,13 +386,13 @@ namespace CocoroConsole.Controls
                 DisplaySettingsControl.SaveToSnapshot();
                 var displaySnapshot = DisplaySettingsControl.GetSnapshot();
 
-                // System/MCP の設定を収集
-                var systemSnapshot = CollectSystemAndMcpSettings();
+                // System の設定を収集
+                var systemSnapshot = CollectSystemSettings();
 
                 // AppSettings に反映（Display）
                 DisplaySettingsControl.ApplySnapshotToAppSettings(displaySnapshot);
 
-                // AppSettings に反映（System/MCP）
+                // AppSettings に反映（System）
                 ApplySystemSnapshotToAppSettings(systemSnapshot);
 
                 // Character/Animation の反映
@@ -548,8 +533,6 @@ namespace CocoroConsole.Controls
 
         protected override void OnClosed(EventArgs e)
         {
-            // MCPタブのViewModelを破棄
-            McpSettingsControl.GetViewModel()?.Dispose();
             IsClosed = true;
             base.OnClosed(e);
         }
@@ -575,7 +558,6 @@ namespace CocoroConsole.Controls
             appSettings.IsEnableWebService = (bool)snapshot["IsEnableWebService"];
             appSettings.IsEnableReminder = (bool)snapshot["IsEnableReminder"];
             appSettings.IsEnableNotificationApi = (bool)snapshot["IsEnableNotificationApi"];
-            appSettings.IsEnableMcp = (bool)snapshot["IsEnableMcp"];
 
             appSettings.ScreenshotSettings.enabled = (bool)snapshot["ScreenshotEnabled"];
             appSettings.ScreenshotSettings.intervalMinutes = (int)snapshot["ScreenshotInterval"];
@@ -596,9 +578,6 @@ namespace CocoroConsole.Controls
             appSettings.ScheduledCommandSettings.Enabled = (bool)snapshot["ScheduledCommandEnabled"];
             appSettings.ScheduledCommandSettings.Command = (string)snapshot["ScheduledCommand"];
             appSettings.ScheduledCommandSettings.IntervalMinutes = (int)snapshot["ScheduledCommandInterval"];
-
-            // MCPタブのViewModelにも反映
-            McpSettingsControl.SetMcpEnabled(appSettings.IsEnableMcp);
         }
 
         /// <summary>
@@ -904,7 +883,6 @@ namespace CocoroConsole.Controls
             // System設定の取得
             config.isEnableNotificationApi = ExternalServicesSettingsControl.GetIsEnableNotificationApi();
             config.isEnableReminder = SystemSettingsControl.GetIsEnableReminder();
-            config.isEnableMcp = McpSettingsControl.GetMcpEnabled();
 
             var CocoroCoreMSettings = SystemSettingsControl.GetCocoroCoreMSettings();
             config.enable_pro_mode = CocoroCoreMSettings.enableProMode;
@@ -938,7 +916,6 @@ namespace CocoroConsole.Controls
             // 基本設定項目の比較
             if (currentSettings.isEnableNotificationApi != previousSettings.isEnableNotificationApi ||
                 currentSettings.isEnableReminder != previousSettings.isEnableReminder ||
-                currentSettings.isEnableMcp != previousSettings.isEnableMcp ||
                 currentSettings.enable_pro_mode != previousSettings.enable_pro_mode ||
                 currentSettings.enable_internet_retrieval != previousSettings.enable_internet_retrieval ||
                 currentSettings.googleApiKey != previousSettings.googleApiKey ||
