@@ -347,9 +347,6 @@ namespace CocoroConsole.Communication
     {
         public int CocoroConsolePort { get; set; } = 55600;
         public int cocoroCorePort { get; set; } = 55601;
-        public int cocoroMemoryPort { get; set; } = 55602;
-        public int cocoroMemoryDBPort { get; set; } = 55603;
-        public int cocoroMemoryWebPort { get; set; } = 55606;
         public int cocoroShellPort { get; set; } = 55605;
         public int notificationApiPort { get; set; } = 55604;
         public bool isEnableNotificationApi { get; set; } = false;
@@ -389,9 +386,6 @@ namespace CocoroConsole.Communication
             {
                 CocoroConsolePort = this.CocoroConsolePort,
                 cocoroCorePort = this.cocoroCorePort,
-                cocoroMemoryPort = this.cocoroMemoryPort,
-                cocoroMemoryDBPort = this.cocoroMemoryDBPort,
-                cocoroMemoryWebPort = this.cocoroMemoryWebPort,
                 cocoroShellPort = this.cocoroShellPort,
                 notificationApiPort = this.notificationApiPort,
                 isEnableNotificationApi = this.isEnableNotificationApi,

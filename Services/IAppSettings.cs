@@ -19,21 +19,6 @@ namespace CocoroConsole.Services
         int CocoroGhostPort { get; set; }
 
         /// <summary>
-        /// CocoroMemoryポート
-        /// </summary>
-        int CocoroMemoryPort { get; set; }
-
-        /// <summary>
-        /// CocoroMemoryDBポート
-        /// </summary>
-        int CocoroMemoryDBPort { get; set; }
-
-        /// <summary>
-        /// CocoroMemoryWebポート
-        /// </summary>
-        int CocoroMemoryWebPort { get; set; }
-
-        /// <summary>
         /// CocoroShellポート
         /// </summary>
         int CocoroShellPort { get; set; }

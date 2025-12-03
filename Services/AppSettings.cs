@@ -45,9 +45,6 @@ namespace CocoroConsole.Services
 
         public int CocoroConsolePort { get; set; } = 55600;
         public int CocoroGhostPort { get; set; } = 55601;
-        public int CocoroMemoryPort { get; set; } = 55602;
-        public int CocoroMemoryDBPort { get; set; } = 55603;
-        public int CocoroMemoryWebPort { get; set; } = 55606;
         public int CocoroShellPort { get; set; } = 55605;
         public int NotificationApiPort { get; set; } = 55604;
         // 通知API設定
@@ -146,9 +143,6 @@ namespace CocoroConsole.Services
         {
             CocoroConsolePort = config.CocoroConsolePort;
             CocoroGhostPort = config.cocoroCorePort;
-            CocoroMemoryPort = config.cocoroMemoryPort;
-            CocoroMemoryDBPort = config.cocoroMemoryDBPort;
-            CocoroMemoryWebPort = config.cocoroMemoryWebPort;
             CocoroShellPort = config.cocoroShellPort;
             NotificationApiPort = config.notificationApiPort;
             IsEnableNotificationApi = config.isEnableNotificationApi;
@@ -240,9 +234,6 @@ namespace CocoroConsole.Services
             {
                 CocoroConsolePort = CocoroConsolePort,
                 cocoroCorePort = CocoroGhostPort,
-                cocoroMemoryPort = CocoroMemoryPort,
-                cocoroMemoryDBPort = CocoroMemoryDBPort,
-                cocoroMemoryWebPort = CocoroMemoryWebPort,
                 cocoroShellPort = CocoroShellPort,
                 notificationApiPort = NotificationApiPort,
                 isEnableNotificationApi = IsEnableNotificationApi,

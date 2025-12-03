@@ -1,9 +1,6 @@
 ﻿{
   "CocoroConsolePort": 55600,
   "cocoroCorePort": 55601,
-  "cocoroMemoryPort": 55602, # 削除
-  "cocoroMemoryDBPort": 55603, # 削除
-  "cocoroMemoryWebPort": 55606, # 削除
   "cocoroShellPort": 55605,
   "notificationApiPort": 55604,
   "isEnableNotificationApi": false,
@@ -59,10 +56,6 @@
     "command": "",
     "intervalMinutes": 60
   },
-  "enable_pro_mode": false, # 削除
-  "enable_internet_retrieval": false, # 削除
-  "googleApiKey": "", # 削除
-  "googleSearchEngineId": "", # 削除
   "currentCharacterIndex": 0,
   "characterList": [
     {
