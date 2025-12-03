@@ -16,7 +16,7 @@ namespace CocoroConsole.Services
         /// <summary>
         /// CocoroCoreポート
         /// </summary>
-        int CocoroCorePort { get; set; }
+        int CocoroGhostPort { get; set; }
 
         /// <summary>
         /// CocoroMemoryポート

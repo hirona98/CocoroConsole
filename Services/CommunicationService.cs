@@ -41,14 +41,14 @@ namespace CocoroConsole.Services
         public event EventHandler<ControlRequest>? ControlCommandReceived;
         public event EventHandler<string>? ErrorOccurred;
         public event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
-        public event EventHandler<CocoroCoreMStatus>? StatusChanged;
+        public event EventHandler<CocoroGhostStatus>? StatusChanged;
 
         public bool IsServerRunning => _apiServer.IsRunning;
 
         /// <summary>
-        /// 現在のCocoroCoreMステータス
+        /// 現在のCocoroGhostステータス
         /// </summary>
-        public CocoroCoreMStatus CurrentStatus => _statusPollingService.CurrentStatus;
+        public CocoroGhostStatus CurrentStatus => _statusPollingService.CurrentStatus;
 
         /// <summary>
         /// コンストラクタ
@@ -72,10 +72,10 @@ namespace CocoroConsole.Services
             _shellClient = new CocoroShellClient(_appSettings.CocoroShellPort);
 
             // CocoroCoreクライアントの初期化
-            _coreClient = new CocoroCoreClient(_appSettings.CocoroCorePort);
+            _coreClient = new CocoroCoreClient(_appSettings.CocoroGhostPort);
 
             // WebSocketクライアントの初期化
-            _webSocketClient = new WebSocketChatClient(_appSettings.CocoroCorePort, $"dock_{DateTime.Now:yyyyMMddHHmmssfff}");
+            _webSocketClient = new WebSocketChatClient(_appSettings.CocoroGhostPort, $"dock_{DateTime.Now:yyyyMMddHHmmssfff}");
             _webSocketClient.MessageReceived += OnWebSocketMessageReceived;
             _webSocketClient.ConnectionStateChanged += OnWebSocketConnectionStateChanged;
             _webSocketClient.ErrorOccurred += OnWebSocketErrorOccurred;
@@ -90,7 +90,7 @@ namespace CocoroConsole.Services
             RefreshSettingsCache();
 
             // ステータスポーリングサービスの初期化
-            _statusPollingService = new StatusPollingService($"http://127.0.0.1:{_appSettings.CocoroCorePort}");
+            _statusPollingService = new StatusPollingService($"http://127.0.0.1:{_appSettings.CocoroGhostPort}");
             _statusPollingService.StatusChanged += (sender, status) => StatusChanged?.Invoke(this, status);
 
             // AppSettingsの変更イベントを購読
@@ -202,7 +202,7 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// CocoroCoreMにWebSocketチャットメッセージを送信
+        /// CocoroGhostにWebSocketチャットメッセージを送信
         /// </summary>
         /// <param name="message">送信メッセージ</param>
         /// <param name="characterName">キャラクター名（オプション）</param>
@@ -272,8 +272,8 @@ namespace CocoroConsole.Services
 
                 // 画像がある場合は画像処理中、そうでなければメッセージ処理中に設定
                 var processingStatus = (images != null && images.Count > 0)
-                    ? CocoroCoreMStatus.ProcessingImage
-                    : CocoroCoreMStatus.ProcessingMessage;
+                    ? CocoroGhostStatus.ProcessingImage
+                    : CocoroGhostStatus.ProcessingMessage;
                 _statusPollingService.SetProcessingStatus(processingStatus);
 
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "WebSocketチャット開始"));
@@ -298,7 +298,7 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// デスクトップウォッチ画像をCocoroCoreMに送信
+        /// デスクトップウォッチ画像をCocoroGhostに送信
         /// </summary>
         /// <param name="screenshotData">スクリーンショットデータ</param>
         public async Task SendDesktopWatchToCoreAsync(ScreenshotData screenshotData)
@@ -413,7 +413,7 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// CocoroCoreMに通知メッセージを送信
+        /// CocoroGhostに通知メッセージを送信
         /// </summary>
         /// <param name="originalSource">通知送信元</param>
         /// <param name="originalMessage">元の通知メッセージ</param>
@@ -454,7 +454,7 @@ namespace CocoroConsole.Services
                 };
 
                 // 処理中ステータスを設定
-                _statusPollingService.SetProcessingStatus(CocoroCoreMStatus.ProcessingMessage);
+                _statusPollingService.SetProcessingStatus(CocoroGhostStatus.ProcessingMessage);
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "通知処理開始"));
 
                 // WebSocketメッセージを送信
@@ -496,7 +496,7 @@ namespace CocoroConsole.Services
                     internet_search = false
                 };
 
-                _statusPollingService.SetProcessingStatus(CocoroCoreMStatus.ProcessingMessage);
+                _statusPollingService.SetProcessingStatus(CocoroGhostStatus.ProcessingMessage);
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "DirectRequest処理開始"));
 
                 await _webSocketClient.SendChatAsync(_currentSessionId, request);

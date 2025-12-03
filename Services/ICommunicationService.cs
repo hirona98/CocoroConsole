@@ -52,9 +52,9 @@ namespace CocoroConsole.Services
         event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
 
         /// <summary>
-        /// CocoroCoreMステータス変更イベント
+        /// CocoroGhostステータス変更イベント
         /// </summary>
-        event EventHandler<CocoroCoreMStatus>? StatusChanged;
+        event EventHandler<CocoroGhostStatus>? StatusChanged;
 
         /// <summary>
         /// APIサーバーが起動しているかどうか
@@ -62,9 +62,9 @@ namespace CocoroConsole.Services
         bool IsServerRunning { get; }
 
         /// <summary>
-        /// 現在のCocoroCoreMステータス
+        /// 現在のCocoroGhostステータス
         /// </summary>
-        CocoroCoreMStatus CurrentStatus { get; }
+        CocoroGhostStatus CurrentStatus { get; }
 
         /// <summary>
         /// APIサーバーを開始
@@ -98,7 +98,7 @@ namespace CocoroConsole.Services
         Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, List<string>? imageDataUrls = null);
 
         /// <summary>
-        /// デスクトップウォッチ画像をCocoroCoreMに送信
+        /// デスクトップウォッチ画像をCocoroGhostに送信
         /// </summary>
         /// <param name="screenshotData">スクリーンショットデータ</param>
         Task SendDesktopWatchToCoreAsync(ScreenshotData screenshotData);

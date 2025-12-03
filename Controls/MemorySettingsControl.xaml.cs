@@ -107,7 +107,7 @@ namespace CocoroConsole.Controls
         {
             var result = MessageBox.Show(
                 "すべての記憶データをバックアップします。\n" +
-                "バックアップ中はCocoroCoreMが一時停止します。\n\n" +
+                "バックアップ中はCocoroGhostが一時停止します。\n\n" +
                 "実行しますか？",
                 "記憶のバックアップ確認",
                 MessageBoxButton.YesNo,
@@ -136,20 +136,20 @@ namespace CocoroConsole.Controls
             {
                 // ダイアログを表示
                 progressDialog.Show();
-                progressDialog.MessageText.Text = "CocoroCoreMを停止しています...";
+                progressDialog.MessageText.Text = "CocoroGhostを停止しています...";
 
                 // バックアップ処理を実行
                 await Task.Run(async () =>
                 {
-                    // CocoroCoreMプロセスを停止
-                    ProcessHelper.LaunchExternalApplication("CocoroCoreM.exe", "CocoroCoreM", ProcessOperation.Terminate, false);
+                    // CocoroGhostプロセスを停止
+                    ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", ProcessOperation.Terminate, false);
 
                     // プロセスの停止を待つ（ポーリング）
                     int waitCount = 0;
                     while (waitCount < 60) // 最大60秒待機
                     {
                         await Task.Delay(1000);
-                        var processes = Process.GetProcessesByName("CocoroCoreM");
+                        var processes = Process.GetProcessesByName("CocoroGhost");
                         if (processes.Length == 0)
                         {
                             break;
@@ -176,7 +176,7 @@ namespace CocoroConsole.Controls
                     string backupPath = Path.Combine(baseDirectory, backupDirName);
 
                     string memoryPath = Path.Combine(userDataPath, "Memory");
-                    string neo4jDataPath = Path.Combine(baseDirectory, "CocoroCoreM", "neo4j", "data");
+                    string neo4jDataPath = Path.Combine(baseDirectory, "CocoroGhost", "neo4j", "data");
 
                     string backupMemoryPath = Path.Combine(backupPath, "Memory");
                     string backupNeo4jPath = Path.Combine(backupPath, "neo4j_data");
@@ -226,7 +226,7 @@ namespace CocoroConsole.Controls
                     // UI更新
                     await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
-                        progressDialog.MessageText.Text = "CocoroCoreMを再起動しています...";
+                        progressDialog.MessageText.Text = "CocoroGhostを再起動しています...";
                     });
 
                     await Task.Delay(1000);
@@ -235,14 +235,14 @@ namespace CocoroConsole.Controls
                 // ダイアログを閉じる
                 progressDialog.Close();
 
-                // CocoroCoreMを再起動
-                ProcessHelper.LaunchExternalApplication("CocoroCoreM.exe", "CocoroCoreM", ProcessOperation.RestartIfRunning, false);
+                // CocoroGhostを再起動
+                ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", ProcessOperation.RestartIfRunning, false);
 
                 // 完了メッセージ
                 MessageBox.Show(
                     $"記憶データのバックアップが完了しました。\n\n" +
                     $"バックアップ先: {backupDirName}\n" +
-                    $"CocoroCoreMの再起動を開始しました。",
+                    $"CocoroGhostの再起動を開始しました。",
                     "バックアップ完了",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -388,20 +388,20 @@ namespace CocoroConsole.Controls
             {
                 // ダイアログを表示
                 progressDialog.Show();
-                progressDialog.MessageText.Text = "CocoroCoreMを停止しています...";
+                progressDialog.MessageText.Text = "CocoroGhostを停止しています...";
 
                 // 復元処理を実行
                 await Task.Run(async () =>
                 {
-                    // CocoroCoreMプロセスを停止
-                    ProcessHelper.LaunchExternalApplication("CocoroCoreM.exe", "CocoroCoreM", ProcessOperation.Terminate, false);
+                    // CocoroGhostプロセスを停止
+                    ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", ProcessOperation.Terminate, false);
 
                     // プロセスの停止を待つ（ポーリング）
                     int waitCount = 0;
                     while (waitCount < 60) // 最大60秒待機
                     {
                         await Task.Delay(1000);
-                        var processes = Process.GetProcessesByName("CocoroCoreM");
+                        var processes = Process.GetProcessesByName("CocoroGhost");
                         if (processes.Length == 0)
                         {
                             break;
@@ -427,7 +427,7 @@ namespace CocoroConsole.Controls
                     string baseDirectory = Path.GetDirectoryName(userDataPath) ?? AppContext.BaseDirectory;
 
                     string currentMemoryPath = Path.Combine(userDataPath, "Memory");
-                    string currentNeo4jPath = Path.Combine(baseDirectory, "CocoroCoreM", "neo4j", "data");
+                    string currentNeo4jPath = Path.Combine(baseDirectory, "CocoroGhost", "neo4j", "data");
 
                     // 既存のデータを削除
                     if (Directory.Exists(currentMemoryPath))
@@ -494,7 +494,7 @@ namespace CocoroConsole.Controls
                     // UI更新
                     await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
-                        progressDialog.MessageText.Text = "CocoroCoreMを再起動しています...";
+                        progressDialog.MessageText.Text = "CocoroGhostを再起動しています...";
                     });
 
                     await Task.Delay(1000);
@@ -503,14 +503,14 @@ namespace CocoroConsole.Controls
                 // ダイアログを閉じる
                 progressDialog.Close();
 
-                // CocoroCoreMを再起動
-                ProcessHelper.LaunchExternalApplication("CocoroCoreM.exe", "CocoroCoreM", ProcessOperation.RestartIfRunning, false);
+                // CocoroGhostを再起動
+                ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", ProcessOperation.RestartIfRunning, false);
 
                 // 完了メッセージ
                 MessageBox.Show(
                     $"記憶データの復元が完了しました。\n\n" +
                     $"復元元: {folderName}\n" +
-                    $"CocoroCoreMの再起動を開始しました。",
+                    $"CocoroGhostの再起動を開始しました。",
                     "復元完了",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -577,20 +577,20 @@ namespace CocoroConsole.Controls
             {
                 // ダイアログを表示
                 progressDialog.Show();
-                progressDialog.MessageText.Text = "CocoroCoreMを停止しています...";
+                progressDialog.MessageText.Text = "CocoroGhostを停止しています...";
 
                 // 削除処理を実行
                 await Task.Run(async () =>
                 {
-                    // CocoroCoreMプロセスを停止
-                    ProcessHelper.LaunchExternalApplication("CocoroCoreM.exe", "CocoroCoreM", ProcessOperation.Terminate, false);
+                    // CocoroGhostプロセスを停止
+                    ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", ProcessOperation.Terminate, false);
 
                     // プロセスの停止を待つ（ポーリング）
                     int waitCount = 0;
                     while (waitCount < 60) // 最大60秒待機
                     {
                         await Task.Delay(1000);
-                        var processes = Process.GetProcessesByName("CocoroCoreM");
+                        var processes = Process.GetProcessesByName("CocoroGhost");
                         if (processes.Length == 0)
                         {
                             break;
@@ -615,9 +615,9 @@ namespace CocoroConsole.Controls
                     string userDataPath = FindUserDataDirectory();
                     string memoryPath = Path.Combine(userDataPath, "Memory");
 
-                    // UserDataと同一階層のCocoroCoreMディレクトリからneo4jパスを取得
+                    // UserDataと同一階層のCocoroGhostディレクトリからneo4jパスを取得
                     string baseDirectory = Path.GetDirectoryName(userDataPath) ?? AppContext.BaseDirectory;
-                    string neo4jDataPath = Path.Combine(baseDirectory, "CocoroCoreM", "neo4j", "data");
+                    string neo4jDataPath = Path.Combine(baseDirectory, "CocoroGhost", "neo4j", "data");
 
                     // Memoryフォルダの削除
                     if (Directory.Exists(memoryPath))

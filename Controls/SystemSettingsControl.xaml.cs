@@ -67,12 +67,6 @@ namespace CocoroConsole.Controls
                 var speakerService = new SpeakerRecognitionService(dbPath, appSettings.MicrophoneSettings.speakerRecognitionThreshold);
                 SpeakerManagementControl.Initialize(speakerService, appSettings.MicrophoneSettings.speakerRecognitionThreshold);
 
-                // CocoroCoreM設定
-                EnableInternetRetrievalCheckBox.IsChecked = appSettings.EnableInternetRetrieval;
-                GoogleApiKeyTextBox.Text = appSettings.GoogleApiKey;
-                GoogleSearchEngineIdTextBox.Text = appSettings.GoogleSearchEngineId;
-                InternetMaxResultsTextBox.Text = appSettings.InternetMaxResults.ToString();
-
                 // リマインダーUI初期化（スペース区切り形式）
                 ReminderDateTimeTextBox.Text = DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:mm");
 
@@ -111,13 +105,6 @@ namespace CocoroConsole.Controls
 
             // マイク設定
             MicThresholdSlider.ValueChanged += OnSettingsChanged;
-
-            // CocoroCoreM設定
-            EnableInternetRetrievalCheckBox.Checked += OnSettingsChanged;
-            EnableInternetRetrievalCheckBox.Unchecked += OnSettingsChanged;
-            GoogleApiKeyTextBox.TextChanged += OnSettingsChanged;
-            GoogleSearchEngineIdTextBox.TextChanged += OnSettingsChanged;
-            InternetMaxResultsTextBox.TextChanged += OnSettingsChanged;
         }
 
         /// <summary>
@@ -212,40 +199,6 @@ namespace CocoroConsole.Controls
             // speakerRecognitionThresholdはInitializeAsyncで設定済み
         }
 
-        /// <summary>
-        /// CocoroCoreM設定を取得
-        /// </summary>
-        public (bool enableProMode, bool enableInternetRetrieval, string googleApiKey, string googleSearchEngineId, int internetMaxResults) GetCocoroCoreMSettings()
-        {
-            bool enableProMode = true; // 設定ファイルのみで制御
-            bool enableInternetRetrieval = EnableInternetRetrievalCheckBox.IsChecked ?? true;
-            string googleApiKey = GoogleApiKeyTextBox.Text;
-            string googleSearchEngineId = GoogleSearchEngineIdTextBox.Text;
-            int internetMaxResults = 5;
-
-            if (int.TryParse(InternetMaxResultsTextBox.Text, out int maxResults))
-            {
-                if (maxResults >= 1 && maxResults <= 10)
-                {
-                    internetMaxResults = maxResults;
-                }
-            }
-
-            return (enableProMode, enableInternetRetrieval, googleApiKey, googleSearchEngineId, internetMaxResults);
-        }
-
-        /// <summary>
-        /// CocoroCoreM設定を設定
-        /// </summary>
-        public void SetCocoroCoreMSettings(bool enableProMode, bool enableInternetRetrieval, string googleApiKey, string googleSearchEngineId, int internetMaxResults)
-        {
-            // enableProModeはコメントアウト（設定ファイルでのみ制御）
-            EnableInternetRetrievalCheckBox.IsChecked = enableInternetRetrieval;
-            GoogleApiKeyTextBox.Text = googleApiKey;
-            GoogleSearchEngineIdTextBox.Text = googleSearchEngineId;
-            InternetMaxResultsTextBox.Text = internetMaxResults.ToString();
-        }
-
         #region リマインダー関連メソッド
 
         /// <summary>
@@ -301,7 +254,7 @@ namespace CocoroConsole.Controls
                     return;
                 }
 
-                // スペース区切り形式の解析（CocoroCoreM/SQLiteが対応）
+                // スペース区切り形式の解析
                 DateTime scheduledAt;
                 if (!DateTime.TryParseExact(dateTimeText, new[] { "yyyy-MM-dd HH:mm", "yyyy-M-d H:mm", "yyyy-MM-dd HH:mm:ss", "yyyy-M-d H:mm:ss" },
                     System.Globalization.CultureInfo.InvariantCulture,

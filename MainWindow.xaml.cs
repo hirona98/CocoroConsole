@@ -94,7 +94,7 @@ namespace CocoroConsole
                 // 初期ステータス表示
                 if (_communicationService != null)
                 {
-                    UpdateCocoroCoreMStatusDisplay(_communicationService.CurrentStatus);
+                    UpdateCocoroGhostStatusDisplay(_communicationService.CurrentStatus);
                 }
 
                 // APIサーバーの起動を開始
@@ -171,8 +171,8 @@ namespace CocoroConsole
         {
             // CocoroShell.exeを起動（既に起動していれば終了してから再起動）
             LaunchCocoroShell();
-            // CocoroCoreM.exeを起動（既に起動していれば終了してから再起動）
-            LaunchCocoroCoreM();
+            // CocoroGhost.exeを起動（既に起動していれば終了してから再起動）
+            LaunchCocoroGhost();
         }
 
         /// <summary>
@@ -186,7 +186,7 @@ namespace CocoroConsole
             _communicationService.NotificationMessageReceived += OnNotificationMessageReceived;
             _communicationService.ControlCommandReceived += OnControlCommandReceived;
             _communicationService.ErrorOccurred += OnErrorOccurred;
-            _communicationService.StatusChanged += OnCocoroCoreMStatusChanged;
+            _communicationService.StatusChanged += OnCocoroGhostStatusChanged;
         }
 
         /// <summary>
@@ -421,10 +421,10 @@ namespace CocoroConsole
 
 
         /// <summary>
-        /// CocoroCoreMステータスに基づいて表示を更新
+        /// CocoroGhostステータスに基づいて表示を更新
         /// </summary>
-        /// <param name="status">CocoroCoreMのステータス</param>
-        private void UpdateCocoroCoreMStatusDisplay(CocoroCoreMStatus status)
+        /// <param name="status">CocoroGhostのステータス</param>
+        private void UpdateCocoroGhostStatusDisplay(CocoroGhostStatus status)
         {
             // 現在のキャラクター設定を取得してLLMの使用状況を確認
             var currentCharacter = GetStoredCharacterSetting();
@@ -432,17 +432,17 @@ namespace CocoroConsole
 
             string statusText = status switch
             {
-                CocoroCoreMStatus.WaitingForStartup => isLLMEnabled ? "CocoroCoreM起動待ち" : "LLM無効",
-                CocoroCoreMStatus.Normal => isLLMEnabled ? "正常動作中" : "LLM無効",
-                CocoroCoreMStatus.ProcessingMessage => "LLMメッセージ処理中",
-                CocoroCoreMStatus.ProcessingImage => "LLM画像処理中",
+                CocoroGhostStatus.WaitingForStartup => isLLMEnabled ? "CocoroGhost起動待ち" : "LLM無効",
+                CocoroGhostStatus.Normal => isLLMEnabled ? "正常動作中" : "LLM無効",
+                CocoroGhostStatus.ProcessingMessage => "LLMメッセージ処理中",
+                CocoroGhostStatus.ProcessingImage => "LLM画像処理中",
                 _ => "不明な状態"
             };
 
             ConnectionStatusText.Text = $"状態: {statusText}";
 
             // 送信ボタンの有効/無効を制御（LLMが無効の場合は無効にする）
-            bool isSendEnabled = isLLMEnabled && status != CocoroCoreMStatus.WaitingForStartup;
+            bool isSendEnabled = isLLMEnabled && status != CocoroGhostStatus.WaitingForStartup;
             ChatControlInstance.UpdateSendButtonEnabled(isSendEnabled);
         }
 
@@ -632,13 +632,13 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// CocoroCoreMステータス変更時のハンドラ
+        /// CocoroGhostステータス変更時のハンドラ
         /// </summary>
-        private void OnCocoroCoreMStatusChanged(object? sender, CocoroCoreMStatus status)
+        private void OnCocoroGhostStatusChanged(object? sender, CocoroGhostStatus status)
         {
             UIHelper.RunOnUIThread(() =>
             {
-                UpdateCocoroCoreMStatusDisplay(status);
+                UpdateCocoroGhostStatusDisplay(status);
             });
         }
 
@@ -716,7 +716,7 @@ namespace CocoroConsole
                 // 2つのプロセスを並行して終了させる
                 var tasks = new[]
                 {
-                    Task.Run(() => LaunchCocoroCoreM(ProcessOperation.Terminate)),
+                    Task.Run(() => LaunchCocoroGhost(ProcessOperation.Terminate)),
                     Task.Run(() => LaunchCocoroShell(ProcessOperation.Terminate))
                 };
 
@@ -939,10 +939,10 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// CocoroCoreM.exeを起動する（既に起動している場合は終了してから再起動）
+        /// CocoroGhost.exeを起動する（既に起動している場合は終了してから再起動）
         /// </summary>
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
-        private void LaunchCocoroCoreM(ProcessOperation operation = ProcessOperation.RestartIfRunning)
+        private void LaunchCocoroGhost(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
             if (_appSettings.CharacterList.Count > 0 &&
                _appSettings.CurrentCharacterIndex < _appSettings.CharacterList.Count &&
@@ -953,31 +953,31 @@ namespace CocoroConsole
                 {
 #if !DEBUG
                     // プロセス起動
-                    ProcessHelper.LaunchExternalApplication("CocoroCoreM.exe", "CocoroCoreM", operation, false);
+                    ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", operation, false);
 #endif
                     // 非同期でAPI通信による起動完了を監視（無限ループ）
                     _ = Task.Run(async () =>
                     {
-                        await WaitForCocoroCoreMStartupAsync();
+                        await WaitForCocoroGhostStartupAsync();
                     });
                 }
                 else
                 {
-                    ProcessHelper.LaunchExternalApplication("CocoroCoreM.exe", "CocoroCoreM", operation, false);
+                    ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", operation, false);
                 }
             }
             else
             {
-                // LLMを使用しない場合はCocoroCoreMを終了
-                ProcessHelper.LaunchExternalApplication("CocoroCoreM.exe", "CocoroCoreM", ProcessOperation.Terminate, false);
+                // LLMを使用しない場合はCocoroGhostを終了
+                ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", ProcessOperation.Terminate, false);
             }
         }
 
         /// <summary>
-        /// CocoroCoreM.exeを起動する（既に起動している場合は終了してから再起動）（非同期版）
+        /// CocoroGhost.exeを起動する（既に起動している場合は終了してから再起動）（非同期版）
         /// </summary>
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
-        private async Task LaunchCocoroCoreMAsync(ProcessOperation operation = ProcessOperation.RestartIfRunning)
+        private async Task LaunchCocoroGhostAsync(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
             if (_appSettings.CharacterList.Count > 0 &&
                _appSettings.CurrentCharacterIndex < _appSettings.CharacterList.Count &&
@@ -988,23 +988,23 @@ namespace CocoroConsole
                 {
 #if !DEBUG
                     // プロセス起動（非同期）
-                    await ProcessHelper.LaunchExternalApplicationAsync("CocoroCoreM.exe", "CocoroCoreM", operation, false);
+                    await ProcessHelper.LaunchExternalApplicationAsync("CocoroGhost.exe", "CocoroGhost", operation, false);
 #endif
                     // 非同期でAPI通信による起動完了を監視（無限ループ）
                     _ = Task.Run(async () =>
                     {
-                        await WaitForCocoroCoreMStartupAsync();
+                        await WaitForCocoroGhostStartupAsync();
                     });
                 }
                 else
                 {
-                    await ProcessHelper.LaunchExternalApplicationAsync("CocoroCoreM.exe", "CocoroCoreM", operation, false);
+                    await ProcessHelper.LaunchExternalApplicationAsync("CocoroGhost.exe", "CocoroGhost", operation, false);
                 }
             }
             else
             {
-                // LLMを使用しない場合はCocoroCoreMを終了
-                await ProcessHelper.LaunchExternalApplicationAsync("CocoroCoreM.exe", "CocoroCoreM", ProcessOperation.Terminate, false);
+                // LLMを使用しない場合はCocoroGhostを終了
+                await ProcessHelper.LaunchExternalApplicationAsync("CocoroGhost.exe", "CocoroGhost", ProcessOperation.Terminate, false);
             }
         }
 
@@ -1101,8 +1101,8 @@ namespace CocoroConsole
                 // チャットに音声認識結果を表示
                 ChatControlInstance.AddVoiceMessage(text);
 
-                // CocoroCoreMに送信
-                SendMessageToCocoroCore(text, null);
+                // CocoroGhostに送信
+                SendMessageToCocoroGhost(text, null);
             });
         }
 
@@ -1153,9 +1153,9 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// CocoroCoreMにメッセージを送信
+        /// CocoroGhostにメッセージを送信
         /// </summary>
-        private async void SendMessageToCocoroCore(string message, string? imageData)
+        private async void SendMessageToCocoroGhost(string message, string? imageData)
         {
             try
             {
@@ -1170,14 +1170,14 @@ namespace CocoroConsole
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[MainWindow] CocoroCoreM送信エラー: {ex.Message}");
+                Debug.WriteLine($"[MainWindow] CocoroGhost送信エラー: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// CocoroCoreMのAPI起動完了を監視（無限ループ）
+        /// CocoroGhostのAPI起動完了を監視（無限ループ）
         /// </summary>
-        private async Task WaitForCocoroCoreMStartupAsync()
+        private async Task WaitForCocoroGhostStartupAsync()
         {
             var delay = TimeSpan.FromSeconds(1); // 1秒間隔でチェック
 
@@ -1188,12 +1188,12 @@ namespace CocoroConsole
                     if (_communicationService != null)
                     {
                         // StatusPollingServiceのステータスで起動状態を確認
-                        if (_communicationService.CurrentStatus == CocoroCoreMStatus.Normal ||
-                            _communicationService.CurrentStatus == CocoroCoreMStatus.ProcessingMessage ||
-                            _communicationService.CurrentStatus == CocoroCoreMStatus.ProcessingImage)
+                        if (_communicationService.CurrentStatus == CocoroGhostStatus.Normal ||
+                            _communicationService.CurrentStatus == CocoroGhostStatus.ProcessingMessage ||
+                            _communicationService.CurrentStatus == CocoroGhostStatus.ProcessingImage)
                         {
                             // 起動成功時はログ出力のみ
-                            Debug.WriteLine("[MainWindow] CocoroCoreM起動完了");
+                            Debug.WriteLine("[MainWindow] CocoroGhost起動完了");
                             return; // 起動完了で監視終了
                         }
                     }
@@ -1335,18 +1335,17 @@ namespace CocoroConsole
                 // シャットダウンオーバーレイを表示
                 ShutdownOverlay.Visibility = Visibility.Visible;
 
-                // CocoreCoreMのプロセスIDを事前に取得
-                int? CocoroCoreMProcessId = GetProcessIdByPort(_appSettings.CocoroCorePort);
-                Debug.WriteLine($"CocoroCoreM プロセスID: {CocoroCoreMProcessId?.ToString() ?? "見つかりません"}");
+                // CocoroGhostのプロセスIDを事前に取得
+                int? CocoroGhostProcessId = GetProcessIdByPort(_appSettings.CocoroGhostPort);
+                Debug.WriteLine($"CocoroGhost プロセスID: {CocoroGhostProcessId?.ToString() ?? "見つかりません"}");
+                // CocoroShellとCocoroGhostに並行してシャットダウン要求を送信
+                Debug.WriteLine("CocoroShellとCocoroGhostに終了要求を送信中...");
 
-                // CocoroShellとCoreMに並行してシャットダウン要求を送信
-                Debug.WriteLine("CocoroShellとCocoreCoreMに終了要求を送信中...");
-
-                // CocoroShellとCocoreCoreMに並行してシャットダウン要求を送信
+                // CocoroShellとCocoroGhostに並行してシャットダウン要求を送信
                 var shutdownTasks = new[]
                 {
                     Task.Run(() => ProcessHelper.ExitProcess("CocoroShell", ProcessOperation.Terminate)),
-                    Task.Run(() => ProcessHelper.ExitProcess("CocoroCoreM", ProcessOperation.Terminate))
+                    Task.Run(() => ProcessHelper.ExitProcess("CocoroGhost", ProcessOperation.Terminate))
                 };
 
                 // すべてのシャットダウン要求の完了を待つ（最大5秒）
@@ -1360,13 +1359,13 @@ namespace CocoroConsole
                 }
 
                 // CocoreCoreM プロセスの確実な終了を待機
-                if (CocoroCoreMProcessId.HasValue)
+                if (CocoroGhostProcessId.HasValue)
                 {
                     Debug.WriteLine("CocoreCoreM プロセスの終了を監視中...");
                     var maxWaitTime = TimeSpan.FromSeconds(120);
                     var startTime = DateTime.Now;
 
-                    while (IsProcessRunning(CocoroCoreMProcessId.Value))
+                    while (IsProcessRunning(CocoroGhostProcessId.Value))
                     {
                         if (DateTime.Now - startTime > maxWaitTime)
                         {
@@ -1387,7 +1386,7 @@ namespace CocoroConsole
                     var maxWaitTime = TimeSpan.FromSeconds(120);
                     var startTime = DateTime.Now;
 
-                    while (_communicationService != null && _communicationService.CurrentStatus != CocoroCoreMStatus.WaitingForStartup)
+                    while (_communicationService != null && _communicationService.CurrentStatus != CocoroGhostStatus.WaitingForStartup)
                     {
                         if (DateTime.Now - startTime > maxWaitTime)
                         {

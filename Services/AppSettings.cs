@@ -44,7 +44,7 @@ namespace CocoroConsole.Services
         public string SystemPromptsDirectory => Path.Combine(UserDataDirectory, "SystemPrompts");
 
         public int CocoroConsolePort { get; set; } = 55600;
-        public int CocoroCorePort { get; set; } = 55601;
+        public int CocoroGhostPort { get; set; } = 55601;
         public int CocoroMemoryPort { get; set; } = 55602;
         public int CocoroMemoryDBPort { get; set; } = 55603;
         public int CocoroMemoryWebPort { get; set; } = 55606;
@@ -72,13 +72,6 @@ namespace CocoroConsole.Services
         public int WindowSize { get; set; } = 650;
         public float WindowPositionX { get; set; } = 0.0f;
         public float WindowPositionY { get; set; } = 0.0f;
-
-        // CocoroCoreM用追加設定
-        public bool EnableProMode { get; set; } = true;
-        public bool EnableInternetRetrieval { get; set; } = true;
-        public string GoogleApiKey { get; set; } = "GOOGLE_API_KEY";
-        public string GoogleSearchEngineId { get; set; } = "GOOGLE_SERCH_ENGINE_ID";
-        public int InternetMaxResults { get; set; } = 5;
 
         // キャラクター設定
         public int CurrentCharacterIndex { get; set; } = 0;
@@ -152,7 +145,7 @@ namespace CocoroConsole.Services
         public void UpdateSettings(ConfigSettings config)
         {
             CocoroConsolePort = config.CocoroConsolePort;
-            CocoroCorePort = config.cocoroCorePort;
+            CocoroGhostPort = config.cocoroCorePort;
             CocoroMemoryPort = config.cocoroMemoryPort;
             CocoroMemoryDBPort = config.cocoroMemoryDBPort;
             CocoroMemoryWebPort = config.cocoroMemoryWebPort;
@@ -212,13 +205,6 @@ namespace CocoroConsole.Services
                 ScheduledCommandSettings = config.scheduledCommandSettings;
             }
 
-            // CocoroCoreM用追加設定を更新
-            EnableProMode = config.enable_pro_mode;
-            EnableInternetRetrieval = config.enable_internet_retrieval;
-            GoogleApiKey = config.googleApiKey;
-            GoogleSearchEngineId = config.googleSearchEngineId;
-            InternetMaxResults = config.internetMaxResults;
-
             // 設定読み込み完了フラグを設定
             IsLoaded = true;
         }
@@ -253,7 +239,7 @@ namespace CocoroConsole.Services
             return new ConfigSettings
             {
                 CocoroConsolePort = CocoroConsolePort,
-                cocoroCorePort = CocoroCorePort,
+                cocoroCorePort = CocoroGhostPort,
                 cocoroMemoryPort = CocoroMemoryPort,
                 cocoroMemoryDBPort = CocoroMemoryDBPort,
                 cocoroMemoryWebPort = CocoroMemoryWebPort,
@@ -287,11 +273,6 @@ namespace CocoroConsole.Services
                     Command = ScheduledCommandSettings.Command,
                     IntervalMinutes = ScheduledCommandSettings.IntervalMinutes
                 },
-                enable_pro_mode = EnableProMode,
-                enable_internet_retrieval = EnableInternetRetrieval,
-                googleApiKey = GoogleApiKey,
-                googleSearchEngineId = GoogleSearchEngineId,
-                internetMaxResults = InternetMaxResults,
                 currentCharacterIndex = CurrentCharacterIndex,
                 characterList = new List<CharacterSettings>(CharacterList)
             };

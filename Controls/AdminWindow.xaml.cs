@@ -26,8 +26,8 @@ namespace CocoroConsole.Controls
         // 通信サービス
         private ICommunicationService? _communicationService;
 
-        // CocoroCoreM再起動が必要な設定の前回値を保存
-        private ConfigSettings _previousCocoroCoreMSettings;
+        // CocoroCore再起動が必要な設定の前回値を保存
+        private ConfigSettings _previousCocoroCoreSettings;
         private Dictionary<int, string> _previousSystemPrompts = new Dictionary<int, string>();
 
         public bool IsClosed { get; private set; } = false;
@@ -70,8 +70,8 @@ namespace CocoroConsole.Controls
             // 元の設定のバックアップを作成
             BackupSettings();
 
-            // CocoroCoreM再起動チェック用に現在の設定のディープコピーを保存
-            _previousCocoroCoreMSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
+            // CocoroGhost再起動チェック用に現在の設定のディープコピーを保存
+            _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
 
             // systemPrompt内容を保存
             SaveSystemPromptContents();
@@ -211,13 +211,6 @@ namespace CocoroConsole.Controls
             dict["MicInputThreshold"] = microphoneSettings.inputThreshold;
             dict["SpeakerRecognitionThreshold"] = microphoneSettings.speakerRecognitionThreshold;
 
-            var CocoroCoreMSettings = SystemSettingsControl.GetCocoroCoreMSettings();
-            dict["EnableProMode"] = CocoroCoreMSettings.enableProMode;
-            dict["EnableInternetRetrieval"] = CocoroCoreMSettings.enableInternetRetrieval;
-            dict["GoogleApiKey"] = CocoroCoreMSettings.googleApiKey;
-            dict["GoogleSearchEngineId"] = CocoroCoreMSettings.googleSearchEngineId;
-            dict["InternetMaxResults"] = CocoroCoreMSettings.internetMaxResults;
-
             // おまけ設定（定期コマンド実行）
             var scheduledCommandSettings = ExtrasControl.GetScheduledCommandSettings();
             dict["ScheduledCommandEnabled"] = scheduledCommandSettings.Enabled;
@@ -334,7 +327,7 @@ namespace CocoroConsole.Controls
 
                 // 設定のバックアップを更新（適用後の状態を新しいベースラインとする）
                 BackupSettings();
-                _previousCocoroCoreMSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
+                _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
 
                 // systemPrompt内容も更新
                 SaveSystemPromptContents();
@@ -356,9 +349,9 @@ namespace CocoroConsole.Controls
             // CharacterManagementControlの設定確定処理を実行
             CharacterManagementControl.ConfirmSettings();
 
-            // UI上の現在の設定を取得してCocoroCoreM再起動が必要かチェック
+            // UI上の現在の設定を取得してCocoroGhost再起動が必要かチェック
             var currentSettings = GetCurrentUISettings();
-            bool needsCocoroCoreMRestart = HasCocoroCoreMRestartRequiredChanges(_previousCocoroCoreMSettings, currentSettings);
+            bool needsCocoroGhostRestart = HasCocoroGhostRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings);
 
             // すべてのタブの設定を保存
             SaveAllSettings();
@@ -366,11 +359,11 @@ namespace CocoroConsole.Controls
             // CocoroShellを再起動
             RestartCocoroShell();
 
-            // CocoroCoreMの設定変更があった場合は再起動
-            if (needsCocoroCoreMRestart)
+            // CocoroGhostの設定変更があった場合は再起動
+            if (needsCocoroGhostRestart)
             {
-                _ = RestartCocoroCoreMAsync();
-                Debug.WriteLine("CocoroCoreM再起動処理を実行しました");
+                _ = RestartCocoroGhostAsync();
+                Debug.WriteLine("CocoroGhost再起動処理を実行しました");
             }
         }
 
@@ -565,12 +558,6 @@ namespace CocoroConsole.Controls
 
             appSettings.MicrophoneSettings.inputThreshold = (int)snapshot["MicInputThreshold"];
             appSettings.MicrophoneSettings.speakerRecognitionThreshold = (float)snapshot["SpeakerRecognitionThreshold"];
-
-            appSettings.EnableProMode = (bool)snapshot["EnableProMode"];
-            appSettings.EnableInternetRetrieval = (bool)snapshot["EnableInternetRetrieval"];
-            appSettings.GoogleApiKey = (string)snapshot["GoogleApiKey"];
-            appSettings.GoogleSearchEngineId = (string)snapshot["GoogleSearchEngineId"];
-            appSettings.InternetMaxResults = (int)snapshot["InternetMaxResults"];
 
             // おまけ設定（定期コマンド実行）
             appSettings.ScheduledCommandSettings.Enabled = (bool)snapshot["ScheduledCommandEnabled"];
@@ -778,9 +765,9 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// CocoroCoreMを再起動する
+        /// CocoroGhostを再起動する
         /// </summary>
-        private async Task RestartCocoroCoreMAsync()
+        private async Task RestartCocoroGhostAsync()
         {
             try
             {
@@ -788,16 +775,16 @@ namespace CocoroConsole.Controls
                 var mainWindow = Application.Current.MainWindow as MainWindow;
                 if (mainWindow != null)
                 {
-                    // MainWindowのLaunchCocoroCoreMAsyncメソッドを呼び出してCocoroCoreMを再起動
-                    var launchMethod = mainWindow.GetType().GetMethod("LaunchCocoroCoreMAsync",
+                    // MainWindowのLaunchCocoroGhostAsyncメソッドを呼び出してCocoroGhostを再起動
+                    var launchMethod = mainWindow.GetType().GetMethod("LaunchCocoroGhostAsync",
                         System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
                     if (launchMethod != null)
                     {
-                        // ProcessOperation.RestartIfRunning を指定してCocoroCoreMを再起動（非同期）
+                        // ProcessOperation.RestartIfRunning を指定してCocoroGhostを再起動（非同期）
                         var taskResult =
                             launchMethod.Invoke(mainWindow, new object[] { ProcessOperation.RestartIfRunning });
-                        Debug.WriteLine("CocoroCoreMを再起動要求をしました");
+                        Debug.WriteLine("CocoroGhostを再起動要求をしました");
 
                         // 非同期で再起動処理を待機
                         if (taskResult is Task task)
@@ -806,22 +793,22 @@ namespace CocoroConsole.Controls
                         }
 
                         // 再起動完了を待機
-                        await WaitForCocoroCoreMRestartAsync();
-                        Debug.WriteLine("CocoroCoreMの再起動が完了しました");
+                        await WaitForCocoroGhostRestartAsync();
+                        Debug.WriteLine("CocoroGhostの再起動が完了しました");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"CocoroCoreM再起動中にエラーが発生しました: {ex.Message}");
-                throw new Exception($"CocoroCoreMの再起動に失敗しました: {ex.Message}");
+                Debug.WriteLine($"CocoroGhost再起動中にエラーが発生しました: {ex.Message}");
+                throw new Exception($"CocoroGhostの再起動に失敗しました: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// CocoroCoreMの再起動完了を待機
+        /// CocoroGhostの再起動完了を待機
         /// </summary>
-        private async Task WaitForCocoroCoreMRestartAsync()
+        private async Task WaitForCocoroGhostRestartAsync()
         {
             var delay = TimeSpan.FromSeconds(1);
             var maxWaitTime = TimeSpan.FromSeconds(120);
@@ -840,20 +827,20 @@ namespace CocoroConsole.Controls
                         // まず停止（起動待ち）状態になることを確認
                         if (!hasBeenDisconnected)
                         {
-                            if (currentStatus == CocoroCoreMStatus.WaitingForStartup)
+                            if (currentStatus == CocoroGhostStatus.WaitingForStartup)
                             {
                                 hasBeenDisconnected = true;
-                                Debug.WriteLine("CocoroCoreM停止を確認（起動待ち）");
+                                Debug.WriteLine("CocoroGhost停止を確認（起動待ち）");
                             }
                         }
                         // 停止を確認済みの場合、再起動完了を待機
                         else
                         {
-                            if (currentStatus == CocoroCoreMStatus.Normal ||
-                                currentStatus == CocoroCoreMStatus.ProcessingMessage ||
-                                currentStatus == CocoroCoreMStatus.ProcessingImage)
+                            if (currentStatus == CocoroGhostStatus.Normal ||
+                                currentStatus == CocoroGhostStatus.ProcessingMessage ||
+                                currentStatus == CocoroGhostStatus.ProcessingImage)
                             {
-                                Debug.WriteLine("CocoroCoreM再起動完了");
+                                Debug.WriteLine("CocoroGhost再起動完了");
                                 return;
                             }
                         }
@@ -866,7 +853,7 @@ namespace CocoroConsole.Controls
                 await Task.Delay(delay);
             }
 
-            throw new TimeoutException("CocoroCoreMの再起動がタイムアウトしました");
+            throw new TimeoutException("CocoroGhostの再起動がタイムアウトしました");
         }
 
         /// <summary>
@@ -881,13 +868,6 @@ namespace CocoroConsole.Controls
             // System設定の取得
             config.isEnableNotificationApi = ExternalServicesSettingsControl.GetIsEnableNotificationApi();
             config.isEnableReminder = SystemSettingsControl.GetIsEnableReminder();
-
-            var CocoroCoreMSettings = SystemSettingsControl.GetCocoroCoreMSettings();
-            config.enable_pro_mode = CocoroCoreMSettings.enableProMode;
-            config.enable_internet_retrieval = CocoroCoreMSettings.enableInternetRetrieval;
-            config.googleApiKey = CocoroCoreMSettings.googleApiKey;
-            config.googleSearchEngineId = CocoroCoreMSettings.googleSearchEngineId;
-            config.internetMaxResults = CocoroCoreMSettings.internetMaxResults;
 
             // Character設定の取得（ディープコピーを使用）
             config.currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
@@ -904,21 +884,16 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// CocoroCoreM再起動が必要な設定項目が変更されたかどうかをチェック
+        /// CocoroGhost再起動が必要な設定項目が変更されたかどうかをチェック
         /// </summary>
         /// <param name="previousSettings">以前の設定</param>
         /// <param name="currentSettings">現在の設定</param>
-        /// <returns>CocoroCoreM再起動が必要な変更があった場合true</returns>
-        private bool HasCocoroCoreMRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
+        /// <returns>CocoroGhost再起動が必要な変更があった場合true</returns>
+        private bool HasCocoroGhostRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
         {
             // 基本設定項目の比較
             if (currentSettings.isEnableNotificationApi != previousSettings.isEnableNotificationApi ||
                 currentSettings.isEnableReminder != previousSettings.isEnableReminder ||
-                currentSettings.enable_pro_mode != previousSettings.enable_pro_mode ||
-                currentSettings.enable_internet_retrieval != previousSettings.enable_internet_retrieval ||
-                currentSettings.googleApiKey != previousSettings.googleApiKey ||
-                currentSettings.googleSearchEngineId != previousSettings.googleSearchEngineId ||
-                currentSettings.internetMaxResults != previousSettings.internetMaxResults ||
                 currentSettings.currentCharacterIndex != previousSettings.currentCharacterIndex)
             {
                 return true;

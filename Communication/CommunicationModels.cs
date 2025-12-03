@@ -375,11 +375,6 @@ namespace CocoroConsole.Communication
         public MicrophoneSettings microphoneSettings { get; set; } = new MicrophoneSettings();
         public MessageWindowSettings messageWindowSettings { get; set; } = new MessageWindowSettings();
         public ScheduledCommandSettings scheduledCommandSettings { get; set; } = new ScheduledCommandSettings();
-        public bool enable_pro_mode { get; set; } = false;
-        public bool enable_internet_retrieval { get; set; } = true;
-        public string googleApiKey { get; set; } = "GOOGLE_API_KEY";
-        public string googleSearchEngineId { get; set; } = "GOOGLE_SERCH_ENGINE_ID";
-        public int internetMaxResults { get; set; } = 5;
 
         public int currentCharacterIndex { get; set; }
         public List<CharacterSettings> characterList { get; set; } = new List<CharacterSettings>();
@@ -417,11 +412,6 @@ namespace CocoroConsole.Communication
                 windowSize = this.windowSize,
                 windowPositionX = this.windowPositionX,
                 windowPositionY = this.windowPositionY,
-                enable_pro_mode = this.enable_pro_mode,
-                enable_internet_retrieval = this.enable_internet_retrieval,
-                googleApiKey = this.googleApiKey,
-                googleSearchEngineId = this.googleSearchEngineId,
-                internetMaxResults = this.internetMaxResults,
                 currentCharacterIndex = this.currentCharacterIndex,
 
                 // 複雑オブジェクトのディープコピー
@@ -645,11 +635,11 @@ namespace CocoroConsole.Communication
 
 
     // ========================================
-    // CocoroCoreM チャットAPI関連モデル
+    // CocoroGhost チャットAPI関連モデル
     // ========================================
 
     /// <summary>
-    /// CocoroCoreM 画像データ
+    /// CocoroGhost 画像データ
     /// </summary>
     public class ImageData
     {
@@ -657,7 +647,7 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// CocoroCoreM 通知データ
+    /// CocoroGhost 通知データ
     /// </summary>
     public class NotificationData
     {
@@ -666,7 +656,7 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// CocoroCoreM 会話履歴メッセージ
+    /// CocoroGhost 会話履歴メッセージ
     /// </summary>
     public class HistoryMessage
     {
@@ -676,9 +666,9 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// CocoroCoreM チャットAPIリクエスト
+    /// CocoroGhost チャットAPIリクエスト
     /// </summary>
-    public class CocoroCoreMChatRequest
+    public class CocoroGhostChatRequest
     {
         public string query { get; set; } = string.Empty; // ユーザークエリ（必須）
         public string chat_type { get; set; } = "text"; // "text" | "text_image" | "notification" | "desktop_watch"

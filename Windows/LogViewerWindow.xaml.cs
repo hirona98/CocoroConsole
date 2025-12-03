@@ -377,20 +377,20 @@ namespace CocoroConsole.Windows
         {
             // リリースバイナリ実行時のパス
             var releasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                "CocoroCoreM", "logs", "cocoro_core2.log");
+                "CocoroGhost", "logs", "cocoro_core2.log");
             if (File.Exists(releasePath))
                 return releasePath;
 
-            // デバッグ時のパス（CocoroConsoleからCocoroCoreMへの相対パス）
+            // デバッグ時のパス（CocoroConsoleからCocoroGhostへの相対パス）
             var debugPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                "..", "CocoroCoreM", "logs", "cocoro_core2.log");
+                "..", "CocoroGhost", "logs", "cocoro_core2.log");
             var fullDebugPath = Path.GetFullPath(debugPath);
             if (File.Exists(fullDebugPath))
                 return fullDebugPath;
 
             // さらに上のディレクトリから探す場合のパス
             var alternativeDebugPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                "..", "..", "..", "..", "CocoroCoreM", "logs", "cocoro_core2.log");
+                "..", "..", "..", "..", "CocoroGhost", "logs", "cocoro_core2.log");
             return Path.GetFullPath(alternativeDebugPath);
         }
 

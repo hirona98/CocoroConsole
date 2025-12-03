@@ -29,7 +29,7 @@ namespace CocoroConsole.Services
         private const int MaxLogEntries = 1000;
         private const int DebounceDelayMs = 100;
 
-        // Python標準ロガーの形式: 2025-08-15 12:00:07,337 - __main__ - INFO - CocoroCoreMを初期化しています...
+        // Python標準ロガーの形式: 2025-08-15 12:00:07,337 - __main__ - INFO - CocoroGhostを初期化しています...
         private readonly Regex _logPattern = new Regex(
             @"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - (.+?) - (\w+) - (.+)$",
             RegexOptions.Compiled | RegexOptions.Multiline);
@@ -108,7 +108,7 @@ namespace CocoroConsole.Services
                 await Task.Run(() =>
                 {
                     var allLines = new List<string>();
-                    
+
                     using var fileStream = new FileStream(_logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     using var reader = new StreamReader(fileStream, Encoding.UTF8);
 
@@ -119,13 +119,13 @@ namespace CocoroConsole.Services
                     }
 
                     // 最終1000件を取得
-                    var lastLines = allLines.Count > MaxLogEntries 
+                    var lastLines = allLines.Count > MaxLogEntries
                         ? allLines.Skip(allLines.Count - MaxLogEntries).ToList()
                         : allLines;
 
                     // ログメッセージを別スレッドで解析し、リストを構築
                     var totalLines = lastLines.Count;
-                    
+
                     for (int i = 0; i < lastLines.Count; i++)
                     {
                         var logLine = lastLines[i];
@@ -197,7 +197,7 @@ namespace CocoroConsole.Services
             {
                 // 既存のタイマーをキャンセル
                 _debounceTimer?.Dispose();
-                
+
                 // 新しいタイマーを設定（デバウンス処理）
                 _debounceTimer = new Timer(OnDebounceTimerElapsed, null, DebounceDelayMs, Timeout.Infinite);
             }
@@ -232,14 +232,14 @@ namespace CocoroConsole.Services
                 // 既に読み込み処理中の場合はスキップ
                 if (_isReading)
                     return;
-                
+
                 _isReading = true;
             }
 
             try
             {
                 using var fileStream = new FileStream(_logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                
+
                 // ファイルが縮小された場合（ログローテーションなど）
                 if (fileStream.Length < _lastReadPosition)
                 {
@@ -256,20 +256,20 @@ namespace CocoroConsole.Services
                 using var reader = new StreamReader(fileStream, Encoding.UTF8);
                 string? line;
                 var newLogs = new List<LogMessage>();
-                
+
                 while ((line = reader.ReadLine()) != null)
                 {
                     var logMessage = ParseLogLine(line);
                     if (logMessage != null)
                     {
                         var logId = GenerateLogId(logMessage);
-                        
+
                         lock (_lockObject)
                         {
                             if (_processedLogIds.Add(logId))
                             {
                                 newLogs.Add(logMessage);
-                                
+
                                 // 処理済みIDの数が制限を超えた場合、古いものを削除
                                 if (_processedLogIds.Count > MaxLogEntries * 2)
                                 {
@@ -295,7 +295,7 @@ namespace CocoroConsole.Services
             catch (IOException)
             {
                 // ファイルがロックされている場合は少し待ってから再試行
-                Task.Delay(200).ContinueWith(_ => 
+                Task.Delay(200).ContinueWith(_ =>
                 {
                     lock (_lockObject)
                     {
@@ -340,10 +340,10 @@ namespace CocoroConsole.Services
                 var message = match.Groups[4].Value;
 
                 // タイムスタンプを解析
-                if (!DateTime.TryParseExact(timestampStr, 
-                    "yyyy-MM-dd HH:mm:ss,fff", 
-                    CultureInfo.InvariantCulture, 
-                    DateTimeStyles.None, 
+                if (!DateTime.TryParseExact(timestampStr,
+                    "yyyy-MM-dd HH:mm:ss,fff",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
                     out DateTime timestamp))
                 {
                     return null;
@@ -372,10 +372,10 @@ namespace CocoroConsole.Services
         private string GenerateLogId(LogMessage logMessage)
         {
             // タイムスタンプ + コンポーネント + レベル + メッセージの先頭50文字でIDを生成
-            var messagePrefix = logMessage.message.Length > 50 
-                ? logMessage.message.Substring(0, 50) 
+            var messagePrefix = logMessage.message.Length > 50
+                ? logMessage.message.Substring(0, 50)
                 : logMessage.message;
-            
+
             return $"{logMessage.timestamp:yyyy-MM-dd HH:mm:ss,fff}|{logMessage.component}|{logMessage.level}|{messagePrefix}";
         }
 
@@ -386,7 +386,7 @@ namespace CocoroConsole.Services
         {
             _fileWatcher?.Dispose();
             _fileWatcher = null;
-            
+
             _debounceTimer?.Dispose();
             _debounceTimer = null;
         }
@@ -399,12 +399,12 @@ namespace CocoroConsole.Services
             if (!_disposed)
             {
                 StopWatching();
-                
+
                 lock (_lockObject)
                 {
                     _processedLogIds.Clear();
                 }
-                
+
                 _disposed = true;
             }
         }
