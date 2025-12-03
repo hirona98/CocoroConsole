@@ -1,19 +1,15 @@
-﻿using CocoroConsole.Communication;
+﻿using CocoroAI.Services;
+using CocoroConsole.Communication;
 using CocoroConsole.Controls;
 using CocoroConsole.Services;
 using CocoroConsole.Utilities;
 using CocoroConsole.Windows;
-using CocoroAI.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media.Imaging;
-using System.IO;
 
 namespace CocoroConsole
 {
@@ -28,7 +24,6 @@ namespace CocoroConsole
         private ScreenshotService? _screenshotService;
         private bool _isScreenshotPaused = false;
         private RealtimeVoiceRecognitionService? _voiceRecognitionService;
-        private MobileWebSocketServer? _mobileWebSocketServer;
         private ScheduledCommandService? _scheduledCommandService;
         private AdminWindow? _adminWindow;
         private LogViewerWindow? _logViewerWindow;
@@ -79,9 +74,6 @@ namespace CocoroConsole
 
                 // 通信サービスを初期化
                 InitializeCommunicationService();
-
-                // MobileWebSocketServerを初期化
-                InitializeMobileWebSocketServer();
 
                 // スクリーンショットサービスを初期化
                 InitializeScreenshotService();
@@ -1097,128 +1089,6 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// MobileWebSocketServerを初期化
-        /// </summary>
-        private void InitializeMobileWebSocketServer()
-        {
-            try
-            {
-                if (!_appSettings.IsEnableWebService)
-                {
-                    Debug.WriteLine("[MainWindow] Web機能が無効のため、MobileWebSocketServerを起動しません");
-                    return;
-                }
-
-                _mobileWebSocketServer = new MobileWebSocketServer(_appSettings.CocoroWebPort, _appSettings);
-
-                // モバイルチャットのイベントハンドラを設定
-                _mobileWebSocketServer.MobileMessageReceived += OnMobileMessageReceived;
-                _mobileWebSocketServer.MobileImageMessageReceived += OnMobileImageMessageReceived;
-                _mobileWebSocketServer.MobileAiResponseReceived += OnMobileAiResponseReceived;
-
-                // 非同期で起動
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await _mobileWebSocketServer.StartAsync();
-                        Debug.WriteLine($"[MainWindow] MobileWebSocketServer起動完了: ポート{_appSettings.CocoroWebPort}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"[MainWindow] MobileWebSocketServer起動エラー: {ex.Message}");
-
-                        // UIスレッドでエラー表示
-                        Dispatcher.Invoke(() =>
-                        {
-                            UIHelper.ShowError("Web機能初期化エラー",
-                                $"MobileWebSocketServerの起動に失敗しました:\n{ex.Message}\n\nWeb機能は無効になります。");
-                        });
-
-                        _mobileWebSocketServer?.Dispose();
-                        _mobileWebSocketServer = null;
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[MainWindow] MobileWebSocketServer初期化エラー: {ex.Message}");
-                UIHelper.ShowError("Web機能初期化エラー", $"MobileWebSocketServerの初期化に失敗しました: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// モバイルメッセージ受信イベント
-        /// </summary>
-        private void OnMobileMessageReceived(object? sender, string message)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                // チャットにモバイルメッセージを表示
-                ChatControlInstance.AddUserMessage(message);
-
-                // ステータスバーにLLM処理中を表示
-                UpdateCocoroCoreMStatusDisplay(CocoroCoreMStatus.ProcessingMessage);
-            });
-        }
-
-        /// <summary>
-        /// モバイルからの画像付きメッセージ受信イベントハンドラ
-        /// </summary>
-        private void OnMobileImageMessageReceived(object? sender, (string message, string imageBase64) data)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                // Base64画像データをBitmapImageに変換
-                try
-                {
-                    var imageBytes = Convert.FromBase64String(data.imageBase64);
-                    using (var stream = new MemoryStream(imageBytes))
-                    {
-                        var bitmapImage = new BitmapImage();
-                        bitmapImage.BeginInit();
-                        bitmapImage.StreamSource = stream;
-                        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmapImage.EndInit();
-                        bitmapImage.Freeze();
-
-                        // 画像付きメッセージに📱プレフィックスを付けて表示
-                        string displayMessage = $"📱 {data.message}";
-                        var imageSources = new List<BitmapSource> { bitmapImage };
-                        ChatControlInstance.AddUserMessage(displayMessage, imageSources);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[MainWindow] 画像変換エラー: {ex.Message}");
-                    // エラーの場合はテキストのみ表示
-                    string displayMessage = $"📱 {data.message}";
-                    ChatControlInstance.AddUserMessage(displayMessage, null);
-                }
-
-                Debug.WriteLine($"[MainWindow] 画像付きユーザーメッセージ表示: '📱 {data.message}', 画像サイズ: {data.imageBase64.Length} bytes");
-            });
-        }
-
-        /// <summary>
-        /// モバイルからのAI応答受信イベントハンドラ（画像付き対応）
-        /// </summary>
-        private void OnMobileAiResponseReceived(object? sender, (string text, string? imageBase64) data)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                // AI応答には画像を含めない（ユーザーが送信した画像をAI応答として表示するのは不適切）
-                // AIが画像を生成した場合のみ画像付きで表示するべきだが、現在の実装では対応していない
-                ChatControlInstance.AddAiMessage(data.text);
-
-                if (!string.IsNullOrEmpty(data.imageBase64))
-                {
-                    Debug.WriteLine($"[MainWindow] AI応答で画像データを受信したが表示しない: '{data.text}', 画像サイズ: {data.imageBase64.Length} bytes");
-                }
-            });
-        }
-
-        /// <summary>
         /// 音声認識結果を処理
         /// </summary>
         private void OnVoiceRecognized(string text)
@@ -1464,26 +1334,6 @@ namespace CocoroConsole
 
                 // シャットダウンオーバーレイを表示
                 ShutdownOverlay.Visibility = Visibility.Visible;
-
-                // MobileWebSocketServerを停止
-                if (_mobileWebSocketServer != null)
-                {
-                    Debug.WriteLine("MobileWebSocketServerを停止中...");
-                    try
-                    {
-                        // イベント購読解除
-                        _mobileWebSocketServer.MobileMessageReceived -= OnMobileMessageReceived;
-
-                        await _mobileWebSocketServer.StopAsync();
-                        _mobileWebSocketServer.Dispose();
-                        _mobileWebSocketServer = null;
-                        Debug.WriteLine("MobileWebSocketServer停止完了");
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"MobileWebSocketServer停止エラー: {ex.Message}");
-                    }
-                }
 
                 // CocoreCoreMのプロセスIDを事前に取得
                 int? CocoroCoreMProcessId = GetProcessIdByPort(_appSettings.CocoroCorePort);

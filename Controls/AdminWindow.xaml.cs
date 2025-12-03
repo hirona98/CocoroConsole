@@ -197,7 +197,6 @@ namespace CocoroConsole.Controls
         private Dictionary<string, object> CollectSystemSettings()
         {
             var dict = new Dictionary<string, object>();
-            dict["IsEnableWebService"] = ExternalServicesSettingsControl.GetIsEnableWebService();
             dict["IsEnableReminder"] = SystemSettingsControl.GetIsEnableReminder();
             dict["IsEnableNotificationApi"] = ExternalServicesSettingsControl.GetIsEnableNotificationApi();
 
@@ -555,7 +554,6 @@ namespace CocoroConsole.Controls
         private void ApplySystemSnapshotToAppSettings(Dictionary<string, object> snapshot)
         {
             var appSettings = AppSettings.Instance;
-            appSettings.IsEnableWebService = (bool)snapshot["IsEnableWebService"];
             appSettings.IsEnableReminder = (bool)snapshot["IsEnableReminder"];
             appSettings.IsEnableNotificationApi = (bool)snapshot["IsEnableNotificationApi"];
 

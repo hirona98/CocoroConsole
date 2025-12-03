@@ -35,9 +35,6 @@ namespace CocoroConsole.Controls
             {
                 var appSettings = AppSettings.Instance;
 
-                // Webサービス設定
-                IsEnableWebServiceCheckBox.IsChecked = appSettings.IsEnableWebService;
-
                 // 通知API設定
                 IsEnableNotificationApiCheckBox.IsChecked = appSettings.IsEnableNotificationApi;
                 NotificationApiDetailsTextBox.Text = GetNotificationApiDetails();
@@ -62,10 +59,6 @@ namespace CocoroConsole.Controls
         /// </summary>
         private void SetupEventHandlers()
         {
-            // Webサービス設定
-            IsEnableWebServiceCheckBox.Checked += OnSettingsChanged;
-            IsEnableWebServiceCheckBox.Unchecked += OnSettingsChanged;
-
             // 通知API設定
             IsEnableNotificationApiCheckBox.Checked += OnSettingsChanged;
             IsEnableNotificationApiCheckBox.Unchecked += OnSettingsChanged;
@@ -156,22 +149,6 @@ namespace CocoroConsole.Controls
             sb.AppendLine("  -ContentType \"application/json; charset=utf-8\" `");
             sb.AppendLine("  -Body '{\"prompt\":\"これは直近1時間のニュースです。内容をユーザに説明するとともに感想を述べてください。：～ニュース内容～\"}'");
             return sb.ToString();
-        }
-
-        /// <summary>
-        /// Webサービス有効状態を取得
-        /// </summary>
-        public bool GetIsEnableWebService()
-        {
-            return IsEnableWebServiceCheckBox.IsChecked ?? false;
-        }
-
-        /// <summary>
-        /// Webサービス有効状態を設定
-        /// </summary>
-        public void SetIsEnableWebService(bool enabled)
-        {
-            IsEnableWebServiceCheckBox.IsChecked = enabled;
         }
 
         /// <summary>

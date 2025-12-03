@@ -49,16 +49,6 @@ namespace CocoroConsole.Services
         bool IsEnableReminder { get; set; }
 
         /// <summary>
-        /// WebSocketサーバーポート
-        /// </summary>
-        int CocoroWebPort { get; set; }
-
-        /// <summary>
-        /// Web機能有効/無効
-        /// </summary>
-        bool IsEnableWebService { get; set; }
-
-        /// <summary>
         /// 通知APIポート
         /// </summary>
         int NotificationApiPort { get; set; }

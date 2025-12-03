@@ -5,11 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text;
 
 namespace CocoroConsole.Services
 {
@@ -52,8 +50,6 @@ namespace CocoroConsole.Services
         public int CocoroMemoryWebPort { get; set; } = 55606;
         public int CocoroShellPort { get; set; } = 55605;
         public int NotificationApiPort { get; set; } = 55604;
-        public int CocoroWebPort { get; set; } = 55607;
-        public bool IsEnableWebService { get; set; } = false;
         // 通知API設定
         public bool IsEnableNotificationApi { get; set; } = true;
         // リマインダー設定
@@ -162,10 +158,8 @@ namespace CocoroConsole.Services
             CocoroMemoryWebPort = config.cocoroMemoryWebPort;
             CocoroShellPort = config.cocoroShellPort;
             NotificationApiPort = config.notificationApiPort;
-            CocoroWebPort = config.cocoroWebPort;
             IsEnableNotificationApi = config.isEnableNotificationApi;
             IsEnableReminder = config.isEnableReminder;
-            IsEnableWebService = config.isEnableWebService;
             IsRestoreWindowPosition = config.isRestoreWindowPosition;
             IsTopmost = config.isTopmost;
             IsEscapeCursor = config.isEscapeCursor;
@@ -265,10 +259,8 @@ namespace CocoroConsole.Services
                 cocoroMemoryWebPort = CocoroMemoryWebPort,
                 cocoroShellPort = CocoroShellPort,
                 notificationApiPort = NotificationApiPort,
-                cocoroWebPort = CocoroWebPort,
                 isEnableNotificationApi = IsEnableNotificationApi,
                 isEnableReminder = IsEnableReminder,
-                isEnableWebService = IsEnableWebService,
                 isRestoreWindowPosition = IsRestoreWindowPosition,
                 isTopmost = IsTopmost,
                 isEscapeCursor = IsEscapeCursor,

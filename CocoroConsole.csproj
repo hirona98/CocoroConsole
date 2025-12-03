@@ -63,7 +63,6 @@
     <EmbeddedResource Include="Resource\License.txt" />
 
     <!-- wwwrootをEmbeddedResourceとしてexe内に組み込み -->
-    <EmbeddedResource Include="wwwroot\**" />
   </ItemGroup>
 
   <ItemGroup>
