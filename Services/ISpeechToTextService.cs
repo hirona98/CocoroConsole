@@ -69,39 +69,4 @@ namespace CocoroConsole.Services
             }
         }
     }
-
-    /// <summary>
-    /// 将来のWhisperやその他STTサービス用のベーステンプレート
-    /// </summary>
-    public class WhisperSpeechToTextService : ISpeechToTextService
-    {
-        private bool _disposed;
-
-        public string ServiceName => "Whisper";
-        public bool IsAvailable => !_disposed;
-
-        public WhisperSpeechToTextService(string apiKey = "")
-        {
-            // Whisper初期化処理
-        }
-
-        public async Task<string> RecognizeAsync(byte[] audioData)
-        {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(WhisperSpeechToTextService));
-
-            // TODO: Whisper実装
-            await Task.Delay(1);
-            return string.Empty;
-        }
-
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                _disposed = true;
-                System.Diagnostics.Debug.WriteLine($"[{ServiceName}] Disposed");
-            }
-        }
-    }
 }

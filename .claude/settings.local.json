@@ -8,7 +8,7 @@
       "Bash(dotnet build)",
       "Bash(dotnet --list-sdks)",
       "Bash(mkdir:*)",
-      "Bash(powershell.exe -Command \"~/CocoroNotify.ps1 ''ClaudeCode'' ''リポジトリをCocoroConsoleに変更完了''\")"
+      "Bash(powershell.exe -Command \"~/CocoroNotify.ps1:*)"
     ],
     "deny": []
   },
