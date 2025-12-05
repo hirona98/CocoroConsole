@@ -62,12 +62,12 @@ CocoroConsole の設定ファイル（Setting.json）で管理している項目
 
 ### Phase 1: API クライアント実装
 
-- [ ] 1.1 cocoro_ghost API クライアントクラス作成
+- [x] 1.1 cocoro_ghost API クライアントクラス作成
   - `Services/CocoroGhostApiClient.cs`
   - 認証ヘッダー（Bearer Token）対応
   - エラーハンドリング
 
-- [ ] 1.2 API モデルクラス作成
+- [x] 1.2 API モデルクラス作成
   - `Models/CocoroGhostApi/` ディレクトリ作成
   - LLMPreset モデル
   - CharacterPreset モデル
