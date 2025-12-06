@@ -75,21 +75,25 @@ CocoroConsole の設定ファイル（Setting.json）で管理している項目
 
 ### Phase 2: 設定画面の改修
 
-- [ ] 2.1 LLMプリセット管理UI作成
+- [x] 2.1 LLMプリセット管理UI作成
+  - `Controls/LlmPresetManagementControl.xaml(.cs)`
   - プリセット一覧表示
   - プリセット選択・切替
   - プリセット作成・編集・削除
   - 切替時の再起動通知
 
-- [ ] 2.2 キャラクタープリセット管理UI作成
+- [x] 2.2 キャラクタープリセット管理UI作成
+  - `Controls/CharacterPresetManagementControl.xaml(.cs)`
   - プリセット一覧表示
   - プリセット選択・切替
   - プリセット作成・編集・削除
   - システムプロンプト編集
   - 切替時の再起動通知
 
-- [ ] 2.3 共通設定UI改修
-  - exclude_keywords のAPI経由管理
+- [x] 2.3 共通設定UI改修
+  - exclude_keywords のAPI経由管理（SystemSettingsControl）
+  - AdminWindowに新タブ追加（LLMプリセット、キャラプリセット）
+  - AppSettingsにCocoroGhostBearerToken追加
 
 ### Phase 3: CharacterSettings の分離
 

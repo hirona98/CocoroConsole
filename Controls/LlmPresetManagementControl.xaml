@@ -1,0 +1,415 @@
+<UserControl x:Class="CocoroConsole.Controls.LlmPresetManagementControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="600"
+             d:DesignWidth="900">
+
+    <UserControl.Resources>
+        <Style x:Key="DeleteButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#FF6B6B"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,5"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- プリセット選択 -->
+                <GroupBox Header="LLMプリセット選択"
+                          Margin="0,0,20,20"
+                          Padding="10"
+                          ToolTip="Select LLM Preset (Restart Required)">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="85"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ComboBox x:Name="LlmPresetComboBox"
+                                  Grid.Column="0"
+                                  Margin="0,5,10,5"
+                                  SelectionChanged="LlmPresetComboBox_SelectionChanged"
+                                  DisplayMemberPath="Name"
+                                  SelectedValuePath="Id">
+                        </ComboBox>
+
+                        <Button x:Name="AddPresetButton"
+                                Grid.Column="1"
+                                Content="追加"
+                                Margin="0,5,0,5"
+                                Padding="10,5"
+                                Click="AddPresetButton_Click"
+                                ToolTip="Add new preset"/>
+
+                        <Button x:Name="DuplicatePresetButton"
+                                Grid.Column="2"
+                                Content="複製"
+                                Margin="5,5,0,5"
+                                Padding="10,5"
+                                Click="DuplicatePresetButton_Click"
+                                ToolTip="Duplicate current preset"/>
+
+                        <Button x:Name="DeletePresetButton"
+                                Grid.Column="3"
+                                Content="削除"
+                                Margin="5,5,0,5"
+                                Padding="10,5"
+                                Style="{StaticResource DeleteButtonStyle}"
+                                Click="DeletePresetButton_Click"
+                                ToolTip="Delete this preset"/>
+                    </Grid>
+                </GroupBox>
+
+                <!-- プリセット詳細編集 -->
+                <GroupBox Header="プリセット設定"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <!-- プリセット名 -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="プリセット名:"
+                                       VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1"
+                                     x:Name="PresetNameTextBox"
+                                     Foreground="#FF0078D7"
+                                     Padding="2"/>
+                        </Grid>
+
+                        <!-- LLMモデル -->
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="LLM:"
+                                       VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1"
+                                     x:Name="LlmModelTextBox"
+                                     Foreground="#FF0078D7"
+                                     Padding="2"/>
+                        </Grid>
+                        <TextBlock Foreground="#666666"
+                                   TextWrapping="Wrap"
+                                   Margin="150,0,0,0">
+                            <TextBlock.Inlines>
+                                <Run Text="LiteLLM の書式で記載してください"/>
+                                <LineBreak/>
+                                <Run Text="ex) openai/gpt-4o-mini, gemini/gemini-2.0-flash"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
+
+                        <!-- APIキー -->
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="API Key:"
+                                       VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+                                <TextBox x:Name="ApiKeyTextBox"
+                                         Foreground="#FF4873CF"
+                                         Padding="2"
+                                         Width="300"
+                                         HorizontalAlignment="Left"/>
+                                <Button Content="上書き貼付け"
+                                        Margin="10,0,0,0"
+                                        Padding="10,0,10,0"
+                                        Click="ApiKeyPasteButton_Click"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Base URL -->
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="Base URL:"
+                                       VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1"
+                                     x:Name="BaseUrlTextBox"
+                                     Foreground="#FF0078D7"
+                                     Padding="2"/>
+                        </Grid>
+                        <TextBlock Foreground="#666666"
+                                   Margin="150,2,0,0"
+                                   Text="ローカルLLM使用時のBase URL（例: http://127.0.0.1:1234/v1）"/>
+
+                        <!-- Reasoning Effort -->
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="Reasoning Effort:"
+                                       VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1"
+                                     x:Name="ReasoningEffortTextBox"
+                                     Foreground="#FF0078D7"
+                                     Padding="2"/>
+                        </Grid>
+
+                        <!-- 会話履歴件数 -->
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="会話履歴件数:"
+                                       VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1"
+                                     x:Name="MaxTurnsWindowTextBox"
+                                     Foreground="#FF0078D7"
+                                     Padding="2"
+                                     Width="100"
+                                     HorizontalAlignment="Left"/>
+                        </Grid>
+
+                        <!-- Max Tokens -->
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="Max Tokens:"
+                                       VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1"
+                                     x:Name="MaxTokensTextBox"
+                                     Foreground="#FF0078D7"
+                                     Padding="2"
+                                     Width="100"
+                                     HorizontalAlignment="Left"/>
+                        </Grid>
+
+                        <!-- Max Tokens (Vision) -->
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="Max Tokens (Vision):"
+                                       VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1"
+                                     x:Name="MaxTokensVisionTextBox"
+                                     Foreground="#FF0078D7"
+                                     Padding="2"
+                                     Width="100"
+                                     HorizontalAlignment="Left"/>
+                        </Grid>
+
+                        <!-- 画像用LLM設定 -->
+                        <Expander Header="画像用LLM設定"
+                                  Margin="0,15,0,0"
+                                  IsExpanded="False"
+                                  Foreground="#FF4873CF">
+                            <StackPanel Margin="0,10,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="画像用LLM:"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1"
+                                             x:Name="ImageModelTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"/>
+                                </Grid>
+
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="画像用API Key:"
+                                               VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1"
+                                                Orientation="Horizontal">
+                                        <TextBox x:Name="ImageApiKeyTextBox"
+                                                 Foreground="#FF4873CF"
+                                                 Padding="2"
+                                                 Width="300"/>
+                                        <Button Content="上書き貼付け"
+                                                Margin="10,0,0,0"
+                                                Padding="10,0,10,0"
+                                                Click="ImageApiKeyPasteButton_Click"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="画像用Base URL:"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1"
+                                             x:Name="ImageBaseUrlTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"/>
+                                </Grid>
+
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="タイムアウト(秒):"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1"
+                                             x:Name="ImageTimeoutTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"
+                                             Width="100"
+                                             HorizontalAlignment="Left"/>
+                                </Grid>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- Embedding設定 -->
+                        <Expander Header="Embedding設定"
+                                  Margin="0,10,0,0"
+                                  IsExpanded="False"
+                                  Foreground="#FF4873CF">
+                            <StackPanel Margin="0,10,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="Embeddingモデル:"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1"
+                                             x:Name="EmbeddingModelTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"/>
+                                </Grid>
+
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="Embedding API Key:"
+                                               VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1"
+                                                Orientation="Horizontal">
+                                        <TextBox x:Name="EmbeddingApiKeyTextBox"
+                                                 Foreground="#FF4873CF"
+                                                 Padding="2"
+                                                 Width="300"/>
+                                        <Button Content="上書き貼付け"
+                                                Margin="10,0,0,0"
+                                                Padding="10,0,10,0"
+                                                Click="EmbeddingApiKeyPasteButton_Click"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="Embedding Base URL:"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1"
+                                             x:Name="EmbeddingBaseUrlTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"/>
+                                </Grid>
+
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="Embedding Dimension:"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1"
+                                             x:Name="EmbeddingDimensionTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"
+                                             Width="100"
+                                             HorizontalAlignment="Left"/>
+                                </Grid>
+
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="類似エピソード数:"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1"
+                                             x:Name="SimilarEpisodesLimitTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"
+                                             Width="100"
+                                             HorizontalAlignment="Left"/>
+                                </Grid>
+                            </StackPanel>
+                        </Expander>
+
+                        <!-- 保存ボタン -->
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    Margin="0,20,0,0">
+                            <Button x:Name="ActivatePresetButton"
+                                    Content="このプリセットを有効化"
+                                    Padding="15,8"
+                                    Margin="0,0,10,0"
+                                    Click="ActivatePresetButton_Click"
+                                    Background="#4CAF50"
+                                    Foreground="White"
+                                    ToolTip="このプリセットを有効にします（再起動が必要）"/>
+                            <Button x:Name="SavePresetButton"
+                                    Content="保存"
+                                    Padding="15,8"
+                                    Click="SavePresetButton_Click"
+                                    Background="#4873CF"
+                                    Foreground="White"/>
+                        </StackPanel>
+
+                        <!-- 再起動通知 -->
+                        <TextBlock x:Name="RestartNoticeText"
+                                   Text="※プリセットを変更した場合、cocoro_ghost の再起動が必要です"
+                                   Foreground="#FF6B6B"
+                                   Margin="0,10,0,0"
+                                   Visibility="Collapsed"/>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

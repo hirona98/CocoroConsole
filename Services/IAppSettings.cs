@@ -24,6 +24,11 @@ namespace CocoroConsole.Services
         int CocoroShellPort { get; set; }
 
         /// <summary>
+        /// cocoro_ghost API Bearer トークン
+        /// </summary>
+        string CocoroGhostBearerToken { get; set; }
+
+        /// <summary>
         /// 通知API有効/無効
         /// </summary>
         bool IsEnableNotificationApi { get; set; }

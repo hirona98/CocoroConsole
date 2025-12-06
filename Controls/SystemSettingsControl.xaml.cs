@@ -1,5 +1,6 @@
 ﻿using CocoroConsole.Communication;
 using CocoroConsole.Models;
+using CocoroConsole.Models.CocoroGhostApi;
 using CocoroConsole.Services;
 using CocoroConsole.Windows;
 using System;
@@ -34,10 +35,28 @@ namespace CocoroConsole.Controls
         /// </summary>
         private IReminderService _reminderService;
 
+        /// <summary>
+        /// cocoro_ghost API クライアント
+        /// </summary>
+        private CocoroGhostApiClient? _apiClient;
+
+        /// <summary>
+        /// APIから取得したexclude_keywords
+        /// </summary>
+        private List<string> _apiExcludeKeywords = new();
+
         public SystemSettingsControl()
         {
             InitializeComponent();
             _reminderService = new ReminderService(AppSettings.Instance);
+        }
+
+        /// <summary>
+        /// cocoro_ghost APIクライアントを設定
+        /// </summary>
+        public void SetApiClient(CocoroGhostApiClient? apiClient)
+        {
+            _apiClient = apiClient;
         }
 
         /// <summary>
@@ -57,7 +76,9 @@ namespace CocoroConsole.Controls
                 CaptureActiveWindowOnlyCheckBox.IsChecked = appSettings.ScreenshotSettings.captureActiveWindowOnly;
                 ScreenshotIntervalTextBox.Text = appSettings.ScreenshotSettings.intervalMinutes.ToString();
                 IdleTimeoutTextBox.Text = appSettings.ScreenshotSettings.idleTimeoutMinutes.ToString();
-                ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, appSettings.ScreenshotSettings.excludePatterns);
+
+                // exclude_keywordsをAPIから読み込み（API利用可能な場合）
+                await LoadExcludeKeywordsFromApiAsync(appSettings);
 
                 // マイク設定
                 MicThresholdSlider.Value = appSettings.MicrophoneSettings.inputThreshold;
@@ -198,6 +219,87 @@ namespace CocoroConsole.Controls
             MicThresholdSlider.Value = settings.inputThreshold;
             // speakerRecognitionThresholdはInitializeAsyncで設定済み
         }
+
+        #region exclude_keywords API連携
+
+        /// <summary>
+        /// APIからexclude_keywordsを読み込み
+        /// </summary>
+        private async Task LoadExcludeKeywordsFromApiAsync(IAppSettings appSettings)
+        {
+            try
+            {
+                if (_apiClient != null)
+                {
+                    var settings = await _apiClient.GetSettingsAsync();
+                    if (settings != null)
+                    {
+                        _apiExcludeKeywords = settings.ExcludeKeywords ?? new List<string>();
+                        ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, _apiExcludeKeywords);
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"APIからexclude_keywordsの読み込みに失敗: {ex.Message}");
+            }
+
+            // APIが利用できない場合はローカル設定を使用
+            ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, appSettings.ScreenshotSettings.excludePatterns);
+        }
+
+        /// <summary>
+        /// exclude_keywordsをAPIに保存
+        /// </summary>
+        public async Task<bool> SaveExcludeKeywordsToApiAsync()
+        {
+            if (_apiClient == null) return false;
+
+            try
+            {
+                var patterns = ExcludePatternsTextBox.Text
+                    .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Trim())
+                    .Where(p => !string.IsNullOrEmpty(p))
+                    .ToList();
+
+                var request = new CocoroGhostSettingsUpdateRequest
+                {
+                    ExcludeKeywords = patterns
+                };
+
+                await _apiClient.UpdateSettingsAsync(request);
+                _apiExcludeKeywords = patterns;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"APIへのexclude_keywords保存に失敗: {ex.Message}");
+                MessageBox.Show($"除外パターンのAPI保存に失敗しました: {ex.Message}", "警告",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// exclude_keywordsのUI値を取得
+        /// </summary>
+        public List<string> GetExcludeKeywords()
+        {
+            return ExcludePatternsTextBox.Text
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(p => p.Trim())
+                .Where(p => !string.IsNullOrEmpty(p))
+                .ToList();
+        }
+
+        /// <summary>
+        /// APIクライアントが設定されているか
+        /// </summary>
+        public bool HasApiClient => _apiClient != null;
+
+        #endregion
 
         #region リマインダー関連メソッド
 

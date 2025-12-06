@@ -47,6 +47,8 @@ namespace CocoroConsole.Services
         public int CocoroGhostPort { get; set; } = 55601;
         public int CocoroShellPort { get; set; } = 55605;
         public int NotificationApiPort { get; set; } = 55604;
+        // cocoro_ghost API Bearer トークン
+        public string CocoroGhostBearerToken { get; set; } = string.Empty;
         // 通知API設定
         public bool IsEnableNotificationApi { get; set; } = true;
         // リマインダー設定

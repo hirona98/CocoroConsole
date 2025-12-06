@@ -26,6 +26,9 @@ namespace CocoroConsole.Controls
         // 通信サービス
         private ICommunicationService? _communicationService;
 
+        // cocoro_ghost APIクライアント
+        private CocoroGhostApiClient? _apiClient;
+
         // CocoroCore再起動が必要な設定の前回値を保存
         private ConfigSettings _previousCocoroCoreSettings;
         private Dictionary<int, string> _previousSystemPrompts = new Dictionary<int, string>();
@@ -42,6 +45,9 @@ namespace CocoroConsole.Controls
 
             _communicationService = communicationService;
 
+            // cocoro_ghost APIクライアントを初期化
+            InitializeApiClient();
+
             // Display タブ初期化
             DisplaySettingsControl.SetCommunicationService(_communicationService);
             DisplaySettingsControl.InitializeFromAppSettings();
@@ -49,7 +55,8 @@ namespace CocoroConsole.Controls
             // キャラクター設定の初期化
             InitializeCharacterSettings();
 
-            // システム設定コントロールを初期化
+            // システム設定コントロールを初期化（APIクライアント設定後に初期化）
+            SystemSettingsControl.SetApiClient(_apiClient);
             _ = SystemSettingsControl.InitializeAsync();
 
             // システム設定変更イベントを登録
@@ -66,6 +73,9 @@ namespace CocoroConsole.Controls
 
             // 外部サービス設定変更イベントを登録
             ExternalServicesSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
+
+            // プリセット管理コントロールを初期化
+            _ = InitializePresetControlsAsync();
 
             // 元の設定のバックアップを作成
             BackupSettings();
@@ -101,6 +111,53 @@ namespace CocoroConsole.Controls
                 _communicationService = service;
             }
             LoadLicenseText();
+        }
+
+        /// <summary>
+        /// cocoro_ghost APIクライアントを初期化
+        /// </summary>
+        private void InitializeApiClient()
+        {
+            try
+            {
+                var appSettings = AppSettings.Instance;
+                var baseUrl = $"http://127.0.0.1:{appSettings.CocoroGhostPort}";
+                var token = appSettings.CocoroGhostBearerToken;
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    _apiClient = new CocoroGhostApiClient(baseUrl, token);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"APIクライアント初期化エラー: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// プリセット管理コントロールを初期化
+        /// </summary>
+        private async Task InitializePresetControlsAsync()
+        {
+            if (_apiClient == null) return;
+
+            try
+            {
+                // LLMプリセット管理コントロール初期化
+                LlmPresetManagementControl.Initialize(_apiClient);
+                await LlmPresetManagementControl.LoadPresetsAsync();
+                LlmPresetManagementControl.PresetActivated += (sender, args) => MarkSettingsChanged();
+
+                // キャラクタープリセット管理コントロール初期化
+                CharacterPresetManagementControl.Initialize(_apiClient);
+                await CharacterPresetManagementControl.LoadPresetsAsync();
+                CharacterPresetManagementControl.PresetActivated += (sender, args) => MarkSettingsChanged();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"プリセット管理初期化エラー: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -395,10 +452,24 @@ namespace CocoroConsole.Controls
 
                 // デスクトップウォッチの設定変更を反映
                 UpdateDesktopWatchSettings();
+
+                // exclude_keywordsをAPIに保存
+                _ = SaveExcludeKeywordsToApiAsync();
             }
             catch (System.Exception ex)
             {
                 Debug.WriteLine($"[AdminWindow] 設定の保存に失敗しました: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// exclude_keywordsをAPIに保存
+        /// </summary>
+        private async Task SaveExcludeKeywordsToApiAsync()
+        {
+            if (SystemSettingsControl.HasApiClient)
+            {
+                await SystemSettingsControl.SaveExcludeKeywordsToApiAsync();
             }
         }
 
