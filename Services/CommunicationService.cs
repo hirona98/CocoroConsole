@@ -35,7 +35,7 @@ namespace CocoroConsole.Services
         // 設定キャッシュ用
         private ConfigSettings? _cachedConfigSettings;
 
-        // アクティブなキャラクタープリセットのmemory_idキャッシュ
+        // memory_idキャッシュ
         private string _cachedMemoryId = "memory";
 
         public event EventHandler<ChatRequest>? ChatMessageReceived;
@@ -124,9 +124,6 @@ namespace CocoroConsole.Services
                 {
                     await _notificationApiServer.StartAsync();
                 }
-
-                // アクティブなキャラクタープリセットのmemory_idをキャッシュ
-                await RefreshMemoryIdCacheAsync();
             }
             catch (Exception ex)
             {
@@ -172,47 +169,6 @@ namespace CocoroConsole.Services
         public void RefreshSettingsCache()
         {
             _cachedConfigSettings = _appSettings.GetConfigSettings();
-        }
-
-        /// <summary>
-        /// アクティブなキャラクタープリセットのmemory_idをAPIから取得してキャッシュを更新
-        /// </summary>
-        public async Task RefreshMemoryIdCacheAsync()
-        {
-            if (_cocoroGhostApiClient == null)
-            {
-                Debug.WriteLine("CommunicationService: CocoroGhostApiClientが初期化されていないため、memory_idをデフォルト値のままにします");
-                return;
-            }
-
-            try
-            {
-                // /settings からアクティブなプリセットIDを取得
-                var settings = await _cocoroGhostApiClient.GetSettingsAsync();
-                if (settings?.ActiveCharacterPresetId == null)
-                {
-                    Debug.WriteLine("CommunicationService: アクティブなキャラクタープリセットIDが取得できませんでした");
-                    return;
-                }
-
-                // キャラクタープリセット一覧を取得
-                var presets = await _cocoroGhostApiClient.GetCharacterPresetsAsync();
-                var activePreset = presets.Find(p => p.Id == settings.ActiveCharacterPresetId);
-
-                if (activePreset != null && !string.IsNullOrEmpty(activePreset.MemoryId))
-                {
-                    _cachedMemoryId = activePreset.MemoryId;
-                    Debug.WriteLine($"CommunicationService: memory_idをキャッシュしました: {_cachedMemoryId}");
-                }
-                else
-                {
-                    Debug.WriteLine("CommunicationService: アクティブなプリセットのmemory_idが空のため、デフォルト値を使用します");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"CommunicationService: memory_idの取得に失敗しました: {ex.Message}");
-            }
         }
 
         /// <summary>

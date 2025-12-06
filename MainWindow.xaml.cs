@@ -220,11 +220,6 @@ namespace CocoroConsole
 
                 _communicationService?.RefreshSettingsCache();
 
-                if (_communicationService != null)
-                {
-                    await _communicationService.RefreshMemoryIdCacheAsync();
-                }
-
                 Debug.WriteLine("[MainWindow] cocoro_ghost設定をAPIから同期しました");
             }
             catch (Exception ex)

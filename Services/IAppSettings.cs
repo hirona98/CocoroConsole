@@ -35,11 +35,6 @@ namespace CocoroConsole.Services
         string? ActiveLlmPresetId { get; set; }
 
         /// <summary>
-        /// APIで管理されるアクティブなキャラクタープリセットID
-        /// </summary>
-        string? ActiveCharacterPresetId { get; set; }
-
-        /// <summary>
         /// 通知API有効/無効
         /// </summary>
         bool IsEnableNotificationApi { get; set; }

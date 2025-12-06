@@ -144,27 +144,6 @@ namespace CocoroConsole.Controls
                 LlmPresetManagementControl.Initialize(_apiClient);
                 await LlmPresetManagementControl.LoadPresetsAsync();
                 LlmPresetManagementControl.PresetActivated += (sender, args) => MarkSettingsChanged();
-
-                // キャラクタープリセット管理コントロール初期化
-                CharacterPresetManagementControl.Initialize(_apiClient);
-                await CharacterPresetManagementControl.LoadPresetsAsync();
-                CharacterPresetManagementControl.PresetActivated += async (sender, args) =>
-                {
-                    MarkSettingsChanged();
-
-                    // memory_idキャッシュを更新（APIトークン未設定時は内部でスキップ）
-                    if (_communicationService != null)
-                    {
-                        try
-                        {
-                            await _communicationService.RefreshMemoryIdCacheAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"キャラクタープリセット有効化後のmemory_id更新に失敗: {ex.Message}");
-                        }
-                    }
-                };
             }
             catch (Exception ex)
             {
@@ -428,12 +407,9 @@ namespace CocoroConsole.Controls
                 // プリセットを保存・有効化
                 await LlmPresetManagementControl.SaveCurrentPresetAsync();
                 await LlmPresetManagementControl.ActivateSelectedPresetAsync();
-                await CharacterPresetManagementControl.SaveCurrentPresetAsync();
-                await CharacterPresetManagementControl.ActivateSelectedPresetAsync();
 
                 // API管理のプリセットIDをキャッシュ
                 AppSettings.Instance.ActiveLlmPresetId = LlmPresetManagementControl.GetActivePresetId();
-                AppSettings.Instance.ActiveCharacterPresetId = CharacterPresetManagementControl.GetActivePresetId();
 
                 // 設定をファイルに保存
                 AppSettings.Instance.SaveAppSettings();
@@ -898,7 +874,6 @@ namespace CocoroConsole.Controls
             config.isEnableNotificationApi = ExternalServicesSettingsControl.GetIsEnableNotificationApi();
             config.isEnableReminder = SystemSettingsControl.GetIsEnableReminder();
             config.activeLlmPresetId = LlmPresetManagementControl.GetActivePresetId();
-            config.activeCharacterPresetId = CharacterPresetManagementControl.GetActivePresetId();
 
             // Character設定の取得（ディープコピーを使用）
             config.currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
@@ -923,8 +898,7 @@ namespace CocoroConsole.Controls
         private bool HasCocoroGhostRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
         {
             // API管理のプリセット切替
-            if (currentSettings.activeLlmPresetId != previousSettings.activeLlmPresetId ||
-                currentSettings.activeCharacterPresetId != previousSettings.activeCharacterPresetId)
+            if (currentSettings.activeLlmPresetId != previousSettings.activeLlmPresetId)
             {
                 return true;
             }

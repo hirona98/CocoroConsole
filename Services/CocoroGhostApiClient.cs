@@ -73,36 +73,6 @@ namespace CocoroConsole.Services
             return SendAsync(HttpMethod.Post, $"/llm-presets/{presetId}/activate", null, cancellationToken);
         }
 
-        public Task<List<CharacterPreset>> GetCharacterPresetsAsync(CancellationToken cancellationToken = default)
-        {
-            return SendAsync<List<CharacterPreset>>(HttpMethod.Get, "/character-presets", null, cancellationToken);
-        }
-
-        public Task<CharacterPreset> CreateCharacterPresetAsync(CharacterPreset preset, CancellationToken cancellationToken = default)
-        {
-            return SendAsync<CharacterPreset>(HttpMethod.Post, "/character-presets", preset, cancellationToken);
-        }
-
-        public Task<CharacterPreset> GetCharacterPresetAsync(string presetId, CancellationToken cancellationToken = default)
-        {
-            return SendAsync<CharacterPreset>(HttpMethod.Get, $"/character-presets/{presetId}", null, cancellationToken);
-        }
-
-        public Task<CharacterPreset> UpdateCharacterPresetAsync(string presetId, CharacterPreset preset, CancellationToken cancellationToken = default)
-        {
-            return SendAsync<CharacterPreset>(new HttpMethod("PATCH"), $"/character-presets/{presetId}", preset, cancellationToken);
-        }
-
-        public Task DeleteCharacterPresetAsync(string presetId, CancellationToken cancellationToken = default)
-        {
-            return SendAsync(HttpMethod.Delete, $"/character-presets/{presetId}", null, cancellationToken);
-        }
-
-        public Task ActivateCharacterPresetAsync(string presetId, CancellationToken cancellationToken = default)
-        {
-            return SendAsync(HttpMethod.Post, $"/character-presets/{presetId}/activate", null, cancellationToken);
-        }
-
         public Task<CocoroGhostSettings> GetSettingsAsync(CancellationToken cancellationToken = default)
         {
             return SendAsync<CocoroGhostSettings>(HttpMethod.Get, "/settings", null, cancellationToken);

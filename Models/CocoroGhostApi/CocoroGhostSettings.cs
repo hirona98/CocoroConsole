@@ -10,9 +10,6 @@ namespace CocoroConsole.Models.CocoroGhostApi
 
         [JsonPropertyName("active_llm_preset_id")]
         public string? ActiveLlmPresetId { get; set; }
-
-        [JsonPropertyName("active_character_preset_id")]
-        public string? ActiveCharacterPresetId { get; set; }
     }
 
     public class CocoroGhostSettingsUpdateRequest

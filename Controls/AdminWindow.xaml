@@ -126,14 +126,6 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="キャラプリセット"
-                     Style="{StaticResource AdminTabItemStyle}"
-                     ToolTip="Character Preset Management">
-                <Grid Margin="20,20,0,20">
-                    <local:CharacterPresetManagementControl x:Name="CharacterPresetManagementControl"/>
-                </Grid>
-            </TabItem>
-
             <TabItem Header="Memory"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="Memory setting">
