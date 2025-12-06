@@ -30,11 +30,6 @@ namespace CocoroConsole.Services
         string CocoroGhostBearerToken { get; set; }
 
         /// <summary>
-        /// APIで管理されるアクティブなLLMプリセットID
-        /// </summary>
-        string? ActiveLlmPresetId { get; set; }
-
-        /// <summary>
         /// 通知API有効/無効
         /// </summary>
         bool IsEnableNotificationApi { get; set; }

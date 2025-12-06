@@ -45,6 +45,16 @@ namespace CocoroConsole.Controls
         /// </summary>
         private List<string> _apiExcludeKeywords = new();
 
+        /// <summary>
+        /// APIから取得したLLMプリセット
+        /// </summary>
+        private List<LlmPreset> _apiLlmPresets = new();
+
+        /// <summary>
+        /// APIから取得したEmbeddingプリセット
+        /// </summary>
+        private List<EmbeddingPreset> _apiEmbeddingPresets = new();
+
         public SystemSettingsControl()
         {
             InitializeComponent();
@@ -235,6 +245,8 @@ namespace CocoroConsole.Controls
                     if (settings != null)
                     {
                         _apiExcludeKeywords = settings.ExcludeKeywords ?? new List<string>();
+                        _apiLlmPresets = settings.LlmPreset ?? new List<LlmPreset>();
+                        _apiEmbeddingPresets = settings.EmbeddingPreset ?? new List<EmbeddingPreset>();
                         ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, _apiExcludeKeywords);
                         return;
                     }
@@ -264,9 +276,19 @@ namespace CocoroConsole.Controls
                     .Where(p => !string.IsNullOrEmpty(p))
                     .ToList();
 
+                // 最新設定を取得し、プリセットを保全したまま更新する
+                var latestSettings = await _apiClient.GetSettingsAsync();
+                if (latestSettings != null)
+                {
+                    _apiLlmPresets = latestSettings.LlmPreset ?? new List<LlmPreset>();
+                    _apiEmbeddingPresets = latestSettings.EmbeddingPreset ?? new List<EmbeddingPreset>();
+                }
+
                 var request = new CocoroGhostSettingsUpdateRequest
                 {
-                    ExcludeKeywords = patterns
+                    ExcludeKeywords = patterns,
+                    LlmPreset = _apiLlmPresets,
+                    EmbeddingPreset = _apiEmbeddingPresets
                 };
 
                 await _apiClient.UpdateSettingsAsync(request);

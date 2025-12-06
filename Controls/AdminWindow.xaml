@@ -118,14 +118,6 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="LLMプリセット"
-                     Style="{StaticResource AdminTabItemStyle}"
-                     ToolTip="LLM Preset Management">
-                <Grid Margin="20,20,0,20">
-                    <local:LlmPresetManagementControl x:Name="LlmPresetManagementControl"/>
-                </Grid>
-            </TabItem>
-
             <TabItem Header="Memory"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="Memory setting">

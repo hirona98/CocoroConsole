@@ -140,10 +140,8 @@ namespace CocoroConsole.Controls
 
             try
             {
-                // LLMプリセット管理コントロール初期化
-                LlmPresetManagementControl.Initialize(_apiClient);
-                await LlmPresetManagementControl.LoadPresetsAsync();
-                LlmPresetManagementControl.PresetActivated += (sender, args) => MarkSettingsChanged();
+                // APIクライアントの初期化
+                await Task.CompletedTask;
             }
             catch (Exception ex)
             {
@@ -403,13 +401,6 @@ namespace CocoroConsole.Controls
 
                 // Character/Animation の反映
                 UpdateCharacterAndAnimationAppSettings();
-
-                // プリセットを保存・有効化
-                await LlmPresetManagementControl.SaveCurrentPresetAsync();
-                await LlmPresetManagementControl.ActivateSelectedPresetAsync();
-
-                // API管理のプリセットIDをキャッシュ
-                AppSettings.Instance.ActiveLlmPresetId = LlmPresetManagementControl.GetActivePresetId();
 
                 // 設定をファイルに保存
                 AppSettings.Instance.SaveAppSettings();
@@ -873,7 +864,6 @@ namespace CocoroConsole.Controls
             // System設定の取得
             config.isEnableNotificationApi = ExternalServicesSettingsControl.GetIsEnableNotificationApi();
             config.isEnableReminder = SystemSettingsControl.GetIsEnableReminder();
-            config.activeLlmPresetId = LlmPresetManagementControl.GetActivePresetId();
 
             // Character設定の取得（ディープコピーを使用）
             config.currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
@@ -897,12 +887,6 @@ namespace CocoroConsole.Controls
         /// <returns>CocoroGhost再起動が必要な変更があった場合true</returns>
         private bool HasCocoroGhostRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
         {
-            // API管理のプリセット切替
-            if (currentSettings.activeLlmPresetId != previousSettings.activeLlmPresetId)
-            {
-                return true;
-            }
-
             // 基本設定項目の比較
             if (currentSettings.isEnableNotificationApi != previousSettings.isEnableNotificationApi ||
                 currentSettings.isEnableReminder != previousSettings.isEnableReminder ||

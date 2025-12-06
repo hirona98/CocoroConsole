@@ -1,6 +1,5 @@
 using CocoroConsole.Models.CocoroGhostApi;
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -43,36 +42,6 @@ namespace CocoroConsole.Services
             };
         }
 
-        public Task<List<LlmPreset>> GetLlmPresetsAsync(CancellationToken cancellationToken = default)
-        {
-            return SendAsync<List<LlmPreset>>(HttpMethod.Get, "/llm-presets", null, cancellationToken);
-        }
-
-        public Task<LlmPreset> CreateLlmPresetAsync(LlmPreset preset, CancellationToken cancellationToken = default)
-        {
-            return SendAsync<LlmPreset>(HttpMethod.Post, "/llm-presets", preset, cancellationToken);
-        }
-
-        public Task<LlmPreset> GetLlmPresetAsync(string presetId, CancellationToken cancellationToken = default)
-        {
-            return SendAsync<LlmPreset>(HttpMethod.Get, $"/llm-presets/{presetId}", null, cancellationToken);
-        }
-
-        public Task<LlmPreset> UpdateLlmPresetAsync(string presetId, LlmPreset preset, CancellationToken cancellationToken = default)
-        {
-            return SendAsync<LlmPreset>(new HttpMethod("PATCH"), $"/llm-presets/{presetId}", preset, cancellationToken);
-        }
-
-        public Task DeleteLlmPresetAsync(string presetId, CancellationToken cancellationToken = default)
-        {
-            return SendAsync(HttpMethod.Delete, $"/llm-presets/{presetId}", null, cancellationToken);
-        }
-
-        public Task ActivateLlmPresetAsync(string presetId, CancellationToken cancellationToken = default)
-        {
-            return SendAsync(HttpMethod.Post, $"/llm-presets/{presetId}/activate", null, cancellationToken);
-        }
-
         public Task<CocoroGhostSettings> GetSettingsAsync(CancellationToken cancellationToken = default)
         {
             return SendAsync<CocoroGhostSettings>(HttpMethod.Get, "/settings", null, cancellationToken);
@@ -80,7 +49,7 @@ namespace CocoroConsole.Services
 
         public Task<CocoroGhostSettings> UpdateSettingsAsync(CocoroGhostSettingsUpdateRequest request, CancellationToken cancellationToken = default)
         {
-            return SendAsync<CocoroGhostSettings>(new HttpMethod("PATCH"), "/settings", request, cancellationToken);
+            return SendAsync<CocoroGhostSettings>(HttpMethod.Post, "/settings", request, cancellationToken);
         }
 
         private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
@@ -109,43 +78,6 @@ namespace CocoroConsole.Services
                 }
 
                 return result;
-            }
-            catch (TaskCanceledException ex)
-            {
-                throw new TimeoutException("cocoro_ghost APIリクエストがタイムアウトしました", ex);
-            }
-            catch (HttpRequestException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"cocoro_ghost API通信に失敗しました: {ex.Message}", ex);
-            }
-            finally
-            {
-                request.Dispose();
-            }
-        }
-
-        private async Task SendAsync(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
-        {
-            var request = new HttpRequestMessage(method, BuildUrl(path));
-
-            if (payload != null)
-            {
-                request.Content = CreateJsonContent(payload);
-            }
-
-            try
-            {
-                using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new HttpRequestException($"cocoro_ghost APIエラー: {(int)response.StatusCode} {response.ReasonPhrase} {responseBody}");
-                }
             }
             catch (TaskCanceledException ex)
             {

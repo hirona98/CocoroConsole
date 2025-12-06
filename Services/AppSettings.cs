@@ -47,8 +47,6 @@ namespace CocoroConsole.Services
         public int NotificationApiPort { get; set; } = 55604;
         // cocoro_ghost API Bearer トークン
         public string CocoroGhostBearerToken { get; set; } = string.Empty;
-        // APIで管理されるアクティブプリセットID
-        public string? ActiveLlmPresetId { get; set; }
         // 通知API設定
         public bool IsEnableNotificationApi { get; set; } = true;
         // リマインダー設定
@@ -167,7 +165,6 @@ namespace CocoroConsole.Services
             WindowPositionX = config.windowPositionX;
             WindowPositionY = config.windowPositionY;
             CurrentCharacterIndex = config.currentCharacterIndex;
-            ActiveLlmPresetId = config.activeLlmPresetId;
 
             // キャラクターリストを更新（もし受信したリストが空でなければ）
             if (config.characterList != null && config.characterList.Count > 0)
@@ -226,7 +223,6 @@ namespace CocoroConsole.Services
             }
 
             ScreenshotSettings.excludePatterns = apiSettings.ExcludeKeywords ?? new List<string>();
-            ActiveLlmPresetId = apiSettings.ActiveLlmPresetId;
         }
 
         /// <summary>
@@ -270,8 +266,7 @@ namespace CocoroConsole.Services
                     IntervalMinutes = ScheduledCommandSettings.IntervalMinutes
                 },
                 currentCharacterIndex = CurrentCharacterIndex,
-                characterList = new List<CharacterSettings>(CharacterList),
-                activeLlmPresetId = ActiveLlmPresetId
+                characterList = new List<CharacterSettings>(CharacterList)
             };
         }
 

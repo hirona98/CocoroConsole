@@ -8,13 +8,22 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonPropertyName("exclude_keywords")]
         public List<string> ExcludeKeywords { get; set; } = new List<string>();
 
-        [JsonPropertyName("active_llm_preset_id")]
-        public string? ActiveLlmPresetId { get; set; }
+        [JsonPropertyName("llm_preset")]
+        public List<LlmPreset> LlmPreset { get; set; } = new List<LlmPreset>();
+
+        [JsonPropertyName("embedding_preset")]
+        public List<EmbeddingPreset> EmbeddingPreset { get; set; } = new List<EmbeddingPreset>();
     }
 
     public class CocoroGhostSettingsUpdateRequest
     {
         [JsonPropertyName("exclude_keywords")]
         public List<string> ExcludeKeywords { get; set; } = new List<string>();
+
+        [JsonPropertyName("llm_preset")]
+        public List<LlmPreset> LlmPreset { get; set; } = new List<LlmPreset>();
+
+        [JsonPropertyName("embedding_preset")]
+        public List<EmbeddingPreset> EmbeddingPreset { get; set; } = new List<EmbeddingPreset>();
     }
 }
