@@ -152,7 +152,23 @@ namespace CocoroConsole.Controls
                 // キャラクタープリセット管理コントロール初期化
                 CharacterPresetManagementControl.Initialize(_apiClient);
                 await CharacterPresetManagementControl.LoadPresetsAsync();
-                CharacterPresetManagementControl.PresetActivated += (sender, args) => MarkSettingsChanged();
+                CharacterPresetManagementControl.PresetActivated += async (sender, args) =>
+                {
+                    MarkSettingsChanged();
+
+                    // memory_idキャッシュを更新（APIトークン未設定時は内部でスキップ）
+                    if (_communicationService != null)
+                    {
+                        try
+                        {
+                            await _communicationService.RefreshMemoryIdCacheAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"キャラクタープリセット有効化後のmemory_id更新に失敗: {ex.Message}");
+                        }
+                    }
+                };
             }
             catch (Exception ex)
             {
@@ -511,16 +527,6 @@ namespace CocoroConsole.Controls
                 modelName = source.modelName,
                 vrmFilePath = source.vrmFilePath,
                 isUseLLM = source.isUseLLM,
-                apiKey = source.apiKey,
-                llmModel = source.llmModel,
-                reasoning_effort = source.reasoning_effort,
-                max_turns_window = source.max_turns_window,
-                max_tokens = source.max_tokens,
-                max_tokens_vision = source.max_tokens_vision,
-                localLLMBaseUrl = source.localLLMBaseUrl,
-                visionApiKey = source.visionApiKey,
-                visionModel = source.visionModel,
-                systemPromptFilePath = source.systemPromptFilePath,
                 isUseTTS = source.isUseTTS,
                 ttsType = source.ttsType,
                 voicevoxConfig = new VoicevoxConfig
@@ -577,11 +583,6 @@ namespace CocoroConsole.Controls
                     outputAudioChannels = source.aivisCloudConfig.outputAudioChannels
                 },
                 isEnableMemory = source.isEnableMemory,
-                memoryId = source.memoryId,
-                embeddedApiKey = source.embeddedApiKey,
-                embeddedModel = source.embeddedModel,
-                embeddedDimension = source.embeddedDimension,
-                embeddedBaseUrl = source.embeddedBaseUrl,
                 isUseSTT = source.isUseSTT,
                 sttEngine = source.sttEngine,
                 sttWakeWord = source.sttWakeWord,
@@ -653,23 +654,7 @@ namespace CocoroConsole.Controls
                 {
                     // 現在のキャラクターの設定を更新
                     appSettings.CharacterList[currentIndex] = currentCharacterSetting;
-
-                    // Memory設定を現在のキャラクターから取得
-                    MemorySettingsControl.SaveToCharacterSettings(currentCharacterSetting);
-
-                    // 全キャラクターに記憶用設定を適用
-                    string embeddedApiKey = currentCharacterSetting.embeddedApiKey;
-                    string embeddedModel = currentCharacterSetting.embeddedModel;
-                    string embeddedDimension = currentCharacterSetting.embeddedDimension;
-                    string embeddedBaseUrl = currentCharacterSetting.embeddedBaseUrl;
-
-                    foreach (var character in appSettings.CharacterList)
-                    {
-                        character.embeddedApiKey = embeddedApiKey;
-                        character.embeddedModel = embeddedModel;
-                        character.embeddedDimension = embeddedDimension;
-                        character.embeddedBaseUrl = embeddedBaseUrl;
-                    }
+                    // 注: LLM/Embedding設定はAPI経由で管理される
                 }
             }
 
@@ -976,44 +961,17 @@ namespace CocoroConsole.Controls
                 return true;
             }
 
-            // キャラクターの比較（追加して削除して…とかやるとNGだけど…）
+            // キャラクターの比較
             for (int i = 0; i < currentSettings.characterList.Count; i++)
             {
                 var current = currentSettings.characterList[i];
                 var previous = previousSettings.characterList[i];
 
+                // LLM/埋め込み設定はAPI経由で管理されるため、ここではisUseLLMとisEnableMemoryのみ比較
                 if (current.isUseLLM != previous.isUseLLM ||
-                    current.apiKey != previous.apiKey ||
-                    current.llmModel != previous.llmModel ||
-                    current.reasoning_effort != previous.reasoning_effort ||
-                    current.max_turns_window != previous.max_turns_window ||
-                    current.max_tokens != previous.max_tokens ||
-                    current.max_tokens_vision != previous.max_tokens_vision ||
-                    current.visionApiKey != previous.visionApiKey ||
-                    current.visionModel != previous.visionModel ||
-                    current.localLLMBaseUrl != previous.localLLMBaseUrl ||
-                    current.systemPromptFilePath != previous.systemPromptFilePath ||
-                    current.isEnableMemory != previous.isEnableMemory ||
-                    current.memoryId != previous.memoryId ||
-                    current.embeddedApiKey != previous.embeddedApiKey ||
-                    current.embeddedModel != previous.embeddedModel ||
-                    current.embeddedDimension != previous.embeddedDimension ||
-                    current.embeddedBaseUrl != previous.embeddedBaseUrl)
+                    current.isEnableMemory != previous.isEnableMemory)
                 {
                     return true;
-                }
-
-                // systemPromptのテキスト内容変更チェック
-                if (CharacterManagementControl != null)
-                {
-                    var currentPrompts = CharacterManagementControl.GetCurrentSystemPrompts();
-                    var currentPrompt = currentPrompts.ContainsKey(i) ? currentPrompts[i] : string.Empty;
-                    var previousPrompt = _previousSystemPrompts.ContainsKey(i) ? _previousSystemPrompts[i] : string.Empty;
-
-                    if (currentPrompt != previousPrompt)
-                    {
-                        return true;
-                    }
                 }
             }
 

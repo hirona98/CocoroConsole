@@ -26,24 +26,12 @@ namespace CocoroConsole.Controls
         public void LoadCharacterSettings(CharacterSettings character)
         {
             _currentCharacter = character;
-            if (character != null)
-            {
-                EmbeddedModelTextBox.Text = character.embeddedModel;
-                EmbeddedDimensionTextBox.Text = character.embeddedDimension;
-                EmbeddedApiKeyPasswordBox.Text = character.embeddedApiKey;
-                EmbeddedBaseUrlTextBox.Text = character.embeddedBaseUrl;
-            }
+            // Embedding設定はAPI経由で管理されるため、ここでは何もしない
         }
 
         public void SaveToCharacterSettings(CharacterSettings character)
         {
-            if (character != null)
-            {
-                character.embeddedModel = EmbeddedModelTextBox.Text;
-                character.embeddedDimension = EmbeddedDimensionTextBox.Text;
-                character.embeddedApiKey = EmbeddedApiKeyPasswordBox.Text;
-                character.embeddedBaseUrl = EmbeddedBaseUrlTextBox.Text;
-            }
+            // Embedding設定はAPI経由で管理されるため、ここでは何もしない
         }
 
         private void EmbeddedApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)

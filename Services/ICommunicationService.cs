@@ -152,5 +152,10 @@ namespace CocoroConsole.Services
         /// 設定キャッシュを更新
         /// </summary>
         void RefreshSettingsCache();
+
+        /// <summary>
+        /// アクティブなキャラクタープリセットのmemory_idをAPIから取得してキャッシュを更新
+        /// </summary>
+        Task RefreshMemoryIdCacheAsync();
     }
 }

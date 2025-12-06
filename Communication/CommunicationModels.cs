@@ -127,17 +127,6 @@ namespace CocoroConsole.Communication
         public string modelName { get; set; } = string.Empty;
         public string vrmFilePath { get; set; } = string.Empty;
         public bool isUseLLM { get; set; }
-        public string apiKey { get; set; } = string.Empty;
-        public string llmModel { get; set; } = "openai/gpt-4o-mini";
-        public string reasoning_effort { get; set; } = string.Empty; // LLMの推論レベル
-        public int max_turns_window { get; set; } = 100; // 会話履歴送信件数
-        public int max_tokens { get; set; } = 8192; // LLMが生成できる最大トークン数
-        public int max_tokens_vision { get; set; } = 4096; // 画像分析時のLLMが生成できる最大トークン数
-        // 画像分析用設定
-        public string visionApiKey { get; set; } = string.Empty; // 画像分析用APIキー（空ならapiKeyを使用）
-        public string visionModel { get; set; } = "openai/gpt-4o-mini"; // 画像分析用モデル
-        public string localLLMBaseUrl { get; set; } = string.Empty; // ローカルLLMのベースURL
-        public string systemPromptFilePath { get; set; } = string.Empty;
         public bool isUseTTS { get; set; }
 
         public string ttsType { get; set; } = "voicevox"; // "voicevox" or "style-bert-vits2" or "aivis-cloud"
@@ -148,11 +137,6 @@ namespace CocoroConsole.Communication
         public AivisCloudConfig aivisCloudConfig { get; set; } = new AivisCloudConfig();
 
         public bool isEnableMemory { get; set; } = true; // メモリ機能の有効/無効
-        public string memoryId { get; set; } = "";
-        public string embeddedApiKey { get; set; } = string.Empty; // 埋め込みモデル用APIキー
-        public string embeddedModel { get; set; } = "openai/text-embedding-3-large"; // 埋め込みモデル名
-        public string embeddedDimension { get; set; } = "3072"; // 埋め込みモデルの次元数
-        public string embeddedBaseUrl { get; set; } = string.Empty; // 埋め込みモデル専用ベースURL
         public bool isUseSTT { get; set; } = false; // STT（音声認識）機能の有効/無効
         public string sttEngine { get; set; } = "amivoice"; // STTエンジン ("amivoice" | "openai")
         public string sttWakeWord { get; set; } = string.Empty; // STT起動ワード
@@ -175,16 +159,6 @@ namespace CocoroConsole.Communication
                 modelName = this.modelName,
                 vrmFilePath = this.vrmFilePath,
                 isUseLLM = this.isUseLLM,
-                apiKey = this.apiKey,
-                llmModel = this.llmModel,
-                reasoning_effort = this.reasoning_effort,
-                max_turns_window = this.max_turns_window,
-                max_tokens = this.max_tokens,
-                max_tokens_vision = this.max_tokens_vision,
-                visionApiKey = this.visionApiKey,
-                visionModel = this.visionModel,
-                localLLMBaseUrl = this.localLLMBaseUrl,
-                systemPromptFilePath = this.systemPromptFilePath,
                 isUseTTS = this.isUseTTS,
                 ttsType = this.ttsType,
 
@@ -248,11 +222,6 @@ namespace CocoroConsole.Communication
                 },
 
                 isEnableMemory = this.isEnableMemory,
-                memoryId = this.memoryId,
-                embeddedApiKey = this.embeddedApiKey,
-                embeddedModel = this.embeddedModel,
-                embeddedDimension = this.embeddedDimension,
-                embeddedBaseUrl = this.embeddedBaseUrl,
                 isUseSTT = this.isUseSTT,
                 sttEngine = this.sttEngine,
                 sttWakeWord = this.sttWakeWord,

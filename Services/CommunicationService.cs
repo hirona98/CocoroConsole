@@ -24,6 +24,7 @@ namespace CocoroConsole.Services
         private readonly IAppSettings _appSettings;
         private readonly NotificationApiServer? _notificationApiServer;
         private readonly StatusPollingService _statusPollingService;
+        private readonly CocoroGhostApiClient? _cocoroGhostApiClient;
 
         // メッセージ順序保証用セマフォ
         private readonly SemaphoreSlim _forwardMessageSemaphore = new SemaphoreSlim(1, 1);
@@ -34,6 +35,9 @@ namespace CocoroConsole.Services
         // 設定キャッシュ用
         private ConfigSettings? _cachedConfigSettings;
         private readonly Dictionary<string, string> _cachedSystemPrompts = new Dictionary<string, string>();
+
+        // アクティブなキャラクタープリセットのmemory_idキャッシュ
+        private string _cachedMemoryId = "memory";
 
         public event EventHandler<ChatRequest>? ChatMessageReceived;
         public event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
@@ -86,6 +90,14 @@ namespace CocoroConsole.Services
                 _notificationApiServer = new NotificationApiServer(_appSettings.NotificationApiPort, this);
             }
 
+            // CocoroGhost APIクライアントの初期化（Bearer Tokenが設定されている場合のみ）
+            var bearerToken = _appSettings.CocoroGhostBearerToken;
+            if (!string.IsNullOrEmpty(bearerToken))
+            {
+                var baseUrl = $"http://127.0.0.1:{_appSettings.CocoroGhostPort}";
+                _cocoroGhostApiClient = new CocoroGhostApiClient(baseUrl, bearerToken);
+            }
+
             // 設定キャッシュを初期化
             RefreshSettingsCache();
 
@@ -113,6 +125,9 @@ namespace CocoroConsole.Services
                 {
                     await _notificationApiServer.StartAsync();
                 }
+
+                // アクティブなキャラクタープリセットのmemory_idをキャッシュ
+                await RefreshMemoryIdCacheAsync();
             }
             catch (Exception ex)
             {
@@ -160,6 +175,47 @@ namespace CocoroConsole.Services
             _cachedConfigSettings = _appSettings.GetConfigSettings();
             // SystemPromptキャッシュもクリア（次回アクセス時に再読み込み）
             _cachedSystemPrompts.Clear();
+        }
+
+        /// <summary>
+        /// アクティブなキャラクタープリセットのmemory_idをAPIから取得してキャッシュを更新
+        /// </summary>
+        public async Task RefreshMemoryIdCacheAsync()
+        {
+            if (_cocoroGhostApiClient == null)
+            {
+                Debug.WriteLine("CommunicationService: CocoroGhostApiClientが初期化されていないため、memory_idをデフォルト値のままにします");
+                return;
+            }
+
+            try
+            {
+                // /settings からアクティブなプリセットIDを取得
+                var settings = await _cocoroGhostApiClient.GetSettingsAsync();
+                if (settings?.ActiveCharacterPresetId == null)
+                {
+                    Debug.WriteLine("CommunicationService: アクティブなキャラクタープリセットIDが取得できませんでした");
+                    return;
+                }
+
+                // キャラクタープリセット一覧を取得
+                var presets = await _cocoroGhostApiClient.GetCharacterPresetsAsync();
+                var activePreset = presets.Find(p => p.Id == settings.ActiveCharacterPresetId);
+
+                if (activePreset != null && !string.IsNullOrEmpty(activePreset.MemoryId))
+                {
+                    _cachedMemoryId = activePreset.MemoryId;
+                    Debug.WriteLine($"CommunicationService: memory_idをキャッシュしました: {_cachedMemoryId}");
+                }
+                else
+                {
+                    Debug.WriteLine("CommunicationService: アクティブなプリセットのmemory_idが空のため、デフォルト値を使用します");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"CommunicationService: memory_idの取得に失敗しました: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -712,7 +768,8 @@ namespace CocoroConsole.Services
                     var sessionId = message.session_id;
 
                     var currentCharacter = GetStoredCharacterSetting();
-                    var memoryId = !string.IsNullOrEmpty(currentCharacter?.memoryId) ? currentCharacter.memoryId : "memory";
+                    // memoryIdはAPI経由で取得したキャッシュ値を使用
+                    var memoryId = _cachedMemoryId;
 
                     var chatRequest = new ChatRequest
                     {

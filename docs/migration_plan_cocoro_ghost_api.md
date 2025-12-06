@@ -97,7 +97,7 @@ CocoroConsole の設定ファイル（Setting.json）で管理している項目
 
 ### Phase 3: CharacterSettings の分離
 
-- [ ] 3.1 CharacterSettings からLLM関連項目を削除
+- [x] 3.1 CharacterSettings からLLM関連項目を削除
   - apiKey
   - llmModel
   - localLLMBaseUrl
@@ -114,9 +114,8 @@ CocoroConsole の設定ファイル（Setting.json）で管理している項目
   - systemPromptFilePath
   - memoryId
 
-- [ ] 3.2 CharacterSettings に参照IDを追加（オプション）
-  - llmPresetId（参照用、実際の設定はAPI側）
-  - characterPresetId（参照用、実際の設定はAPI側）
+- [x] 3.2 CharacterSettings に参照IDを追加（オプション）
+  - スキップ（参照IDは不要と判断、API側で管理）
 
 ### Phase 4: 既存コードの改修
 

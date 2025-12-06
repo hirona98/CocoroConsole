@@ -210,20 +210,7 @@ namespace CocoroConsole.Services
         /// </summary>
         private void EnsureCharacterSchemaConsistency()
         {
-            if (CharacterList == null)
-            {
-                return;
-            }
-
-            foreach (var character in CharacterList)
-            {
-                if (character == null)
-                {
-                    continue;
-                }
-
-                character.reasoning_effort ??= string.Empty;
-            }
+            // LLM関連の設定はAPI経由で管理されるため、ここでは何もしない
         }
 
         /// <summary>
