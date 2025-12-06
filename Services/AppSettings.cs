@@ -1,5 +1,6 @@
 ﻿using CocoroConsole.Communication;
 using CocoroConsole.Models;
+using CocoroConsole.Models.CocoroGhostApi;
 using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
@@ -49,6 +50,9 @@ namespace CocoroConsole.Services
         public int NotificationApiPort { get; set; } = 55604;
         // cocoro_ghost API Bearer トークン
         public string CocoroGhostBearerToken { get; set; } = string.Empty;
+        // APIで管理されるアクティブプリセットID
+        public string? ActiveLlmPresetId { get; set; }
+        public string? ActiveCharacterPresetId { get; set; }
         // 通知API設定
         public bool IsEnableNotificationApi { get; set; } = true;
         // リマインダー設定
@@ -167,6 +171,8 @@ namespace CocoroConsole.Services
             WindowPositionX = config.windowPositionX;
             WindowPositionY = config.windowPositionY;
             CurrentCharacterIndex = config.currentCharacterIndex;
+            ActiveLlmPresetId = config.activeLlmPresetId;
+            ActiveCharacterPresetId = config.activeCharacterPresetId;
 
             // キャラクターリストを更新（もし受信したリストが空でなければ）
             if (config.characterList != null && config.characterList.Count > 0)
@@ -214,6 +220,22 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
+        /// cocoro_ghost APIから取得した設定をローカル設定に反映
+        /// </summary>
+        /// <param name="apiSettings">/settings のレスポンス</param>
+        public void ApplyCocoroGhostSettings(CocoroGhostSettings apiSettings)
+        {
+            if (apiSettings == null)
+            {
+                return;
+            }
+
+            ScreenshotSettings.excludePatterns = apiSettings.ExcludeKeywords ?? new List<string>();
+            ActiveLlmPresetId = apiSettings.ActiveLlmPresetId;
+            ActiveCharacterPresetId = apiSettings.ActiveCharacterPresetId;
+        }
+
+        /// <summary>
         /// 現在の設定からConfigSettingsオブジェクトを作成
         /// </summary>
         /// <returns>ConfigSettings オブジェクト</returns>
@@ -254,7 +276,9 @@ namespace CocoroConsole.Services
                     IntervalMinutes = ScheduledCommandSettings.IntervalMinutes
                 },
                 currentCharacterIndex = CurrentCharacterIndex,
-                characterList = new List<CharacterSettings>(CharacterList)
+                characterList = new List<CharacterSettings>(CharacterList),
+                activeLlmPresetId = ActiveLlmPresetId,
+                activeCharacterPresetId = ActiveCharacterPresetId
             };
         }
 

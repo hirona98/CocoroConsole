@@ -344,6 +344,8 @@ namespace CocoroConsole.Communication
 
         public int currentCharacterIndex { get; set; }
         public List<CharacterSettings> characterList { get; set; } = new List<CharacterSettings>();
+        public string? activeLlmPresetId { get; set; }
+        public string? activeCharacterPresetId { get; set; }
 
         /// <summary>
         /// このConfigSettingsオブジェクトのディープコピーを作成
@@ -376,6 +378,8 @@ namespace CocoroConsole.Communication
                 windowPositionX = this.windowPositionX,
                 windowPositionY = this.windowPositionY,
                 currentCharacterIndex = this.currentCharacterIndex,
+                activeLlmPresetId = this.activeLlmPresetId,
+                activeCharacterPresetId = this.activeCharacterPresetId,
 
                 // 複雑オブジェクトのディープコピー
                 screenshotSettings = new ScreenshotSettings

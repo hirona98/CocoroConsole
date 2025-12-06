@@ -1,4 +1,5 @@
 ﻿using CocoroConsole.Communication;
+using CocoroConsole.Models.CocoroGhostApi;
 using System.Collections.Generic;
 
 namespace CocoroConsole.Services
@@ -27,6 +28,16 @@ namespace CocoroConsole.Services
         /// cocoro_ghost API Bearer トークン
         /// </summary>
         string CocoroGhostBearerToken { get; set; }
+
+        /// <summary>
+        /// APIで管理されるアクティブなLLMプリセットID
+        /// </summary>
+        string? ActiveLlmPresetId { get; set; }
+
+        /// <summary>
+        /// APIで管理されるアクティブなキャラクタープリセットID
+        /// </summary>
+        string? ActiveCharacterPresetId { get; set; }
 
         /// <summary>
         /// 通知API有効/無効
@@ -184,6 +195,12 @@ namespace CocoroConsole.Services
         /// 設定ファイルから設定を読み込む
         /// </summary>
         void LoadSettings();
+
+        /// <summary>
+        /// cocoro_ghost APIから取得した設定をローカル設定に反映
+        /// </summary>
+        /// <param name="apiSettings">/settings のレスポンス</param>
+        void ApplyCocoroGhostSettings(CocoroGhostSettings apiSettings);
 
         /// <summary>
         /// アプリケーション設定ファイルを読み込む

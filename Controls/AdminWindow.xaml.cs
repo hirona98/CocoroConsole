@@ -463,6 +463,10 @@ namespace CocoroConsole.Controls
                 // Character/Animation の反映
                 UpdateCharacterAndAnimationAppSettings();
 
+                // API管理のプリセットIDをキャッシュ
+                AppSettings.Instance.ActiveLlmPresetId = LlmPresetManagementControl.GetActivePresetId();
+                AppSettings.Instance.ActiveCharacterPresetId = CharacterPresetManagementControl.GetActivePresetId();
+
                 // 設定をファイルに保存
                 AppSettings.Instance.SaveAppSettings();
 
@@ -924,6 +928,8 @@ namespace CocoroConsole.Controls
             // System設定の取得
             config.isEnableNotificationApi = ExternalServicesSettingsControl.GetIsEnableNotificationApi();
             config.isEnableReminder = SystemSettingsControl.GetIsEnableReminder();
+            config.activeLlmPresetId = LlmPresetManagementControl.GetActivePresetId();
+            config.activeCharacterPresetId = CharacterPresetManagementControl.GetActivePresetId();
 
             // Character設定の取得（ディープコピーを使用）
             config.currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
@@ -947,6 +953,13 @@ namespace CocoroConsole.Controls
         /// <returns>CocoroGhost再起動が必要な変更があった場合true</returns>
         private bool HasCocoroGhostRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
         {
+            // API管理のプリセット切替
+            if (currentSettings.activeLlmPresetId != previousSettings.activeLlmPresetId ||
+                currentSettings.activeCharacterPresetId != previousSettings.activeCharacterPresetId)
+            {
+                return true;
+            }
+
             // 基本設定項目の比較
             if (currentSettings.isEnableNotificationApi != previousSettings.isEnableNotificationApi ||
                 currentSettings.isEnableReminder != previousSettings.isEnableReminder ||

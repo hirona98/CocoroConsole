@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -74,6 +75,9 @@ namespace CocoroConsole
 
                 // 通信サービスを初期化
                 InitializeCommunicationService();
+
+                // cocoro_ghost API設定を同期（利用可能な場合）
+                SyncSettingsFromCocoroGhost().GetAwaiter().GetResult();
 
                 // スクリーンショットサービスを初期化
                 InitializeScreenshotService();
@@ -187,6 +191,46 @@ namespace CocoroConsole
             _communicationService.ControlCommandReceived += OnControlCommandReceived;
             _communicationService.ErrorOccurred += OnErrorOccurred;
             _communicationService.StatusChanged += OnCocoroGhostStatusChanged;
+        }
+
+        /// <summary>
+        /// cocoro_ghost APIから設定を取得してローカル設定に反映
+        /// </summary>
+        private async Task SyncSettingsFromCocoroGhost()
+        {
+            if (string.IsNullOrWhiteSpace(_appSettings.CocoroGhostBearerToken))
+            {
+                return;
+            }
+
+            try
+            {
+                var baseUrl = $"http://127.0.0.1:{_appSettings.CocoroGhostPort}";
+                using var apiClient = new CocoroGhostApiClient(baseUrl, _appSettings.CocoroGhostBearerToken);
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+                var apiSettings = await apiClient.GetSettingsAsync(cts.Token);
+                if (apiSettings == null)
+                {
+                    return;
+                }
+
+                _appSettings.ApplyCocoroGhostSettings(apiSettings);
+                _appSettings.SaveAppSettings();
+
+                _communicationService?.RefreshSettingsCache();
+
+                if (_communicationService != null)
+                {
+                    await _communicationService.RefreshMemoryIdCacheAsync();
+                }
+
+                Debug.WriteLine("[MainWindow] cocoro_ghost設定をAPIから同期しました");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[MainWindow] cocoro_ghost設定同期に失敗: {ex.Message}");
+            }
         }
 
         /// <summary>
