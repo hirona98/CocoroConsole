@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Services;
 using CocoroConsole.Utilities;
 using CocoroConsole.Windows;
 using Microsoft.Win32;
@@ -14,7 +17,10 @@ namespace CocoroConsole.Controls
     public partial class EmbeddingSettingsControl : UserControl
     {
         private bool _isInitializing = false;
-        private EmbeddingPreset? _currentPreset = null;
+        private List<EmbeddingPreset> _presets = new List<EmbeddingPreset>();
+        private int _currentPresetIndex = -1;
+        private CocoroGhostApiClient? _apiClient;
+        private Func<Task>? _onPresetListChanged;
 
         public event EventHandler? SettingsChanged;
 
@@ -23,25 +29,58 @@ namespace CocoroConsole.Controls
             InitializeComponent();
         }
 
+        public void SetApiClient(CocoroGhostApiClient apiClient, Func<Task> onPresetListChanged)
+        {
+            _apiClient = apiClient;
+            _onPresetListChanged = onPresetListChanged;
+        }
+
+        public List<EmbeddingPreset> GetAllPresets()
+        {
+            // 現在のUI値を現在のプリセットに反映
+            if (_currentPresetIndex >= 0 && _currentPresetIndex < _presets.Count)
+            {
+                SaveCurrentUIToPreset();
+            }
+            return _presets.ToList();
+        }
+
+        private void SaveCurrentUIToPreset()
+        {
+            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count) return;
+
+            EmbeddingPreset preset = _presets[_currentPresetIndex];
+            preset.EmbeddingPresetName = MemoryIdTextBox.Text;
+            preset.EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Password) ? null : EmbeddingApiKeyPasswordBox.Password;
+            preset.EmbeddingModel = EmbeddingModelTextBox.Text;
+            preset.EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text;
+            preset.EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 1536;
+            preset.SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : 5;
+        }
+
         public void LoadSettings(EmbeddingPreset? preset)
         {
             _isInitializing = true;
-            _currentPreset = preset;
 
             try
             {
+                _presets.Clear();
+                PresetSelectComboBox.Items.Clear();
+
                 if (preset == null)
                 {
                     ClearSettings();
+                    _currentPresetIndex = -1;
                     return;
                 }
 
-                MemoryIdTextBox.Text = preset.EmbeddingPresetName ?? string.Empty;
-                EmbeddingApiKeyPasswordBox.Password = preset.EmbeddingModelApiKey ?? string.Empty;
-                EmbeddingModelTextBox.Text = preset.EmbeddingModel ?? string.Empty;
-                EmbeddingBaseUrlTextBox.Text = preset.EmbeddingBaseUrl ?? string.Empty;
-                EmbeddingDimensionTextBox.Text = preset.EmbeddingDimension?.ToString() ?? "1536";
-                SimilarEpisodesLimitTextBox.Text = preset.SimilarEpisodesLimit?.ToString() ?? "5";
+                // 単一プリセットをリストに追加
+                _presets.Add(preset);
+                PresetSelectComboBox.Items.Add(preset.EmbeddingPresetName);
+                PresetSelectComboBox.SelectedIndex = 0;
+                _currentPresetIndex = 0;
+
+                LoadPresetToUI(preset);
             }
             finally
             {
@@ -49,16 +88,60 @@ namespace CocoroConsole.Controls
             }
         }
 
+        public void LoadSettingsList(List<EmbeddingPreset>? presets)
+        {
+            _isInitializing = true;
+
+            try
+            {
+                _presets.Clear();
+                PresetSelectComboBox.Items.Clear();
+
+                if (presets == null || presets.Count == 0)
+                {
+                    ClearSettings();
+                    _currentPresetIndex = -1;
+                    return;
+                }
+
+                _presets.AddRange(presets);
+                foreach (EmbeddingPreset preset in presets)
+                {
+                    PresetSelectComboBox.Items.Add(preset.EmbeddingPresetName);
+                }
+                PresetSelectComboBox.SelectedIndex = 0;
+                _currentPresetIndex = 0;
+
+                LoadPresetToUI(presets[0]);
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+        }
+
+        private void LoadPresetToUI(EmbeddingPreset preset)
+        {
+            MemoryIdTextBox.Text = preset.EmbeddingPresetName ?? string.Empty;
+            EmbeddingApiKeyPasswordBox.Password = preset.EmbeddingModelApiKey ?? string.Empty;
+            EmbeddingModelTextBox.Text = preset.EmbeddingModel ?? string.Empty;
+            EmbeddingBaseUrlTextBox.Text = preset.EmbeddingBaseUrl ?? string.Empty;
+            EmbeddingDimensionTextBox.Text = preset.EmbeddingDimension?.ToString() ?? "1536";
+            SimilarEpisodesLimitTextBox.Text = preset.SimilarEpisodesLimit?.ToString() ?? "5";
+        }
+
         public EmbeddingPreset? GetSettings()
         {
-            if (_currentPreset == null)
+            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
             {
                 return null;
             }
 
+            EmbeddingPreset currentPreset = _presets[_currentPresetIndex];
+
             EmbeddingPreset preset = new EmbeddingPreset
             {
-                EmbeddingPresetId = _currentPreset.EmbeddingPresetId,
+                EmbeddingPresetId = currentPreset.EmbeddingPresetId,
                 EmbeddingPresetName = MemoryIdTextBox.Text,
                 EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Password) ? null : EmbeddingApiKeyPasswordBox.Password,
                 EmbeddingModel = EmbeddingModelTextBox.Text,
@@ -78,6 +161,129 @@ namespace CocoroConsole.Controls
             EmbeddingBaseUrlTextBox.Text = string.Empty;
             EmbeddingDimensionTextBox.Text = "1536";
             SimilarEpisodesLimitTextBox.Text = "5";
+        }
+
+        private void PresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+
+            // 現在のUI値を保存
+            SaveCurrentUIToPreset();
+
+            int selectedIndex = PresetSelectComboBox.SelectedIndex;
+            if (selectedIndex >= 0 && selectedIndex < _presets.Count)
+            {
+                _currentPresetIndex = selectedIndex;
+                _isInitializing = true;
+                try
+                {
+                    LoadPresetToUI(_presets[selectedIndex]);
+                }
+                finally
+                {
+                    _isInitializing = false;
+                }
+            }
+        }
+
+        private async void AddPresetButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 現在のUI値を保存
+            SaveCurrentUIToPreset();
+
+            // 新規プリセットを作成
+            EmbeddingPreset newPreset = new EmbeddingPreset
+            {
+                EmbeddingPresetId = null,
+                EmbeddingPresetName = GenerateNewPresetName(),
+                EmbeddingModelApiKey = null,
+                EmbeddingModel = string.Empty,
+                EmbeddingBaseUrl = null,
+                EmbeddingDimension = 1536,
+                SimilarEpisodesLimit = 5
+            };
+
+            _presets.Add(newPreset);
+            PresetSelectComboBox.Items.Add(newPreset.EmbeddingPresetName);
+            PresetSelectComboBox.SelectedIndex = _presets.Count - 1;
+
+            await SavePresetsToApiAsync();
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private async void DeletePresetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            {
+                MessageBox.Show("削除するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (_presets.Count <= 1)
+            {
+                MessageBox.Show("最後のプリセットは削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            string presetName = _presets[_currentPresetIndex].EmbeddingPresetName ?? "不明";
+            MessageBoxResult result = MessageBox.Show(
+                $"プリセット「{presetName}」を削除しますか？",
+                "削除確認",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            _isInitializing = true;
+            try
+            {
+                _presets.RemoveAt(_currentPresetIndex);
+                PresetSelectComboBox.Items.RemoveAt(_currentPresetIndex);
+
+                int newIndex = Math.Min(_currentPresetIndex, _presets.Count - 1);
+                if (newIndex >= 0)
+                {
+                    PresetSelectComboBox.SelectedIndex = newIndex;
+                    _currentPresetIndex = newIndex;
+                    LoadPresetToUI(_presets[newIndex]);
+                }
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            await SavePresetsToApiAsync();
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private string GenerateNewPresetName()
+        {
+            int counter = 1;
+            string baseName = "新規プリセット";
+            string name = baseName;
+
+            while (_presets.Any(p => p.EmbeddingPresetName == name))
+            {
+                counter++;
+                name = $"{baseName} {counter}";
+            }
+
+            return name;
+        }
+
+        private async Task SavePresetsToApiAsync()
+        {
+            if (_apiClient == null || _onPresetListChanged == null) return;
+
+            try
+            {
+                await _onPresetListChanged();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"プリセットの保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void OnSettingChanged(object sender, RoutedEventArgs e)
