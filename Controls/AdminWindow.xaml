@@ -118,11 +118,19 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Memory"
+            <TabItem Header="LLM"
                      Style="{StaticResource AdminTabItemStyle}"
-                     ToolTip="Memory setting">
+                     ToolTip="LLM setting">
                 <Grid Margin="20,20,0,20">
-                    <local:MemorySettingsControl x:Name="MemorySettingsControl"/>
+                    <local:LlmSettingsControl x:Name="LlmSettingsControl"/>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Embedding"
+                     Style="{StaticResource AdminTabItemStyle}"
+                     ToolTip="Embedding setting">
+                <Grid Margin="20,20,0,20">
+                    <local:EmbeddingSettingsControl x:Name="EmbeddingSettingsControl"/>
                 </Grid>
             </TabItem>
 

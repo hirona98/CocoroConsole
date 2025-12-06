@@ -1,0 +1,346 @@
+<UserControl x:Class="CocoroConsole.Controls.LlmSettingsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="800"
+             d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <Style x:Key="SettingLabelStyle" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+            <Setter Property="Width" Value="140"/>
+        </Style>
+        <Style x:Key="SettingTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Foreground" Value="#FF0078D7"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <!-- プリセットボタン共通スタイル -->
+        <Style x:Key="PresetButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#4873CF"/>
+            <Setter Property="Foreground" Value="WhiteSmoke"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Content="{TemplateBinding Content}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#CCCCCC"/>
+                                <Setter Property="Foreground" Value="#888888"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#5A84D9"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#3A62B8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- 削除ボタンスタイル -->
+        <Style x:Key="DeleteButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#D50000"/>
+            <Setter Property="Foreground" Value="WhiteSmoke"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Content="{TemplateBinding Content}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#CCCCCC"/>
+                                <Setter Property="Foreground" Value="#888888"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#E53935"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#B71C1C"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- プリセット選択 -->
+                <GroupBox Header="プリセット選択"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="85"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ComboBox x:Name="PresetSelectComboBox"
+                                  Grid.Column="0"
+                                  Margin="0,5,10,5"
+                                  SelectionChanged="PresetSelectComboBox_SelectionChanged"/>
+
+                        <Button x:Name="AddPresetButton"
+                                Grid.Column="1"
+                                Content="追加"
+                                Margin="0,5,0,5"
+                                Style="{StaticResource PresetButtonStyle}"
+                                Click="AddPresetButton_Click"
+                                ToolTip="プリセットを追加"/>
+
+                        <Button x:Name="DuplicatePresetButton"
+                                Grid.Column="2"
+                                Content="複製"
+                                Margin="5,5,0,5"
+                                Style="{StaticResource PresetButtonStyle}"
+                                Click="DuplicatePresetButton_Click"
+                                ToolTip="現在のプリセットを複製"/>
+
+                        <Button x:Name="DeletePresetButton"
+                                Grid.Column="3"
+                                Content="削除"
+                                Margin="5,5,0,5"
+                                Style="{StaticResource DeleteButtonStyle}"
+                                Click="DeletePresetButton_Click"
+                                ToolTip="このプリセットを削除"/>
+                    </Grid>
+                </GroupBox>
+
+                <!-- システムプロンプト -->
+                <Expander IsExpanded="False"
+                          Margin="0,0,20,20">
+                    <Expander.Header>
+                        <TextBlock Text="システムプロンプト"
+                                   Foreground="#FF4873CF"/>
+                    </Expander.Header>
+                    <Border BorderBrush="#CCCCCC"
+                            BorderThickness="1"
+                            Margin="0,10,0,0"
+                            Padding="5">
+                        <TextBox x:Name="SystemPromptTextBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Height="200"
+                                 BorderThickness="0"
+                                 Foreground="#FF0078D7"
+                                 TextChanged="OnSettingChanged"/>
+                    </Border>
+                </Expander>
+
+                <!-- LLM設定 -->
+                <GroupBox Header="LLM設定"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <!-- APIキー -->
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="APIキー:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <PasswordBox x:Name="LlmApiKeyPasswordBox"
+                                         Grid.Column="1"
+                                         Foreground="#FF0078D7"
+                                         Padding="2"
+                                         BorderBrush="#CCCCCC"
+                                         BorderThickness="1"
+                                         PasswordChanged="OnSettingChanged"/>
+                        </Grid>
+
+                        <!-- LLMモデル -->
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="LLMモデル:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="LlmModelTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+
+                        <!-- Base URL -->
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Base URL:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="LlmBaseUrlTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     ToolTip="ローカルLLM使用時のベースURL（例: http://localhost:11434/v1）"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+
+                        <!-- Reasoning Effort -->
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Reasoning Effort:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="ReasoningEffortTextBox"
+                                     Grid.Column="1"
+                                     Padding="2"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+
+                        <!-- 最大ターンウィンドウ -->
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="80"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="最大ターン数:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="MaxTurnsWindowTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     ToolTip="会話履歴の最大ターン数"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+
+                        <!-- 最大トークン -->
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="80"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="最大トークン:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="MaxTokensTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     ToolTip="LLM応答の最大トークン数"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Vision設定 -->
+                <GroupBox Header="Vision設定"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <!-- Vision APIキー -->
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Vision APIキー:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <PasswordBox x:Name="VisionApiKeyPasswordBox"
+                                         Grid.Column="1"
+                                         Foreground="#FF0078D7"
+                                         Padding="2"
+                                         BorderBrush="#CCCCCC"
+                                         BorderThickness="1"
+                                         ToolTip="空欄の場合はLLM APIキーを使用"
+                                         PasswordChanged="OnSettingChanged"/>
+                        </Grid>
+
+                        <!-- Visionモデル -->
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Visionモデル:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="VisionModelTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+
+                        <!-- Vision Base URL -->
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Vision Base URL:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="VisionBaseUrlTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     ToolTip="Vision用のベースURL（空欄の場合はLLM Base URLを使用）"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+
+                        <!-- Vision最大トークン -->
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="80"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Vision最大トークン:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="MaxTokensVisionTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     ToolTip="Vision応答の最大トークン数"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+
+                        <!-- 画像タイムアウト -->
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="画像タイムアウト:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="ImageTimeoutSecondsTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     ToolTip="画像処理のタイムアウト秒数"
+                                     TextChanged="OnSettingChanged"/>
+                            <TextBlock Text="秒"
+                                       Grid.Column="2"
+                                       VerticalAlignment="Center"
+                                       Margin="5,0,0,0"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

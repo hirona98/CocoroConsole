@@ -1,9 +1,11 @@
 ﻿using CocoroConsole.Communication;
+using CocoroConsole.Models.CocoroGhostApi;
 using CocoroConsole.Services;
 using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -140,8 +142,25 @@ namespace CocoroConsole.Controls
 
             try
             {
-                // APIクライアントの初期化
-                await Task.CompletedTask;
+                // APIから設定を取得
+                CocoroGhostSettings settings = await _apiClient.GetSettingsAsync();
+
+                // LLM設定をリスト全体でロード
+                List<LlmPreset> llmPresets = settings.LlmPreset ?? new List<LlmPreset>();
+                if (llmPresets.Count == 0)
+                {
+                    llmPresets.Add(new LlmPreset { LlmPresetName = "デフォルト" });
+                }
+                LlmSettingsControl.SetApiClient(_apiClient, SaveLlmPresetsToApiAsync);
+                LlmSettingsControl.LoadSettingsList(llmPresets);
+
+                // Embedding設定をロード
+                EmbeddingPreset? embeddingPreset = settings.EmbeddingPreset?.FirstOrDefault();
+                EmbeddingSettingsControl.LoadSettings(embeddingPreset);
+
+                // 設定変更イベントを登録
+                LlmSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
+                EmbeddingSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
             }
             catch (Exception ex)
             {
@@ -410,6 +429,9 @@ namespace CocoroConsole.Controls
 
                 // exclude_keywordsをAPIに保存
                 await SaveExcludeKeywordsToApiAsync();
+
+                // LLM/Embedding設定をAPIに保存
+                await SaveLlmAndEmbeddingSettingsToApiAsync();
             }
             catch (System.Exception ex)
             {
@@ -426,6 +448,56 @@ namespace CocoroConsole.Controls
             if (SystemSettingsControl.HasApiClient)
             {
                 await SystemSettingsControl.SaveExcludeKeywordsToApiAsync();
+            }
+        }
+
+        /// <summary>
+        /// LLM/Embedding設定をAPIに保存
+        /// </summary>
+        private async Task SaveLlmAndEmbeddingSettingsToApiAsync()
+        {
+            if (_apiClient == null) return;
+
+            try
+            {
+                List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
+                EmbeddingPreset? embeddingPreset = EmbeddingSettingsControl.GetSettings();
+
+                CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
+                {
+                    LlmPreset = llmPresets,
+                    EmbeddingPreset = embeddingPreset != null ? new List<EmbeddingPreset> { embeddingPreset } : new List<EmbeddingPreset>()
+                };
+
+                await _apiClient.UpdateSettingsAsync(request);
+                Debug.WriteLine("[AdminWindow] LLM/Embedding設定をAPIに保存しました");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AdminWindow] LLM/Embedding設定の保存に失敗しました: {ex.Message}");
+            }
+        }
+
+        private async Task SaveLlmPresetsToApiAsync()
+        {
+            if (_apiClient == null) return;
+
+            try
+            {
+                List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
+
+                CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
+                {
+                    LlmPreset = llmPresets
+                };
+
+                await _apiClient.UpdateSettingsAsync(request);
+                Debug.WriteLine("[AdminWindow] LLMプリセットをAPIに保存しました");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AdminWindow] LLMプリセットの保存に失敗しました: {ex.Message}");
+                throw;
             }
         }
 
