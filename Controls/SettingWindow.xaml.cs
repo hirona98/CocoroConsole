@@ -14,9 +14,9 @@ namespace CocoroConsole.Controls
 {
 
     /// <summary>
-    /// AdminWindow.xaml の相互作用ロジック
+    /// SettingWindow.xaml の相互作用ロジック
     /// </summary>
-    public partial class AdminWindow : Window
+    public partial class SettingWindow : Window
     {
         // Display 設定は DisplaySettingsControl に委譲
         private Dictionary<string, object> _originalDisplaySettings = new Dictionary<string, object>();
@@ -36,11 +36,11 @@ namespace CocoroConsole.Controls
 
         public bool IsClosed { get; private set; } = false;
 
-        public AdminWindow() : this(null)
+        public SettingWindow() : this(null)
         {
         }
 
-        public AdminWindow(ICommunicationService? communicationService)
+        public SettingWindow(ICommunicationService? communicationService)
         {
             InitializeComponent();
 
@@ -233,7 +233,7 @@ namespace CocoroConsole.Controls
         }
 
 
-        // System やその他設定の収集はこのまま AdminWindow 側で実施
+        // System やその他設定の収集はこのまま SettingWindow 側で実施
         private Dictionary<string, object> CollectSystemSettings()
         {
             var dict = new Dictionary<string, object>();
@@ -435,7 +435,7 @@ namespace CocoroConsole.Controls
             }
             catch (System.Exception ex)
             {
-                Debug.WriteLine($"[AdminWindow] 設定の保存に失敗しました: {ex.Message}");
+                Debug.WriteLine($"[SettingWindow] 設定の保存に失敗しました: {ex.Message}");
                 throw;
             }
         }
@@ -470,11 +470,11 @@ namespace CocoroConsole.Controls
                 };
 
                 await _apiClient.UpdateSettingsAsync(request);
-                Debug.WriteLine("[AdminWindow] LLM/Embedding設定をAPIに保存しました");
+                Debug.WriteLine("[SettingWindow] LLM/Embedding設定をAPIに保存しました");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[AdminWindow] LLM/Embedding設定の保存に失敗しました: {ex.Message}");
+                Debug.WriteLine($"[SettingWindow] LLM/Embedding設定の保存に失敗しました: {ex.Message}");
             }
         }
 
@@ -492,11 +492,11 @@ namespace CocoroConsole.Controls
                 };
 
                 await _apiClient.UpdateSettingsAsync(request);
-                Debug.WriteLine("[AdminWindow] LLMプリセットをAPIに保存しました");
+                Debug.WriteLine("[SettingWindow] LLMプリセットをAPIに保存しました");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[AdminWindow] LLMプリセットの保存に失敗しました: {ex.Message}");
+                Debug.WriteLine($"[SettingWindow] LLMプリセットの保存に失敗しました: {ex.Message}");
                 throw;
             }
         }
@@ -793,7 +793,7 @@ namespace CocoroConsole.Controls
                     if (initButtonMethod != null)
                     {
                         initButtonMethod.Invoke(mainWindow, null);
-                        Debug.WriteLine("[AdminWindow] メインウィンドウのボタン状態を更新しました");
+                        Debug.WriteLine("[SettingWindow] メインウィンドウのボタン状態を更新しました");
                     }
 
                     // ApplySettingsメソッドを呼び出してサービスを更新
@@ -803,13 +803,13 @@ namespace CocoroConsole.Controls
                     if (applyMethod != null)
                     {
                         applyMethod.Invoke(mainWindow, null);
-                        Debug.WriteLine("[AdminWindow] メインウィンドウのサービスを更新しました");
+                        Debug.WriteLine("[SettingWindow] メインウィンドウのサービスを更新しました");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[AdminWindow] メインウィンドウの状態更新中にエラーが発生しました: {ex.Message}");
+                Debug.WriteLine($"[SettingWindow] メインウィンドウの状態更新中にエラーが発生しました: {ex.Message}");
             }
         }
 

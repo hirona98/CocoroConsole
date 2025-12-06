@@ -26,7 +26,7 @@ namespace CocoroConsole
         private bool _isScreenshotPaused = false;
         private RealtimeVoiceRecognitionService? _voiceRecognitionService;
         private ScheduledCommandService? _scheduledCommandService;
-        private AdminWindow? _adminWindow;
+        private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
         private int? _nextScreenshotInitialDelayMilliseconds;
 
@@ -777,21 +777,21 @@ namespace CocoroConsole
             try
             {
                 // 既に設定画面が開いている場合はアクティブにする
-                if (_adminWindow != null && !_adminWindow.IsClosed)
+                if (_settingWindow != null && !_settingWindow.IsClosed)
                 {
-                    _adminWindow.Activate();
-                    _adminWindow.WindowState = WindowState.Normal;
+                    _settingWindow.Activate();
+                    _settingWindow.WindowState = WindowState.Normal;
                     return;
                 }
 
                 // 設定画面を新規作成
-                _adminWindow = new AdminWindow(_communicationService);
-                _adminWindow.Owner = this; // メインウィンドウを親に設定
+                _settingWindow = new SettingWindow(_communicationService);
+                _settingWindow.Owner = this; // メインウィンドウを親に設定
 
                 // ウィンドウが閉じられた時にボタンの状態を更新
-                _adminWindow.Closed += AdminWindow_Closed;
+                _settingWindow.Closed += SettingWindow_Closed;
 
-                _adminWindow.Show(); // モードレスダイアログとして表示
+                _settingWindow.Show(); // モードレスダイアログとして表示
             }
             catch (Exception ex)
             {
@@ -802,7 +802,7 @@ namespace CocoroConsole
         /// <summary>
         /// 設定画面が閉じられた時のイベントハンドラ
         /// </summary>
-        private void AdminWindow_Closed(object? sender, EventArgs e)
+        private void SettingWindow_Closed(object? sender, EventArgs e)
         {
             // ボタンの状態を最新の設定に更新
             InitializeButtonStates();
@@ -810,8 +810,8 @@ namespace CocoroConsole
             // 設定変更に応じてサービスを更新
             ApplySettings();
 
-            // AdminWindowの参照をクリア
-            _adminWindow = null;
+            // SettingWindowの参照をクリア
+            _settingWindow = null;
         }
 
         /// <summary>
