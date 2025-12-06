@@ -117,31 +117,6 @@
                                 キャラクター毎に別の名前にすることを推奨します。
                             </TextBlock>
 
-                            <!-- 操作ボタン -->
-                            <StackPanel Orientation="Horizontal"
-                                        Margin="0,20,0,0">
-                                <Button x:Name="ActivatePresetButton"
-                                        Content="このプリセットを有効化"
-                                        Padding="15,8"
-                                        Margin="0,0,10,0"
-                                        Click="ActivatePresetButton_Click"
-                                        Background="#4CAF50"
-                                        Foreground="White"
-                                        ToolTip="このプリセットを有効にします（再起動が必要）"/>
-                                <Button x:Name="SavePresetButton"
-                                        Content="保存"
-                                        Padding="15,8"
-                                        Click="SavePresetButton_Click"
-                                        Background="#4873CF"
-                                        Foreground="White"/>
-                            </StackPanel>
-
-                            <!-- 再起動通知 -->
-                            <TextBlock x:Name="RestartNoticeText"
-                                       Text="※プリセットを変更した場合、cocoro_ghost の再起動が必要です"
-                                       Foreground="#FF6B6B"
-                                       Margin="0,10,0,0"
-                                       Visibility="Collapsed"/>
                         </StackPanel>
 
                         <Separator Grid.Column="1"

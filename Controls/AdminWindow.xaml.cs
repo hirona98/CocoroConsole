@@ -328,12 +328,12 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// OKボタンのクリックイベントハンドラ
         /// </summary>
-        private void OkButton_Click(object sender, RoutedEventArgs e)
+        private async void OkButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 // 共通の設定保存処理を実行
-                ApplySettingsChanges();
+                await ApplySettingsChangesAsync();
 
                 // ウィンドウを閉じる
                 Close();
@@ -359,12 +359,12 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// 適用ボタンのクリックイベントハンドラ
         /// </summary>
-        private void ApplyButton_Click(object sender, RoutedEventArgs e)
+        private async void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 // 共通の設定保存処理を実行
-                ApplySettingsChanges();
+                await ApplySettingsChangesAsync();
 
                 // 設定のバックアップを更新（適用後の状態を新しいベースラインとする）
                 BackupSettings();
@@ -382,14 +382,14 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// 設定変更を適用する共通処理
         /// </summary>
-        private void ApplySettingsChanges()
+        private async Task ApplySettingsChangesAsync()
         {
-            // UI上の現在の設定を取得してCocoroGhost再起動が必要かチェック
+            // すべてのタブの設定を保存（プリセットの保存・有効化を含む）
+            await SaveAllSettingsAsync();
+
+            // 保存後の設定を取得してCocoroGhost再起動が必要かチェック
             var currentSettings = GetCurrentUISettings();
             bool needsCocoroGhostRestart = HasCocoroGhostRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings);
-
-            // すべてのタブの設定を保存
-            SaveAllSettings();
 
             // CocoroShellを再起動
             RestartCocoroShell();
@@ -397,7 +397,7 @@ namespace CocoroConsole.Controls
             // CocoroGhostの設定変更があった場合は再起動
             if (needsCocoroGhostRestart)
             {
-                _ = RestartCocoroGhostAsync();
+                await RestartCocoroGhostAsync();
                 Debug.WriteLine("CocoroGhost再起動処理を実行しました");
             }
         }
@@ -405,7 +405,7 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// すべてのタブの設定を保存する
         /// </summary>
-        private void SaveAllSettings()
+        private async Task SaveAllSettingsAsync()
         {
             try
             {
@@ -425,6 +425,12 @@ namespace CocoroConsole.Controls
                 // Character/Animation の反映
                 UpdateCharacterAndAnimationAppSettings();
 
+                // プリセットを保存・有効化
+                await LlmPresetManagementControl.SaveCurrentPresetAsync();
+                await LlmPresetManagementControl.ActivateSelectedPresetAsync();
+                await CharacterPresetManagementControl.SaveCurrentPresetAsync();
+                await CharacterPresetManagementControl.ActivateSelectedPresetAsync();
+
                 // API管理のプリセットIDをキャッシュ
                 AppSettings.Instance.ActiveLlmPresetId = LlmPresetManagementControl.GetActivePresetId();
                 AppSettings.Instance.ActiveCharacterPresetId = CharacterPresetManagementControl.GetActivePresetId();
@@ -436,11 +442,12 @@ namespace CocoroConsole.Controls
                 UpdateDesktopWatchSettings();
 
                 // exclude_keywordsをAPIに保存
-                _ = SaveExcludeKeywordsToApiAsync();
+                await SaveExcludeKeywordsToApiAsync();
             }
             catch (System.Exception ex)
             {
                 Debug.WriteLine($"[AdminWindow] 設定の保存に失敗しました: {ex.Message}");
+                throw;
             }
         }
 

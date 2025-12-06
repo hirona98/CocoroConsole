@@ -107,15 +107,6 @@ namespace CocoroConsole.Controls
             EmbeddingDimensionTextBox.Text = preset.EmbeddingDimension?.ToString() ?? "";
             SimilarEpisodesLimitTextBox.Text = preset.SimilarEpisodesLimit?.ToString() ?? "";
 
-            // アクティブ表示
-            UpdateActiveStatus(preset);
-        }
-
-        private void UpdateActiveStatus(LlmPreset preset)
-        {
-            bool isActive = preset.Id == _activePresetId;
-            ActivatePresetButton.IsEnabled = !isActive;
-            ActivatePresetButton.Content = isActive ? "有効中" : "このプリセットを有効化";
         }
 
         private LlmPreset GetPresetFromUI()
@@ -229,51 +220,33 @@ namespace CocoroConsole.Controls
             }
         }
 
-        private async void SavePresetButton_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// 現在選択されているプリセットを保存する
+        /// </summary>
+        public async Task SaveCurrentPresetAsync()
         {
             if (_apiClient == null || _currentPreset?.Id == null) return;
 
-            try
-            {
-                var preset = GetPresetFromUI();
-                await _apiClient.UpdateLlmPresetAsync(_currentPreset.Id, preset);
+            var preset = GetPresetFromUI();
+            await _apiClient.UpdateLlmPresetAsync(_currentPreset.Id, preset);
 
-                // 更新後にリストをリロード
-                var selectedId = _currentPreset.Id;
-                await LoadPresetsAsync();
-                LlmPresetComboBox.SelectedItem = _presets.FirstOrDefault(p => p.Id == selectedId);
-
-                MessageBox.Show("保存しました。", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            // 更新後にリストをリロード
+            var selectedId = _currentPreset.Id;
+            await LoadPresetsAsync();
+            LlmPresetComboBox.SelectedItem = _presets.FirstOrDefault(p => p.Id == selectedId);
         }
 
-        private async void ActivatePresetButton_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// 現在選択されているプリセットを有効化する
+        /// </summary>
+        public async Task ActivateSelectedPresetAsync()
         {
             if (_apiClient == null || _currentPreset?.Id == null) return;
 
-            try
-            {
-                await _apiClient.ActivateLlmPresetAsync(_currentPreset.Id);
-                _activePresetId = _currentPreset.Id;
-                UpdateActiveStatus(_currentPreset);
+            await _apiClient.ActivateLlmPresetAsync(_currentPreset.Id);
+            _activePresetId = _currentPreset.Id;
 
-                RestartNoticeText.Visibility = Visibility.Visible;
-                PresetActivated?.Invoke(this, EventArgs.Empty);
-
-                MessageBox.Show(
-                    "プリセットを有効化しました。\n変更を反映するには cocoro_ghost を再起動してください。",
-                    "プリセット有効化",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"有効化に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            PresetActivated?.Invoke(this, EventArgs.Empty);
         }
 
         private void ApiKeyPasteButton_Click(object sender, RoutedEventArgs e)
