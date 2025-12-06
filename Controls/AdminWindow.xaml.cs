@@ -31,7 +31,6 @@ namespace CocoroConsole.Controls
 
         // CocoroCore再起動が必要な設定の前回値を保存
         private ConfigSettings _previousCocoroCoreSettings;
-        private Dictionary<int, string> _previousSystemPrompts = new Dictionary<int, string>();
 
         public bool IsClosed { get; private set; } = false;
 
@@ -82,9 +81,6 @@ namespace CocoroConsole.Controls
 
             // CocoroGhost再起動チェック用に現在の設定のディープコピーを保存
             _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
-
-            // systemPrompt内容を保存
-            SaveSystemPromptContents();
         }
 
         /// <summary>
@@ -182,10 +178,6 @@ namespace CocoroConsole.Controls
         private void InitializeCharacterSettings()
         {
             // CharacterManagementControlの初期化
-            if (_communicationService != null)
-            {
-                CharacterManagementControl.SetCommunicationService(_communicationService);
-            }
             CharacterManagementControl.Initialize();
             CharacterManagementControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
 
@@ -197,9 +189,6 @@ namespace CocoroConsole.Controls
 
                 // アニメーション設定を更新
                 AnimationSettingsControl.Initialize();
-
-                // Memory設定を更新
-                InitializeMemorySettings();
             };
 
             // 現在のキャラクターインデックスを取得
@@ -214,24 +203,6 @@ namespace CocoroConsole.Controls
 
             // アニメーション設定変更イベントを登録
             AnimationSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
-
-            // MemorySettingsControlの初期化
-            InitializeMemorySettings();
-        }
-
-        /// <summary>
-        /// MemorySettingsControlを初期化する
-        /// </summary>
-        private void InitializeMemorySettings()
-        {
-            if (AppSettings.Instance.CharacterList != null &&
-                _currentCharacterIndex >= 0 &&
-                _currentCharacterIndex < AppSettings.Instance.CharacterList.Count)
-            {
-                var currentCharacter = AppSettings.Instance.CharacterList[_currentCharacterIndex];
-                // 無理やり全キャラクター共通設定にしています
-                MemorySettingsControl.LoadCharacterSettings(currentCharacter);
-            }
         }
 
         // EscapePositionControl は DisplaySettingsControl 内で取り扱う
@@ -378,9 +349,6 @@ namespace CocoroConsole.Controls
         /// </summary>
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            // CharacterManagementControlの削除予定リストをクリア
-            CharacterManagementControl.ResetPendingChanges();
-
             // 変更を破棄して元の設定に戻す
             RestoreOriginalSettings();
 
@@ -402,9 +370,6 @@ namespace CocoroConsole.Controls
                 BackupSettings();
                 _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
 
-                // systemPrompt内容も更新
-                SaveSystemPromptContents();
-
                 // メインウィンドウのボタン状態とサービスを更新
                 UpdateMainWindowStates();
             }
@@ -419,9 +384,6 @@ namespace CocoroConsole.Controls
         /// </summary>
         private void ApplySettingsChanges()
         {
-            // CharacterManagementControlの設定確定処理を実行
-            CharacterManagementControl.ConfirmSettings();
-
             // UI上の現在の設定を取得してCocoroGhost再起動が必要かチェック
             var currentSettings = GetCurrentUISettings();
             bool needsCocoroGhostRestart = HasCocoroGhostRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings);
@@ -989,20 +951,6 @@ namespace CocoroConsole.Controls
             }
 
             return false;
-        }
-
-        private void SaveSystemPromptContents()
-        {
-            _previousSystemPrompts.Clear();
-
-            if (CharacterManagementControl != null)
-            {
-                var currentPrompts = CharacterManagementControl.GetCurrentSystemPrompts();
-                foreach (var kvp in currentPrompts)
-                {
-                    _previousSystemPrompts[kvp.Key] = kvp.Value;
-                }
-            }
         }
 
         /// <summary>

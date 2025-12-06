@@ -34,7 +34,6 @@ namespace CocoroConsole.Services
 
         // 設定キャッシュ用
         private ConfigSettings? _cachedConfigSettings;
-        private readonly Dictionary<string, string> _cachedSystemPrompts = new Dictionary<string, string>();
 
         // アクティブなキャラクタープリセットのmemory_idキャッシュ
         private string _cachedMemoryId = "memory";
@@ -173,8 +172,6 @@ namespace CocoroConsole.Services
         public void RefreshSettingsCache()
         {
             _cachedConfigSettings = _appSettings.GetConfigSettings();
-            // SystemPromptキャッシュもクリア（次回アクセス時に再読み込み）
-            _cachedSystemPrompts.Clear();
         }
 
         /// <summary>
@@ -224,28 +221,6 @@ namespace CocoroConsole.Services
         private void OnSettingsSaved(object? sender, EventArgs e)
         {
             RefreshSettingsCache();
-        }
-
-        /// <summary>
-        /// キャッシュされたSystemPromptを取得
-        /// </summary>
-        /// <param name="promptFilePath">プロンプトファイルのパス</param>
-        /// <returns>プロンプトテキスト</returns>
-        private string? GetCachedSystemPrompt(string? promptFilePath)
-        {
-            if (string.IsNullOrEmpty(promptFilePath))
-                return null;
-
-            // キャッシュから取得
-            if (_cachedSystemPrompts.TryGetValue(promptFilePath, out var cachedPrompt))
-            {
-                return cachedPrompt;
-            }
-
-            // キャッシュにない場合はファイルから読み込んでキャッシュに保存
-            var prompt = AppSettings.Instance.LoadSystemPrompt(promptFilePath);
-            _cachedSystemPrompts[promptFilePath] = prompt;
-            return prompt;
         }
 
         /// <summary>

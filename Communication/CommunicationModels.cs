@@ -78,49 +78,6 @@ namespace CocoroConsole.Communication
         public string outputAudioChannels { get; set; } = "mono";
     }
 
-    /// <summary>
-    /// キャラクター設定クラス
-    /// </summary>
-    /// <summary>
-    /// マイグレーション前の旧CharacterSettings構造体
-    /// </summary>
-    public class CharacterSettingsV1
-    {
-        public bool isReadOnly { get; set; }
-        public string modelName { get; set; } = string.Empty;
-        public string vrmFilePath { get; set; } = string.Empty;
-        public bool isUseLLM { get; set; }
-        public string apiKey { get; set; } = string.Empty;
-        public string llmModel { get; set; } = "openai/gpt-4o-mini";
-        public string visionApiKey { get; set; } = string.Empty;
-        public string visionModel { get; set; } = "openai/gpt-4o-mini";
-        public string localLLMBaseUrl { get; set; } = string.Empty;
-        public string systemPromptFilePath { get; set; } = string.Empty;
-        public bool isUseTTS { get; set; }
-        public string ttsType { get; set; } = "voicevox";
-
-        // 旧設定フィールド
-        public string ttsEndpointURL { get; set; } = string.Empty;
-        public string ttsSperkerID { get; set; } = string.Empty;
-
-        // その他の設定は新しい構造体と同じ
-        public StyleBertVits2Config styleBertVits2Config { get; set; } = new StyleBertVits2Config();
-        public AivisCloudConfig aivisCloudConfig { get; set; } = new AivisCloudConfig();
-        public bool isEnableMemory { get; set; } = true;
-        public string memoryId { get; set; } = "";
-        public string embeddedApiKey { get; set; } = string.Empty;
-        public string embeddedModel { get; set; } = "openai/text-embedding-3-large";
-        public string embeddedDimension { get; set; } = "3072";
-        public bool isUseSTT { get; set; } = false;
-        public string sttEngine { get; set; } = "amivoice";
-        public string sttWakeWord { get; set; } = string.Empty;
-        public string sttApiKey { get; set; } = string.Empty;
-        public string sttLanguage { get; set; } = "ja";
-        public bool isConvertMToon { get; set; } = false;
-        public bool isEnableShadowOff { get; set; } = true;
-        public string shadowOffMesh { get; set; } = "Face, U_Char_1";
-    }
-
     public class CharacterSettings
     {
         public bool isReadOnly { get; set; }

@@ -2,7 +2,6 @@
 using CocoroConsole.Services;
 using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -38,31 +37,6 @@ namespace CocoroConsole.Controls
         private bool _isInitialized = false;
 
         /// <summary>
-        /// 一時的なsystemPromptテキスト（OK押下まで保留）
-        /// </summary>
-        private string _tempSystemPromptText = string.Empty;
-
-        /// <summary>
-        /// 全キャラクターのシステムプロンプト内容を保持（キャラクターインデックス -> プロンプト内容）
-        /// </summary>
-        private Dictionary<int, string> _allCharacterSystemPrompts = new Dictionary<int, string>();
-
-        /// <summary>
-        /// キャンセル時復元用のオリジナルシステムプロンプト内容（キャラクターインデックス -> プロンプト内容）
-        /// </summary>
-        private Dictionary<int, string> _originalCharacterSystemPrompts = new Dictionary<int, string>();
-
-        /// <summary>
-        /// OK押下時に削除予定のシステムプロンプトファイルパス一覧
-        /// </summary>
-        private List<string> _filesToDelete = new List<string>();
-
-        /// <summary>
-        /// 通信サービス
-        /// </summary>
-        private ICommunicationService? _communicationService;
-
-        /// <summary>
         /// キャラクター名変更のデバウンス用タイマー
         /// </summary>
         private DispatcherTimer? _characterNameChangeTimer;
@@ -83,28 +57,7 @@ namespace CocoroConsole.Controls
             };
             _characterNameChangeTimer.Tick += CharacterNameChangeTimer_Tick;
 
-            // Base URLのプレースホルダー制御イベントを設定
-            BaseUrlTextBox.TextChanged += BaseUrlTextBox_TextChanged;
-            BaseUrlTextBox.GotFocus += BaseUrlTextBox_GotFocus;
-
-            // SystemPromptTextBoxのテキスト変更イベントを設定
-            SystemPromptTextBox.TextChanged += SystemPromptTextBox_TextChanged;
-            BaseUrlTextBox.LostFocus += BaseUrlTextBox_LostFocus;
         }
-
-        /// <summary>
-        /// APIキー欄の「上書き貼付け」ボタンクリック
-        /// </summary>
-        private void ApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
-        {
-            PasteFromClipboardIntoTextBox(ApiKeyPasswordBox);
-        }
-
-        private void VisionApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
-        {
-            PasteFromClipboardIntoTextBox(VisionApiKeyPasswordBox);
-        }
-
 
         private void AivisCloudApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
         {
@@ -142,9 +95,6 @@ namespace CocoroConsole.Controls
         {
             LoadCharacterList();
 
-            // 全キャラクターのシステムプロンプト内容を初期化時に読み込む
-            LoadAllCharacterSystemPrompts();
-
             // 選択されたキャラクターの設定をUIに反映
             if (CharacterSelectComboBox.SelectedIndex >= 0)
             {
@@ -153,30 +103,6 @@ namespace CocoroConsole.Controls
             }
 
             _isInitialized = true;
-        }
-
-        /// <summary>
-        /// 全キャラクターのシステムプロンプト内容を読み込み
-        /// </summary>
-        private void LoadAllCharacterSystemPrompts()
-        {
-            // システムプロンプトはAPI経由で管理されるため、ここでは何もしない
-        }
-
-        /// <summary>
-        /// キャラクターリストの変更後に辞書のインデックスを再構築
-        /// </summary>
-        private void RebuildCharacterSystemPromptsDictionaries()
-        {
-            // システムプロンプトはAPI経由で管理されるため、ここでは何もしない
-        }
-
-        /// <summary>
-        /// 通信サービスを設定
-        /// </summary>
-        public void SetCommunicationService(ICommunicationService communicationService)
-        {
-            _communicationService = communicationService;
         }
 
         /// <summary>
@@ -301,13 +227,6 @@ namespace CocoroConsole.Controls
         {
             if (!_isInitialized || CharacterSelectComboBox.SelectedIndex < 0)
                 return;
-
-            // 前のキャラクターの内容を保存
-            if (_currentCharacterIndex >= 0 && _currentCharacterIndex < AppSettings.Instance.CharacterList.Count)
-            {
-                _allCharacterSystemPrompts[_currentCharacterIndex] = SystemPromptTextBox.Text;
-                Debug.WriteLine($"キャラクター切り替え: インデックス {_currentCharacterIndex} の内容を保存");
-            }
 
             _currentCharacterIndex = CharacterSelectComboBox.SelectedIndex;
             UpdateCharacterUI();
@@ -692,50 +611,6 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// ハイパーリンククリック処理
-        /// </summary>
-        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            try
-            {
-                Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
-                e.Handled = true;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"リンクを開けませんでした: {ex.Message}", "エラー",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// Base URLテキストボックスのプレースホルダー制御
-        /// </summary>
-        private void BaseUrlTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            UpdateBaseUrlPlaceholder();
-        }
-
-        private void BaseUrlTextBox_GotFocus(object sender, RoutedEventArgs e)
-        {
-            UpdateBaseUrlPlaceholder();
-        }
-
-        private void BaseUrlTextBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            UpdateBaseUrlPlaceholder();
-        }
-
-        private void UpdateBaseUrlPlaceholder()
-        {
-            if (BaseUrlTextBox != null && BaseUrlPlaceholder != null)
-            {
-                BaseUrlPlaceholder.Visibility = string.IsNullOrEmpty(BaseUrlTextBox.Text) ?
-                    Visibility.Visible : Visibility.Collapsed;
-            }
-        }
-
-        /// <summary>
         /// TTSエンジン選択変更処理
         /// </summary>
         private void TTSEngineComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -845,89 +720,16 @@ namespace CocoroConsole.Controls
             }
         }
 
-
         /// <summary>
-        /// systemPromptファイルを削除
-        /// </summary>
-        /// <param name="filePath">削除するファイルパス</param>
-        private void DeleteSystemPromptFile(string filePath)
-        {
-            try
-            {
-                var fullPath = Path.Combine(AppSettings.Instance.SystemPromptsDirectory, filePath);
-
-                if (File.Exists(fullPath))
-                {
-                    File.Delete(fullPath);
-                    Debug.WriteLine($"systemPromptファイルを削除しました: {filePath}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"systemPromptファイル削除エラー: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// OK押下時の実際のファイル生成と設定確定処理
-        /// </summary>
-        public void ConfirmSettings()
-        {
-            // システムプロンプトはAPI経由で管理されるため、ここでは何もしない
-            // LLM設定もAPI経由で管理される
-        }
-
-        /// <summary>
-        /// キャンセル時の状態リセット処理
-        /// </summary>
-        public void ResetPendingChanges()
-        {
-            try
-            {
-                // 削除予定リストをクリア
-                _filesToDelete.Clear();
-
-                // 一時保存されたプロンプト内容を元の状態に復元
-                _allCharacterSystemPrompts.Clear();
-                foreach (var kvp in _originalCharacterSystemPrompts)
-                {
-                    _allCharacterSystemPrompts[kvp.Key] = kvp.Value;
-                }
-
-                // 現在選択中のキャラクターのUIも復元
-                if (_currentCharacterIndex >= 0 && _allCharacterSystemPrompts.ContainsKey(_currentCharacterIndex))
-                {
-                    SystemPromptTextBox.Text = _allCharacterSystemPrompts[_currentCharacterIndex];
-                    _tempSystemPromptText = _allCharacterSystemPrompts[_currentCharacterIndex];
-                }
-
-                Debug.WriteLine("キャンセル処理: 全ての変更を元の状態に復元しました");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"キャンセル処理エラー: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// キャラクターリストのUIを更新（キャンセル時の復元用）
+        /// キャラクターリストのUIを更新
         /// </summary>
         public void RefreshCharacterList()
         {
             try
             {
-                // システムプロンプト辞書を_originalから復元（ファイル読み込みはしない）
-                _allCharacterSystemPrompts.Clear();
-                foreach (var kvp in _originalCharacterSystemPrompts)
-                {
-                    _allCharacterSystemPrompts[kvp.Key] = kvp.Value;
-                }
-
-                // ComboBoxのItemsSourceを更新
                 CharacterSelectComboBox.ItemsSource = null;
                 CharacterSelectComboBox.ItemsSource = AppSettings.Instance.CharacterList;
 
-                // 最初のキャラクターを選択（または既存のインデックスを維持）
                 if (AppSettings.Instance.CharacterList.Count > 0)
                 {
                     int indexToSelect = Math.Min(_currentCharacterIndex, AppSettings.Instance.CharacterList.Count - 1);
@@ -935,49 +737,19 @@ namespace CocoroConsole.Controls
 
                     _currentCharacterIndex = indexToSelect;
                     CharacterSelectComboBox.SelectedIndex = indexToSelect;
-                    UpdateCharacterUI(); // 引数なしで呼び出し
+                    UpdateCharacterUI();
                 }
                 else
                 {
                     _currentCharacterIndex = -1;
-                    // キャラクターが存在しない場合はUIをクリア
                     CharacterNameTextBox.Text = string.Empty;
                     VRMFilePathTextBox.Text = string.Empty;
-                    SystemPromptTextBox.Text = string.Empty;
                 }
-
-                Debug.WriteLine($"キャラクターリスト復元完了: {AppSettings.Instance.CharacterList.Count}件（プロンプト内容はバックアップから復元）");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"キャラクターリスト復元エラー: {ex.Message}");
             }
-        }
-
-        /// <summary>
-        /// SystemPromptTextBoxのテキスト変更イベント
-        /// </summary>
-        private void SystemPromptTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (_isInitialized)
-            {
-                _tempSystemPromptText = SystemPromptTextBox.Text;
-                // 現在のキャラクターの内容もDictionaryに保存
-                if (_currentCharacterIndex >= 0)
-                {
-                    _allCharacterSystemPrompts[_currentCharacterIndex] = SystemPromptTextBox.Text;
-                }
-            }
-        }
-
-        /// <summary>
-        /// 全キャラクターの現在のシステムプロンプト内容を取得
-        /// </summary>
-        /// <returns>キャラクターインデックスをキーとするシステムプロンプト内容の辞書</returns>
-        public Dictionary<int, string> GetCurrentSystemPrompts()
-        {
-            // システムプロンプトはAPI経由で管理されるため、空の辞書を返す
-            return new Dictionary<int, string>();
         }
     }
 }

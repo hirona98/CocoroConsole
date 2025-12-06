@@ -4,10 +4,6 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Navigation;
-using CocoroConsole.Communication;
-using CocoroConsole.Services;
 using CocoroConsole.Utilities;
 using CocoroConsole.Windows;
 using Microsoft.Win32;
@@ -16,48 +12,9 @@ namespace CocoroConsole.Controls
 {
     public partial class MemorySettingsControl : UserControl
     {
-        private CharacterSettings? _currentCharacter;
-
         public MemorySettingsControl()
         {
             InitializeComponent();
-        }
-
-        public void LoadCharacterSettings(CharacterSettings character)
-        {
-            _currentCharacter = character;
-            // Embedding設定はAPI経由で管理されるため、ここでは何もしない
-        }
-
-        public void SaveToCharacterSettings(CharacterSettings character)
-        {
-            // Embedding設定はAPI経由で管理されるため、ここでは何もしない
-        }
-
-        private void EmbeddedApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
-        {
-            PasteFromClipboardIntoTextBox(EmbeddedApiKeyPasswordBox);
-        }
-
-        private void PasteFromClipboardIntoTextBox(TextBox textBox)
-        {
-            if (Clipboard.ContainsText())
-            {
-                textBox.Text = Clipboard.GetText();
-            }
-        }
-
-        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
-        {
-            try
-            {
-                Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
-                e.Handled = true;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error opening link: {ex.Message}");
-            }
         }
 
         /// <summary>
@@ -521,8 +478,6 @@ namespace CocoroConsole.Controls
 
         private async void DeleteMemoryButton_Click(object sender, RoutedEventArgs e)
         {
-            var characterName = _currentCharacter?.modelName ?? "不明";
-
             // 確認ダイアログを表示
             var result = MessageBox.Show(
                 $"全キャラクターのすべての記憶データを削除します。\n" +
