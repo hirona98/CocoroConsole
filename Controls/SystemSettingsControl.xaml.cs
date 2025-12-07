@@ -1,5 +1,6 @@
 ﻿using CocoroConsole.Communication;
 using CocoroConsole.Models;
+using CocoroConsole.Models.CocoroGhostApi;
 using CocoroConsole.Services;
 using CocoroConsole.Windows;
 using System;
@@ -34,10 +35,38 @@ namespace CocoroConsole.Controls
         /// </summary>
         private IReminderService _reminderService;
 
+        /// <summary>
+        /// cocoro_ghost API クライアント
+        /// </summary>
+        private CocoroGhostApiClient? _apiClient;
+
+        /// <summary>
+        /// APIから取得したexclude_keywords
+        /// </summary>
+        private List<string> _apiExcludeKeywords = new();
+
+        /// <summary>
+        /// APIから取得したLLMプリセット
+        /// </summary>
+        private List<LlmPreset> _apiLlmPresets = new();
+
+        /// <summary>
+        /// APIから取得したEmbeddingプリセット
+        /// </summary>
+        private List<EmbeddingPreset> _apiEmbeddingPresets = new();
+
         public SystemSettingsControl()
         {
             InitializeComponent();
             _reminderService = new ReminderService(AppSettings.Instance);
+        }
+
+        /// <summary>
+        /// cocoro_ghost APIクライアントを設定
+        /// </summary>
+        public void SetApiClient(CocoroGhostApiClient? apiClient)
+        {
+            _apiClient = apiClient;
         }
 
         /// <summary>
@@ -57,7 +86,9 @@ namespace CocoroConsole.Controls
                 CaptureActiveWindowOnlyCheckBox.IsChecked = appSettings.ScreenshotSettings.captureActiveWindowOnly;
                 ScreenshotIntervalTextBox.Text = appSettings.ScreenshotSettings.intervalMinutes.ToString();
                 IdleTimeoutTextBox.Text = appSettings.ScreenshotSettings.idleTimeoutMinutes.ToString();
-                ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, appSettings.ScreenshotSettings.excludePatterns);
+
+                // exclude_keywordsをAPIから読み込み（API利用可能な場合）
+                await LoadExcludeKeywordsFromApiAsync(appSettings);
 
                 // マイク設定
                 MicThresholdSlider.Value = appSettings.MicrophoneSettings.inputThreshold;
@@ -67,11 +98,8 @@ namespace CocoroConsole.Controls
                 var speakerService = new SpeakerRecognitionService(dbPath, appSettings.MicrophoneSettings.speakerRecognitionThreshold);
                 SpeakerManagementControl.Initialize(speakerService, appSettings.MicrophoneSettings.speakerRecognitionThreshold);
 
-                // CocoroCoreM設定
-                EnableInternetRetrievalCheckBox.IsChecked = appSettings.EnableInternetRetrieval;
-                GoogleApiKeyTextBox.Text = appSettings.GoogleApiKey;
-                GoogleSearchEngineIdTextBox.Text = appSettings.GoogleSearchEngineId;
-                InternetMaxResultsTextBox.Text = appSettings.InternetMaxResults.ToString();
+                // Bearer Token設定
+                BearerTokenPasswordBox.Password = appSettings.CocoroGhostBearerToken ?? string.Empty;
 
                 // リマインダーUI初期化（スペース区切り形式）
                 ReminderDateTimeTextBox.Text = DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:mm");
@@ -111,13 +139,6 @@ namespace CocoroConsole.Controls
 
             // マイク設定
             MicThresholdSlider.ValueChanged += OnSettingsChanged;
-
-            // CocoroCoreM設定
-            EnableInternetRetrievalCheckBox.Checked += OnSettingsChanged;
-            EnableInternetRetrievalCheckBox.Unchecked += OnSettingsChanged;
-            GoogleApiKeyTextBox.TextChanged += OnSettingsChanged;
-            GoogleSearchEngineIdTextBox.TextChanged += OnSettingsChanged;
-            InternetMaxResultsTextBox.TextChanged += OnSettingsChanged;
         }
 
         /// <summary>
@@ -212,39 +233,98 @@ namespace CocoroConsole.Controls
             // speakerRecognitionThresholdはInitializeAsyncで設定済み
         }
 
-        /// <summary>
-        /// CocoroCoreM設定を取得
-        /// </summary>
-        public (bool enableProMode, bool enableInternetRetrieval, string googleApiKey, string googleSearchEngineId, int internetMaxResults) GetCocoroCoreMSettings()
-        {
-            bool enableProMode = true; // 設定ファイルのみで制御
-            bool enableInternetRetrieval = EnableInternetRetrievalCheckBox.IsChecked ?? true;
-            string googleApiKey = GoogleApiKeyTextBox.Text;
-            string googleSearchEngineId = GoogleSearchEngineIdTextBox.Text;
-            int internetMaxResults = 5;
+        #region exclude_keywords API連携
 
-            if (int.TryParse(InternetMaxResultsTextBox.Text, out int maxResults))
+        /// <summary>
+        /// APIからexclude_keywordsを読み込み
+        /// </summary>
+        private async Task LoadExcludeKeywordsFromApiAsync(IAppSettings appSettings)
+        {
+            try
             {
-                if (maxResults >= 1 && maxResults <= 10)
+                if (_apiClient != null)
                 {
-                    internetMaxResults = maxResults;
+                    var settings = await _apiClient.GetSettingsAsync();
+                    if (settings != null)
+                    {
+                        _apiExcludeKeywords = settings.ExcludeKeywords ?? new List<string>();
+                        _apiLlmPresets = settings.LlmPreset ?? new List<LlmPreset>();
+                        _apiEmbeddingPresets = settings.EmbeddingPreset ?? new List<EmbeddingPreset>();
+                        ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, _apiExcludeKeywords);
+                        return;
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"APIからexclude_keywordsの読み込みに失敗: {ex.Message}");
+            }
 
-            return (enableProMode, enableInternetRetrieval, googleApiKey, googleSearchEngineId, internetMaxResults);
+            // APIが利用できない場合はローカル設定を使用
+            ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, appSettings.ScreenshotSettings.excludePatterns);
         }
 
         /// <summary>
-        /// CocoroCoreM設定を設定
+        /// exclude_keywordsをAPIに保存
         /// </summary>
-        public void SetCocoroCoreMSettings(bool enableProMode, bool enableInternetRetrieval, string googleApiKey, string googleSearchEngineId, int internetMaxResults)
+        public async Task<bool> SaveExcludeKeywordsToApiAsync()
         {
-            // enableProModeはコメントアウト（設定ファイルでのみ制御）
-            EnableInternetRetrievalCheckBox.IsChecked = enableInternetRetrieval;
-            GoogleApiKeyTextBox.Text = googleApiKey;
-            GoogleSearchEngineIdTextBox.Text = googleSearchEngineId;
-            InternetMaxResultsTextBox.Text = internetMaxResults.ToString();
+            if (_apiClient == null) return false;
+
+            try
+            {
+                var patterns = ExcludePatternsTextBox.Text
+                    .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Trim())
+                    .Where(p => !string.IsNullOrEmpty(p))
+                    .ToList();
+
+                // 最新設定を取得し、プリセットを保全したまま更新する
+                var latestSettings = await _apiClient.GetSettingsAsync();
+                if (latestSettings != null)
+                {
+                    _apiLlmPresets = latestSettings.LlmPreset ?? new List<LlmPreset>();
+                    _apiEmbeddingPresets = latestSettings.EmbeddingPreset ?? new List<EmbeddingPreset>();
+                }
+
+                var request = new CocoroGhostSettingsUpdateRequest
+                {
+                    ExcludeKeywords = patterns,
+                    LlmPreset = _apiLlmPresets,
+                    EmbeddingPreset = _apiEmbeddingPresets
+                };
+
+                await _apiClient.UpdateSettingsAsync(request);
+                _apiExcludeKeywords = patterns;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"APIへのexclude_keywords保存に失敗: {ex.Message}");
+                MessageBox.Show($"除外パターンのAPI保存に失敗しました: {ex.Message}", "警告",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
         }
+
+        /// <summary>
+        /// exclude_keywordsのUI値を取得
+        /// </summary>
+        public List<string> GetExcludeKeywords()
+        {
+            return ExcludePatternsTextBox.Text
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(p => p.Trim())
+                .Where(p => !string.IsNullOrEmpty(p))
+                .ToList();
+        }
+
+        /// <summary>
+        /// APIクライアントが設定されているか
+        /// </summary>
+        public bool HasApiClient => _apiClient != null;
+
+        #endregion
 
         #region リマインダー関連メソッド
 
@@ -301,7 +381,7 @@ namespace CocoroConsole.Controls
                     return;
                 }
 
-                // スペース区切り形式の解析（CocoroCoreM/SQLiteが対応）
+                // スペース区切り形式の解析
                 DateTime scheduledAt;
                 if (!DateTime.TryParseExact(dateTimeText, new[] { "yyyy-MM-dd HH:mm", "yyyy-M-d H:mm", "yyyy-MM-dd HH:mm:ss", "yyyy-M-d H:mm:ss" },
                     System.Globalization.CultureInfo.InvariantCulture,
@@ -430,6 +510,37 @@ namespace CocoroConsole.Controls
             {
                 return (null, input);
             }
+        }
+
+        #endregion
+
+        #region Bearer Token関連
+
+        /// <summary>
+        /// Bearer Token変更イベントハンドラー
+        /// </summary>
+        private void BearerTokenPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitialized)
+                return;
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// Bearer Tokenを取得
+        /// </summary>
+        public string GetBearerToken()
+        {
+            return BearerTokenPasswordBox.Password;
+        }
+
+        /// <summary>
+        /// Bearer Tokenを設定
+        /// </summary>
+        public void SetBearerToken(string token)
+        {
+            BearerTokenPasswordBox.Password = token ?? string.Empty;
         }
 
         #endregion

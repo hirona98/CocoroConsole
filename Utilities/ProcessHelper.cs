@@ -40,7 +40,7 @@ namespace CocoroConsole.Utilities
             // まずはREST APIによる通常終了を試みる
             // Task.Run を使用してデッドロックを回避
             bool gracefullyTerminated = Task.Run(async () => await TryGracefulTerminationAsync(processName)).GetAwaiter().GetResult();
-            
+
             // 終了要求を送信した場合は、プロセスの完全終了を待機
             if (gracefullyTerminated)
             {
@@ -69,7 +69,7 @@ namespace CocoroConsole.Utilities
         {
             // まずはREST APIによる通常終了を試みる
             bool gracefullyTerminated = await TryGracefulTerminationAsync(processName);
-            
+
             // 終了要求を送信した場合は、プロセスの完全終了を待機
             if (gracefullyTerminated)
             {
@@ -103,7 +103,7 @@ namespace CocoroConsole.Utilities
             var settings = AppSettings.Instance;
             int? port = processName.ToLower() switch
             {
-                "cocorocorem" => settings.CocoroCorePort,
+                "cocoroghost" => settings.CocoroGhostPort,
                 "cocoroshell" => settings.CocoroShellPort,
                 _ => null
             };
@@ -167,7 +167,7 @@ namespace CocoroConsole.Utilities
             var settings = AppSettings.Instance;
             int? port = processName.ToLower() switch
             {
-                "cocorocorem" => settings.CocoroCorePort,
+                "cocoroghost" => settings.CocoroGhostPort,
                 "cocoroshell" => settings.CocoroShellPort,
                 _ => null
             };
@@ -291,7 +291,7 @@ namespace CocoroConsole.Utilities
                 var settings = AppSettings.Instance;
                 int? port = processName.ToLower() switch
                 {
-                    "cocorocorem" => settings.CocoroCorePort,
+                    "cocoroghost" => settings.CocoroGhostPort,
                     "cocoroshell" => settings.CocoroShellPort,
                     _ => null
                 };
@@ -367,7 +367,7 @@ namespace CocoroConsole.Utilities
 
                 // 同名の実行中プロセスをチェックして終了または再起動
                 string processName = Path.GetFileNameWithoutExtension(exeName);
-                
+
                 // 再起動の場合は、既存プロセスを終了して完全に終了するまで待機
                 if (operation == ProcessOperation.RestartIfRunning)
                 {
@@ -382,7 +382,7 @@ namespace CocoroConsole.Utilities
                         Debug.WriteLine($"[ProcessHelper] {processName} は実行されていませんでした。新しいプロセスを起動します。");
                     }
                 }
-                
+
                 // 終了のみの場合は起動しない
                 if (operation == ProcessOperation.Terminate)
                 {
@@ -413,7 +413,7 @@ namespace CocoroConsole.Utilities
                 if (newProcess != null)
                 {
                     Debug.WriteLine($"[ProcessHelper] {processName} を正常に起動しました。PID: {newProcess.Id}");
-                    
+
                     // 起動後、少し待機してプロセスが安定するのを待つ
                     Thread.Sleep(500);
                 }
@@ -453,7 +453,7 @@ namespace CocoroConsole.Utilities
 
                 // 同名の実行中プロセスをチェックして終了または再起動
                 string processName = Path.GetFileNameWithoutExtension(exeName);
-                
+
                 // 再起動の場合は、既存プロセスを終了して完全に終了するまで待機
                 if (operation == ProcessOperation.RestartIfRunning)
                 {
@@ -468,7 +468,7 @@ namespace CocoroConsole.Utilities
                         Debug.WriteLine($"[ProcessHelper] {processName} は実行されていませんでした。新しいプロセスを起動します。");
                     }
                 }
-                
+
                 // 終了のみの場合は起動しない
                 if (operation == ProcessOperation.Terminate)
                 {
@@ -499,7 +499,7 @@ namespace CocoroConsole.Utilities
                 if (newProcess != null)
                 {
                     Debug.WriteLine($"[ProcessHelper] {processName} を正常に起動しました。PID: {newProcess.Id}");
-                    
+
                     // 起動後、少し待機してプロセスが安定するのを待つ
                     await Task.Delay(500);
                 }

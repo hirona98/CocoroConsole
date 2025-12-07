@@ -47,14 +47,34 @@ namespace CocoroConsole.Services
         event EventHandler<string>? ErrorOccurred;
 
         /// <summary>
+        /// ストリーミングチャットイベント（トークン逐次）
+        /// </summary>
+        event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
+
+        /// <summary>
         /// ステータス更新要求イベント
         /// </summary>
         event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
 
         /// <summary>
-        /// CocoroCoreMステータス変更イベント
+        /// CocoroGhostステータス変更イベント
         /// </summary>
-        event EventHandler<CocoroCoreMStatus>? StatusChanged;
+        event EventHandler<CocoroGhostStatus>? StatusChanged;
+
+        /// <summary>
+        /// ログストリームメッセージ受信イベント
+        /// </summary>
+        event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
+
+        /// <summary>
+        /// ログストリーム接続状態イベント
+        /// </summary>
+        event EventHandler<bool>? LogStreamConnectionChanged;
+
+        /// <summary>
+        /// ログストリームエラーイベント
+        /// </summary>
+        event EventHandler<string>? LogStreamError;
 
         /// <summary>
         /// APIサーバーが起動しているかどうか
@@ -62,9 +82,9 @@ namespace CocoroConsole.Services
         bool IsServerRunning { get; }
 
         /// <summary>
-        /// 現在のCocoroCoreMステータス
+        /// 現在のCocoroGhostステータス
         /// </summary>
-        CocoroCoreMStatus CurrentStatus { get; }
+        CocoroGhostStatus CurrentStatus { get; }
 
         /// <summary>
         /// APIサーバーを開始
@@ -98,7 +118,7 @@ namespace CocoroConsole.Services
         Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, List<string>? imageDataUrls = null);
 
         /// <summary>
-        /// デスクトップウォッチ画像をCocoroCoreMに送信
+        /// デスクトップウォッチ画像をCocoroGhostに送信
         /// </summary>
         /// <param name="screenshotData">スクリーンショットデータ</param>
         Task SendDesktopWatchToCoreAsync(ScreenshotData screenshotData);
@@ -129,6 +149,16 @@ namespace CocoroConsole.Services
         /// </summary>
         /// <param name="isUseTTS">TTS使用状態</param>
         Task SendTTSStateToShellAsync(bool isUseTTS);
+
+        /// <summary>
+        /// ログストリーム接続を開始
+        /// </summary>
+        Task StartLogStreamAsync();
+
+        /// <summary>
+        /// ログストリーム接続を停止
+        /// </summary>
+        Task StopLogStreamAsync();
 
 
 

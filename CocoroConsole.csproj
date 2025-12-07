@@ -32,9 +32,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Resource\DefaultSetting.json" />
-    <None Remove="Resource\Sample_CocoroAiMcp.json" />
     <None Remove="Resource\DefaultAnimationSettings.json" />
-    <None Remove="Resource\初音ミクSD_26db7924-4efb-50ff-927e-fbeffe9f3e1a.txt" />
     <None Remove="Resource\logo.png" />
   </ItemGroup>
   <ItemGroup>
@@ -43,25 +41,13 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <TargetPath>UserDataM\DefaultSetting.json</TargetPath>
-    </None>
-    <None Include="Resource\Sample_CocoroAiMcp.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <TargetPath>UserDataM\Sample_CocoroAiMcp.json</TargetPath>
+      <TargetPath>UserData\DefaultSetting.json</TargetPath>
     </None>
     <None Include="Resource\DefaultAnimationSettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <TargetPath>UserDataM\DefaultAnimationSettings.json</TargetPath>
-    </None>
-    <None Include="Resource\初音ミクSD_26db7924-4efb-50ff-927e-fbeffe9f3e1a.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <TargetPath>UserDataM\SystemPrompts\初音ミクSD_26db7924-4efb-50ff-927e-fbeffe9f3e1a.txt</TargetPath>
+      <TargetPath>UserData\DefaultAnimationSettings.json</TargetPath>
     </None>
     <!-- Silero VAD ONNXモデル（exe内に組み込み） -->
     <EmbeddedResource Include="Resource\silero_vad.onnx" />
@@ -70,7 +56,6 @@
     <EmbeddedResource Include="Resource\License.txt" />
 
     <!-- wwwrootをEmbeddedResourceとしてexe内に組み込み -->
-    <EmbeddedResource Include="wwwroot\**" />
   </ItemGroup>
 
   <ItemGroup>

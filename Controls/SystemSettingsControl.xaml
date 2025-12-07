@@ -357,76 +357,47 @@
                 </GroupBox>
 
                 <!-- 話者識別設定 -->
-                <local:SpeakerManagementControl x:Name="SpeakerManagementControl" Margin="0,0,20,0"/>
+                <local:SpeakerManagementControl x:Name="SpeakerManagementControl"
+                        Margin="0,0,20,20"/>
 
-                <!-- インターネット検索設定 -->
-                <GroupBox Header="インターネット検索設定（未実装）"
-                          Margin="0,0,20,20"
+                <!-- API認証設定 -->
+                <GroupBox Header="API認証設定"
+                          Margin="0,0,20,0"
                           Padding="10">
                     <StackPanel>
-                        <!-- インターネット検索設定 -->
-                        <CheckBox x:Name="EnableInternetRetrievalCheckBox"
-                                  Content="インターネット検索を有効にする"
-                                  Margin="0,10,0,0"
-                                  Foreground="#FF4873CF"
-                                  ToolTip="Enable internet search capability"
-                                  IsEnabled="False"/>
+                        <!-- 説明テキスト -->
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="#666666"
+                                   Margin="0,0,0,10">
+                            CocoroGhost APIとの通信に使用するBearer Tokenを設定します。
+                            <LineBreak/>
+                            cocoro_ghostのconfig.tomlで設定したtokenと同じ値を入力してください。
+                        </TextBlock>
 
-                        <!-- Google API Key -->
-                        <Grid Margin="0,10,0,0">
+                        <!-- Bearer Token設定 -->
+                        <Grid Margin="0,5,0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0"
-                                       Text="Google API Key:"
+                                       Text="Bearer Token:"
                                        VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="1"
-                                     x:Name="GoogleApiKeyTextBox"
-                                     Foreground="#FF0078D7"
-                                     Padding="2"
-                                     VerticalAlignment="Center"
-                                     Margin="10,0,0,0"/>
+                            <PasswordBox Grid.Column="1"
+                                         x:Name="BearerTokenPasswordBox"
+                                         Padding="2"
+                                         VerticalAlignment="Center"
+                                         MaxWidth="300"
+                                         HorizontalAlignment="Left"
+                                         PasswordChanged="BearerTokenPasswordBox_PasswordChanged"/>
                         </Grid>
 
-                        <!-- Google Search Engine ID -->
-                        <Grid Margin="0,10,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="130"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0"
-                                       Text="Search Engine ID:"
-                                       VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="1"
-                                     x:Name="GoogleSearchEngineIdTextBox"
-                                     Foreground="#FF0078D7"
-                                     Padding="2"
-                                     VerticalAlignment="Center"
-                                     Margin="10,0,0,0"/>
-                        </Grid>
-
-                        <!-- 最大検索結果数 -->
-                        <Grid Margin="0,10,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="130"/>
-                                <ColumnDefinition Width="60"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0"
-                                       Text="最大検索結果数:"
-                                       VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="1"
-                                     x:Name="InternetMaxResultsTextBox"
-                                     Foreground="#FF0078D7"
-                                     Padding="2"
-                                     VerticalAlignment="Center"
-                                     Margin="10,0,10,0"/>
-                            <TextBlock Grid.Column="2"
-                                       Text="（1-10）"
-                                       VerticalAlignment="Center"
-                                       Foreground="#666666"/>
-                        </Grid>
+                        <!-- 注意テキスト -->
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="#666666"
+                                   Margin="0,5,0,0">
+                            ※変更後はアプリケーションの再起動が必要です。
+                        </TextBlock>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

@@ -78,66 +78,12 @@ namespace CocoroConsole.Communication
         public string outputAudioChannels { get; set; } = "mono";
     }
 
-    /// <summary>
-    /// キャラクター設定クラス
-    /// </summary>
-    /// <summary>
-    /// マイグレーション前の旧CharacterSettings構造体
-    /// </summary>
-    public class CharacterSettingsV1
-    {
-        public bool isReadOnly { get; set; }
-        public string modelName { get; set; } = string.Empty;
-        public string vrmFilePath { get; set; } = string.Empty;
-        public bool isUseLLM { get; set; }
-        public string apiKey { get; set; } = string.Empty;
-        public string llmModel { get; set; } = "openai/gpt-4o-mini";
-        public string visionApiKey { get; set; } = string.Empty;
-        public string visionModel { get; set; } = "openai/gpt-4o-mini";
-        public string localLLMBaseUrl { get; set; } = string.Empty;
-        public string systemPromptFilePath { get; set; } = string.Empty;
-        public bool isUseTTS { get; set; }
-        public string ttsType { get; set; } = "voicevox";
-
-        // 旧設定フィールド
-        public string ttsEndpointURL { get; set; } = string.Empty;
-        public string ttsSperkerID { get; set; } = string.Empty;
-
-        // その他の設定は新しい構造体と同じ
-        public StyleBertVits2Config styleBertVits2Config { get; set; } = new StyleBertVits2Config();
-        public AivisCloudConfig aivisCloudConfig { get; set; } = new AivisCloudConfig();
-        public bool isEnableMemory { get; set; } = true;
-        public string memoryId { get; set; } = "";
-        public string embeddedApiKey { get; set; } = string.Empty;
-        public string embeddedModel { get; set; } = "openai/text-embedding-3-large";
-        public string embeddedDimension { get; set; } = "3072";
-        public bool isUseSTT { get; set; } = false;
-        public string sttEngine { get; set; } = "amivoice";
-        public string sttWakeWord { get; set; } = string.Empty;
-        public string sttApiKey { get; set; } = string.Empty;
-        public string sttLanguage { get; set; } = "ja";
-        public bool isConvertMToon { get; set; } = false;
-        public bool isEnableShadowOff { get; set; } = true;
-        public string shadowOffMesh { get; set; } = "Face, U_Char_1";
-    }
-
     public class CharacterSettings
     {
         public bool isReadOnly { get; set; }
         public string modelName { get; set; } = string.Empty;
         public string vrmFilePath { get; set; } = string.Empty;
         public bool isUseLLM { get; set; }
-        public string apiKey { get; set; } = string.Empty;
-        public string llmModel { get; set; } = "openai/gpt-4o-mini";
-        public string reasoning_effort { get; set; } = string.Empty; // LLMの推論レベル
-        public int max_turns_window { get; set; } = 100; // 会話履歴送信件数
-        public int max_tokens { get; set; } = 8192; // LLMが生成できる最大トークン数
-        public int max_tokens_vision { get; set; } = 4096; // 画像分析時のLLMが生成できる最大トークン数
-        // 画像分析用設定
-        public string visionApiKey { get; set; } = string.Empty; // 画像分析用APIキー（空ならapiKeyを使用）
-        public string visionModel { get; set; } = "openai/gpt-4o-mini"; // 画像分析用モデル
-        public string localLLMBaseUrl { get; set; } = string.Empty; // ローカルLLMのベースURL
-        public string systemPromptFilePath { get; set; } = string.Empty;
         public bool isUseTTS { get; set; }
 
         public string ttsType { get; set; } = "voicevox"; // "voicevox" or "style-bert-vits2" or "aivis-cloud"
@@ -148,11 +94,6 @@ namespace CocoroConsole.Communication
         public AivisCloudConfig aivisCloudConfig { get; set; } = new AivisCloudConfig();
 
         public bool isEnableMemory { get; set; } = true; // メモリ機能の有効/無効
-        public string memoryId { get; set; } = "";
-        public string embeddedApiKey { get; set; } = string.Empty; // 埋め込みモデル用APIキー
-        public string embeddedModel { get; set; } = "openai/text-embedding-3-large"; // 埋め込みモデル名
-        public string embeddedDimension { get; set; } = "3072"; // 埋め込みモデルの次元数
-        public string embeddedBaseUrl { get; set; } = string.Empty; // 埋め込みモデル専用ベースURL
         public bool isUseSTT { get; set; } = false; // STT（音声認識）機能の有効/無効
         public string sttEngine { get; set; } = "amivoice"; // STTエンジン ("amivoice" | "openai")
         public string sttWakeWord { get; set; } = string.Empty; // STT起動ワード
@@ -175,16 +116,6 @@ namespace CocoroConsole.Communication
                 modelName = this.modelName,
                 vrmFilePath = this.vrmFilePath,
                 isUseLLM = this.isUseLLM,
-                apiKey = this.apiKey,
-                llmModel = this.llmModel,
-                reasoning_effort = this.reasoning_effort,
-                max_turns_window = this.max_turns_window,
-                max_tokens = this.max_tokens,
-                max_tokens_vision = this.max_tokens_vision,
-                visionApiKey = this.visionApiKey,
-                visionModel = this.visionModel,
-                localLLMBaseUrl = this.localLLMBaseUrl,
-                systemPromptFilePath = this.systemPromptFilePath,
                 isUseTTS = this.isUseTTS,
                 ttsType = this.ttsType,
 
@@ -248,11 +179,6 @@ namespace CocoroConsole.Communication
                 },
 
                 isEnableMemory = this.isEnableMemory,
-                memoryId = this.memoryId,
-                embeddedApiKey = this.embeddedApiKey,
-                embeddedModel = this.embeddedModel,
-                embeddedDimension = this.embeddedDimension,
-                embeddedBaseUrl = this.embeddedBaseUrl,
                 isUseSTT = this.isUseSTT,
                 sttEngine = this.sttEngine,
                 sttWakeWord = this.sttWakeWord,
@@ -347,16 +273,10 @@ namespace CocoroConsole.Communication
     {
         public int CocoroConsolePort { get; set; } = 55600;
         public int cocoroCorePort { get; set; } = 55601;
-        public int cocoroMemoryPort { get; set; } = 55602;
-        public int cocoroMemoryDBPort { get; set; } = 55603;
-        public int cocoroMemoryWebPort { get; set; } = 55606;
         public int cocoroShellPort { get; set; } = 55605;
         public int notificationApiPort { get; set; } = 55604;
-        public int cocoroWebPort { get; set; } = 55607;
         public bool isEnableNotificationApi { get; set; } = false;
         public bool isEnableReminder { get; set; } = true;
-        public bool isEnableMcp { get; set; } = false;
-        public bool isEnableWebService { get; set; } = false;
         public bool isRestoreWindowPosition { get; set; } = false;
         public bool isTopmost { get; set; }
         public bool isEscapeCursor { get; set; }
@@ -378,11 +298,6 @@ namespace CocoroConsole.Communication
         public MicrophoneSettings microphoneSettings { get; set; } = new MicrophoneSettings();
         public MessageWindowSettings messageWindowSettings { get; set; } = new MessageWindowSettings();
         public ScheduledCommandSettings scheduledCommandSettings { get; set; } = new ScheduledCommandSettings();
-        public bool enable_pro_mode { get; set; } = false;
-        public bool enable_internet_retrieval { get; set; } = true;
-        public string googleApiKey { get; set; } = "GOOGLE_API_KEY";
-        public string googleSearchEngineId { get; set; } = "GOOGLE_SERCH_ENGINE_ID";
-        public int internetMaxResults { get; set; } = 5;
 
         public int currentCharacterIndex { get; set; }
         public List<CharacterSettings> characterList { get; set; } = new List<CharacterSettings>();
@@ -397,16 +312,10 @@ namespace CocoroConsole.Communication
             {
                 CocoroConsolePort = this.CocoroConsolePort,
                 cocoroCorePort = this.cocoroCorePort,
-                cocoroMemoryPort = this.cocoroMemoryPort,
-                cocoroMemoryDBPort = this.cocoroMemoryDBPort,
-                cocoroMemoryWebPort = this.cocoroMemoryWebPort,
                 cocoroShellPort = this.cocoroShellPort,
                 notificationApiPort = this.notificationApiPort,
-                cocoroWebPort = this.cocoroWebPort,
                 isEnableNotificationApi = this.isEnableNotificationApi,
                 isEnableReminder = this.isEnableReminder,
-                isEnableMcp = this.isEnableMcp,
-                isEnableWebService = this.isEnableWebService,
                 isRestoreWindowPosition = this.isRestoreWindowPosition,
                 isTopmost = this.isTopmost,
                 isEscapeCursor = this.isEscapeCursor,
@@ -423,11 +332,6 @@ namespace CocoroConsole.Communication
                 windowSize = this.windowSize,
                 windowPositionX = this.windowPositionX,
                 windowPositionY = this.windowPositionY,
-                enable_pro_mode = this.enable_pro_mode,
-                enable_internet_retrieval = this.enable_internet_retrieval,
-                googleApiKey = this.googleApiKey,
-                googleSearchEngineId = this.googleSearchEngineId,
-                internetMaxResults = this.internetMaxResults,
                 currentCharacterIndex = this.currentCharacterIndex,
 
                 // 複雑オブジェクトのディープコピー
@@ -639,36 +543,6 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// MCPステータス情報
-    /// </summary>
-    public class McpStatus
-    {
-        public int total_servers { get; set; }
-        public int connected_servers { get; set; }
-        public int total_tools { get; set; }
-        public Dictionary<string, McpServerInfo>? servers { get; set; }
-        public string? error { get; set; }
-    }
-
-    /// <summary>
-    /// MCPサーバー情報
-    /// </summary>
-    public class McpServerInfo
-    {
-        public bool connected { get; set; }
-        public int tool_count { get; set; }
-        public string connection_type { get; set; } = string.Empty;
-    }
-
-    /// <summary>
-    /// MCPツール登録ログレスポンス
-    /// </summary>
-    public class McpToolRegistrationResponse : StandardResponse
-    {
-        public List<string>? logs { get; set; }
-    }
-
-    /// <summary>
     /// ログメッセージ
     /// </summary>
     public class LogMessage
@@ -681,11 +555,11 @@ namespace CocoroConsole.Communication
 
 
     // ========================================
-    // CocoroCoreM チャットAPI関連モデル
+    // CocoroGhost チャットAPI関連モデル
     // ========================================
 
     /// <summary>
-    /// CocoroCoreM 画像データ
+    /// CocoroGhost 画像データ
     /// </summary>
     public class ImageData
     {
@@ -693,7 +567,7 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// CocoroCoreM 通知データ
+    /// CocoroGhost 通知データ
     /// </summary>
     public class NotificationData
     {
@@ -702,7 +576,7 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// CocoroCoreM 会話履歴メッセージ
+    /// CocoroGhost 会話履歴メッセージ
     /// </summary>
     public class HistoryMessage
     {
@@ -712,9 +586,9 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// CocoroCoreM チャットAPIリクエスト
+    /// CocoroGhost チャットAPIリクエスト
     /// </summary>
-    public class CocoroCoreMChatRequest
+    public class CocoroGhostChatRequest
     {
         public string query { get; set; } = string.Empty; // ユーザークエリ（必須）
         public string chat_type { get; set; } = "text"; // "text" | "text_image" | "notification" | "desktop_watch"
