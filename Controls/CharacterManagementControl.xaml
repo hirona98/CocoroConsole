@@ -3,9 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             mc:Ignorable="d"
-             d:DesignHeight="1000"
-             d:DesignWidth="2000">
+             mc:Ignorable="d">
 
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -104,6 +102,12 @@
                                     ToolTip="Open..."
                                     Margin="5,0,0,0"/>
                         </Grid>
+                        <!-- VRMファイル説明テキスト -->
+                        <TextBlock Foreground="#666666"
+                                   TextWrapping="Wrap"
+                                   Margin="130,0,0,0">
+                            何も指定しない場合はVRM表示機能が無効になります。
+                        </TextBlock>
                     </StackPanel>
                 </GroupBox>
 
@@ -114,15 +118,13 @@
                     <StackPanel>
                         <!-- MToon変換設定 -->
                         <CheckBox x:Name="ConvertMToonCheckBox"
-                                  Content="UnlitをMToonに変換する（正常に表示されないときに試してください）"
-                                  Foreground="#FF4873CF"
-                                  ToolTip="Convert Unlit to MToon"/>
+                                  Content="UnlitをMToonに変換する（正常に表示されないときに有効にしてみてください）"
+                                  Foreground="#FF4873CF"/>
 
                         <!-- 影オフメッシュ設定 -->
                         <CheckBox x:Name="EnableShadowOffCheckBox"
                                   Content="指定したメッシュに影を落とさない"
                                   Foreground="#FF4873CF"
-                                  ToolTip="Enable shadow off mesh"
                                   Checked="EnableShadowOffCheckBox_Checked"
                                   Unchecked="EnableShadowOffCheckBox_Unchecked"
                                   Margin="0,10,0,0"/>
@@ -146,8 +148,8 @@
                         <!-- 影設定説明テキスト -->
                         <TextBlock Foreground="#666666"
                                    TextWrapping="Wrap"
-                                   Margin="100,0,0,10">
-                            顔など特定のメッシュに影を落としたくない場合に使用します
+                                   Margin="130,0,0,10">
+                            顔など特定のメッシュに影を落としたくない場合に指定してください。
                         </TextBlock>
                     </StackPanel>
                 </GroupBox>
@@ -164,7 +166,7 @@
                         <TextBlock Foreground="#666666"
                                    TextWrapping="Wrap"
                                    Margin="0,10,0,0">
-                        LLMの詳細設定とプリセット管理は「LLMプリセット」「キャラプリセット」タブで行います。
+                        LLMの詳細設定とプリセット管理は「LLM」と「Embedding」タブで行ってください。
                         </TextBlock>
                     </StackPanel>
                 </GroupBox>
@@ -878,9 +880,9 @@
                         <TextBlock Foreground="#666666"
                                    TextWrapping="Wrap"
                                    Margin="130,0,0,0">
-                            音声認識を開始するキーワードです。複数設定する場合はカンマ区切りで入力してください
+                            音声認識を開始するキーワードです。空欄の場合は常に有効です。
                             <LineBreak/>
-                            （例: こんにちは, ハロー, ミク）。空欄の場合は常に音声認識が有効になります。
+                            複数設定する場合はカンマ区切りにしてください。（例: こんにちは, ハロー, ミク）
                         </TextBlock>
 
                         <!-- STT APIキーの設定 -->
