@@ -52,13 +52,12 @@ namespace CocoroConsole.Services
         {
             _httpClient = new HttpClient
             {
-                Timeout = TimeSpan.FromMilliseconds(800) // ポーリング間隔より短いタイムアウト
+                Timeout = TimeSpan.FromMilliseconds(800)
             };
             _healthEndpoint = $"{baseUrl.TrimEnd('/')}/api/health";
 
-            // 1秒間隔でポーリングを開始（シンプルなブロッキング実装）
+            // 1秒間隔でポーリング開始（起動待ち用）
             _pollingTimer = new Timer(_ => PollHealthStatus(), null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
-
         }
 
         /// <summary>
@@ -78,26 +77,39 @@ namespace CocoroConsole.Services
 
                     if (healthCheck != null && healthCheck.status == "healthy")
                     {
-                        // 接続成功時は現在の処理状態を維持（Disconnected以外）
                         if (_currentStatus == CocoroGhostStatus.WaitingForStartup)
                         {
                             UpdateStatus(CocoroGhostStatus.Normal);
+                            // 起動完了したら10秒間隔に変更
+                            _pollingTimer.Change(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
                         }
                     }
                     else
                     {
-                        UpdateStatus(CocoroGhostStatus.WaitingForStartup);
+                        if (_currentStatus != CocoroGhostStatus.WaitingForStartup)
+                        {
+                            UpdateStatus(CocoroGhostStatus.WaitingForStartup);
+                            // 起動待ちに戻ったら1秒間隔に変更
+                            _pollingTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
+                        }
                     }
                 }
                 else
                 {
-                    UpdateStatus(CocoroGhostStatus.WaitingForStartup);
+                    if (_currentStatus != CocoroGhostStatus.WaitingForStartup)
+                    {
+                        UpdateStatus(CocoroGhostStatus.WaitingForStartup);
+                        _pollingTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
+                    }
                 }
             }
             catch (Exception)
             {
-                // 接続エラー時はDisconnected状態に
-                UpdateStatus(CocoroGhostStatus.WaitingForStartup);
+                if (_currentStatus != CocoroGhostStatus.WaitingForStartup)
+                {
+                    UpdateStatus(CocoroGhostStatus.WaitingForStartup);
+                    _pollingTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
+                }
             }
         }
 
@@ -146,7 +158,6 @@ namespace CocoroConsole.Services
 
             _pollingTimer?.Dispose();
             _httpClient?.Dispose();
-
         }
     }
 }
