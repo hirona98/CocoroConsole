@@ -3,6 +3,7 @@
   "cocoroCorePort": 55601,
   "cocoroShellPort": 55605,
   "notificationApiPort": 55604,
+  "cocoroGhostBearerToken": "cocoro_token",
   "isEnableNotificationApi": false,
   "isEnableReminder": true,
   "isRestoreWindowPosition": false,

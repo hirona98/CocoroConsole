@@ -38,6 +38,9 @@ namespace CocoroConsole.Services
         // memory_idキャッシュ
         private string _cachedMemoryId = "memory";
 
+        // 起動時の設定取得済みフラグ
+        private bool _initialSettingsFetched = false;
+
         public event EventHandler<ChatRequest>? ChatMessageReceived;
         public event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
         public event Action<ChatMessagePayload, List<System.Windows.Media.Imaging.BitmapSource>?>? NotificationMessageReceived;
@@ -102,7 +105,7 @@ namespace CocoroConsole.Services
 
             // ステータスポーリングサービスの初期化
             _statusPollingService = new StatusPollingService($"http://127.0.0.1:{_appSettings.CocoroGhostPort}");
-            _statusPollingService.StatusChanged += (sender, status) => StatusChanged?.Invoke(this, status);
+            _statusPollingService.StatusChanged += OnStatusPollingServiceStatusChanged;
 
             // AppSettingsの変更イベントを購読
             AppSettings.SettingsSaved += OnSettingsSaved;
@@ -177,6 +180,65 @@ namespace CocoroConsole.Services
         private void OnSettingsSaved(object? sender, EventArgs e)
         {
             RefreshSettingsCache();
+        }
+
+
+        /// <summary>
+        /// StatusPollingServiceのステータス変更ハンドラ
+        /// </summary>
+        private void OnStatusPollingServiceStatusChanged(object? sender, CocoroGhostStatus status)
+        {
+            // 外部イベントに転送
+            StatusChanged?.Invoke(this, status);
+
+            // 初回Normal時にcocoro_ghostから設定を取得
+            if (!_initialSettingsFetched && status == CocoroGhostStatus.Normal)
+            {
+                _initialSettingsFetched = true;
+                _ = FetchAndApplySettingsFromCocoroGhostAsync();
+            }
+        }
+
+        /// <summary>
+        /// cocoro_ghostから設定を取得してAppSettingsに反映
+        /// </summary>
+        public async Task FetchAndApplySettingsFromCocoroGhostAsync()
+        {
+            if (_cocoroGhostApiClient == null)
+            {
+                Debug.WriteLine("[CommunicationService] CocoroGhostApiClientが初期化されていないため、設定取得をスキップ");
+                return;
+            }
+
+            try
+            {
+                Debug.WriteLine("[CommunicationService] cocoro_ghostから設定を取得中...");
+                var settings = await _cocoroGhostApiClient.GetSettingsAsync();
+
+                // AppSettingsに反映
+                ApplyCocoroGhostSettingsToAppSettings(settings);
+
+                Debug.WriteLine("[CommunicationService] cocoro_ghostから設定を取得・反映しました");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CommunicationService] cocoro_ghostから設定取得に失敗: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// cocoro_ghostから取得した設定をAppSettingsに反映
+        /// </summary>
+        private void ApplyCocoroGhostSettingsToAppSettings(Models.CocoroGhostApi.CocoroGhostSettings settings)
+        {
+            // ExcludeKeywordsをScreenshotSettings.excludePatternsに反映
+            // （LLM/Embedding設定はcocoro_ghost側で管理されているため、AppSettingsには保存しない）
+            AppSettings.Instance.ApplyCocoroGhostSettings(settings);
+
+            // 設定キャッシュを更新
+            RefreshSettingsCache();
+
+            Debug.WriteLine("[CommunicationService] AppSettingsにcocoro_ghost設定を反映完了");
         }
 
         /// <summary>

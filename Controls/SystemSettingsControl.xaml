@@ -358,7 +358,48 @@
 
                 <!-- 話者識別設定 -->
                 <local:SpeakerManagementControl x:Name="SpeakerManagementControl"
-                        Margin="0,0,20,0"/>
+                        Margin="0,0,20,20"/>
+
+                <!-- API認証設定 -->
+                <GroupBox Header="API認証設定"
+                          Margin="0,0,20,0"
+                          Padding="10">
+                    <StackPanel>
+                        <!-- 説明テキスト -->
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="#666666"
+                                   Margin="0,0,0,10">
+                            CocoroGhost APIとの通信に使用するBearer Tokenを設定します。
+                            <LineBreak/>
+                            cocoro_ghostのconfig.tomlで設定したtokenと同じ値を入力してください。
+                        </TextBlock>
+
+                        <!-- Bearer Token設定 -->
+                        <Grid Margin="0,5,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="Bearer Token:"
+                                       VerticalAlignment="Center"/>
+                            <PasswordBox Grid.Column="1"
+                                         x:Name="BearerTokenPasswordBox"
+                                         Padding="2"
+                                         VerticalAlignment="Center"
+                                         MaxWidth="300"
+                                         HorizontalAlignment="Left"
+                                         PasswordChanged="BearerTokenPasswordBox_PasswordChanged"/>
+                        </Grid>
+
+                        <!-- 注意テキスト -->
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="#666666"
+                                   Margin="0,5,0,0">
+                            ※変更後はアプリケーションの再起動が必要です。
+                        </TextBlock>
+                    </StackPanel>
+                </GroupBox>
             </StackPanel>
         </ScrollViewer>
     </Grid>

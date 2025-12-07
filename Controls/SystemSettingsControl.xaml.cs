@@ -98,6 +98,9 @@ namespace CocoroConsole.Controls
                 var speakerService = new SpeakerRecognitionService(dbPath, appSettings.MicrophoneSettings.speakerRecognitionThreshold);
                 SpeakerManagementControl.Initialize(speakerService, appSettings.MicrophoneSettings.speakerRecognitionThreshold);
 
+                // Bearer Token設定
+                BearerTokenPasswordBox.Password = appSettings.CocoroGhostBearerToken ?? string.Empty;
+
                 // リマインダーUI初期化（スペース区切り形式）
                 ReminderDateTimeTextBox.Text = DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:mm");
 
@@ -507,6 +510,37 @@ namespace CocoroConsole.Controls
             {
                 return (null, input);
             }
+        }
+
+        #endregion
+
+        #region Bearer Token関連
+
+        /// <summary>
+        /// Bearer Token変更イベントハンドラー
+        /// </summary>
+        private void BearerTokenPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitialized)
+                return;
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// Bearer Tokenを取得
+        /// </summary>
+        public string GetBearerToken()
+        {
+            return BearerTokenPasswordBox.Password;
+        }
+
+        /// <summary>
+        /// Bearer Tokenを設定
+        /// </summary>
+        public void SetBearerToken(string token)
+        {
+            BearerTokenPasswordBox.Password = token ?? string.Empty;
         }
 
         #endregion

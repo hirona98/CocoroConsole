@@ -76,8 +76,9 @@ namespace CocoroConsole
                 // 通信サービスを初期化
                 InitializeCommunicationService();
 
-                // cocoro_ghost API設定を同期（利用可能な場合）
-                SyncSettingsFromCocoroGhost().GetAwaiter().GetResult();
+                // cocoro_ghost API設定を同期（非同期で実行、完了を待たない）
+                // CommunicationServiceでも初回Normal時に設定取得が行われる
+                _ = SyncSettingsFromCocoroGhost();
 
                 // スクリーンショットサービスを初期化
                 InitializeScreenshotService();

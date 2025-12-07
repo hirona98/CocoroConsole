@@ -262,6 +262,9 @@ namespace CocoroConsole.Controls
             dict["ScheduledCommand"] = scheduledCommandSettings.Command;
             dict["ScheduledCommandInterval"] = scheduledCommandSettings.IntervalMinutes;
 
+            // Bearer Token
+            dict["BearerToken"] = SystemSettingsControl.GetBearerToken();
+
             return dict;
         }
 
@@ -675,6 +678,9 @@ namespace CocoroConsole.Controls
             appSettings.ScheduledCommandSettings.Enabled = (bool)snapshot["ScheduledCommandEnabled"];
             appSettings.ScheduledCommandSettings.Command = (string)snapshot["ScheduledCommand"];
             appSettings.ScheduledCommandSettings.IntervalMinutes = (int)snapshot["ScheduledCommandInterval"];
+
+            // Bearer Token
+            appSettings.CocoroGhostBearerToken = (string)snapshot["BearerToken"];
         }
 
         /// <summary>
