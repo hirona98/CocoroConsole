@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -56,7 +57,9 @@ namespace CocoroConsole.Services
         {
             ThrowIfDisposed();
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, BuildUrl("/api/chat"));
+            var chatUrl = BuildChatRequestUrl(requestPayload);
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, chatUrl);
             request.Headers.Accept.Clear();
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
             request.Content = CreateJsonContent(requestPayload);
@@ -207,6 +210,25 @@ namespace CocoroConsole.Services
         private string BuildUrl(string path)
         {
             return $"{_baseUrl}/{path.TrimStart('/')}";
+        }
+
+        private string BuildChatRequestUrl(ChatStreamRequest payload)
+        {
+            var queryParts = new List<string>
+            {
+                $"request={Uri.EscapeDataString(payload.Text ?? string.Empty)}"
+            };
+
+            var userId = string.IsNullOrWhiteSpace(payload.UserId) ? "default" : payload.UserId;
+            queryParts.Add($"user_id={Uri.EscapeDataString(userId)}");
+
+            if (!string.IsNullOrWhiteSpace(payload.ContextHint))
+            {
+                queryParts.Add($"context_hint={Uri.EscapeDataString(payload.ContextHint)}");
+            }
+
+            var queryString = string.Join("&", queryParts);
+            return BuildUrl($"/api/chat?{queryString}");
         }
 
         public void Dispose()
