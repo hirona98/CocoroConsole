@@ -21,7 +21,6 @@ namespace CocoroConsole.Services
         private readonly CocoroConsoleApiServer _apiServer;
         private readonly CocoroShellClient _shellClient;
         private readonly CocoroCoreClient _coreClient;
-        private readonly WebSocketChatClient _webSocketClient;
         private readonly IAppSettings _appSettings;
         private readonly NotificationApiServer? _notificationApiServer;
         private readonly StatusPollingService _statusPollingService;
@@ -84,12 +83,6 @@ namespace CocoroConsole.Services
 
             // CocoroCoreクライアントの初期化
             _coreClient = new CocoroCoreClient(_appSettings.CocoroGhostPort);
-
-            // WebSocketクライアントの初期化
-            _webSocketClient = new WebSocketChatClient(_appSettings.CocoroGhostPort, $"dock_{DateTime.Now:yyyyMMddHHmmssfff}");
-            _webSocketClient.MessageReceived += OnWebSocketMessageReceived;
-            _webSocketClient.ConnectionStateChanged += OnWebSocketConnectionStateChanged;
-            _webSocketClient.ErrorOccurred += OnWebSocketErrorOccurred;
 
             // 通知APIサーバーの初期化（有効な場合のみ）
             if (_appSettings.IsEnableNotificationApi)
@@ -256,7 +249,7 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// CocoroGhostにWebSocketチャットメッセージを送信
+        /// CocoroGhostにチャットメッセージを送信（HTTP/SSE）
         /// </summary>
         /// <param name="message">送信メッセージ</param>
         /// <param name="characterName">キャラクター名（オプション）</param>
@@ -276,13 +269,13 @@ namespace CocoroConsole.Services
         /// <param name="imageDataUrls">画像データURLリスト（オプション）</param>
         public async Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, List<string>? imageDataUrls = null)
         {
-            if (_cocoroGhostApiClient != null)
+            if (_cocoroGhostApiClient == null)
             {
-                await SendChatViaHttpStreamingAsync(message, imageDataUrls);
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, "cocoro_ghostのBearerトークンが設定されていません"));
                 return;
             }
 
-            await SendChatViaWebSocketAsync(message, imageDataUrls);
+            await SendChatViaHttpStreamingAsync(message, imageDataUrls);
         }
 
         private async Task SendChatViaHttpStreamingAsync(string message, List<string>? imageDataUrls)
@@ -401,103 +394,41 @@ namespace CocoroConsole.Services
             }
         }
 
-        private async Task SendChatViaWebSocketAsync(string message, List<string>? imageDataUrls)
-        {
-            try
-            {
-                // 現在のキャラクター設定を取得
-                var currentCharacter = GetStoredCharacterSetting();
-
-                // LLMが無効の場合は処理しない
-                if (currentCharacter == null || !currentCharacter.isUseLLM)
-                {
-                    Debug.WriteLine("チャット送信: LLMが無効のためスキップ");
-                    return;
-                }
-
-                // セッションIDを生成または既存のものを使用
-                if (string.IsNullOrEmpty(_currentSessionId))
-                {
-                    _currentSessionId = $"dock_{DateTime.Now:yyyyMMddHHmmssfff}";
-                }
-
-                // WebSocket接続確認
-                if (!_webSocketClient.IsConnected)
-                {
-                    Debug.WriteLine("[WebSocket] 接続を開始します...");
-                    var connected = await _webSocketClient.ConnectAsync();
-                    if (!connected)
-                    {
-                        throw new Exception("WebSocket接続に失敗しました");
-                    }
-                }
-
-                // 画像データを変換
-                List<ImageData>? images = null;
-                if (imageDataUrls != null && imageDataUrls.Count > 0)
-                {
-                    images = imageDataUrls.Select(url => new ImageData { data = url }).ToList();
-                }
-
-                // チャットタイプを決定
-                var chatType = (images != null && images.Count > 0) ? "text_image" : "text";
-
-                // WebSocketチャットリクエストを作成
-                var request = new WebSocketChatRequest
-                {
-                    query = message,
-                    chat_type = chatType,
-                    images = images,
-                    internet_search = false // WebSocketバージョンでは無効化
-                };
-
-                // 画像がある場合は画像処理中、そうでなければメッセージ処理中に設定
-                var processingStatus = (images != null && images.Count > 0)
-                    ? CocoroGhostStatus.ProcessingImage
-                    : CocoroGhostStatus.ProcessingMessage;
-                _statusPollingService.SetProcessingStatus(processingStatus);
-
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "WebSocketチャット開始"));
-
-
-                // WebSocketでチャットを送信
-                var success = await _webSocketClient.SendChatAsync(_currentSessionId, request);
-                if (!success)
-                {
-                    throw new Exception("WebSocketメッセージ送信に失敗しました");
-                }
-
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"WebSocketチャット送信エラー: {ex.Message}");
-                // エラー時は正常状態に戻す
-                _statusPollingService.SetNormalStatus();
-                // ステータスバーにエラー表示
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"WebSocket通信エラー: {ex.Message}"));
-            }
-        }
-
         /// <summary>
         /// デスクトップウォッチ画像をCocoroGhostに送信
         /// </summary>
         /// <param name="screenshotData">スクリーンショットデータ</param>
         public async Task SendDesktopWatchToCoreAsync(ScreenshotData screenshotData)
         {
-            if (!_webSocketClient.IsConnected)
+            if (_cocoroGhostApiClient == null)
             {
-                await _webSocketClient.ConnectAsync();
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, "cocoro_ghostのBearerトークンが設定されていません"));
+                return;
             }
 
-            var imageDataUrl = $"data:image/png;base64,{screenshotData.ImageBase64}";
-            var request = new WebSocketChatRequest
+            try
             {
-                query = "",
-                chat_type = "desktop_watch",
-                images = new List<ImageData> { new ImageData { data = imageDataUrl } }
-            };
+                var request = new CaptureRequest
+                {
+                    CaptureType = "desktop",
+                    ImageBase64 = screenshotData.ImageBase64,
+                    ContextText = screenshotData.WindowTitle
+                };
 
-            await _webSocketClient.SendChatAsync("", request);
+                _statusPollingService.SetProcessingStatus(CocoroGhostStatus.ProcessingImage);
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "デスクトップウォッチ送信中"));
+
+                await _cocoroGhostApiClient.SendCaptureAsync(request);
+
+                _statusPollingService.SetNormalStatus();
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "デスクトップウォッチ送信完了"));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"デスクトップウォッチ送信エラー: {ex.Message}");
+                _statusPollingService.SetNormalStatus();
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"デスクトップウォッチ送信エラー: {ex.Message}"));
+            }
         }
 
 
@@ -535,6 +466,12 @@ namespace CocoroConsole.Services
         {
             try
             {
+                if (_cocoroGhostApiClient == null)
+                {
+                    StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, "cocoro_ghostのBearerトークンが設定されていません"));
+                    return;
+                }
+
                 // 現在のキャラクター設定を取得
                 var currentCharacter = GetStoredCharacterSetting();
 
@@ -554,7 +491,27 @@ namespace CocoroConsole.Services
                         .Select(url => new ImageData { data = url })
                         .ToList();
                 }
-                await SendNotificationToCoreAsync(notification.from, notification.message, images);
+                string? firstImageBase64 = null;
+                if (images != null && images.Count > 0)
+                {
+                    firstImageBase64 = ExtractBase64(images.First().data);
+                }
+
+                var request = new NotificationRequest
+                {
+                    SourceSystem = notification.from,
+                    Title = notification.from,
+                    Body = notification.message,
+                    ImageBase64 = firstImageBase64
+                };
+
+                _statusPollingService.SetProcessingStatus(CocoroGhostStatus.ProcessingMessage);
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "通知処理開始"));
+
+                await _cocoroGhostApiClient.SendNotificationAsync(request);
+
+                _statusPollingService.SetNormalStatus();
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "通知処理完了"));
             }
             catch (Exception ex)
             {
@@ -567,6 +524,12 @@ namespace CocoroConsole.Services
         {
             try
             {
+                if (_cocoroGhostApiClient == null)
+                {
+                    StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, "cocoro_ghostのBearerトークンが設定されていません"));
+                    return;
+                }
+
                 var currentCharacter = GetStoredCharacterSetting();
 
                 if (currentCharacter == null || !currentCharacter.isUseLLM)
@@ -584,109 +547,31 @@ namespace CocoroConsole.Services
                         .ToList();
                 }
 
-                await SendDirectRequestToCoreAsync(request.message, images);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"DirectRequest処理エラー: {ex.Message}");
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"DirectRequest処理エラー: {ex.Message}"));
-            }
-        }
-
-        /// <summary>
-        /// CocoroGhostに通知メッセージを送信
-        /// </summary>
-        /// <param name="originalSource">通知送信元</param>
-        /// <param name="originalMessage">元の通知メッセージ</param>
-        /// <param name="images">画像データリスト（オプション）</param>
-        public async Task SendNotificationToCoreAsync(string originalSource, string originalMessage, List<ImageData>? images = null)
-        {
-            try
-            {
-                // セッションIDを生成または既存のものを使用
-                if (string.IsNullOrEmpty(_currentSessionId))
+                string? firstImageBase64 = null;
+                if (images != null && images.Count > 0)
                 {
-                    _currentSessionId = $"dock_{DateTime.Now:yyyyMMddHHmmssfff}";
+                    firstImageBase64 = ExtractBase64(images.First().data);
                 }
 
-                // WebSocket接続確認
-                if (!_webSocketClient.IsConnected)
+                var metaRequest = new MetaRequest
                 {
-                    Debug.WriteLine("[WebSocket] 通知送信のため接続を開始します...");
-                    var connected = await _webSocketClient.ConnectAsync();
-                    if (!connected)
-                    {
-                        throw new Exception("WebSocket接続に失敗しました");
-                    }
-                }
-
-                // 通知専用のWebSocketチャットリクエストを作成
-                var request = new WebSocketChatRequest
-                {
-                    query = originalMessage, // 元のメッセージをそのまま送信
-                    chat_type = "notification", // 通知タイプ
-                    images = images,
-                    notification = new NotificationData
-                    {
-                        original_source = originalSource,
-                        original_message = originalMessage
-                    },
-                    internet_search = false // 通知では無効化
-                };
-
-                // 処理中ステータスを設定
-                _statusPollingService.SetProcessingStatus(CocoroGhostStatus.ProcessingMessage);
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "通知処理開始"));
-
-                // WebSocketメッセージを送信
-                await _webSocketClient.SendChatAsync(_currentSessionId, request);
-
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"通知送信エラー: {ex.Message}");
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"通知送信エラー: {ex.Message}"));
-                throw;
-            }
-        }
-
-        private async Task SendDirectRequestToCoreAsync(string prompt, List<ImageData>? images = null)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(_currentSessionId))
-                {
-                    _currentSessionId = $"dock_{DateTime.Now:yyyyMMddHHmmssfff}";
-                }
-
-                if (!_webSocketClient.IsConnected)
-                {
-                    Debug.WriteLine("[WebSocket] DirectRequest送信のため接続を開始します...");
-                    var connected = await _webSocketClient.ConnectAsync();
-                    if (!connected)
-                    {
-                        throw new Exception("WebSocket接続に失敗しました");
-                    }
-                }
-
-                var request = new WebSocketChatRequest
-                {
-                    query = prompt,
-                    chat_type = "direct",
-                    images = images,
-                    internet_search = false
+                    Instruction = $"Direct request from {request.from}",
+                    PayloadText = request.message,
+                    ImageBase64 = firstImageBase64
                 };
 
                 _statusPollingService.SetProcessingStatus(CocoroGhostStatus.ProcessingMessage);
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "DirectRequest処理開始"));
 
-                await _webSocketClient.SendChatAsync(_currentSessionId, request);
+                await _cocoroGhostApiClient.SendMetaRequestAsync(metaRequest);
+
+                _statusPollingService.SetNormalStatus();
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "DirectRequest処理完了"));
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"DirectRequest送信エラー: {ex.Message}");
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"DirectRequest送信エラー: {ex.Message}"));
-                throw;
+                Debug.WriteLine($"DirectRequest処理エラー: {ex.Message}");
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"DirectRequest処理エラー: {ex.Message}"));
             }
         }
 
@@ -721,6 +606,40 @@ namespace CocoroConsole.Services
             }
 
             return dataUrl;
+        }
+
+        /// <summary>
+        /// CocoroShellにメッセージを転送（ノンブロッキング）
+        /// </summary>
+        /// <param name="content">転送するメッセージ内容</param>
+        /// <param name="currentCharacter">現在のキャラクター設定</param>
+        private async void ForwardMessageToShellAsync(string content, CharacterSettings? currentCharacter)
+        {
+            await _forwardMessageSemaphore.WaitAsync();
+            try
+            {
+                if (string.IsNullOrEmpty(content))
+                {
+                    return;
+                }
+
+                var shellRequest = new ShellChatRequest
+                {
+                    content = content,
+                    animation = "talk",
+                    characterName = currentCharacter?.modelName
+                };
+
+                await _shellClient.SendChatMessageAsync(shellRequest);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Shell Forward] CocoroShellへの転送エラー: {ex.Message}");
+            }
+            finally
+            {
+                _forwardMessageSemaphore.Release();
+            }
         }
 
 
@@ -898,225 +817,6 @@ namespace CocoroConsole.Services
             }
         }
 
-        #region WebSocket イベントハンドラー
-
-        /// <summary>
-        /// WebSocketメッセージ受信ハンドラー
-        /// </summary>
-        private void OnWebSocketMessageReceived(object? sender, WebSocketResponseMessage message)
-        {
-            try
-            {
-                switch (message.type)
-                {
-                    case "status":
-                        HandleWebSocketStatusMessage(message);
-                        break;
-
-                    case "text":
-                        HandleWebSocketTextMessage(message);
-                        break;
-
-                    case "reference":
-                        HandleWebSocketReferenceMessage(message);
-                        break;
-
-                    case "time":
-                        HandleWebSocketTimeMessage(message);
-                        break;
-
-                    case "end":
-                        HandleWebSocketEndMessage(message);
-                        break;
-
-                    case "error":
-                        HandleWebSocketErrorMessage(message);
-                        break;
-
-                    default:
-                        Debug.WriteLine($"[WebSocket] 未知のメッセージタイプ: {message.type}");
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[WebSocket] メッセージ処理エラー: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// WebSocket接続状態変更ハンドラー
-        /// </summary>
-        private void OnWebSocketConnectionStateChanged(object? sender, bool isConnected)
-        {
-            StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(isConnected,
-                isConnected ? "WebSocket接続確立" : "WebSocket接続切断"));
-        }
-
-        /// <summary>
-        /// WebSocketエラーハンドラー
-        /// </summary>
-        private void OnWebSocketErrorOccurred(object? sender, string errorMessage)
-        {
-            Debug.WriteLine($"[WebSocket] エラー: {errorMessage}");
-            ErrorOccurred?.Invoke(this, errorMessage);
-        }
-
-        /// <summary>
-        /// WebSocketステータスメッセージ処理
-        /// </summary>
-        private void HandleWebSocketStatusMessage(WebSocketResponseMessage message)
-        {
-            // ステータス情報の処理（必要に応じて実装）
-        }
-
-        /// <summary>
-        /// WebSocketテキストメッセージ処理
-        /// </summary>
-        private void HandleWebSocketTextMessage(WebSocketResponseMessage message)
-        {
-            if (message.data is System.Text.Json.JsonElement jsonElement)
-            {
-                if (jsonElement.TryGetProperty("content", out var contentElement))
-                {
-                    var content = contentElement.GetString() ?? "";
-                    var sessionId = message.session_id;
-
-                    var currentCharacter = GetStoredCharacterSetting();
-                    // memoryIdはAPI経由で取得したキャッシュ値を使用
-                    var memoryId = _cachedMemoryId;
-
-                    var chatRequest = new ChatRequest
-                    {
-                        memoryId = memoryId,
-                        sessionId = sessionId,
-                        message = content,
-                        role = "assistant",
-                        content = content
-                    };
-
-                    // サーバー側でチャンク処理されたメッセージをそのまま表示
-                    ChatMessageReceived?.Invoke(this, chatRequest);
-
-
-                    // CocoroShellにメッセージを転送（ノンブロッキング）
-                    ForwardMessageToShellAsync(content, currentCharacter);
-                }
-            }
-        }
-
-        /// <summary>
-        /// WebSocket参照メッセージ処理
-        /// </summary>
-        private void HandleWebSocketReferenceMessage(WebSocketResponseMessage message)
-        {
-            // 参照情報の処理（必要に応じて実装）
-        }
-
-        /// <summary>
-        /// WebSocket時間メッセージ処理
-        /// </summary>
-        private void HandleWebSocketTimeMessage(WebSocketResponseMessage message)
-        {
-            // 時間情報の処理（必要に応じて実装）
-        }
-
-        /// <summary>
-        /// WebSocket完了メッセージ処理
-        /// </summary>
-        private void HandleWebSocketEndMessage(WebSocketResponseMessage message)
-        {
-            var sessionId = message.session_id;
-
-            // 完了イベントを発火
-            var finishedEvent = new StreamingChatEventArgs
-            {
-                Content = "",
-                IsFinished = true,
-                IsError = false
-            };
-
-            StreamingChatReceived?.Invoke(this, finishedEvent);
-
-            // 正常状態に戻す
-            _statusPollingService.SetNormalStatus();
-            StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "WebSocketチャット完了"));
-        }
-
-        /// <summary>
-        /// WebSocketエラーメッセージ処理
-        /// </summary>
-        private void HandleWebSocketErrorMessage(WebSocketResponseMessage message)
-        {
-            string errorMessage = "WebSocketエラーが発生しました";
-
-            if (message.data is System.Text.Json.JsonElement jsonElement)
-            {
-                if (jsonElement.TryGetProperty("message", out var messageElement))
-                {
-                    errorMessage = messageElement.GetString() ?? errorMessage;
-                }
-            }
-
-            Debug.WriteLine($"[WebSocket] エラーメッセージ: {errorMessage}");
-
-            // エラーイベントを発火
-            var errorEvent = new StreamingChatEventArgs
-            {
-                Content = "",
-                IsFinished = true,
-                IsError = true,
-                ErrorMessage = errorMessage
-            };
-
-            StreamingChatReceived?.Invoke(this, errorEvent);
-
-            // 正常状態に戻す
-            _statusPollingService.SetNormalStatus();
-            StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"チャットエラー: {errorMessage}"));
-        }
-
-        /// <summary>
-        /// CocoroShellにメッセージを転送（ノンブロッキング）
-        /// </summary>
-        /// <param name="content">転送するメッセージ内容</param>
-        /// <param name="currentCharacter">現在のキャラクター設定</param>
-        private async void ForwardMessageToShellAsync(string content, CharacterSettings? currentCharacter)
-        {
-            // メッセージ順序を保証するためセマフォで制御
-            await _forwardMessageSemaphore.WaitAsync();
-            try
-            {
-                if (string.IsNullOrEmpty(content))
-                {
-                    return;
-                }
-
-                // ShellChatRequestを作成
-                var shellRequest = new ShellChatRequest
-                {
-                    content = content,
-                    animation = "talk", // 話すアニメーション
-                    characterName = currentCharacter?.modelName
-                };
-
-                // CocoroShellにメッセージを送信（既に非同期なのでそのまま呼び出し）
-                await _shellClient.SendChatMessageAsync(shellRequest);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[Shell Forward] CocoroShellへの転送エラー: {ex.Message}");
-                // エラーログは出力するが、メインの処理は継続させる
-            }
-            finally
-            {
-                // 必ずセマフォを解放
-                _forwardMessageSemaphore.Release();
-            }
-        }
-
-        #endregion
-
         /// <summary>
         /// リソースの解放
         /// </summary>
@@ -1133,7 +833,6 @@ namespace CocoroConsole.Services
             _apiServer?.Dispose();
             _shellClient?.Dispose();
             _coreClient?.Dispose();
-            _webSocketClient?.Dispose();
             _logStreamClient?.Dispose();
         }
     }

@@ -135,6 +135,24 @@ namespace CocoroConsole.Services
             }
         }
 
+        public Task<NotificationResponse> SendNotificationAsync(NotificationRequest request, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendAsync<NotificationResponse>(HttpMethod.Post, "/api/notification", request, cancellationToken);
+        }
+
+        public Task<MetaRequestResponse> SendMetaRequestAsync(MetaRequest request, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendAsync<MetaRequestResponse>(HttpMethod.Post, "/api/meta_request", request, cancellationToken);
+        }
+
+        public Task<CaptureResponse> SendCaptureAsync(CaptureRequest request, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendAsync<CaptureResponse>(HttpMethod.Post, "/api/capture", request, cancellationToken);
+        }
+
         private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
         {
             var request = new HttpRequestMessage(method, BuildUrl(path));
@@ -251,5 +269,71 @@ namespace CocoroConsole.Services
 
         [JsonPropertyName("message")]
         public string? Message { get; set; }
+    }
+
+    public class NotificationRequest
+    {
+        [JsonPropertyName("source_system")]
+        public string SourceSystem { get; set; } = string.Empty;
+
+        [JsonPropertyName("title")]
+        public string Title { get; set; } = string.Empty;
+
+        [JsonPropertyName("body")]
+        public string Body { get; set; } = string.Empty;
+
+        [JsonPropertyName("image_base64")]
+        public string? ImageBase64 { get; set; }
+    }
+
+    public class NotificationResponse
+    {
+        [JsonPropertyName("episode_id")]
+        public int EpisodeId { get; set; }
+
+        [JsonPropertyName("llm_response")]
+        public JsonElement? LlmResponse { get; set; }
+    }
+
+    public class MetaRequest
+    {
+        [JsonPropertyName("instruction")]
+        public string Instruction { get; set; } = string.Empty;
+
+        [JsonPropertyName("payload_text")]
+        public string PayloadText { get; set; } = string.Empty;
+
+        [JsonPropertyName("image_base64")]
+        public string? ImageBase64 { get; set; }
+    }
+
+    public class MetaRequestResponse
+    {
+        [JsonPropertyName("episode_id")]
+        public int EpisodeId { get; set; }
+
+        [JsonPropertyName("llm_response")]
+        public JsonElement? LlmResponse { get; set; }
+    }
+
+    public class CaptureRequest
+    {
+        [JsonPropertyName("capture_type")]
+        public string CaptureType { get; set; } = string.Empty;
+
+        [JsonPropertyName("image_base64")]
+        public string ImageBase64 { get; set; } = string.Empty;
+
+        [JsonPropertyName("context_text")]
+        public string? ContextText { get; set; }
+    }
+
+    public class CaptureResponse
+    {
+        [JsonPropertyName("episode_id")]
+        public int EpisodeId { get; set; }
+
+        [JsonPropertyName("stored")]
+        public bool Stored { get; set; }
     }
 }
