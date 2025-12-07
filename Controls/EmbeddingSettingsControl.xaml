@@ -129,6 +129,12 @@
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
+                        <!-- 警告テキスト -->
+                        <TextBlock Foreground="Red"
+                                   Margin="0,0,0,10">
+                            ※一度設定したら変更しないでください
+                        </TextBlock>
+
                         <!-- プリセット名(memory_id) -->
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
@@ -176,6 +182,23 @@
                                      ToolTip="例: text-embedding-3-small"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
+                        <!-- Embeddingモデル説明テキスト -->
+                        <TextBlock Foreground="#666666"
+                                   TextWrapping="Wrap"
+                                   Margin="160,0,0,5">
+                            <TextBlock.Inlines>
+                                <Run Text="記憶DBで使うモデルを設定します。LiteLLM の書式で入力してください。"/>
+                                <LineBreak/>
+                                <Run Text="ex) openai/text-embedding-3-large, gemini/gemini-embedding-001"/>
+                                <LineBreak/>
+                                <Run Text="詳細は "/>
+                                <Hyperlink NavigateUri="https://docs.litellm.ai/docs/embedding/supported_embedding"
+                                           RequestNavigate="Hyperlink_RequestNavigate">
+                                    <Run Text="https://docs.litellm.ai/docs/embedding/supported_embedding"/>
+                                </Hyperlink>
+                                <Run Text=" を参照してください"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
 
                         <!-- Embedding Base URL -->
                         <Grid Margin="0,5">

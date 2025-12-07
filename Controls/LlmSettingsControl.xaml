@@ -148,7 +148,7 @@
                                  AcceptsReturn="True"
                                  TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
-                                 Height="200"
+                                 Height="800"
                                  BorderThickness="0"
                                  Foreground="#FF0078D7"
                                  TextChanged="OnSettingChanged"/>
@@ -190,6 +190,22 @@
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
+                        <!-- LLMモデル説明テキスト -->
+                        <TextBlock Foreground="#666666"
+                                   TextWrapping="Wrap"
+                                   Margin="140,0,0,5">
+                            <TextBlock.Inlines>
+                                <Run Text="LiteLLM の書式で記載してください"/>
+                                <Run Text="（詳細は "/>
+                                <Hyperlink NavigateUri="https://docs.litellm.ai/docs/providers"
+                                               RequestNavigate="Hyperlink_RequestNavigate">
+                                    <Run Text="https://docs.litellm.ai/docs/providers"/>
+                                </Hyperlink>
+                                <Run Text="）"/>
+                                <LineBreak/>
+                                <Run Text="ex) openai/gpt-4o-mini, gemini/gemini-2.0-flash, ollama_chat/gemma3:12b"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
 
                         <!-- Base URL -->
                         <Grid Margin="0,5">
@@ -205,6 +221,10 @@
                                      ToolTip="ローカルLLM使用時のベースURL（例: http://localhost:11434/v1）"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
+                        <TextBlock Foreground="#666666"
+                                       Margin="140,0,0,5"
+                                       Text="必要に応じてベースURLを設定できます（例: http://localhost:11434/v1）"
+                                       TextWrapping="Wrap"/>
 
                         <!-- Reasoning Effort -->
                         <Grid Margin="0,5">
@@ -219,6 +239,10 @@
                                      Padding="2"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
+                        <TextBlock Foreground="#666666"
+                                       Margin="140,0,0,5"
+                                       Text="推論レベルです。空白にすると無効か最低レベルになります。"
+                                       TextWrapping="Wrap"/>
 
                         <!-- 最大ターンウィンドウ -->
                         <Grid Margin="0,5">
@@ -226,12 +250,11 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="80"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="最大ターン数:"
+                            <TextBlock Text="会話履歴件数:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="MaxTurnsWindowTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="会話履歴の最大ターン数"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
 
@@ -246,9 +269,16 @@
                             <TextBox x:Name="MaxTokensTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="LLM応答の最大トークン数"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
+                        <TextBlock Foreground="#666666"
+                                       Margin="140,0,0,5"
+                                       TextWrapping="Wrap">
+                            大きくするほど長い回答が可能になりますが、処理時間とコストが増加します
+                            <LineBreak/>
+                            エラーに気づきにくいため、変更後はしばらくログを確認してください。
+                        </TextBlock>
+
                     </StackPanel>
                 </GroupBox>
 
@@ -271,7 +301,6 @@
                                          Padding="2"
                                          BorderBrush="#CCCCCC"
                                          BorderThickness="1"
-                                         ToolTip="空欄の場合はLLM APIキーを使用"
                                          PasswordChanged="OnSettingChanged"/>
                         </Grid>
 
@@ -300,7 +329,6 @@
                             <TextBox x:Name="VisionBaseUrlTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="Vision用のベースURL（空欄の場合はLLM Base URLを使用）"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
 
@@ -315,7 +343,6 @@
                             <TextBox x:Name="MaxTokensVisionTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="Vision応答の最大トークン数"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
 
@@ -326,12 +353,11 @@
                                 <ColumnDefinition Width="80"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="画像タイムアウト:"
+                            <TextBlock Text="タイムアウト:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="ImageTimeoutSecondsTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="画像処理のタイムアウト秒数"
                                      TextChanged="OnSettingChanged"/>
                             <TextBlock Text="秒"
                                        Grid.Column="2"

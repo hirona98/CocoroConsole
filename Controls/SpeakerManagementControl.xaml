@@ -7,7 +7,6 @@
              d:DesignHeight="450"
              d:DesignWidth="800">
     <GroupBox Header="話者識別設定"
-              Margin="0,0,20,20"
               Padding="10">
         <StackPanel>
             <!-- 登録済み話者リスト -->

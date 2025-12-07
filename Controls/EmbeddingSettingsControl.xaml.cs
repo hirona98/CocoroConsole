@@ -297,5 +297,9 @@ namespace CocoroConsole.Controls
             }
         }
 
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            Utilities.UIHelper.HandleHyperlinkNavigation(e);
+        }
     }
 }

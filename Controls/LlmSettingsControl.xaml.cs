@@ -374,5 +374,10 @@ namespace CocoroConsole.Controls
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
         }
+
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            Utilities.UIHelper.HandleHyperlinkNavigation(e);
+        }
     }
 }

@@ -55,5 +55,25 @@ namespace CocoroConsole.Utilities
                 MessageBox.Show($"{title}: {message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             });
         }
+
+        /// <summary>
+        /// ハイパーリンクのナビゲーションイベントを処理してURLをブラウザで開く
+        /// </summary>
+        public static void HandleHyperlinkNavigation(System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = e.Uri.AbsoluteUri,
+                    UseShellExecute = true
+                });
+                e.Handled = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"URLを開けませんでした: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 }
