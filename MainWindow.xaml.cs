@@ -74,11 +74,8 @@ namespace CocoroConsole
                 InitializeExternalProcesses();
 
                 // 通信サービスを初期化
+                // CommunicationServiceが初回Normal時にcocoro_ghost設定を取得・反映する
                 InitializeCommunicationService();
-
-                // cocoro_ghost API設定を同期（非同期で実行、完了を待たない）
-                // CommunicationServiceでも初回Normal時に設定取得が行われる
-                _ = SyncSettingsFromCocoroGhost();
 
                 // スクリーンショットサービスを初期化
                 InitializeScreenshotService();
@@ -192,41 +189,6 @@ namespace CocoroConsole
             _communicationService.ControlCommandReceived += OnControlCommandReceived;
             _communicationService.ErrorOccurred += OnErrorOccurred;
             _communicationService.StatusChanged += OnCocoroGhostStatusChanged;
-        }
-
-        /// <summary>
-        /// cocoro_ghost APIから設定を取得してローカル設定に反映
-        /// </summary>
-        private async Task SyncSettingsFromCocoroGhost()
-        {
-            if (string.IsNullOrWhiteSpace(_appSettings.CocoroGhostBearerToken))
-            {
-                return;
-            }
-
-            try
-            {
-                var baseUrl = $"http://127.0.0.1:{_appSettings.CocoroGhostPort}";
-                using var apiClient = new CocoroGhostApiClient(baseUrl, _appSettings.CocoroGhostBearerToken);
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-
-                var apiSettings = await apiClient.GetSettingsAsync(cts.Token);
-                if (apiSettings == null)
-                {
-                    return;
-                }
-
-                _appSettings.ApplyCocoroGhostSettings(apiSettings);
-                _appSettings.SaveAppSettings();
-
-                _communicationService?.RefreshSettingsCache();
-
-                Debug.WriteLine("[MainWindow] cocoro_ghost設定をAPIから同期しました");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[MainWindow] cocoro_ghost設定同期に失敗: {ex.Message}");
-            }
         }
 
         /// <summary>

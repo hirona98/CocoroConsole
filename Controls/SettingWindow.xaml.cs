@@ -435,11 +435,8 @@ namespace CocoroConsole.Controls
                 // デスクトップウォッチの設定変更を反映
                 UpdateDesktopWatchSettings();
 
-                // exclude_keywordsをAPIに保存
-                await SaveExcludeKeywordsToApiAsync();
-
-                // LLM/Embedding設定をAPIに保存
-                await SaveLlmAndEmbeddingSettingsToApiAsync();
+                // 全設定をAPIに保存（1回のリクエストで送信）
+                await SaveAllSettingsToApiAsync();
             }
             catch (System.Exception ex)
             {
@@ -449,40 +446,31 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// exclude_keywordsをAPIに保存
+        /// 全設定をAPIに保存（1回のリクエストで送信）
         /// </summary>
-        private async Task SaveExcludeKeywordsToApiAsync()
-        {
-            if (SystemSettingsControl.HasApiClient)
-            {
-                await SystemSettingsControl.SaveExcludeKeywordsToApiAsync();
-            }
-        }
-
-        /// <summary>
-        /// LLM/Embedding設定をAPIに保存
-        /// </summary>
-        private async Task SaveLlmAndEmbeddingSettingsToApiAsync()
+        private async Task SaveAllSettingsToApiAsync()
         {
             if (_apiClient == null) return;
 
             try
             {
+                List<string> excludeKeywords = SystemSettingsControl.GetExcludeKeywords();
                 List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
                 List<EmbeddingPreset> embeddingPresets = EmbeddingSettingsControl.GetAllPresets();
 
                 CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
                 {
+                    ExcludeKeywords = excludeKeywords,
                     LlmPreset = llmPresets,
                     EmbeddingPreset = embeddingPresets
                 };
 
                 await _apiClient.UpdateSettingsAsync(request);
-                Debug.WriteLine("[SettingWindow] LLM/Embedding設定をAPIに保存しました");
+                Debug.WriteLine("[SettingWindow] 設定をAPIに保存しました");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[SettingWindow] LLM/Embedding設定の保存に失敗しました: {ex.Message}");
+                Debug.WriteLine($"[SettingWindow] 設定の保存に失敗しました: {ex.Message}");
             }
         }
 
