@@ -117,6 +117,17 @@ namespace CocoroConsole.Windows
         /// <param name="logMessage">ログメッセージ</param>
         public void AddLogMessage(LogMessage logMessage)
         {
+            AddLogMessages(new List<LogMessage> { logMessage });
+        }
+
+        /// <summary>
+        /// ログメッセージをまとめて追加（最大1000件まで）
+        /// </summary>
+        /// <param name="logMessages">ログメッセージのリスト</param>
+        public void AddLogMessages(IReadOnlyList<LogMessage> logMessages)
+        {
+            if (logMessages == null || logMessages.Count == 0) return;
+
             Dispatcher.BeginInvoke(() =>
             {
                 // 自動スクロールがOFFの場合、現在のスクロール位置を保存
@@ -129,7 +140,10 @@ namespace CocoroConsole.Windows
                     _lastVerticalOffset = savedOffset;
                 }
 
-                _allLogs.Add(logMessage);
+                foreach (var logMessage in logMessages)
+                {
+                    _allLogs.Add(logMessage);
+                }
 
                 // 最大件数を超えた場合、古いログを削除
                 bool itemsRemoved = false;
@@ -140,7 +154,8 @@ namespace CocoroConsole.Windows
                 }
 
                 UpdateLogCount();
-                UpdateStatus($"最新ログ: {logMessage.timestamp:HH:mm:ss} [{logMessage.level}] {logMessage.component}");
+                var latestLog = logMessages[logMessages.Count - 1];
+                UpdateStatus($"最新ログ: {latestLog.timestamp:HH:mm:ss} [{latestLog.level}] {latestLog.component}");
 
                 // スクロール位置の処理
                 if (AutoScrollCheckBox.IsChecked == true && LogDataGrid.Items.Count > 0)
@@ -255,6 +270,15 @@ namespace CocoroConsole.Windows
             if (StatusTextBlock == null) return;
 
             StatusTextBlock.Text = message;
+        }
+
+        /// <summary>
+        /// 外部からステータスラベルを更新する
+        /// </summary>
+        /// <param name="message">表示するメッセージ</param>
+        public void UpdateStatusMessage(string message)
+        {
+            Dispatcher.BeginInvoke(() => UpdateStatus(message));
         }
 
         /// <summary>

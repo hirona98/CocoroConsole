@@ -700,11 +700,70 @@ namespace CocoroConsole
             // ログビューアーを新規作成
             _logViewerWindow = new LogViewerWindow();
             _logViewerWindow.Owner = this;
+            AttachLogStreamHandlers();
 
             // ウィンドウが閉じられた時の処理
-            _logViewerWindow.Closed += (sender, args) => { _logViewerWindow = null; };
+            _logViewerWindow.Closed += async (sender, args) =>
+            {
+                DetachLogStreamHandlers();
+                if (_communicationService != null)
+                {
+                    await _communicationService.StopLogStreamAsync();
+                }
+                _logViewerWindow = null;
+            };
+
+            // ログストリーム接続開始（失敗してもUIスレッドはブロックしない）
+            if (_communicationService != null)
+            {
+                _ = _communicationService.StartLogStreamAsync();
+                _logViewerWindow.UpdateStatusMessage("ログストリーム接続中...");
+            }
 
             _logViewerWindow.Show();
+        }
+
+        private void AttachLogStreamHandlers()
+        {
+            if (_communicationService == null) return;
+
+            _communicationService.LogMessagesReceived += OnLogStreamMessagesReceived;
+            _communicationService.LogStreamConnectionChanged += OnLogStreamConnectionChanged;
+            _communicationService.LogStreamError += OnLogStreamError;
+        }
+
+        private void DetachLogStreamHandlers()
+        {
+            if (_communicationService == null) return;
+
+            _communicationService.LogMessagesReceived -= OnLogStreamMessagesReceived;
+            _communicationService.LogStreamConnectionChanged -= OnLogStreamConnectionChanged;
+            _communicationService.LogStreamError -= OnLogStreamError;
+        }
+
+        private void OnLogStreamMessagesReceived(object? sender, IReadOnlyList<LogMessage> logs)
+        {
+            if (_logViewerWindow == null || _logViewerWindow.IsClosed) return;
+
+            UIHelper.RunOnUIThread(() =>
+            {
+                _logViewerWindow?.AddLogMessages(logs);
+            });
+        }
+
+        private void OnLogStreamConnectionChanged(object? sender, bool isConnected)
+        {
+            if (_logViewerWindow == null || _logViewerWindow.IsClosed) return;
+
+            var status = isConnected ? "ログストリーム接続中" : "ログストリーム切断";
+            UIHelper.RunOnUIThread(() => _logViewerWindow?.UpdateStatusMessage(status));
+        }
+
+        private void OnLogStreamError(object? sender, string error)
+        {
+            if (_logViewerWindow == null || _logViewerWindow.IsClosed) return;
+
+            UIHelper.RunOnUIThread(() => _logViewerWindow?.UpdateStatusMessage($"ログストリームエラー: {error}"));
         }
 
         /// <summary>

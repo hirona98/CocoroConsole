@@ -25,6 +25,7 @@ namespace CocoroConsole.Services
         private readonly NotificationApiServer? _notificationApiServer;
         private readonly StatusPollingService _statusPollingService;
         private readonly CocoroGhostApiClient? _cocoroGhostApiClient;
+        private LogStreamClient? _logStreamClient;
 
         // メッセージ順序保証用セマフォ
         private readonly SemaphoreSlim _forwardMessageSemaphore = new SemaphoreSlim(1, 1);
@@ -48,6 +49,9 @@ namespace CocoroConsole.Services
         public event EventHandler<string>? ErrorOccurred;
         public event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
         public event EventHandler<CocoroGhostStatus>? StatusChanged;
+        public event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
+        public event EventHandler<bool>? LogStreamConnectionChanged;
+        public event EventHandler<string>? LogStreamError;
 
         public bool IsServerRunning => _apiServer.IsRunning;
 
@@ -628,6 +632,79 @@ namespace CocoroConsole.Services
             }
         }
 
+        /// <summary>
+        /// ログストリーム接続を開始
+        /// </summary>
+        public async Task StartLogStreamAsync()
+        {
+            if (_logStreamClient != null)
+            {
+                return;
+            }
+
+            var bearerToken = _appSettings.CocoroGhostBearerToken;
+            if (string.IsNullOrWhiteSpace(bearerToken))
+            {
+                LogStreamError?.Invoke(this, "cocoro_ghostのBearerトークンが設定されていません");
+                return;
+            }
+
+            var logStreamUri = new Uri($"ws://127.0.0.1:{_appSettings.CocoroGhostPort}/api/logs/stream");
+            _logStreamClient = new LogStreamClient(logStreamUri, bearerToken);
+            _logStreamClient.LogsReceived += OnLogStreamLogsReceived;
+            _logStreamClient.ConnectionStateChanged += OnLogStreamConnectionStateChanged;
+            _logStreamClient.ErrorOccurred += OnLogStreamErrorOccurred;
+
+            try
+            {
+                await _logStreamClient.StartAsync();
+            }
+            catch (Exception ex)
+            {
+                LogStreamError?.Invoke(this, $"ログストリーム接続に失敗しました: {ex.Message}");
+                await StopLogStreamAsync();
+            }
+        }
+
+        /// <summary>
+        /// ログストリーム接続を停止
+        /// </summary>
+        public async Task StopLogStreamAsync()
+        {
+            if (_logStreamClient == null)
+            {
+                return;
+            }
+
+            try
+            {
+                await _logStreamClient.StopAsync();
+            }
+            finally
+            {
+                _logStreamClient.LogsReceived -= OnLogStreamLogsReceived;
+                _logStreamClient.ConnectionStateChanged -= OnLogStreamConnectionStateChanged;
+                _logStreamClient.ErrorOccurred -= OnLogStreamErrorOccurred;
+                _logStreamClient.Dispose();
+                _logStreamClient = null;
+            }
+        }
+
+        private void OnLogStreamLogsReceived(object? sender, IReadOnlyList<LogMessage> logs)
+        {
+            LogMessagesReceived?.Invoke(this, logs);
+        }
+
+        private void OnLogStreamConnectionStateChanged(object? sender, bool isConnected)
+        {
+            LogStreamConnectionChanged?.Invoke(this, isConnected);
+        }
+
+        private void OnLogStreamErrorOccurred(object? sender, string errorMessage)
+        {
+            LogStreamError?.Invoke(this, errorMessage);
+        }
+
 
         /// <summary>
         /// CocoroShellから現在のキャラクター位置を取得
@@ -912,6 +989,7 @@ namespace CocoroConsole.Services
             _shellClient?.Dispose();
             _coreClient?.Dispose();
             _webSocketClient?.Dispose();
+            _logStreamClient?.Dispose();
         }
     }
 }

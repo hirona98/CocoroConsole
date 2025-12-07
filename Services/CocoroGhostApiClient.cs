@@ -44,12 +44,12 @@ namespace CocoroConsole.Services
 
         public Task<CocoroGhostSettings> GetSettingsAsync(CancellationToken cancellationToken = default)
         {
-            return SendAsync<CocoroGhostSettings>(HttpMethod.Get, "/settings", null, cancellationToken);
+            return SendAsync<CocoroGhostSettings>(HttpMethod.Get, "/api/settings", null, cancellationToken);
         }
 
         public Task<CocoroGhostSettings> UpdateSettingsAsync(CocoroGhostSettingsUpdateRequest request, CancellationToken cancellationToken = default)
         {
-            return SendAsync<CocoroGhostSettings>(HttpMethod.Post, "/settings", request, cancellationToken);
+            return SendAsync<CocoroGhostSettings>(HttpMethod.Post, "/api/settings", request, cancellationToken);
         }
 
         private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)

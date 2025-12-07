@@ -57,6 +57,21 @@ namespace CocoroConsole.Services
         event EventHandler<CocoroGhostStatus>? StatusChanged;
 
         /// <summary>
+        /// ログストリームメッセージ受信イベント
+        /// </summary>
+        event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
+
+        /// <summary>
+        /// ログストリーム接続状態イベント
+        /// </summary>
+        event EventHandler<bool>? LogStreamConnectionChanged;
+
+        /// <summary>
+        /// ログストリームエラーイベント
+        /// </summary>
+        event EventHandler<string>? LogStreamError;
+
+        /// <summary>
         /// APIサーバーが起動しているかどうか
         /// </summary>
         bool IsServerRunning { get; }
@@ -129,6 +144,16 @@ namespace CocoroConsole.Services
         /// </summary>
         /// <param name="isUseTTS">TTS使用状態</param>
         Task SendTTSStateToShellAsync(bool isUseTTS);
+
+        /// <summary>
+        /// ログストリーム接続を開始
+        /// </summary>
+        Task StartLogStreamAsync();
+
+        /// <summary>
+        /// ログストリーム接続を停止
+        /// </summary>
+        Task StopLogStreamAsync();
 
 
 
