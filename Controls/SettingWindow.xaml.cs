@@ -149,7 +149,23 @@ namespace CocoroConsole.Controls
                 List<LlmPreset> llmPresets = settings.LlmPreset ?? new List<LlmPreset>();
                 if (llmPresets.Count == 0)
                 {
-                    llmPresets.Add(new LlmPreset { LlmPresetName = "デフォルト" });
+                    llmPresets.Add(new LlmPreset
+                    {
+                        LlmPresetId = 0,
+                        LlmPresetName = "デフォルト",
+                        SystemPrompt = string.Empty,
+                        LlmApiKey = null,
+                        LlmModel = string.Empty,
+                        ReasoningEffort = null,
+                        LlmBaseUrl = null,
+                        MaxTurnsWindow = 10,
+                        MaxTokens = 4096,
+                        ImageModelApiKey = null,
+                        ImageModel = string.Empty,
+                        ImageLlmBaseUrl = null,
+                        MaxTokensVision = 4096,
+                        ImageTimeoutSeconds = 60
+                    });
                 }
                 LlmSettingsControl.SetApiClient(_apiClient, SaveLlmPresetsToApiAsync);
                 LlmSettingsControl.LoadSettingsList(llmPresets);
@@ -158,7 +174,16 @@ namespace CocoroConsole.Controls
                 List<EmbeddingPreset> embeddingPresets = settings.EmbeddingPreset ?? new List<EmbeddingPreset>();
                 if (embeddingPresets.Count == 0)
                 {
-                    embeddingPresets.Add(new EmbeddingPreset { EmbeddingPresetName = "デフォルト" });
+                    embeddingPresets.Add(new EmbeddingPreset
+                    {
+                        EmbeddingPresetId = 0,
+                        EmbeddingPresetName = "デフォルト",
+                        EmbeddingModelApiKey = null,
+                        EmbeddingModel = string.Empty,
+                        EmbeddingBaseUrl = null,
+                        EmbeddingDimension = 1536,
+                        SimilarEpisodesLimit = 5
+                    });
                 }
                 EmbeddingSettingsControl.SetApiClient(_apiClient, SaveEmbeddingPresetsToApiAsync);
                 EmbeddingSettingsControl.LoadSettingsList(embeddingPresets);

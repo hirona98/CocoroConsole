@@ -189,7 +189,7 @@ namespace CocoroConsole.Controls
             // 新規プリセットを作成
             EmbeddingPreset newPreset = new EmbeddingPreset
             {
-                EmbeddingPresetId = null,
+                EmbeddingPresetId = 0,
                 EmbeddingPresetName = GenerateNewPresetName(),
                 EmbeddingModelApiKey = null,
                 EmbeddingModel = string.Empty,

@@ -218,12 +218,13 @@ namespace CocoroConsole.Controls
             // 新規プリセットを作成
             LlmPreset newPreset = new LlmPreset
             {
-                LlmPresetId = null,
+                LlmPresetId = 0,
                 LlmPresetName = GenerateNewPresetName(),
                 SystemPrompt = string.Empty,
                 LlmApiKey = null,
                 LlmModel = string.Empty,
                 LlmBaseUrl = null,
+                ImageModel = string.Empty,
                 MaxTurnsWindow = 10,
                 MaxTokens = 4096,
                 MaxTokensVision = 4096,
@@ -252,7 +253,7 @@ namespace CocoroConsole.Controls
             LlmPreset source = _presets[_currentPresetIndex];
             LlmPreset duplicate = new LlmPreset
             {
-                LlmPresetId = null,
+                LlmPresetId = source.LlmPresetId ?? 0,
                 LlmPresetName = source.LlmPresetName + " (コピー)",
                 SystemPrompt = source.SystemPrompt,
                 LlmApiKey = source.LlmApiKey,
