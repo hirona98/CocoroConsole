@@ -388,6 +388,20 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task ApplySettingsChangesAsync()
         {
+            var bearerToken = SystemSettingsControl.GetBearerToken();
+            if (string.IsNullOrWhiteSpace(bearerToken))
+            {
+                var result = MessageBox.Show(
+                    "cocoro_ghostのBearerトークンが未設定です。チャット/通知/キャプチャは送受信できません。このまま保存しますか？",
+                    "Bearerトークン未設定",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                if (result == MessageBoxResult.No)
+                {
+                    return;
+                }
+            }
+
             // すべてのタブの設定を保存（プリセットの保存・有効化を含む）
             await SaveAllSettingsAsync();
 

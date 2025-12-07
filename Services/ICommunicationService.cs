@@ -47,6 +47,11 @@ namespace CocoroConsole.Services
         event EventHandler<string>? ErrorOccurred;
 
         /// <summary>
+        /// ストリーミングチャットイベント（トークン逐次）
+        /// </summary>
+        event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
+
+        /// <summary>
         /// ステータス更新要求イベント
         /// </summary>
         event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;

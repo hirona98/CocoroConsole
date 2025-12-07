@@ -23,6 +23,7 @@ namespace CocoroConsole.Controls
     public partial class ChatControl : UserControl
     {
         public event EventHandler<string>? MessageSent;
+        private bool _isStreamingMessage;
 
         // 添付画像データ（Base64形式のdata URL、最大5枚）
         private List<string> _attachedImageDataUrls = new List<string>();
@@ -348,6 +349,48 @@ namespace CocoroConsole.Controls
 
             // 自動スクロール
             ChatScrollViewer.ScrollToEnd();
+        }
+
+        public void StartStreamingAiMessage(string content)
+        {
+            _isStreamingMessage = true;
+            AddAiMessage(content);
+        }
+
+        public void UpdateStreamingAiMessage(string content)
+        {
+            var messageTextBox = GetLastAiMessageTextBox();
+            if (messageTextBox == null)
+            {
+                StartStreamingAiMessage(content);
+                return;
+            }
+
+            messageTextBox.Text = RemoveFaceTags(content);
+            ChatScrollViewer.ScrollToEnd();
+        }
+
+        public void FinishStreamingAiMessage()
+        {
+            _isStreamingMessage = false;
+        }
+
+        private TextBox? GetLastAiMessageTextBox()
+        {
+            if (ChatMessagesPanel.Children.Count == 0)
+                return null;
+
+            var lastContainer = ChatMessagesPanel.Children[ChatMessagesPanel.Children.Count - 1] as StackPanel;
+            if (lastContainer == null) return null;
+
+            var bubble = lastContainer.Children.OfType<Border>().FirstOrDefault(b => b.Style == (Style)Resources["AiBubbleStyle"]);
+            if (bubble == null) return null;
+
+            var messageContent = bubble.Child as StackPanel;
+            if (messageContent == null) return null;
+
+            var messageTextBox = messageContent.Children.OfType<TextBox>().FirstOrDefault(tb => tb.Style == (Style)Resources["AiMessageTextStyle"]);
+            return messageTextBox;
         }
 
         /// <summary>

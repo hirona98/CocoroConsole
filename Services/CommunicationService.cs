@@ -20,7 +20,6 @@ namespace CocoroConsole.Services
 
         private readonly CocoroConsoleApiServer _apiServer;
         private readonly CocoroShellClient _shellClient;
-        private readonly CocoroCoreClient _coreClient;
         private readonly IAppSettings _appSettings;
         private readonly NotificationApiServer? _notificationApiServer;
         private readonly StatusPollingService _statusPollingService;
@@ -80,9 +79,6 @@ namespace CocoroConsole.Services
 
             // CocoroShellクライアントの初期化
             _shellClient = new CocoroShellClient(_appSettings.CocoroShellPort);
-
-            // CocoroCoreクライアントの初期化
-            _coreClient = new CocoroCoreClient(_appSettings.CocoroGhostPort);
 
             // 通知APIサーバーの初期化（有効な場合のみ）
             if (_appSettings.IsEnableNotificationApi)
@@ -832,7 +828,6 @@ namespace CocoroConsole.Services
             _notificationApiServer?.Dispose();
             _apiServer?.Dispose();
             _shellClient?.Dispose();
-            _coreClient?.Dispose();
             _logStreamClient?.Dispose();
         }
     }

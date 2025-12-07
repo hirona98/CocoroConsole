@@ -29,6 +29,8 @@ namespace CocoroConsole
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
         private int? _nextScreenshotInitialDelayMilliseconds;
+        private bool _isStreamingChatActive;
+        private bool _skipNextAssistantMessage;
 
 
         public MainWindow()
@@ -185,6 +187,7 @@ namespace CocoroConsole
             // 通信サービスを初期化 (REST APIサーバーを使用)
             _communicationService = new CommunicationService(_appSettings);            // 通信サービスのイベントハンドラを設定
             _communicationService.ChatMessageReceived += OnChatMessageReceived;
+            _communicationService.StreamingChatReceived += OnStreamingChatReceived;
             _communicationService.NotificationMessageReceived += OnNotificationMessageReceived;
             _communicationService.ControlCommandReceived += OnControlCommandReceived;
             _communicationService.ErrorOccurred += OnErrorOccurred;
@@ -569,6 +572,12 @@ namespace CocoroConsole
         {
             UIHelper.RunOnUIThread(() =>
             {
+                if (_skipNextAssistantMessage && request.role == "assistant")
+                {
+                    _skipNextAssistantMessage = false;
+                    return;
+                }
+
                 if (request.role == "user")
                 {
                     ChatControlInstance.AddUserMessage(request.content);
@@ -577,6 +586,40 @@ namespace CocoroConsole
                 {
                     // サーバー側処理済みメッセージをそのまま新規追加
                     ChatControlInstance.AddAiMessage(request.content);
+                }
+            });
+        }
+
+        private void OnStreamingChatReceived(object? sender, StreamingChatEventArgs e)
+        {
+            UIHelper.RunOnUIThread(() =>
+            {
+                if (e.IsError)
+                {
+                    ChatControlInstance.AddAiMessage($"[error] {e.ErrorMessage ?? "チャット中断"}");
+                    _isStreamingChatActive = false;
+                    _skipNextAssistantMessage = false;
+                    return;
+                }
+
+                if (!e.IsFinished)
+                {
+                    if (!_isStreamingChatActive)
+                    {
+                        ChatControlInstance.StartStreamingAiMessage(e.Content);
+                        _isStreamingChatActive = true;
+                    }
+                    else
+                    {
+                        ChatControlInstance.UpdateStreamingAiMessage(e.Content);
+                    }
+                }
+                else
+                {
+                    ChatControlInstance.UpdateStreamingAiMessage(e.Content);
+                    ChatControlInstance.FinishStreamingAiMessage();
+                    _isStreamingChatActive = false;
+                    _skipNextAssistantMessage = true; // 直後の最終メッセージ表示を抑止
                 }
             });
         }
