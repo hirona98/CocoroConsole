@@ -1,5 +1,7 @@
 using CocoroConsole.Models.CocoroGhostApi;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -48,6 +50,89 @@ namespace CocoroConsole.Services
         public Task<CocoroGhostSettings> UpdateSettingsAsync(CocoroGhostSettingsUpdateRequest request, CancellationToken cancellationToken = default)
         {
             return SendAsync<CocoroGhostSettings>(HttpMethod.Post, "/api/settings", request, cancellationToken);
+        }
+
+        public async IAsyncEnumerable<ChatStreamEvent> StreamChatAsync(ChatStreamRequest requestPayload, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, BuildUrl("/api/chat"));
+            request.Headers.Accept.Clear();
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+            request.Content = CreateJsonContent(requestPayload);
+
+            using var response = await _httpClient.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken
+            ).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                throw new HttpRequestException($"cocoro_ghost chat APIエラー: {(int)response.StatusCode} {response.ReasonPhrase} {body}");
+            }
+
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+
+            while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+            {
+                var line = await reader.ReadLineAsync().ConfigureAwait(false);
+                if (line == null)
+                {
+                    break;
+                }
+
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                const string dataPrefix = "data:";
+                if (!line.StartsWith(dataPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var json = line.Substring(dataPrefix.Length).Trim();
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    continue;
+                }
+
+                ChatStreamServerEvent? serverEvent = null;
+                try
+                {
+                    serverEvent = JsonSerializer.Deserialize<ChatStreamServerEvent>(json, _serializerOptions);
+                }
+                catch
+                {
+                    // SSEフォーマットが想定外の場合はスキップ
+                    continue;
+                }
+
+                if (serverEvent == null || string.IsNullOrWhiteSpace(serverEvent.Type))
+                {
+                    continue;
+                }
+
+                var clientEvent = new ChatStreamEvent
+                {
+                    Type = serverEvent.Type,
+                    Delta = serverEvent.Delta,
+                    ReplyText = serverEvent.ReplyText,
+                    EpisodeId = serverEvent.EpisodeId,
+                    ErrorMessage = serverEvent.Message
+                };
+
+                yield return clientEvent;
+
+                if (serverEvent.Type == "done" || serverEvent.Type == "error")
+                {
+                    yield break;
+                }
+            }
         }
 
         private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
@@ -116,5 +201,55 @@ namespace CocoroConsole.Services
             _disposed = true;
             _httpClient.Dispose();
         }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(CocoroGhostApiClient));
+            }
+        }
+    }
+
+    public class ChatStreamRequest
+    {
+        [JsonPropertyName("user_id")]
+        public string UserId { get; set; } = "default";
+
+        [JsonPropertyName("text")]
+        public string Text { get; set; } = string.Empty;
+
+        [JsonPropertyName("context_hint")]
+        public string? ContextHint { get; set; }
+
+        [JsonPropertyName("image_base64")]
+        public string? ImageBase64 { get; set; }
+    }
+
+    public class ChatStreamEvent
+    {
+        public string Type { get; set; } = string.Empty;
+        public string? Delta { get; set; }
+        public string? ReplyText { get; set; }
+        public int? EpisodeId { get; set; }
+        public string? ErrorMessage { get; set; }
+    }
+
+    internal class ChatStreamServerEvent
+    {
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = string.Empty;
+
+        [JsonPropertyName("delta")]
+        public string? Delta { get; set; }
+
+        [JsonPropertyName("reply_text")]
+        public string? ReplyText { get; set; }
+
+        [JsonPropertyName("episode_id")]
+        public int? EpisodeId { get; set; }
+
+        [JsonPropertyName("message")]
+        public string? Message { get; set; }
     }
 }

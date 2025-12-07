@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -274,6 +275,133 @@ namespace CocoroConsole.Services
         /// <param name="characterName">キャラクター名（オプション）</param>
         /// <param name="imageDataUrls">画像データURLリスト（オプション）</param>
         public async Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, List<string>? imageDataUrls = null)
+        {
+            if (_cocoroGhostApiClient != null)
+            {
+                await SendChatViaHttpStreamingAsync(message, imageDataUrls);
+                return;
+            }
+
+            await SendChatViaWebSocketAsync(message, imageDataUrls);
+        }
+
+        private async Task SendChatViaHttpStreamingAsync(string message, List<string>? imageDataUrls)
+        {
+            try
+            {
+                // 現在のキャラクター設定を取得
+                var currentCharacter = GetStoredCharacterSetting();
+
+                // LLMが無効の場合は処理しない
+                if (currentCharacter == null || !currentCharacter.isUseLLM)
+                {
+                    Debug.WriteLine("チャット送信: LLMが無効のためスキップ");
+                    return;
+                }
+
+                // セッションIDを生成または既存のものを使用
+                if (string.IsNullOrEmpty(_currentSessionId))
+                {
+                    _currentSessionId = $"dock_{DateTime.Now:yyyyMMddHHmmssfff}";
+                }
+
+                // 画像データを変換
+                string? imageBase64 = null;
+                if (imageDataUrls != null && imageDataUrls.Count > 0)
+                {
+                    imageBase64 = ExtractBase64(imageDataUrls.First());
+                }
+
+                // 画像がある場合は画像処理中、そうでなければメッセージ処理中に設定
+                var processingStatus = (!string.IsNullOrEmpty(imageBase64))
+                    ? CocoroGhostStatus.ProcessingImage
+                    : CocoroGhostStatus.ProcessingMessage;
+                _statusPollingService.SetProcessingStatus(processingStatus);
+
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット送信開始"));
+
+                var chatRequest = new ChatStreamRequest
+                {
+                    Text = message,
+                    UserId = "default",
+                    ImageBase64 = imageBase64
+                };
+
+                var buffer = new StringBuilder();
+
+                await foreach (var ev in _cocoroGhostApiClient!.StreamChatAsync(chatRequest))
+                {
+                    switch (ev.Type)
+                    {
+                        case "token":
+                            if (!string.IsNullOrEmpty(ev.Delta))
+                            {
+                                buffer.Append(ev.Delta);
+                                StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                                {
+                                    Content = buffer.ToString(),
+                                    IsFinished = false,
+                                    IsError = false
+                                });
+                            }
+                            break;
+                        case "done":
+                            var replyText = ev.ReplyText ?? buffer.ToString();
+                            var memoryId = _cachedMemoryId;
+                            var chatReply = new ChatRequest
+                            {
+                                memoryId = memoryId,
+                                sessionId = _currentSessionId,
+                                message = replyText,
+                                role = "assistant",
+                                content = replyText
+                            };
+
+                            ChatMessageReceived?.Invoke(this, chatReply);
+                            ForwardMessageToShellAsync(replyText, currentCharacter);
+
+                            StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                            {
+                                Content = replyText,
+                                IsFinished = true,
+                                IsError = false
+                            });
+
+                            _statusPollingService.SetNormalStatus();
+                            StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット完了"));
+                            return;
+                        case "error":
+                            var errorMessage = ev.ErrorMessage ?? "チャットAPIエラーが発生しました";
+                            StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                            {
+                                Content = "",
+                                IsFinished = true,
+                                IsError = true,
+                                ErrorMessage = errorMessage
+                            });
+                            _statusPollingService.SetNormalStatus();
+                            StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"チャットエラー: {errorMessage}"));
+                            return;
+                        default:
+                            break;
+                    }
+                }
+
+                // 想定外にストリームが途切れた場合も正常化する
+                _statusPollingService.SetNormalStatus();
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット完了"));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"チャット送信エラー: {ex.Message}");
+                // エラー時は正常状態に戻す
+                _statusPollingService.SetNormalStatus();
+                // ステータスバーにエラー表示
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"チャット送信エラー: {ex.Message}"));
+            }
+        }
+
+        private async Task SendChatViaWebSocketAsync(string message, List<string>? imageDataUrls)
         {
             try
             {
@@ -576,6 +704,23 @@ namespace CocoroConsole.Services
                 return config.characterList[config.currentCharacterIndex];
             }
             return null;
+        }
+
+        private string? ExtractBase64(string? dataUrl)
+        {
+            if (string.IsNullOrWhiteSpace(dataUrl))
+            {
+                return null;
+            }
+
+            const string marker = "base64,";
+            var index = dataUrl.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (index >= 0 && index + marker.Length < dataUrl.Length)
+            {
+                return dataUrl.Substring(index + marker.Length);
+            }
+
+            return dataUrl;
         }
 
 
