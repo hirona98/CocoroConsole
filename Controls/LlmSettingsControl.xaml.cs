@@ -45,7 +45,7 @@ namespace CocoroConsole.Controls
             if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count) return;
 
             LlmPreset preset = _presets[_currentPresetIndex];
-            preset.LlmPresetName = PresetSelectComboBox.SelectedItem?.ToString() ?? preset.LlmPresetName;
+            preset.LlmPresetName = PresetNameTextBox.Text;
             preset.SystemPrompt = SystemPromptTextBox.Text;
             preset.LlmApiKey = string.IsNullOrWhiteSpace(LlmApiKeyPasswordBox.Password) ? null : LlmApiKeyPasswordBox.Password;
             preset.LlmModel = LlmModelTextBox.Text;
@@ -124,6 +124,7 @@ namespace CocoroConsole.Controls
 
         private void LoadPresetToUI(LlmPreset preset)
         {
+            PresetNameTextBox.Text = preset.LlmPresetName ?? string.Empty;
             SystemPromptTextBox.Text = preset.SystemPrompt ?? string.Empty;
             LlmApiKeyPasswordBox.Password = preset.LlmApiKey ?? string.Empty;
             LlmModelTextBox.Text = preset.LlmModel ?? string.Empty;
@@ -154,7 +155,7 @@ namespace CocoroConsole.Controls
             LlmPreset preset = new LlmPreset
             {
                 LlmPresetId = currentPreset.LlmPresetId,
-                LlmPresetName = PresetSelectComboBox.SelectedItem?.ToString() ?? currentPreset.LlmPresetName,
+                LlmPresetName = PresetNameTextBox.Text,
                 LlmApiKey = string.IsNullOrWhiteSpace(LlmApiKeyPasswordBox.Password) ? null : LlmApiKeyPasswordBox.Password,
                 LlmModel = LlmModelTextBox.Text,
                 LlmBaseUrl = string.IsNullOrWhiteSpace(LlmBaseUrlTextBox.Text) ? null : LlmBaseUrlTextBox.Text,
@@ -176,6 +177,7 @@ namespace CocoroConsole.Controls
 
         private void ClearSettings()
         {
+            PresetNameTextBox.Text = string.Empty;
             SystemPromptTextBox.Text = string.Empty;
             LlmApiKeyPasswordBox.Password = string.Empty;
             LlmModelTextBox.Text = string.Empty;
@@ -364,6 +366,11 @@ namespace CocoroConsole.Controls
         {
             if (!_isInitializing)
             {
+                // 名前変更時はComboBoxの表示も更新
+                if (sender == PresetNameTextBox && _currentPresetIndex >= 0 && _currentPresetIndex < PresetSelectComboBox.Items.Count)
+                {
+                    PresetSelectComboBox.Items[_currentPresetIndex] = PresetNameTextBox.Text;
+                }
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
         }

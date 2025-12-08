@@ -134,27 +134,48 @@
                     </Grid>
                 </GroupBox>
 
-                <!-- システムプロンプト -->
-                <Expander IsExpanded="False"
-                          Margin="0,0,20,20">
-                    <Expander.Header>
-                        <TextBlock Text="システムプロンプト"
-                                   Foreground="#FF4873CF"/>
-                    </Expander.Header>
-                    <Border BorderBrush="#CCCCCC"
-                            BorderThickness="1"
-                            Margin="0,10,0,0"
-                            Padding="5">
-                        <TextBox x:Name="SystemPromptTextBox"
-                                 AcceptsReturn="True"
-                                 TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 Height="800"
-                                 BorderThickness="0"
-                                 Foreground="#FF0078D7"
-                                 TextChanged="OnSettingChanged"/>
-                    </Border>
-                </Expander>
+                <!-- 基本設定 -->
+                <GroupBox Header="基本設定"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <!-- 名前 -->
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="名前:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="PresetNameTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+
+                        <!-- システムプロンプト -->
+                        <Expander IsExpanded="False"
+                                  Margin="0,10,0,0">
+                            <Expander.Header>
+                                <TextBlock Text="システムプロンプト"
+                                           Foreground="#FF4873CF"/>
+                            </Expander.Header>
+                            <Border BorderBrush="#CCCCCC"
+                                    BorderThickness="1"
+                                    Margin="0,10,0,0"
+                                    Padding="5">
+                                <TextBox x:Name="SystemPromptTextBox"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto"
+                                         Height="800"
+                                         BorderThickness="0"
+                                         Foreground="#FF0078D7"
+                                         TextChanged="OnSettingChanged"/>
+                            </Border>
+                        </Expander>
+                    </StackPanel>
+                </GroupBox>
 
                 <!-- LLM設定 -->
                 <GroupBox Header="LLM設定"
