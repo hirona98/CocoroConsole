@@ -49,7 +49,7 @@ namespace CocoroConsole.Controls
             preset.EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Password) ? null : EmbeddingApiKeyPasswordBox.Password;
             preset.EmbeddingModel = EmbeddingModelTextBox.Text;
             preset.EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text;
-            preset.EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 1536;
+            preset.EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 3072;
             preset.SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : 5;
         }
 
@@ -121,7 +121,7 @@ namespace CocoroConsole.Controls
             EmbeddingApiKeyPasswordBox.Password = preset.EmbeddingModelApiKey ?? string.Empty;
             EmbeddingModelTextBox.Text = preset.EmbeddingModel ?? string.Empty;
             EmbeddingBaseUrlTextBox.Text = preset.EmbeddingBaseUrl ?? string.Empty;
-            EmbeddingDimensionTextBox.Text = preset.EmbeddingDimension?.ToString() ?? "1536";
+            EmbeddingDimensionTextBox.Text = preset.EmbeddingDimension?.ToString() ?? "3072";
             SimilarEpisodesLimitTextBox.Text = preset.SimilarEpisodesLimit?.ToString() ?? "5";
         }
 
@@ -141,7 +141,7 @@ namespace CocoroConsole.Controls
                 EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Password) ? null : EmbeddingApiKeyPasswordBox.Password,
                 EmbeddingModel = EmbeddingModelTextBox.Text,
                 EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text,
-                EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 1536,
+                EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 3072,
                 SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : 5
             };
 
@@ -154,7 +154,7 @@ namespace CocoroConsole.Controls
             EmbeddingApiKeyPasswordBox.Password = string.Empty;
             EmbeddingModelTextBox.Text = string.Empty;
             EmbeddingBaseUrlTextBox.Text = string.Empty;
-            EmbeddingDimensionTextBox.Text = "1536";
+            EmbeddingDimensionTextBox.Text = "3072";
             SimilarEpisodesLimitTextBox.Text = "5";
         }
 
@@ -194,7 +194,7 @@ namespace CocoroConsole.Controls
                 EmbeddingModelApiKey = null,
                 EmbeddingModel = string.Empty,
                 EmbeddingBaseUrl = null,
-                EmbeddingDimension = 1536,
+                EmbeddingDimension = 3072,
                 SimilarEpisodesLimit = 5
             };
 

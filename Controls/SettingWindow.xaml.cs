@@ -158,7 +158,7 @@ namespace CocoroConsole.Controls
                         LlmModel = string.Empty,
                         ReasoningEffort = null,
                         LlmBaseUrl = null,
-                        MaxTurnsWindow = 10,
+                        MaxTurnsWindow = 50,
                         MaxTokens = 4096,
                         ImageModelApiKey = null,
                         ImageModel = string.Empty,
@@ -181,7 +181,7 @@ namespace CocoroConsole.Controls
                         EmbeddingModelApiKey = null,
                         EmbeddingModel = string.Empty,
                         EmbeddingBaseUrl = null,
-                        EmbeddingDimension = 1536,
+                        EmbeddingDimension = 3072,
                         SimilarEpisodesLimit = 5
                     });
                 }
