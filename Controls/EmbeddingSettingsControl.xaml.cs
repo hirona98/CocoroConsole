@@ -324,6 +324,23 @@ namespace CocoroConsole.Controls
         {
             if (!_isInitializing)
             {
+                // 名前変更時はプリセットリストとComboBoxの表示を更新
+                if (sender == MemoryIdTextBox && _currentPresetIndex >= 0 && _currentPresetIndex < _presets.Count)
+                {
+                    // プリセットの名前を更新
+                    _presets[_currentPresetIndex].EmbeddingPresetName = MemoryIdTextBox.Text;
+
+                    // ComboBoxを更新
+                    var currentIndex = _currentPresetIndex;
+                    PresetSelectComboBox.SelectionChanged -= PresetSelectComboBox_SelectionChanged;
+                    PresetSelectComboBox.Items.Clear();
+                    foreach (var preset in _presets)
+                    {
+                        PresetSelectComboBox.Items.Add(preset.EmbeddingPresetName);
+                    }
+                    PresetSelectComboBox.SelectedIndex = currentIndex;
+                    PresetSelectComboBox.SelectionChanged += PresetSelectComboBox_SelectionChanged;
+                }
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
         }

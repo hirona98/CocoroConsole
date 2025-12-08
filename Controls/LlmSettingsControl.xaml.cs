@@ -366,10 +366,22 @@ namespace CocoroConsole.Controls
         {
             if (!_isInitializing)
             {
-                // 名前変更時はComboBoxの表示も更新
-                if (sender == PresetNameTextBox && _currentPresetIndex >= 0 && _currentPresetIndex < PresetSelectComboBox.Items.Count)
+                // 名前変更時はプリセットリストとComboBoxの表示を更新
+                if (sender == PresetNameTextBox && _currentPresetIndex >= 0 && _currentPresetIndex < _presets.Count)
                 {
-                    PresetSelectComboBox.Items[_currentPresetIndex] = PresetNameTextBox.Text;
+                    // プリセットの名前を更新
+                    _presets[_currentPresetIndex].LlmPresetName = PresetNameTextBox.Text;
+
+                    // ComboBoxを更新
+                    var currentIndex = _currentPresetIndex;
+                    PresetSelectComboBox.SelectionChanged -= PresetSelectComboBox_SelectionChanged;
+                    PresetSelectComboBox.Items.Clear();
+                    foreach (var preset in _presets)
+                {
+                        PresetSelectComboBox.Items.Add(preset.LlmPresetName);
+                    }
+                    PresetSelectComboBox.SelectedIndex = currentIndex;
+                    PresetSelectComboBox.SelectionChanged += PresetSelectComboBox_SelectionChanged;
                 }
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
