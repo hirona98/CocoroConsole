@@ -206,6 +206,37 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private async void DuplicatePresetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            {
+                MessageBox.Show("複製するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // 現在のUI値を保存
+            SaveCurrentUIToPreset();
+
+            EmbeddingPreset source = _presets[_currentPresetIndex];
+            EmbeddingPreset duplicate = new EmbeddingPreset
+            {
+                EmbeddingPresetId = 0,
+                EmbeddingPresetName = source.EmbeddingPresetName + " (コピー)",
+                EmbeddingModelApiKey = source.EmbeddingModelApiKey,
+                EmbeddingModel = source.EmbeddingModel,
+                EmbeddingBaseUrl = source.EmbeddingBaseUrl,
+                EmbeddingDimension = source.EmbeddingDimension,
+                SimilarEpisodesLimit = source.SimilarEpisodesLimit
+            };
+
+            _presets.Add(duplicate);
+            PresetSelectComboBox.Items.Add(duplicate.EmbeddingPresetName);
+            PresetSelectComboBox.SelectedIndex = _presets.Count - 1;
+
+            await SavePresetsToApiAsync();
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         private async void DeletePresetButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)

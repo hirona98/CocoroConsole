@@ -98,6 +98,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="85"/>
                         </Grid.ColumnDefinitions>
 
@@ -114,8 +115,16 @@
                                 Click="AddPresetButton_Click"
                                 ToolTip="プリセットを追加"/>
 
-                        <Button x:Name="DeletePresetButton"
+                        <Button x:Name="DuplicatePresetButton"
                                 Grid.Column="2"
+                                Content="複製"
+                                Margin="5,5,0,5"
+                                Padding="10,5"
+                                Click="DuplicatePresetButton_Click"
+                                ToolTip="現在のプリセットを複製"/>
+
+                        <Button x:Name="DeletePresetButton"
+                                Grid.Column="3"
                                 Content="削除"
                                 Margin="5,5,0,5"
                                 Padding="10,5"
