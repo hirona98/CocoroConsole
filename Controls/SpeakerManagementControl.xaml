@@ -21,25 +21,23 @@
                            Margin="0,5,10,0"/>
                 <ListBox Grid.Column="1"
                          x:Name="SpeakersListBox"
-                         Height="120"
+                         Height="100"
                          HorizontalContentAlignment="Stretch">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Grid Margin="5,2"
-                                  HorizontalAlignment="Stretch">
+                            <Grid HorizontalAlignment="Stretch">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="{Binding speakerName}"
                                            VerticalAlignment="Center"
-                                           Margin="5,0"
                                            FontSize="14"/>
                                 <Button Grid.Column="1"
                                         Content="削除"
                                         Click="DeleteSpeaker_Click"
                                         Tag="{Binding speakerId}"
-                                        Padding="15,5"
+                                        Padding="15,2"
                                         Margin="5,0"
                                         HorizontalAlignment="Right"/>
                             </Grid>
@@ -64,11 +62,11 @@
                          Margin="0,0,10,0"
                          VerticalAlignment="Center"
                          VerticalContentAlignment="Center"
-                         Padding="5"/>
+                         Padding="2"/>
                 <Button Grid.Column="2"
                         Content="5秒録音して登録"
                         Click="RecordAndRegisterSpeaker_Click"
-                        Padding="15,5"/>
+                        Padding="15,2"/>
             </Grid>
 
             <!-- 識別感度設定 -->

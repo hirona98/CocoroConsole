@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:CocoroConsole.Controls"
              mc:Ignorable="d"
-             d:DesignHeight="800"
+             d:DesignHeight="1200"
              d:DesignWidth="800">
 
     <Grid>
@@ -321,7 +321,7 @@
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666"
                                    Margin="0,0,0,10">
-                            音声認識時のマイク入力感度を調整します。音声認識が有効なキャラクターに適用されます。
+                            音声認識時のマイク入力感度を調整します。
                         </TextBlock>
 
                         <!-- しきい値設定 -->
@@ -358,7 +358,7 @@
 
                 <!-- 話者識別設定 -->
                 <local:SpeakerManagementControl x:Name="SpeakerManagementControl"
-                        Margin="0,0,20,20"/>
+                                                Margin="0,0,20,20"/>
 
                 <!-- API認証設定 -->
                 <GroupBox Header="API認証設定"
@@ -369,9 +369,7 @@
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666"
                                    Margin="0,0,0,10">
-                            CocoroGhost APIとの通信に使用するBearer Tokenを設定します。
-                            <LineBreak/>
-                            cocoro_ghostのconfig.tomlで設定したtokenと同じ値を入力してください。
+                            CocoroGhost APIとの通信に使用するBearer Tokenを設定します。（今は気にしないでください）
                         </TextBlock>
 
                         <!-- Bearer Token設定 -->
@@ -389,15 +387,8 @@
                                          VerticalAlignment="Center"
                                          MaxWidth="300"
                                          HorizontalAlignment="Left"
-                                         PasswordChanged="BearerTokenPasswordBox_PasswordChanged"/>
+                                         PasswordChanged="BearerTokenPasswordBox_PasswordChanged" IsEnabled="False"/>
                         </Grid>
-
-                        <!-- 注意テキスト -->
-                        <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,5,0,0">
-                            ※変更後はアプリケーションの再起動が必要です。
-                        </TextBlock>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>
