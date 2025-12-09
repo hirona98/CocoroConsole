@@ -62,7 +62,7 @@
                           Padding="10"
                           ToolTip="Basic setting">
                     <StackPanel>
-                        <Grid>
+                        <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="*"/>
