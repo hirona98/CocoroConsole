@@ -367,35 +367,14 @@
                             <TextBlock Grid.Column="0"
                                        Text="Bearer Token:"
                                        VerticalAlignment="Center"/>
-                            <Grid Grid.Column="1">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBox Grid.Column="0"
-                                         x:Name="BearerTokenPasswordBox"
-                                         Padding="2"
-                                         VerticalAlignment="Center"
-                                         MaxWidth="300"
-                                         HorizontalAlignment="Left"
-                                         TextChanged="BearerTokenPasswordBox_PasswordChanged"
-                                         IsEnabled="False"/>
-                                <Button Grid.Column="1"
-                                        Content="コピー"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="BearerTokenCopyButton_Click"
-                                        IsEnabled="{Binding IsEnabled, ElementName=BearerTokenPasswordBox}"
-                                        ToolTip="クリップボードにコピー"/>
-                                <Button Grid.Column="2"
-                                        Content="上書き貼付け"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="BearerTokenPasteOverrideButton_Click"
-                                        IsEnabled="{Binding IsEnabled, ElementName=BearerTokenPasswordBox}"
-                                        ToolTip="クリップボードのテキストで上書き"/>
-                            </Grid>
+                            <TextBox Grid.Column="1"
+                                     x:Name="BearerTokenPasswordBox"
+                                     Padding="2"
+                                     VerticalAlignment="Center"
+                                     MaxWidth="300"
+                                     HorizontalAlignment="Left"
+                                     TextChanged="BearerTokenPasswordBox_PasswordChanged"
+                                     IsEnabled="False"/>
                         </Grid>
                     </StackPanel>
                 </GroupBox>

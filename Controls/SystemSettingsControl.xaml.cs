@@ -2,7 +2,6 @@
 using CocoroConsole.Models;
 using CocoroConsole.Models.CocoroGhostApi;
 using CocoroConsole.Services;
-using CocoroConsole.Utilities;
 using CocoroConsole.Windows;
 using System;
 using System.Collections.Generic;
@@ -576,16 +575,6 @@ namespace CocoroConsole.Controls
                 return;
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void BearerTokenPasteOverrideButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClipboardPasteOverride.PasteOverwrite(BearerTokenPasswordBox);
-        }
-
-        private void BearerTokenCopyButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClipboardPasteOverride.CopyToClipboard(BearerTokenPasswordBox);
         }
 
         /// <summary>
