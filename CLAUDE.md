@@ -1,1 +1,1 @@
-﻿WSL上で動作している場合は必ずpowershell.exe経由でビルドしてください
+﻿@AGENTS.mc
