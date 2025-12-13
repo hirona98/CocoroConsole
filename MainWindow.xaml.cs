@@ -1030,7 +1030,7 @@ namespace CocoroConsole
                _appSettings.CurrentCharacterIndex < _appSettings.CharacterList.Count)
             {
                 var currentCharacter = _appSettings.CharacterList[_appSettings.CurrentCharacterIndex];
-                if (!string.IsNullOrWhiteSpace(currentCharacter.vrmFilePath))
+                if (!string.IsNullOrWhiteSpace(currentCharacter.vrmFilePath) || currentCharacter.isReadOnly == true)
                 {
                     ProcessHelper.LaunchExternalApplication("CocoroShell.exe", "CocoroShell", operation, true);
                     return;
