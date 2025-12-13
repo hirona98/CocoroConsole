@@ -11,16 +11,6 @@ namespace CocoroConsole.Controls
     /// </summary>
     public partial class ExternalServicesSettingsControl : UserControl
     {
-        /// <summary>
-        /// 設定が変更されたときに発生するイベント
-        /// </summary>
-        public event EventHandler? SettingsChanged;
-
-        /// <summary>
-        /// 読み込み完了フラグ
-        /// </summary>
-        private bool _isInitialized = false;
-
         public ExternalServicesSettingsControl()
         {
             InitializeComponent();
@@ -33,17 +23,8 @@ namespace CocoroConsole.Controls
         {
             try
             {
-                var appSettings = AppSettings.Instance;
-
-                // 通知API設定
-                IsEnableNotificationApiCheckBox.IsChecked = appSettings.IsEnableNotificationApi;
                 NotificationApiDetailsTextBox.Text = GetNotificationApiDetails();
-                DirectRequestApiDetailsTextBox.Text = GetDirectRequestApiDetails();
-
-                // イベントハンドラーを設定
-                SetupEventHandlers();
-
-                _isInitialized = true;
+                DirectRequestApiDetailsTextBox.Text = GetMetaRequestApiDetails();
 
                 await Task.CompletedTask;
             }
@@ -55,116 +36,96 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// イベントハンドラーを設定
-        /// </summary>
-        private void SetupEventHandlers()
-        {
-            // 通知API設定
-            IsEnableNotificationApiCheckBox.Checked += OnSettingsChanged;
-            IsEnableNotificationApiCheckBox.Unchecked += OnSettingsChanged;
-        }
-
-        /// <summary>
-        /// 設定変更イベントハンドラー
-        /// </summary>
-        private void OnSettingsChanged(object sender, RoutedEventArgs e)
-        {
-            if (!_isInitialized)
-                return;
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <summary>
         /// 通知API詳細テキストを取得（エンドポイント/ボディ/レスポンス/使用例を含む）
         /// </summary>
         private string GetNotificationApiDetails()
         {
+            var cocoroGhostPort = AppSettings.Instance.CocoroGhostPort;
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("エンドポイント:");
-            sb.AppendLine("POST http://127.0.0.1:55604/api/v1/notification");
+            sb.AppendLine($"POST http://127.0.0.1:{cocoroGhostPort}/api/notification");
+            sb.AppendLine();
+            sb.AppendLine("ヘッダー:");
+            sb.AppendLine("Authorization: Bearer <TOKEN>");
+            sb.AppendLine("Content-Type: application/json; charset=utf-8");
             sb.AppendLine();
             sb.AppendLine("リクエストボディ (JSON):");
             sb.AppendLine("{");
-            sb.AppendLine("  \"from\": \"アプリ名\",");
-            sb.AppendLine("  \"message\": \"通知メッセージ\",");
-            sb.AppendLine("  \"images\": [  // オプション（最大5枚）");
-            sb.AppendLine("    \"data:image/jpeg;base64,/9j/4AAQ...\",  // 1枚目");
-            sb.AppendLine("    \"data:image/png;base64,iVBORw0KGgo...\"  // 2枚目");
+            sb.AppendLine("  \"memory_id\": \"default\",  // オプション");
+            sb.AppendLine("  \"source_system\": \"gmail\",");
+            sb.AppendLine("  \"title\": \"件名\",");
+            sb.AppendLine("  \"body\": \"本文\",");
+            sb.AppendLine("  \"images\": [  // オプション");
+            sb.AppendLine("    {\"type\": \"external\", \"base64\": \"...\"}");
             sb.AppendLine("  ]");
             sb.AppendLine("}");
             sb.AppendLine();
             sb.AppendLine("レスポンス:");
-            sb.AppendLine("HTTP/1.1 204 No Content");
+            sb.AppendLine("HTTP/1.1 200 OK");
+            sb.AppendLine("{ \"unit_id\": 23456 }");
+            sb.AppendLine();
+            sb.AppendLine("備考:");
+            sb.AppendLine("- images[].base64 は data:image/...;base64, を除いた生のBase64文字列を指定してください");
             sb.AppendLine();
             sb.AppendLine("使用例 (cURL):");
-            sb.AppendLine("# 1枚の画像を送る場合");
-            sb.AppendLine("curl -X POST http://127.0.0.1:55604/api/v1/notification \\");
+            sb.AppendLine($"curl -X POST http://127.0.0.1:{cocoroGhostPort}/api/notification \\");
+            sb.AppendLine("  -H \"Authorization: Bearer <TOKEN>\" \\");
             sb.AppendLine("  -H \"Content-Type: application/json\" \\");
-            sb.AppendLine("  -d '{\"from\":\"MyApp\",\"message\":\"処理完了\",\"images\":[\"data:image/jpeg;base64,...\"]}'");
-            sb.AppendLine();
-            sb.AppendLine("# 複数枚の画像を送る場合");
-            sb.AppendLine("curl -X POST http://127.0.0.1:55604/api/v1/notification \\");
-            sb.AppendLine("  -H \"Content-Type: application/json\" \\");
-            sb.AppendLine("  -d '{\"from\":\"MyApp\",\"message\":\"結果\",\"images\":[\"data:image/jpeg;base64,...\",\"data:image/png;base64,...\"]}'");
+            sb.AppendLine("  -d '{\"source_system\":\"gmail\",\"title\":\"件名\",\"body\":\"本文\"}'");
             sb.AppendLine();
             sb.AppendLine("使用例 (PowerShell):");
-            sb.AppendLine("# 複数枚の画像を送る場合");
             sb.AppendLine("Invoke-RestMethod -Method Post `");
-            sb.AppendLine("  -Uri \"http://127.0.0.1:55604/api/v1/notification\" `");
+            sb.AppendLine($"  -Uri \"http://127.0.0.1:{cocoroGhostPort}/api/notification\" `");
+            sb.AppendLine("  -Headers @{ Authorization = \"Bearer <TOKEN>\" } `");
             sb.AppendLine("  -ContentType \"application/json; charset=utf-8\" `");
-            sb.AppendLine("  -Body '{\"from\":\"MyApp\",\"message\":\"結果\",\"images\":[\"data:image/jpeg;base64,...\",\"data:image/png;base64,...\"]}'");
+            sb.AppendLine("  -Body '{\"source_system\":\"gmail\",\"title\":\"件名\",\"body\":\"本文\"}'");
             return sb.ToString();
         }
 
         /// <summary>
-        /// 直接要求API詳細テキストを取得（エンドポイント/ボディ/レスポンス/使用例を含む）
+        /// メタ要求API詳細テキストを取得（エンドポイント/ボディ/レスポンス/使用例を含む）
         /// </summary>
-        private string GetDirectRequestApiDetails()
+        private string GetMetaRequestApiDetails()
         {
+            var cocoroGhostPort = AppSettings.Instance.CocoroGhostPort;
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("エンドポイント:");
-            sb.AppendLine("POST http://127.0.0.1:55604/api/v1/direct-request");
+            sb.AppendLine($"POST http://127.0.0.1:{cocoroGhostPort}/api/meta_request");
+            sb.AppendLine();
+            sb.AppendLine("ヘッダー:");
+            sb.AppendLine("Authorization: Bearer <TOKEN>");
+            sb.AppendLine("Content-Type: application/json; charset=utf-8");
             sb.AppendLine();
             sb.AppendLine("リクエストボディ (JSON):");
             sb.AppendLine("{");
-            sb.AppendLine("  \"prompt\": \"任意のプロンプトやメッセージ\",");
-            sb.AppendLine("  \"images\": [  // オプション（最大5枚）");
-            sb.AppendLine("    \"data:image/jpeg;base64,/9j/4AAQ...\",  // 1枚目");
-            sb.AppendLine("    \"data:image/png;base64,iVBORw0KGgo...\"  // 2枚目");
+            sb.AppendLine("  \"memory_id\": \"default\",  // オプション");
+            sb.AppendLine("  \"instruction\": \"任意の指示文\",");
+            sb.AppendLine("  \"payload_text\": \"任意のプロンプトやメッセージ\",");
+            sb.AppendLine("  \"images\": [  // オプション");
+            sb.AppendLine("    {\"type\": \"external\", \"base64\": \"...\"}");
             sb.AppendLine("  ]");
             sb.AppendLine("}");
             sb.AppendLine();
             sb.AppendLine("レスポンス:");
-            sb.AppendLine("HTTP/1.1 204 No Content");
+            sb.AppendLine("HTTP/1.1 200 OK");
+            sb.AppendLine("{ \"unit_id\": 34567 }");
+            sb.AppendLine();
+            sb.AppendLine("備考:");
+            sb.AppendLine("- images[].base64 は data:image/...;base64, を除いた生のBase64文字列を指定してください");
             sb.AppendLine();
             sb.AppendLine("使用例 (cURL):");
-            sb.AppendLine("curl -X POST http://127.0.0.1:55604/api/v1/direct-request \\");
+            sb.AppendLine($"curl -X POST http://127.0.0.1:{cocoroGhostPort}/api/meta_request \\");
+            sb.AppendLine("  -H \"Authorization: Bearer <TOKEN>\" \\");
             sb.AppendLine("  -H \"Content-Type: application/json\" \\");
-            sb.AppendLine("  -d '{\"prompt\":\"これは直近1時間のニュースです。内容をユーザに説明するとともに感想を述べてください。：～ニュース内容～\"}'");
+            sb.AppendLine("  -d '{\"instruction\":\"要約して感想も述べて\",\"payload_text\":\"～ニュース内容～\"}'");
             sb.AppendLine();
             sb.AppendLine("使用例 (PowerShell):");
             sb.AppendLine("Invoke-RestMethod -Method Post `");
-            sb.AppendLine("  -Uri \"http://127.0.0.1:55604/api/v1/direct-request\" `");
+            sb.AppendLine($"  -Uri \"http://127.0.0.1:{cocoroGhostPort}/api/meta_request\" `");
+            sb.AppendLine("  -Headers @{ Authorization = \"Bearer <TOKEN>\" } `");
             sb.AppendLine("  -ContentType \"application/json; charset=utf-8\" `");
-            sb.AppendLine("  -Body '{\"prompt\":\"これは直近1時間のニュースです。内容をユーザに説明するとともに感想を述べてください。：～ニュース内容～\"}'");
+            sb.AppendLine("  -Body '{\"instruction\":\"要約して感想も述べて\",\"payload_text\":\"～ニュース内容～\"}'");
             return sb.ToString();
-        }
-
-        /// <summary>
-        /// 通知API有効状態を取得
-        /// </summary>
-        public bool GetIsEnableNotificationApi()
-        {
-            return IsEnableNotificationApiCheckBox.IsChecked ?? false;
-        }
-
-        /// <summary>
-        /// 通知API有効状態を設定
-        /// </summary>
-        public void SetIsEnableNotificationApi(bool enabled)
-        {
-            IsEnableNotificationApiCheckBox.IsChecked = enabled;
         }
     }
 }

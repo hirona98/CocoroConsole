@@ -39,7 +39,8 @@ namespace CocoroConsole.Services
 
             _serializerOptions = new JsonSerializerOptions
             {
-                PropertyNameCaseInsensitive = true
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
         }
 
@@ -57,9 +58,7 @@ namespace CocoroConsole.Services
         {
             ThrowIfDisposed();
 
-            var chatUrl = BuildChatRequestUrl(requestPayload);
-
-            using var request = new HttpRequestMessage(HttpMethod.Post, chatUrl);
+            using var request = new HttpRequestMessage(HttpMethod.Post, BuildUrl("/api/chat"));
             request.Headers.Accept.Clear();
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
             request.Content = CreateJsonContent(requestPayload);
@@ -79,6 +78,9 @@ namespace CocoroConsole.Services
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             using var reader = new StreamReader(stream, Encoding.UTF8);
 
+            string? currentEvent = null;
+            var dataBuilder = new StringBuilder();
+
             while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
             {
                 var line = await reader.ReadLineAsync().ConfigureAwait(false);
@@ -87,53 +89,53 @@ namespace CocoroConsole.Services
                     break;
                 }
 
-                if (string.IsNullOrWhiteSpace(line))
+                if (line.Length == 0)
                 {
+                    if (string.IsNullOrWhiteSpace(currentEvent) || dataBuilder.Length == 0)
+                    {
+                        currentEvent = null;
+                        dataBuilder.Clear();
+                        continue;
+                    }
+
+                    var json = dataBuilder.ToString();
+                    dataBuilder.Clear();
+
+                    var clientEvent = TryParseChatSseEvent(currentEvent, json);
+                    currentEvent = null;
+
+                    if (clientEvent == null)
+                    {
+                        continue;
+                    }
+
+                    yield return clientEvent;
+
+                    if (clientEvent.Type == "done" || clientEvent.Type == "error")
+                    {
+                        yield break;
+                    }
+
+                    continue;
+                }
+
+                const string eventPrefix = "event:";
+                if (line.StartsWith(eventPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    currentEvent = line.Substring(eventPrefix.Length).Trim();
                     continue;
                 }
 
                 const string dataPrefix = "data:";
-                if (!line.StartsWith(dataPrefix, StringComparison.OrdinalIgnoreCase))
+                if (line.StartsWith(dataPrefix, StringComparison.OrdinalIgnoreCase))
                 {
+                    if (dataBuilder.Length > 0)
+                    {
+                        dataBuilder.Append('\n');
+                    }
+
+                    dataBuilder.Append(line.Substring(dataPrefix.Length).Trim());
                     continue;
-                }
-
-                var json = line.Substring(dataPrefix.Length).Trim();
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    continue;
-                }
-
-                ChatStreamServerEvent? serverEvent = null;
-                try
-                {
-                    serverEvent = JsonSerializer.Deserialize<ChatStreamServerEvent>(json, _serializerOptions);
-                }
-                catch
-                {
-                    // SSEフォーマットが想定外の場合はスキップ
-                    continue;
-                }
-
-                if (serverEvent == null || string.IsNullOrWhiteSpace(serverEvent.Type))
-                {
-                    continue;
-                }
-
-                var clientEvent = new ChatStreamEvent
-                {
-                    Type = serverEvent.Type,
-                    Delta = serverEvent.Delta,
-                    ReplyText = serverEvent.ReplyText,
-                    EpisodeId = serverEvent.EpisodeId,
-                    ErrorMessage = serverEvent.Message
-                };
-
-                yield return clientEvent;
-
-                if (serverEvent.Type == "done" || serverEvent.Type == "error")
-                {
-                    yield break;
                 }
             }
         }
@@ -212,23 +214,63 @@ namespace CocoroConsole.Services
             return $"{_baseUrl}/{path.TrimStart('/')}";
         }
 
-        private string BuildChatRequestUrl(ChatStreamRequest payload)
+        private ChatStreamEvent? TryParseChatSseEvent(string eventName, string json)
         {
-            var queryParts = new List<string>
+            if (string.IsNullOrWhiteSpace(eventName) || string.IsNullOrWhiteSpace(json))
             {
-                $"request={Uri.EscapeDataString(payload.Text ?? string.Empty)}"
-            };
-
-            var userId = string.IsNullOrWhiteSpace(payload.UserId) ? "default" : payload.UserId;
-            queryParts.Add($"user_id={Uri.EscapeDataString(userId)}");
-
-            if (!string.IsNullOrWhiteSpace(payload.ContextHint))
-            {
-                queryParts.Add($"context_hint={Uri.EscapeDataString(payload.ContextHint)}");
+                return null;
             }
 
-            var queryString = string.Join("&", queryParts);
-            return BuildUrl($"/api/chat?{queryString}");
+            try
+            {
+                switch (eventName)
+                {
+                    case "token":
+                        {
+                            var payload = JsonSerializer.Deserialize<ChatStreamTokenPayload>(json, _serializerOptions);
+                            if (string.IsNullOrEmpty(payload?.Text))
+                            {
+                                return null;
+                            }
+
+                            return new ChatStreamEvent
+                            {
+                                Type = "token",
+                                Delta = payload.Text
+                            };
+                        }
+                    case "done":
+                        {
+                            var payload = JsonSerializer.Deserialize<ChatStreamDonePayload>(json, _serializerOptions);
+                            if (payload == null)
+                            {
+                                return null;
+                            }
+
+                            return new ChatStreamEvent
+                            {
+                                Type = "done",
+                                ReplyText = payload.ReplyText,
+                                EpisodeId = payload.EpisodeUnitId
+                            };
+                        }
+                    case "error":
+                        {
+                            var payload = JsonSerializer.Deserialize<ChatStreamErrorPayload>(json, _serializerOptions);
+                            return new ChatStreamEvent
+                            {
+                                Type = "error",
+                                ErrorMessage = payload?.Message
+                            };
+                        }
+                    default:
+                        return null;
+                }
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public void Dispose()
@@ -254,16 +296,20 @@ namespace CocoroConsole.Services
     public class ChatStreamRequest
     {
         [JsonPropertyName("user_id")]
-        public string UserId { get; set; } = "default";
+        [Obsolete("user_idは非推奨です。memory_id / user_text / images を使用してください。")]
+        public string? UserId { get; set; }
 
-        [JsonPropertyName("text")]
-        public string Text { get; set; } = string.Empty;
+        [JsonPropertyName("memory_id")]
+        public string? MemoryId { get; set; }
 
-        [JsonPropertyName("context_hint")]
-        public string? ContextHint { get; set; }
+        [JsonPropertyName("user_text")]
+        public string UserText { get; set; } = string.Empty;
 
-        [JsonPropertyName("image_base64")]
-        public string? ImageBase64 { get; set; }
+        [JsonPropertyName("images")]
+        public List<CocoroGhostImage> Images { get; set; } = new List<CocoroGhostImage>();
+
+        [JsonPropertyName("client_context")]
+        public Dictionary<string, object?>? ClientContext { get; set; }
     }
 
     public class ChatStreamEvent
@@ -275,26 +321,35 @@ namespace CocoroConsole.Services
         public string? ErrorMessage { get; set; }
     }
 
-    internal class ChatStreamServerEvent
+    internal class ChatStreamTokenPayload
     {
-        [JsonPropertyName("type")]
-        public string Type { get; set; } = string.Empty;
+        [JsonPropertyName("text")]
+        public string? Text { get; set; }
+    }
 
-        [JsonPropertyName("delta")]
-        public string? Delta { get; set; }
+    internal class ChatStreamDonePayload
+    {
+        [JsonPropertyName("episode_unit_id")]
+        public int? EpisodeUnitId { get; set; }
 
         [JsonPropertyName("reply_text")]
         public string? ReplyText { get; set; }
+    }
 
-        [JsonPropertyName("episode_id")]
-        public int? EpisodeId { get; set; }
-
+    internal class ChatStreamErrorPayload
+    {
         [JsonPropertyName("message")]
         public string? Message { get; set; }
+
+        [JsonPropertyName("code")]
+        public string? Code { get; set; }
     }
 
     public class NotificationRequest
     {
+        [JsonPropertyName("memory_id")]
+        public string? MemoryId { get; set; }
+
         [JsonPropertyName("source_system")]
         public string SourceSystem { get; set; } = string.Empty;
 
@@ -304,38 +359,44 @@ namespace CocoroConsole.Services
         [JsonPropertyName("body")]
         public string Body { get; set; } = string.Empty;
 
-        [JsonPropertyName("image_base64")]
-        public string? ImageBase64 { get; set; }
+        [JsonPropertyName("images")]
+        public List<CocoroGhostImage> Images { get; set; } = new List<CocoroGhostImage>();
     }
 
     public class NotificationResponse
     {
-        [JsonPropertyName("episode_id")]
-        public int EpisodeId { get; set; }
-
-        [JsonPropertyName("llm_response")]
-        public JsonElement? LlmResponse { get; set; }
+        [JsonPropertyName("unit_id")]
+        public int UnitId { get; set; }
     }
 
     public class MetaRequest
     {
+        [JsonPropertyName("memory_id")]
+        public string? MemoryId { get; set; }
+
         [JsonPropertyName("instruction")]
         public string Instruction { get; set; } = string.Empty;
 
         [JsonPropertyName("payload_text")]
         public string PayloadText { get; set; } = string.Empty;
 
-        [JsonPropertyName("image_base64")]
-        public string? ImageBase64 { get; set; }
+        [JsonPropertyName("images")]
+        public List<CocoroGhostImage> Images { get; set; } = new List<CocoroGhostImage>();
     }
 
     public class MetaRequestResponse
     {
-        [JsonPropertyName("episode_id")]
-        public int EpisodeId { get; set; }
+        [JsonPropertyName("unit_id")]
+        public int UnitId { get; set; }
+    }
 
-        [JsonPropertyName("llm_response")]
-        public JsonElement? LlmResponse { get; set; }
+    public class CocoroGhostImage
+    {
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = string.Empty;
+
+        [JsonPropertyName("base64")]
+        public string Base64 { get; set; } = string.Empty;
     }
 
     public class CaptureRequest

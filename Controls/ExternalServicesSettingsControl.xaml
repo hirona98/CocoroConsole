@@ -18,19 +18,12 @@
                         <!-- 説明テキスト -->
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666">
-                            REST APIで外部アプリケーションと連携できます
+                            外部連携はCocoroGhostのREST APIを利用します（Bearerトークン必須）
                         </TextBlock>
-
-                        <!-- API要求を受けるチェックボックス -->
-                        <CheckBox x:Name="IsEnableNotificationApiCheckBox"
-                                  Content="API要求を受ける（要再起動）"
-                                  Margin="0,10,0,0"
-                                  Foreground="#FF4873CF"
-                                  ToolTip="Enable API"/>
 
                         <!-- 通知API使用例（エンドポイント/ボディ/レスポンス/使用例をすべて折りたたみ） -->
                         <Expander x:Name="NotificationApiDetailsExpander"
-                                  Header="通知API使用例"
+                                  Header="CocoroGhost 通知API使用例"
                                   Foreground="#666666"
                                   IsExpanded="False"
                                   Margin="0,10,0,0">
@@ -47,7 +40,7 @@
 
                         <!-- 直接要求API使用例（エンドポイント/ボディ/レスポンス/使用例をすべて折りたたみ） -->
                         <Expander x:Name="DirectRequestApiDetailsExpander"
-                                  Header="直接要求API使用例"
+                                  Header="CocoroGhost メタ要求API使用例"
                                   Foreground="#666666"
                                   IsExpanded="False"
                                   Margin="0,10,0,0">

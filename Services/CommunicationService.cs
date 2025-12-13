@@ -21,7 +21,6 @@ namespace CocoroConsole.Services
         private readonly CocoroConsoleApiServer _apiServer;
         private readonly CocoroShellClient _shellClient;
         private readonly IAppSettings _appSettings;
-        private readonly NotificationApiServer? _notificationApiServer;
         private readonly StatusPollingService _statusPollingService;
         private readonly CocoroGhostApiClient? _cocoroGhostApiClient;
         private LogStreamClient? _logStreamClient;
@@ -80,12 +79,6 @@ namespace CocoroConsole.Services
             // CocoroShellクライアントの初期化
             _shellClient = new CocoroShellClient(_appSettings.CocoroShellPort);
 
-            // 通知APIサーバーの初期化（有効な場合のみ）
-            if (_appSettings.IsEnableNotificationApi)
-            {
-                _notificationApiServer = new NotificationApiServer(_appSettings.NotificationApiPort, this);
-            }
-
             // CocoroGhost APIクライアントの初期化（Bearer Tokenが設定されている場合のみ）
             var bearerToken = _appSettings.CocoroGhostBearerToken;
             if (!string.IsNullOrEmpty(bearerToken))
@@ -115,12 +108,6 @@ namespace CocoroConsole.Services
             {
                 // CocoroConsole APIサーバーを起動
                 await _apiServer.StartAsync();
-
-                // 通知APIサーバーを起動（有効な場合）
-                if (_notificationApiServer != null)
-                {
-                    await _notificationApiServer.StartAsync();
-                }
             }
             catch (Exception ex)
             {
@@ -137,12 +124,6 @@ namespace CocoroConsole.Services
         {
             try
             {
-                // 通知APIサーバーを停止
-                if (_notificationApiServer != null)
-                {
-                    await _notificationApiServer.StopAsync();
-                }
-
                 // CocoroConsole APIサーバーを停止
                 await _apiServer.StopAsync();
             }
@@ -311,9 +292,17 @@ namespace CocoroConsole.Services
 
                 var chatRequest = new ChatStreamRequest
                 {
-                    Text = message,
-                    UserId = "default",
-                    ImageBase64 = imageBase64
+                    UserText = message,
+                    Images = string.IsNullOrEmpty(imageBase64)
+                        ? new List<CocoroGhostImage>()
+                        : new List<CocoroGhostImage>
+                        {
+                            new CocoroGhostImage
+                            {
+                                Type = "desktop_capture",
+                                Base64 = imageBase64
+                            }
+                        }
                 };
 
                 var buffer = new StringBuilder();
@@ -478,27 +467,14 @@ namespace CocoroConsole.Services
                     return;
                 }
 
-                // 画像データを変換
-                List<ImageData>? images = null;
-                if (imageDataUrls != null && imageDataUrls.Length > 0)
-                {
-                    images = imageDataUrls
-                        .Where(url => !string.IsNullOrEmpty(url))
-                        .Select(url => new ImageData { data = url })
-                        .ToList();
-                }
-                string? firstImageBase64 = null;
-                if (images != null && images.Count > 0)
-                {
-                    firstImageBase64 = ExtractBase64(images.First().data);
-                }
+                var images = CreateCocoroGhostImages(imageDataUrls);
 
                 var request = new NotificationRequest
                 {
                     SourceSystem = notification.from,
                     Title = notification.from,
                     Body = notification.message,
-                    ImageBase64 = firstImageBase64
+                    Images = images
                 };
 
                 _statusPollingService.SetProcessingStatus(CocoroGhostStatus.ProcessingMessage);
@@ -534,26 +510,13 @@ namespace CocoroConsole.Services
                     return;
                 }
 
-                List<ImageData>? images = null;
-                if (imageDataUrls != null && imageDataUrls.Length > 0)
-                {
-                    images = imageDataUrls
-                        .Where(url => !string.IsNullOrEmpty(url))
-                        .Select(url => new ImageData { data = url })
-                        .ToList();
-                }
-
-                string? firstImageBase64 = null;
-                if (images != null && images.Count > 0)
-                {
-                    firstImageBase64 = ExtractBase64(images.First().data);
-                }
+                var images = CreateCocoroGhostImages(imageDataUrls);
 
                 var metaRequest = new MetaRequest
                 {
                     Instruction = $"Direct request from {request.from}",
                     PayloadText = request.message,
-                    ImageBase64 = firstImageBase64
+                    Images = images
                 };
 
                 _statusPollingService.SetProcessingStatus(CocoroGhostStatus.ProcessingMessage);
@@ -602,6 +565,37 @@ namespace CocoroConsole.Services
             }
 
             return dataUrl;
+        }
+
+        private List<CocoroGhostImage> CreateCocoroGhostImages(string[]? imageDataUrls)
+        {
+            var images = new List<CocoroGhostImage>();
+            if (imageDataUrls == null || imageDataUrls.Length == 0)
+            {
+                return images;
+            }
+
+            foreach (var imageDataUrl in imageDataUrls)
+            {
+                if (string.IsNullOrWhiteSpace(imageDataUrl))
+                {
+                    continue;
+                }
+
+                var base64 = ExtractBase64(imageDataUrl);
+                if (string.IsNullOrWhiteSpace(base64))
+                {
+                    continue;
+                }
+
+                images.Add(new CocoroGhostImage
+                {
+                    Type = "external",
+                    Base64 = base64
+                });
+            }
+
+            return images;
         }
 
         /// <summary>
@@ -825,7 +819,6 @@ namespace CocoroConsole.Services
             _forwardMessageSemaphore?.Dispose();
 
             _statusPollingService?.Dispose();
-            _notificationApiServer?.Dispose();
             _apiServer?.Dispose();
             _shellClient?.Dispose();
             _logStreamClient?.Dispose();

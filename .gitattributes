@@ -24,3 +24,4 @@
 *.jpg filter=lfs diff=lfs merge=lfs -text
 *.jpeg filter=lfs diff=lfs merge=lfs -text
 *.onnx filter=lfs diff=lfs merge=lfs -text
+Resource/silero_vad.onnx -filter -diff -merge -text

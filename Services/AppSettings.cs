@@ -44,11 +44,8 @@ namespace CocoroConsole.Services
         public int CocoroConsolePort { get; set; }
         public int CocoroGhostPort { get; set; }
         public int CocoroShellPort { get; set; }
-        public int NotificationApiPort { get; set; }
         // cocoro_ghost API Bearer トークン
         public string CocoroGhostBearerToken { get; set; } = string.Empty;
-        // 通知API設定
-        public bool IsEnableNotificationApi { get; set; }
         // UI設定
         public bool IsRestoreWindowPosition { get; set; }
         public bool IsTopmost { get; set; }
@@ -142,9 +139,7 @@ namespace CocoroConsole.Services
             CocoroConsolePort = config.CocoroConsolePort;
             CocoroGhostPort = config.cocoroCorePort;
             CocoroShellPort = config.cocoroShellPort;
-            NotificationApiPort = config.notificationApiPort;
             CocoroGhostBearerToken = config.cocoroGhostBearerToken ?? string.Empty;
-            IsEnableNotificationApi = config.isEnableNotificationApi;
             IsRestoreWindowPosition = config.isRestoreWindowPosition;
             IsTopmost = config.isTopmost;
             IsEscapeCursor = config.isEscapeCursor;
@@ -234,9 +229,7 @@ namespace CocoroConsole.Services
                 CocoroConsolePort = CocoroConsolePort,
                 cocoroCorePort = CocoroGhostPort,
                 cocoroShellPort = CocoroShellPort,
-                notificationApiPort = NotificationApiPort,
                 cocoroGhostBearerToken = CocoroGhostBearerToken,
-                isEnableNotificationApi = IsEnableNotificationApi,
                 isRestoreWindowPosition = IsRestoreWindowPosition,
                 isTopmost = IsTopmost,
                 isEscapeCursor = IsEscapeCursor,

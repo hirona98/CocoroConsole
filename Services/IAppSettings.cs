@@ -30,16 +30,6 @@ namespace CocoroConsole.Services
         string CocoroGhostBearerToken { get; set; }
 
         /// <summary>
-        /// 通知API有効/無効
-        /// </summary>
-        bool IsEnableNotificationApi { get; set; }
-
-        /// <summary>
-        /// 通知APIポート
-        /// </summary>
-        int NotificationApiPort { get; set; }
-
-        /// <summary>
         /// キャラクター位置復元
         /// </summary>
         bool IsRestoreWindowPosition { get; set; }

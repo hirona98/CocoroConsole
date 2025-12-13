@@ -75,9 +75,6 @@ namespace CocoroConsole.Controls
             // 外部サービス設定コントロールを初期化
             _ = ExternalServicesSettingsControl.InitializeAsync();
 
-            // 外部サービス設定変更イベントを登録
-            ExternalServicesSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
-
             // プリセット管理コントロールを初期化
             _ = InitializePresetControlsAsync();
 
@@ -276,7 +273,6 @@ namespace CocoroConsole.Controls
         private Dictionary<string, object> CollectSystemSettings()
         {
             var dict = new Dictionary<string, object>();
-            dict["IsEnableNotificationApi"] = ExternalServicesSettingsControl.GetIsEnableNotificationApi();
 
             var screenshotSettings = SystemSettingsControl.GetScreenshotSettings();
             dict["ScreenshotEnabled"] = screenshotSettings.enabled;
@@ -665,7 +661,6 @@ namespace CocoroConsole.Controls
         private void ApplySystemSnapshotToAppSettings(Dictionary<string, object> snapshot)
         {
             var appSettings = AppSettings.Instance;
-            appSettings.IsEnableNotificationApi = (bool)snapshot["IsEnableNotificationApi"];
 
             appSettings.ScreenshotSettings.enabled = (bool)snapshot["ScreenshotEnabled"];
             appSettings.ScreenshotSettings.intervalMinutes = (int)snapshot["ScreenshotInterval"];
@@ -969,9 +964,6 @@ namespace CocoroConsole.Controls
             // 現在の設定のディープコピーを作成
             var config = AppSettings.Instance.GetConfigSettings().DeepCopy();
 
-            // System設定の取得
-            config.isEnableNotificationApi = ExternalServicesSettingsControl.GetIsEnableNotificationApi();
-
             // Character設定の取得（ディープコピーを使用）
             config.currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
             var currentCharacterSetting = CharacterManagementControl.GetCurrentCharacterSettingFromUI();
@@ -995,8 +987,7 @@ namespace CocoroConsole.Controls
         private bool HasCocoroGhostRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
         {
             // 基本設定項目の比較
-            if (currentSettings.isEnableNotificationApi != previousSettings.isEnableNotificationApi ||
-                currentSettings.currentCharacterIndex != previousSettings.currentCharacterIndex)
+            if (currentSettings.currentCharacterIndex != previousSettings.currentCharacterIndex)
             {
                 return true;
             }
