@@ -606,7 +606,7 @@ namespace CocoroConsole
                 {
                     if (!_isStreamingChatActive)
                     {
-                        ChatControlInstance.StartStreamingAiMessage(e.Content);
+                        ChatControlInstance.AddAiMessage(e.Content);
                         _isStreamingChatActive = true;
                     }
                     else
@@ -617,7 +617,6 @@ namespace CocoroConsole
                 else
                 {
                     ChatControlInstance.UpdateStreamingAiMessage(e.Content);
-                    ChatControlInstance.FinishStreamingAiMessage();
                     _isStreamingChatActive = false;
                     _skipNextAssistantMessage = true; // 直後の最終メッセージ表示を抑止
                 }

@@ -23,7 +23,6 @@ namespace CocoroConsole.Controls
     public partial class ChatControl : UserControl
     {
         public event EventHandler<string>? MessageSent;
-        private bool _isStreamingMessage;
 
         // 添付画像データ（Base64形式のdata URL、最大5枚）
         private List<string> _attachedImageDataUrls = new List<string>();
@@ -351,28 +350,17 @@ namespace CocoroConsole.Controls
             ChatScrollViewer.ScrollToEnd();
         }
 
-        public void StartStreamingAiMessage(string content)
-        {
-            _isStreamingMessage = true;
-            AddAiMessage(content);
-        }
-
         public void UpdateStreamingAiMessage(string content)
         {
             var messageTextBox = GetLastAiMessageTextBox();
             if (messageTextBox == null)
             {
-                StartStreamingAiMessage(content);
+                AddAiMessage(content);
                 return;
             }
 
             messageTextBox.Text = RemoveFaceTags(content);
             ChatScrollViewer.ScrollToEnd();
-        }
-
-        public void FinishStreamingAiMessage()
-        {
-            _isStreamingMessage = false;
         }
 
         private TextBox? GetLastAiMessageTextBox()
