@@ -533,6 +533,11 @@ namespace CocoroConsole.Controls
             ClipboardPasteOverride.PasteOverwrite(BearerTokenPasswordBox);
         }
 
+        private void BearerTokenCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(BearerTokenPasswordBox);
+        }
+
         /// <summary>
         /// Bearer Tokenを取得
         /// </summary>

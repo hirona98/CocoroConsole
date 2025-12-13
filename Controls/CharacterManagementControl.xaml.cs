@@ -65,9 +65,19 @@ namespace CocoroConsole.Controls
             ClipboardPasteOverride.PasteOverwrite(AivisCloudApiKeyPasswordBox);
         }
 
+        private void AivisCloudApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(AivisCloudApiKeyPasswordBox);
+        }
+
         private void STTApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
         {
             ClipboardPasteOverride.PasteOverwrite(STTApiKeyPasswordBox);
+        }
+
+        private void STTApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(STTApiKeyPasswordBox);
         }
 
         /// <summary>

@@ -7,6 +7,26 @@ namespace CocoroConsole.Utilities
 {
     public static class ClipboardPasteOverride
     {
+        public static void CopyToClipboard(TextBox source)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            TrySetText(source.Text);
+        }
+
+        public static void CopyToClipboard(PasswordBox source)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            TrySetText(source.Password);
+        }
+
         public static void PasteOverwrite(TextBox target)
         {
             if (target == null)
@@ -53,6 +73,20 @@ namespace CocoroConsole.Utilities
                 return false;
             }
         }
+
+        private static void TrySetText(string? text)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(text))
+                {
+                    Clipboard.SetText(text);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Clipboard copy failed: {ex}");
+            }
+        }
     }
 }
-

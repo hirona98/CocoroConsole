@@ -684,6 +684,11 @@
                                              ToolTip="Aivis Cloud APIキー"
                                              Width="200"
                                              HorizontalAlignment="Left"/>
+                                    <Button Content="コピー"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="AivisCloudApiKeyCopyButton_Click"
+                                            ToolTip="クリップボードにコピー"/>
                                     <Button Content="上書き貼付け"
                                             Margin="10,0,0,0"
                                             Padding="10,0,10,0"
@@ -902,6 +907,11 @@
                                          Padding="2"
                                          Width="200"
                                          HorizontalAlignment="Left"/>
+                                <Button Content="コピー"
+                                        Margin="10,0,0,0"
+                                        Padding="10,0,10,0"
+                                        Click="STTApiKeyCopyButton_Click"
+                                        ToolTip="クリップボードにコピー"/>
                                 <Button Content="上書き貼付け"
                                         Margin="10,0,0,0"
                                         Padding="10,0,10,0"

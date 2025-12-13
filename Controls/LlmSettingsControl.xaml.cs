@@ -285,9 +285,19 @@ namespace CocoroConsole.Controls
             ClipboardPasteOverride.PasteOverwrite(LlmApiKeyPasswordBox);
         }
 
+        private void LlmApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(LlmApiKeyPasswordBox);
+        }
+
         private void VisionApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
         {
             ClipboardPasteOverride.PasteOverwrite(VisionApiKeyPasswordBox);
+        }
+
+        private void VisionApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(VisionApiKeyPasswordBox);
         }
 
         private async void DeletePresetButton_Click(object sender, RoutedEventArgs e)

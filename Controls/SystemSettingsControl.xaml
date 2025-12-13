@@ -385,6 +385,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <PasswordBox Grid.Column="0"
                                              x:Name="BearerTokenPasswordBox"
@@ -395,6 +396,13 @@
                                              PasswordChanged="BearerTokenPasswordBox_PasswordChanged"
                                              IsEnabled="False"/>
                                 <Button Grid.Column="1"
+                                        Content="コピー"
+                                        Margin="10,0,0,0"
+                                        Padding="10,0,10,0"
+                                        Click="BearerTokenCopyButton_Click"
+                                        IsEnabled="{Binding IsEnabled, ElementName=BearerTokenPasswordBox}"
+                                        ToolTip="クリップボードにコピー"/>
+                                <Button Grid.Column="2"
                                         Content="上書き貼付け"
                                         Margin="10,0,0,0"
                                         Padding="10,0,10,0"

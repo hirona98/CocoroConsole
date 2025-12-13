@@ -243,6 +243,11 @@ namespace CocoroConsole.Controls
             ClipboardPasteOverride.PasteOverwrite(EmbeddingApiKeyPasswordBox);
         }
 
+        private void EmbeddingApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(EmbeddingApiKeyPasswordBox);
+        }
+
         private async void DeletePresetButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)

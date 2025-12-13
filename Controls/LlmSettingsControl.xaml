@@ -194,6 +194,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <PasswordBox x:Name="LlmApiKeyPasswordBox"
                                              Grid.Column="0"
@@ -203,6 +204,12 @@
                                              BorderThickness="1"
                                              PasswordChanged="OnSettingChanged"/>
                                 <Button Grid.Column="1"
+                                        Content="コピー"
+                                        Margin="10,0,0,0"
+                                        Padding="10,0,10,0"
+                                        Click="LlmApiKeyCopyButton_Click"
+                                        ToolTip="クリップボードにコピー"/>
+                                <Button Grid.Column="2"
                                         Content="上書き貼付け"
                                         Margin="10,0,0,0"
                                         Padding="10,0,10,0"
@@ -333,6 +340,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <PasswordBox x:Name="VisionApiKeyPasswordBox"
                                              Grid.Column="0"
@@ -342,6 +350,12 @@
                                              BorderThickness="1"
                                              PasswordChanged="OnSettingChanged"/>
                                 <Button Grid.Column="1"
+                                        Content="コピー"
+                                        Margin="10,0,0,0"
+                                        Padding="10,0,10,0"
+                                        Click="VisionApiKeyCopyButton_Click"
+                                        ToolTip="クリップボードにコピー"/>
+                                <Button Grid.Column="2"
                                         Content="上書き貼付け"
                                         Margin="10,0,0,0"
                                         Padding="10,0,10,0"
