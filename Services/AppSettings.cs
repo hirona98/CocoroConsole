@@ -49,8 +49,6 @@ namespace CocoroConsole.Services
         public string CocoroGhostBearerToken { get; set; } = string.Empty;
         // 通知API設定
         public bool IsEnableNotificationApi { get; set; }
-        // リマインダー設定
-        public bool IsEnableReminder { get; set; }
         // UI設定
         public bool IsRestoreWindowPosition { get; set; }
         public bool IsTopmost { get; set; }
@@ -147,7 +145,6 @@ namespace CocoroConsole.Services
             NotificationApiPort = config.notificationApiPort;
             CocoroGhostBearerToken = config.cocoroGhostBearerToken ?? string.Empty;
             IsEnableNotificationApi = config.isEnableNotificationApi;
-            IsEnableReminder = config.isEnableReminder;
             IsRestoreWindowPosition = config.isRestoreWindowPosition;
             IsTopmost = config.isTopmost;
             IsEscapeCursor = config.isEscapeCursor;
@@ -240,7 +237,6 @@ namespace CocoroConsole.Services
                 notificationApiPort = NotificationApiPort,
                 cocoroGhostBearerToken = CocoroGhostBearerToken,
                 isEnableNotificationApi = IsEnableNotificationApi,
-                isEnableReminder = IsEnableReminder,
                 isRestoreWindowPosition = IsRestoreWindowPosition,
                 isTopmost = IsTopmost,
                 isEscapeCursor = IsEscapeCursor,

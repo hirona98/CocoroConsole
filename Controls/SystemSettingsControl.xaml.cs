@@ -275,7 +275,7 @@ namespace CocoroConsole.Controls
 
             // APIが利用できない場合はローカル設定を使用
             ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, appSettings.ScreenshotSettings.excludePatterns);
-            EnableReminderCheckBox.IsChecked = appSettings.IsEnableReminder;
+            EnableReminderCheckBox.IsChecked = false;
             _apiReminders = new List<CocoroGhostReminder>();
             UpdateReminderListUI();
         }

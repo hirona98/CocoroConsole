@@ -25,6 +25,9 @@ namespace CocoroConsole.Controls
         // 現在選択されているキャラクターのインデックス
         private int _currentCharacterIndex = 0;
 
+        // リマインダー有効/無効の前回値（ローカル設定には保存しない）
+        private bool _previousRemindersEnabled = false;
+
         // 通信サービス
         private ICommunicationService? _communicationService;
 
@@ -58,7 +61,7 @@ namespace CocoroConsole.Controls
 
             // システム設定コントロールを初期化（APIクライアント設定後に初期化）
             SystemSettingsControl.SetApiClient(_apiClient);
-            _ = SystemSettingsControl.InitializeAsync();
+            _ = InitializeSystemSettingsAsync();
 
             // システム設定変更イベントを登録
             SystemSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
@@ -83,6 +86,12 @@ namespace CocoroConsole.Controls
 
             // CocoroGhost再起動チェック用に現在の設定のディープコピーを保存
             _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
+        }
+
+        private async Task InitializeSystemSettingsAsync()
+        {
+            await SystemSettingsControl.InitializeAsync();
+            _previousRemindersEnabled = SystemSettingsControl.GetIsEnableReminder();
         }
 
         /// <summary>
@@ -267,7 +276,6 @@ namespace CocoroConsole.Controls
         private Dictionary<string, object> CollectSystemSettings()
         {
             var dict = new Dictionary<string, object>();
-            dict["IsEnableReminder"] = SystemSettingsControl.GetIsEnableReminder();
             dict["IsEnableNotificationApi"] = ExternalServicesSettingsControl.GetIsEnableNotificationApi();
 
             var screenshotSettings = SystemSettingsControl.GetScreenshotSettings();
@@ -398,6 +406,7 @@ namespace CocoroConsole.Controls
                 // 設定のバックアップを更新（適用後の状態を新しいベースラインとする）
                 BackupSettings();
                 _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
+                _previousRemindersEnabled = SystemSettingsControl.GetIsEnableReminder();
 
                 // メインウィンドウのボタン状態とサービスを更新
                 UpdateMainWindowStates();
@@ -432,7 +441,10 @@ namespace CocoroConsole.Controls
 
             // 保存後の設定を取得してCocoroGhost再起動が必要かチェック
             var currentSettings = GetCurrentUISettings();
-            bool needsCocoroGhostRestart = HasCocoroGhostRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings);
+            bool currentRemindersEnabled = SystemSettingsControl.GetIsEnableReminder();
+            bool needsCocoroGhostRestart =
+                HasCocoroGhostRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings) ||
+                currentRemindersEnabled != _previousRemindersEnabled;
 
             // CocoroShellを再起動
             RestartCocoroShell();
@@ -443,6 +455,8 @@ namespace CocoroConsole.Controls
                 await RestartCocoroGhostAsync();
                 Debug.WriteLine("CocoroGhost再起動処理を実行しました");
             }
+
+            _previousRemindersEnabled = currentRemindersEnabled;
         }
 
         /// <summary>
@@ -651,7 +665,6 @@ namespace CocoroConsole.Controls
         private void ApplySystemSnapshotToAppSettings(Dictionary<string, object> snapshot)
         {
             var appSettings = AppSettings.Instance;
-            appSettings.IsEnableReminder = (bool)snapshot["IsEnableReminder"];
             appSettings.IsEnableNotificationApi = (bool)snapshot["IsEnableNotificationApi"];
 
             appSettings.ScreenshotSettings.enabled = (bool)snapshot["ScreenshotEnabled"];
@@ -958,7 +971,6 @@ namespace CocoroConsole.Controls
 
             // System設定の取得
             config.isEnableNotificationApi = ExternalServicesSettingsControl.GetIsEnableNotificationApi();
-            config.isEnableReminder = SystemSettingsControl.GetIsEnableReminder();
 
             // Character設定の取得（ディープコピーを使用）
             config.currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
@@ -984,7 +996,6 @@ namespace CocoroConsole.Controls
         {
             // 基本設定項目の比較
             if (currentSettings.isEnableNotificationApi != previousSettings.isEnableNotificationApi ||
-                currentSettings.isEnableReminder != previousSettings.isEnableReminder ||
                 currentSettings.currentCharacterIndex != previousSettings.currentCharacterIndex)
             {
                 return true;

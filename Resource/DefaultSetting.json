@@ -5,7 +5,6 @@
   "notificationApiPort": 55604,
   "cocoroGhostBearerToken": "cocoro_token",
   "isEnableNotificationApi": false,
-  "isEnableReminder": false,
   "isRestoreWindowPosition": false,
   "isTopmost": true,
   "isEscapeCursor": false,

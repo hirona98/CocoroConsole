@@ -277,7 +277,6 @@ namespace CocoroConsole.Communication
         public int notificationApiPort { get; set; }
         public string? cocoroGhostBearerToken { get; set; }
         public bool isEnableNotificationApi { get; set; }
-        public bool isEnableReminder { get; set; }
         public bool isRestoreWindowPosition { get; set; }
         public bool isTopmost { get; set; }
         public bool isEscapeCursor { get; set; }
@@ -317,7 +316,6 @@ namespace CocoroConsole.Communication
                 notificationApiPort = this.notificationApiPort,
                 cocoroGhostBearerToken = this.cocoroGhostBearerToken,
                 isEnableNotificationApi = this.isEnableNotificationApi,
-                isEnableReminder = this.isEnableReminder,
                 isRestoreWindowPosition = this.isRestoreWindowPosition,
                 isTopmost = this.isTopmost,
                 isEscapeCursor = this.isEscapeCursor,

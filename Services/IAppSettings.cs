@@ -35,11 +35,6 @@ namespace CocoroConsole.Services
         bool IsEnableNotificationApi { get; set; }
 
         /// <summary>
-        /// リマインダー有効/無効
-        /// </summary>
-        bool IsEnableReminder { get; set; }
-
-        /// <summary>
         /// 通知APIポート
         /// </summary>
         int NotificationApiPort { get; set; }
