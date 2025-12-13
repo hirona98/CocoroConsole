@@ -359,27 +359,7 @@ namespace CocoroConsole.Controls
                     characterNumber++;
                 }
 
-                var newCharacter = new CharacterSettings
-                {
-                    modelName = newName,
-                    vrmFilePath = string.Empty,
-                    isUseLLM = false,
-                    isUseTTS = false,
-                    ttsType = "voicevox",
-                    voicevoxConfig = new VoicevoxConfig(),
-                    styleBertVits2Config = new StyleBertVits2Config(),
-                    aivisCloudConfig = new AivisCloudConfig(),
-                    isEnableMemory = true,
-                    isUseSTT = false,
-                    sttEngine = "amivoice",
-                    sttWakeWord = string.Empty,
-                    sttApiKey = string.Empty,
-                    sttLanguage = "ja",
-                    isConvertMToon = false,
-                    isEnableShadowOff = true,
-                    shadowOffMesh = "Face, U_Char_1",
-                    isReadOnly = false
-                };
+                var newCharacter = AppSettings.Instance.CreateCharacterFromDefaults(newName);
 
                 AppSettings.Instance.CharacterList.Add(newCharacter);
 

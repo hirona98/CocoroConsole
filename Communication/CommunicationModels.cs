@@ -21,37 +21,37 @@ namespace CocoroConsole.Communication
     /// </summary>
     public class VoicevoxConfig
     {
-        public string endpointUrl { get; set; } = "http://127.0.0.1:50021";
-        public int speakerId { get; set; } = 0;
-        public float speedScale { get; set; } = 1.0f;        // 話速 (0.5 - 2.0)
-        public float pitchScale { get; set; } = 0.0f;        // 音高 (-0.15 - 0.15)
-        public float intonationScale { get; set; } = 1.0f;   // 抑揚 (0.0 - 2.0)
-        public float volumeScale { get; set; } = 1.0f;       // 音量 (0.0 - 2.0)
-        public float prePhonemeLength { get; set; } = 0.1f;  // 音声の前の無音時間 (0.0 - 1.5)
-        public float postPhonemeLength { get; set; } = 0.1f; // 音声の後の無音時間 (0.0 - 1.5)
-        public int outputSamplingRate { get; set; } = 24000;  // 出力サンプリングレート
-        public bool outputStereo { get; set; } = false;       // ステレオ出力するか
+        public string endpointUrl { get; set; } = string.Empty;
+        public int speakerId { get; set; }
+        public float speedScale { get; set; }        // 話速 (0.5 - 2.0)
+        public float pitchScale { get; set; }        // 音高 (-0.15 - 0.15)
+        public float intonationScale { get; set; }   // 抑揚 (0.0 - 2.0)
+        public float volumeScale { get; set; }       // 音量 (0.0 - 2.0)
+        public float prePhonemeLength { get; set; }  // 音声の前の無音時間 (0.0 - 1.5)
+        public float postPhonemeLength { get; set; } // 音声の後の無音時間 (0.0 - 1.5)
+        public int outputSamplingRate { get; set; }  // 出力サンプリングレート
+        public bool outputStereo { get; set; }       // ステレオ出力するか
     }
 
     public class StyleBertVits2Config
     {
-        public string endpointUrl { get; set; } = "http://127.0.0.1:5000";
-        public string modelName { get; set; } = "amitaro";
-        public int modelId { get; set; } = 0;
-        public string speakerName { get; set; } = "あみたろ";
-        public int speakerId { get; set; } = 0;
-        public string style { get; set; } = "Neutral";
-        public float styleWeight { get; set; } = 1.0f;
-        public float sdpRatio { get; set; } = 0.2f;
-        public float noise { get; set; } = 0.6f;
-        public float noiseW { get; set; } = 0.8f;
-        public float length { get; set; } = 1.0f;
-        public string language { get; set; } = "JP";
-        public bool autoSplit { get; set; } = true;
-        public float splitInterval { get; set; } = 0.5f;
-        public string assistText { get; set; } = "";
-        public float assistTextWeight { get; set; } = 0f;
-        public string referenceAudioPath { get; set; } = "";
+        public string endpointUrl { get; set; } = string.Empty;
+        public string modelName { get; set; } = string.Empty;
+        public int modelId { get; set; }
+        public string speakerName { get; set; } = string.Empty;
+        public int speakerId { get; set; }
+        public string style { get; set; } = string.Empty;
+        public float styleWeight { get; set; }
+        public float sdpRatio { get; set; }
+        public float noise { get; set; }
+        public float noiseW { get; set; }
+        public float length { get; set; }
+        public string language { get; set; } = string.Empty;
+        public bool autoSplit { get; set; }
+        public float splitInterval { get; set; }
+        public string assistText { get; set; } = string.Empty;
+        public float assistTextWeight { get; set; }
+        public string referenceAudioPath { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -59,23 +59,23 @@ namespace CocoroConsole.Communication
     /// </summary>
     public class AivisCloudConfig
     {
-        public string apiKey { get; set; } = "";
-        public string endpointUrl { get; set; } = "";
-        public string modelUuid { get; set; } = "a59cb814-0083-4369-8542-f51a29e72af7";
-        public string speakerUuid { get; set; } = "";
-        public int styleId { get; set; } = 0;
-        public string styleName { get; set; } = "";
-        public bool useSSML { get; set; } = false;
-        public string language { get; set; } = "ja";
-        public float speakingRate { get; set; } = 1f;
-        public float emotionalIntensity { get; set; } = 1f;
-        public float tempoDynamics { get; set; } = 1f;
-        public float pitch { get; set; } = 0f;
-        public float volume { get; set; } = 1f;
-        public string outputFormat { get; set; } = "wav";
-        public int outputBitrate { get; set; } = 0;
-        public int outputSamplingRate { get; set; } = 16000;
-        public string outputAudioChannels { get; set; } = "mono";
+        public string apiKey { get; set; } = string.Empty;
+        public string endpointUrl { get; set; } = string.Empty;
+        public string modelUuid { get; set; } = string.Empty;
+        public string speakerUuid { get; set; } = string.Empty;
+        public int styleId { get; set; }
+        public string styleName { get; set; } = string.Empty;
+        public bool useSSML { get; set; }
+        public string language { get; set; } = string.Empty;
+        public float speakingRate { get; set; }
+        public float emotionalIntensity { get; set; }
+        public float tempoDynamics { get; set; }
+        public float pitch { get; set; }
+        public float volume { get; set; }
+        public string outputFormat { get; set; } = string.Empty;
+        public int outputBitrate { get; set; }
+        public int outputSamplingRate { get; set; }
+        public string outputAudioChannels { get; set; } = string.Empty;
     }
 
     public class CharacterSettings
@@ -86,22 +86,22 @@ namespace CocoroConsole.Communication
         public bool isUseLLM { get; set; }
         public bool isUseTTS { get; set; }
 
-        public string ttsType { get; set; } = "voicevox"; // "voicevox" or "style-bert-vits2" or "aivis-cloud"
+        public string ttsType { get; set; } = string.Empty; // "voicevox" or "style-bert-vits2" or "aivis-cloud"
 
         // TTS詳細設定
         public VoicevoxConfig voicevoxConfig { get; set; } = new VoicevoxConfig();
         public StyleBertVits2Config styleBertVits2Config { get; set; } = new StyleBertVits2Config();
         public AivisCloudConfig aivisCloudConfig { get; set; } = new AivisCloudConfig();
 
-        public bool isEnableMemory { get; set; } = true; // メモリ機能の有効/無効
-        public bool isUseSTT { get; set; } = false; // STT（音声認識）機能の有効/無効
-        public string sttEngine { get; set; } = "amivoice"; // STTエンジン ("amivoice" | "openai")
+        public bool isEnableMemory { get; set; } // メモリ機能の有効/無効
+        public bool isUseSTT { get; set; } // STT（音声認識）機能の有効/無効
+        public string sttEngine { get; set; } = string.Empty; // STTエンジン ("amivoice" | "openai")
         public string sttWakeWord { get; set; } = string.Empty; // STT起動ワード
         public string sttApiKey { get; set; } = string.Empty; // STT用APIキー
-        public string sttLanguage { get; set; } = "ja"; // STT言語設定
-        public bool isConvertMToon { get; set; } = false; // UnlitをMToonに変換するかどうか
-        public bool isEnableShadowOff { get; set; } = true; // 影オフ機能の有効/無効（デフォルト: true）
-        public string shadowOffMesh { get; set; } = "Face, U_Char_1"; // 影を落とさないメッシュ名
+        public string sttLanguage { get; set; } = string.Empty; // STT言語設定
+        public bool isConvertMToon { get; set; } // UnlitをMToonに変換するかどうか
+        public bool isEnableShadowOff { get; set; } // 影オフ機能の有効/無効
+        public string shadowOffMesh { get; set; } = string.Empty; // 影を落とさないメッシュ名
 
 
         /// <summary>
@@ -196,10 +196,10 @@ namespace CocoroConsole.Communication
     /// </summary>
     public class ScreenshotSettings
     {
-        public bool enabled { get; set; } = false;
-        public int intervalMinutes { get; set; } = 10;
-        public bool captureActiveWindowOnly { get; set; } = true;
-        public int idleTimeoutMinutes { get; set; } = 10;
+        public bool enabled { get; set; }
+        public int intervalMinutes { get; set; }
+        public bool captureActiveWindowOnly { get; set; }
+        public int idleTimeoutMinutes { get; set; }
         public List<string> excludePatterns { get; set; } = new List<string>();
     }
 
@@ -208,8 +208,8 @@ namespace CocoroConsole.Communication
     /// </summary>
     public class MicrophoneSettings
     {
-        public int inputThreshold { get; set; } = -45;
-        public float speakerRecognitionThreshold { get; set; } = 0.6f;
+        public int inputThreshold { get; set; }
+        public float speakerRecognitionThreshold { get; set; }
     }
 
     /// <summary>
@@ -217,13 +217,13 @@ namespace CocoroConsole.Communication
     /// </summary>
     public class MessageWindowSettings
     {
-        public int maxMessageCount { get; set; } = 3;
-        public int maxTotalCharacters { get; set; } = 300;
-        public float minWindowSize { get; set; } = 200f;
-        public float maxWindowSize { get; set; } = 600f;
-        public float fontSize { get; set; } = 14f;
-        public float horizontalOffset { get; set; } = -0.2f;
-        public float verticalOffset { get; set; } = 0.05f;
+        public int maxMessageCount { get; set; }
+        public int maxTotalCharacters { get; set; }
+        public float minWindowSize { get; set; }
+        public float maxWindowSize { get; set; }
+        public float fontSize { get; set; }
+        public float horizontalOffset { get; set; }
+        public float verticalOffset { get; set; }
     }
 
     /// <summary>
@@ -271,20 +271,21 @@ namespace CocoroConsole.Communication
     /// </summary>
     public class ConfigSettings
     {
-        public int CocoroConsolePort { get; set; } = 55600;
-        public int cocoroCorePort { get; set; } = 55601;
-        public int cocoroShellPort { get; set; } = 55605;
-        public int notificationApiPort { get; set; } = 55604;
-        public bool isEnableNotificationApi { get; set; } = false;
-        public bool isEnableReminder { get; set; } = true;
-        public bool isRestoreWindowPosition { get; set; } = false;
+        public int CocoroConsolePort { get; set; }
+        public int cocoroCorePort { get; set; }
+        public int cocoroShellPort { get; set; }
+        public int notificationApiPort { get; set; }
+        public string? cocoroGhostBearerToken { get; set; }
+        public bool isEnableNotificationApi { get; set; }
+        public bool isEnableReminder { get; set; }
+        public bool isRestoreWindowPosition { get; set; }
         public bool isTopmost { get; set; }
         public bool isEscapeCursor { get; set; }
         public List<EscapePosition> escapePositions { get; set; } = new List<EscapePosition>();
         public bool isInputVirtualKey { get; set; }
         public string virtualKeyString { get; set; } = string.Empty;
         public bool isAutoMove { get; set; }
-        public bool showMessageWindow { get; set; } = true;
+        public bool showMessageWindow { get; set; }
         public bool isEnableAmbientOcclusion { get; set; }
         public int msaaLevel { get; set; }
         public int characterShadow { get; set; }
@@ -292,8 +293,8 @@ namespace CocoroConsole.Communication
         public int backgroundShadow { get; set; }
         public int backgroundShadowResolution { get; set; }
         public float windowSize { get; set; }
-        public float windowPositionX { get; set; } = 0.0f;
-        public float windowPositionY { get; set; } = 0.0f;
+        public float windowPositionX { get; set; }
+        public float windowPositionY { get; set; }
         public ScreenshotSettings screenshotSettings { get; set; } = new ScreenshotSettings();
         public MicrophoneSettings microphoneSettings { get; set; } = new MicrophoneSettings();
         public MessageWindowSettings messageWindowSettings { get; set; } = new MessageWindowSettings();
@@ -314,6 +315,7 @@ namespace CocoroConsole.Communication
                 cocoroCorePort = this.cocoroCorePort,
                 cocoroShellPort = this.cocoroShellPort,
                 notificationApiPort = this.notificationApiPort,
+                cocoroGhostBearerToken = this.cocoroGhostBearerToken,
                 isEnableNotificationApi = this.isEnableNotificationApi,
                 isEnableReminder = this.isEnableReminder,
                 isRestoreWindowPosition = this.isRestoreWindowPosition,

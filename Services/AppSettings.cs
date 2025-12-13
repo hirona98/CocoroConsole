@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace CocoroConsole.Services
 {
@@ -40,34 +41,34 @@ namespace CocoroConsole.Services
         // デフォルトアニメーション設定ファイルのパス
         private string DefaultAnimationSettingsFilePath => Path.Combine(UserDataDirectory, "DefaultAnimationSettings.json");
 
-        public int CocoroConsolePort { get; set; } = 55600;
-        public int CocoroGhostPort { get; set; } = 55601;
-        public int CocoroShellPort { get; set; } = 55605;
-        public int NotificationApiPort { get; set; } = 55604;
+        public int CocoroConsolePort { get; set; }
+        public int CocoroGhostPort { get; set; }
+        public int CocoroShellPort { get; set; }
+        public int NotificationApiPort { get; set; }
         // cocoro_ghost API Bearer トークン
-        public string CocoroGhostBearerToken { get; set; } = "cocoro_token";
+        public string CocoroGhostBearerToken { get; set; } = string.Empty;
         // 通知API設定
-        public bool IsEnableNotificationApi { get; set; } = true;
+        public bool IsEnableNotificationApi { get; set; }
         // リマインダー設定
-        public bool IsEnableReminder { get; set; } = true;
+        public bool IsEnableReminder { get; set; }
         // UI設定
-        public bool IsRestoreWindowPosition { get; set; } = false;
-        public bool IsTopmost { get; set; } = false;
-        public bool IsEscapeCursor { get; set; } = false;
+        public bool IsRestoreWindowPosition { get; set; }
+        public bool IsTopmost { get; set; }
+        public bool IsEscapeCursor { get; set; }
         public List<EscapePosition> EscapePositions { get; set; } = new List<EscapePosition>();
-        public bool IsInputVirtualKey { get; set; } = false;
+        public bool IsInputVirtualKey { get; set; }
         public string VirtualKeyString { get; set; } = string.Empty;
-        public bool IsAutoMove { get; set; } = false;
-        public bool ShowMessageWindow { get; set; } = true;
-        public bool IsEnableAmbientOcclusion { get; set; } = false;
-        public int MsaaLevel { get; set; } = 0;
-        public int CharacterShadow { get; set; } = 0;
-        public int CharacterShadowResolution { get; set; } = 0;
-        public int BackgroundShadow { get; set; } = 0;
-        public int BackgroundShadowResolution { get; set; } = 0;
-        public int WindowSize { get; set; } = 650;
-        public float WindowPositionX { get; set; } = 0.0f;
-        public float WindowPositionY { get; set; } = 0.0f;
+        public bool IsAutoMove { get; set; }
+        public bool ShowMessageWindow { get; set; }
+        public bool IsEnableAmbientOcclusion { get; set; }
+        public int MsaaLevel { get; set; }
+        public int CharacterShadow { get; set; }
+        public int CharacterShadowResolution { get; set; }
+        public int BackgroundShadow { get; set; }
+        public int BackgroundShadowResolution { get; set; }
+        public int WindowSize { get; set; }
+        public float WindowPositionX { get; set; }
+        public float WindowPositionY { get; set; }
 
         // キャラクター設定
         public int CurrentCharacterIndex { get; set; } = 0;
@@ -144,6 +145,7 @@ namespace CocoroConsole.Services
             CocoroGhostPort = config.cocoroCorePort;
             CocoroShellPort = config.cocoroShellPort;
             NotificationApiPort = config.notificationApiPort;
+            CocoroGhostBearerToken = config.cocoroGhostBearerToken ?? string.Empty;
             IsEnableNotificationApi = config.isEnableNotificationApi;
             IsEnableReminder = config.isEnableReminder;
             IsRestoreWindowPosition = config.isRestoreWindowPosition;
@@ -151,7 +153,7 @@ namespace CocoroConsole.Services
             IsEscapeCursor = config.isEscapeCursor;
             EscapePositions = config.escapePositions != null ? new List<EscapePosition>(config.escapePositions) : new List<EscapePosition>();
             IsInputVirtualKey = config.isInputVirtualKey;
-            VirtualKeyString = config.virtualKeyString;
+            VirtualKeyString = config.virtualKeyString ?? string.Empty;
             IsAutoMove = config.isAutoMove;
             ShowMessageWindow = config.showMessageWindow;
             IsEnableAmbientOcclusion = config.isEnableAmbientOcclusion;
@@ -160,7 +162,7 @@ namespace CocoroConsole.Services
             CharacterShadowResolution = config.characterShadowResolution;
             BackgroundShadow = config.backgroundShadow;
             BackgroundShadowResolution = config.backgroundShadowResolution;
-            WindowSize = config.windowSize > 0 ? (int)config.windowSize : 650;
+            WindowSize = config.windowSize > 0 ? (int)config.windowSize : WindowSize;
             WindowPositionX = config.windowPositionX;
             WindowPositionY = config.windowPositionY;
             CurrentCharacterIndex = config.currentCharacterIndex;
@@ -236,6 +238,7 @@ namespace CocoroConsole.Services
                 cocoroCorePort = CocoroGhostPort,
                 cocoroShellPort = CocoroShellPort,
                 notificationApiPort = NotificationApiPort,
+                cocoroGhostBearerToken = CocoroGhostBearerToken,
                 isEnableNotificationApi = IsEnableNotificationApi,
                 isEnableReminder = IsEnableReminder,
                 isRestoreWindowPosition = IsRestoreWindowPosition,
@@ -339,8 +342,9 @@ namespace CocoroConsole.Services
         /// </summary>
         private void LoadExistingSettingsFile()
         {
-            string configJson = File.ReadAllText(AppSettingsFilePath);
-            ProcessCurrentFormatSettings(configJson);
+            string userSettingsJson = File.ReadAllText(AppSettingsFilePath);
+            string mergedJson = MergeWithDefaultSettingsJson(userSettingsJson);
+            ProcessCurrentFormatSettings(mergedJson);
         }
 
         /// <summary>
@@ -351,8 +355,51 @@ namespace CocoroConsole.Services
             var userSettings = MessageHelper.DeserializeFromJson<ConfigSettings>(configJson);
             if (userSettings != null)
             {
-                // デシリアライズされた設定をそのまま使用（デフォルト値は自動適用済み）
                 UpdateSettings(userSettings);
+            }
+        }
+
+        /// <summary>
+        /// User設定(JSON)をDefaultSetting.jsonにマージして、欠けているキーの既定値をDefaultSetting.jsonから補完する
+        /// </summary>
+        private string MergeWithDefaultSettingsJson(string userSettingsJson)
+        {
+            try
+            {
+                var defaultJson = File.Exists(DefaultSettingsFilePath)
+                    ? File.ReadAllText(DefaultSettingsFilePath)
+                    : "{}";
+
+                var defaultNode = JsonNode.Parse(defaultJson) as JsonObject ?? new JsonObject();
+                var userNode = JsonNode.Parse(userSettingsJson) as JsonObject ?? new JsonObject();
+
+                var merged = (JsonObject)defaultNode.DeepClone();
+                MergeJsonObject(merged, userNode);
+
+                return merged.ToJsonString(new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"設定マージエラー: {ex.Message}");
+                return userSettingsJson;
+            }
+        }
+
+        private static void MergeJsonObject(JsonObject target, JsonObject overlay)
+        {
+            foreach (var (key, value) in overlay)
+            {
+                if (value is JsonObject overlayObject && target[key] is JsonObject targetObject)
+                {
+                    MergeJsonObject(targetObject, overlayObject);
+                    continue;
+                }
+
+                target[key] = value?.DeepClone();
             }
         }
 
@@ -382,6 +429,23 @@ namespace CocoroConsole.Services
 
             // 読み込みに失敗した場合は空の設定を返す
             return new ConfigSettings();
+        }
+
+        /// <summary>
+        /// DefaultSetting.json からキャラクターの雛形を作成する
+        /// </summary>
+        public CharacterSettings CreateCharacterFromDefaults(string modelName)
+        {
+            var defaults = LoadDefaultSettings();
+            var template = defaults.characterList != null && defaults.characterList.Count > 0
+                ? defaults.characterList[0]
+                : new CharacterSettings();
+
+            var character = template.DeepCopy();
+            character.modelName = modelName;
+            character.vrmFilePath = string.Empty;
+            character.isReadOnly = false;
+            return character;
         }
 
         /// <summary>
