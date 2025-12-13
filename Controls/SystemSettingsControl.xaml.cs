@@ -7,6 +7,7 @@ using CocoroConsole.Windows;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -32,11 +33,6 @@ namespace CocoroConsole.Controls
         private bool _isInitialized = false;
 
         /// <summary>
-        /// リマインダーサービス
-        /// </summary>
-        private IReminderService _reminderService;
-
-        /// <summary>
         /// cocoro_ghost API クライアント
         /// </summary>
         private CocoroGhostApiClient? _apiClient;
@@ -56,10 +52,19 @@ namespace CocoroConsole.Controls
         /// </summary>
         private List<EmbeddingPreset> _apiEmbeddingPresets = new();
 
+        /// <summary>
+        /// APIから取得したreminders
+        /// </summary>
+        private List<CocoroGhostReminder> _apiReminders = new();
+
+        /// <summary>
+        /// 表示用ID -> APIリマインダーの対応
+        /// </summary>
+        private readonly Dictionary<int, CocoroGhostReminder> _reminderIdMap = new();
+
         public SystemSettingsControl()
         {
             InitializeComponent();
-            _reminderService = new ReminderService(AppSettings.Instance);
         }
 
         /// <summary>
@@ -79,17 +84,14 @@ namespace CocoroConsole.Controls
             {
                 var appSettings = AppSettings.Instance;
 
-                // リマインダー有効状態を設定
-                EnableReminderCheckBox.IsChecked = appSettings.IsEnableReminder;
-
                 // デスクトップウォッチ設定
                 ScreenshotEnabledCheckBox.IsChecked = appSettings.ScreenshotSettings.enabled;
                 CaptureActiveWindowOnlyCheckBox.IsChecked = appSettings.ScreenshotSettings.captureActiveWindowOnly;
                 ScreenshotIntervalTextBox.Text = appSettings.ScreenshotSettings.intervalMinutes.ToString();
                 IdleTimeoutTextBox.Text = appSettings.ScreenshotSettings.idleTimeoutMinutes.ToString();
 
-                // exclude_keywordsをAPIから読み込み（API利用可能な場合）
-                await LoadExcludeKeywordsFromApiAsync(appSettings);
+                // /api/settings から設定を読み込み（API利用可能な場合）
+                await LoadSettingsFromApiAsync(appSettings);
 
                 // マイク設定
                 MicThresholdSlider.Value = appSettings.MicrophoneSettings.inputThreshold;
@@ -104,9 +106,6 @@ namespace CocoroConsole.Controls
 
                 // リマインダーUI初期化（スペース区切り形式）
                 ReminderDateTimeTextBox.Text = DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:mm");
-
-                // リマインダーを読み込み
-                await LoadRemindersAsync();
 
                 // イベントハンドラーを設定
                 SetupEventHandlers();
@@ -149,6 +148,16 @@ namespace CocoroConsole.Controls
         {
             if (!_isInitialized)
                 return;
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void MarkSettingsChanged()
+        {
+            if (!_isInitialized)
+            {
+                return;
+            }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -234,12 +243,12 @@ namespace CocoroConsole.Controls
             // speakerRecognitionThresholdはInitializeAsyncで設定済み
         }
 
-        #region exclude_keywords API連携
+        #region /api/settings API連携
 
         /// <summary>
-        /// APIからexclude_keywordsを読み込み
+        /// APIから設定を読み込み（exclude_keywords / reminders_enabled / reminders）
         /// </summary>
-        private async Task LoadExcludeKeywordsFromApiAsync(IAppSettings appSettings)
+        private async Task LoadSettingsFromApiAsync(IAppSettings appSettings)
         {
             try
             {
@@ -251,22 +260,28 @@ namespace CocoroConsole.Controls
                         _apiExcludeKeywords = settings.ExcludeKeywords ?? new List<string>();
                         _apiLlmPresets = settings.LlmPreset ?? new List<LlmPreset>();
                         _apiEmbeddingPresets = settings.EmbeddingPreset ?? new List<EmbeddingPreset>();
+                        _apiReminders = settings.Reminders ?? new List<CocoroGhostReminder>();
+                        EnableReminderCheckBox.IsChecked = settings.RemindersEnabled;
                         ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, _apiExcludeKeywords);
+                        UpdateReminderListUI();
                         return;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"APIからexclude_keywordsの読み込みに失敗: {ex.Message}");
+                Debug.WriteLine($"APIから設定の読み込みに失敗: {ex.Message}");
             }
 
             // APIが利用できない場合はローカル設定を使用
             ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, appSettings.ScreenshotSettings.excludePatterns);
+            EnableReminderCheckBox.IsChecked = appSettings.IsEnableReminder;
+            _apiReminders = new List<CocoroGhostReminder>();
+            UpdateReminderListUI();
         }
 
         /// <summary>
-        /// exclude_keywordsをAPIに保存
+        /// exclude_keywordsをAPIに保存（/api/settings は全量POSTのため他項目も保全して送信）
         /// </summary>
         public async Task<bool> SaveExcludeKeywordsToApiAsync()
         {
@@ -280,19 +295,17 @@ namespace CocoroConsole.Controls
                     .Where(p => !string.IsNullOrEmpty(p))
                     .ToList();
 
-                // 最新設定を取得し、プリセットを保全したまま更新する
+                // 最新設定を取得し、他項目を保全したまま更新する
                 var latestSettings = await _apiClient.GetSettingsAsync();
-                if (latestSettings != null)
-                {
-                    _apiLlmPresets = latestSettings.LlmPreset ?? new List<LlmPreset>();
-                    _apiEmbeddingPresets = latestSettings.EmbeddingPreset ?? new List<EmbeddingPreset>();
-                }
+                latestSettings ??= new CocoroGhostSettings();
 
                 var request = new CocoroGhostSettingsUpdateRequest
                 {
                     ExcludeKeywords = patterns,
-                    LlmPreset = _apiLlmPresets,
-                    EmbeddingPreset = _apiEmbeddingPresets
+                    RemindersEnabled = latestSettings.RemindersEnabled,
+                    Reminders = latestSettings.Reminders ?? new List<CocoroGhostReminder>(),
+                    LlmPreset = latestSettings.LlmPreset ?? new List<LlmPreset>(),
+                    EmbeddingPreset = latestSettings.EmbeddingPreset ?? new List<EmbeddingPreset>()
                 };
 
                 await _apiClient.UpdateSettingsAsync(request);
@@ -330,24 +343,68 @@ namespace CocoroConsole.Controls
         #region リマインダー関連メソッド
 
         /// <summary>
-        /// リマインダーリストを読み込み
+        /// 現在のリマインダー一覧（API形式）を取得
         /// </summary>
-        private async Task LoadRemindersAsync()
+        public List<CocoroGhostReminder> GetReminders()
         {
-            try
-            {
-                var reminders = await _reminderService.GetAllRemindersAsync();
+            return _apiReminders.ToList();
+        }
 
-                // UIスレッドで実行
-                Dispatcher.Invoke(() =>
+        private static bool TryParseScheduledAt(string scheduledAt, out DateTimeOffset dateTimeOffset)
+        {
+            return DateTimeOffset.TryParse(
+                scheduledAt,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind,
+                out dateTimeOffset
+            );
+        }
+
+        private static string ToApiScheduledAtUtcString(DateTime localDateTime)
+        {
+            var local = DateTime.SpecifyKind(localDateTime, DateTimeKind.Local);
+            var utc = local.ToUniversalTime();
+            return utc.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+        }
+
+        private void UpdateReminderListUI()
+        {
+            _reminderIdMap.Clear();
+
+            var items = new List<Reminder>();
+            var sorted = _apiReminders
+                .Select(r =>
                 {
-                    RemindersItemsControl.ItemsSource = reminders;
-                });
-            }
-            catch (Exception ex)
+                    if (TryParseScheduledAt(r.ScheduledAt, out var dto))
+                    {
+                        return (Reminder: r, SortKey: dto.UtcDateTime);
+                    }
+                    return (Reminder: r, SortKey: DateTime.MaxValue);
+                })
+                .OrderByDescending(x => x.SortKey)
+                .Select(x => x.Reminder)
+                .ToList();
+
+            int id = 1;
+            foreach (var reminder in sorted)
             {
-                Debug.WriteLine($"リマインダー読み込みエラー: {ex.Message}");
+                string displayTime = reminder.ScheduledAt;
+                if (TryParseScheduledAt(reminder.ScheduledAt, out var dto))
+                {
+                    displayTime = dto.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                }
+
+                _reminderIdMap[id] = reminder;
+                items.Add(new Reminder
+                {
+                    Id = id,
+                    RemindDatetime = displayTime,
+                    Requirement = reminder.Content
+                });
+                id++;
             }
+
+            Dispatcher.Invoke(() => { RemindersItemsControl.ItemsSource = items; });
         }
 
         /// <summary>
@@ -361,7 +418,7 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// リマインダー追加ボタンクリック
         /// </summary>
-        private async void AddReminderButton_Click(object sender, RoutedEventArgs e)
+        private void AddReminderButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -401,14 +458,14 @@ namespace CocoroConsole.Controls
                     return;
                 }
 
-                var reminder = new Reminder
+                _apiReminders.Add(new CocoroGhostReminder
                 {
-                    RemindDatetime = scheduledAt.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Requirement = messageText
-                };
+                    ScheduledAt = ToApiScheduledAtUtcString(scheduledAt),
+                    Content = messageText
+                });
 
-                await _reminderService.CreateReminderAsync(reminder);
-                await LoadRemindersAsync();
+                UpdateReminderListUI();
+                MarkSettingsChanged();
             }
             catch (Exception ex)
             {
@@ -420,29 +477,22 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// リマインダー削除ボタンクリック
         /// </summary>
-        private async void DeleteReminderButton_Click(object sender, RoutedEventArgs e)
+        private void DeleteReminderButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (sender is Button button && button.Tag is int reminderId)
-                {
-                    await _reminderService.DeleteReminderAsync(reminderId);
-                    await LoadRemindersAsync();
-                }
+                if (sender is not Button button || button.Tag is not int reminderId) return;
+                if (!_reminderIdMap.TryGetValue(reminderId, out var apiReminder)) return;
+
+                _apiReminders.Remove(apiReminder);
+                UpdateReminderListUI();
+                MarkSettingsChanged();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"リマインダー削除エラー: {ex.Message}", "エラー",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        /// <summary>
-        /// リマインダーリスト更新ボタンクリック
-        /// </summary>
-        private async void RefreshRemindersButton_Click(object sender, RoutedEventArgs e)
-        {
-            await LoadRemindersAsync();
         }
 
         /// <summary>

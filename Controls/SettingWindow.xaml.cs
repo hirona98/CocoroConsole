@@ -494,12 +494,16 @@ namespace CocoroConsole.Controls
             try
             {
                 List<string> excludeKeywords = SystemSettingsControl.GetExcludeKeywords();
+                bool remindersEnabled = SystemSettingsControl.GetIsEnableReminder();
+                List<CocoroGhostReminder> reminders = SystemSettingsControl.GetReminders();
                 List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
                 List<EmbeddingPreset> embeddingPresets = EmbeddingSettingsControl.GetAllPresets();
 
                 CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
                 {
                     ExcludeKeywords = excludeKeywords,
+                    RemindersEnabled = remindersEnabled,
+                    Reminders = reminders,
                     LlmPreset = llmPresets,
                     EmbeddingPreset = embeddingPresets
                 };
@@ -513,51 +517,9 @@ namespace CocoroConsole.Controls
             }
         }
 
-        private async Task SaveLlmPresetsToApiAsync()
-        {
-            if (_apiClient == null) return;
+        private Task SaveLlmPresetsToApiAsync() => SaveAllSettingsToApiAsync();
 
-            try
-            {
-                List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
-
-                CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
-                {
-                    LlmPreset = llmPresets
-                };
-
-                await _apiClient.UpdateSettingsAsync(request);
-                Debug.WriteLine("[SettingWindow] LLMプリセットをAPIに保存しました");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[SettingWindow] LLMプリセットの保存に失敗しました: {ex.Message}");
-                throw;
-            }
-        }
-
-        private async Task SaveEmbeddingPresetsToApiAsync()
-        {
-            if (_apiClient == null) return;
-
-            try
-            {
-                List<EmbeddingPreset> embeddingPresets = EmbeddingSettingsControl.GetAllPresets();
-
-                CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
-                {
-                    EmbeddingPreset = embeddingPresets
-                };
-
-                await _apiClient.UpdateSettingsAsync(request);
-                Debug.WriteLine("[SettingWindow] EmbeddingプリセットをAPIに保存しました");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[SettingWindow] Embeddingプリセットの保存に失敗しました: {ex.Message}");
-                throw;
-            }
-        }
+        private Task SaveEmbeddingPresetsToApiAsync() => SaveAllSettingsToApiAsync();
 
         /// <summary>
         /// 元の設定に戻す（一設定などがあるためDisplayのみ復元が必要）

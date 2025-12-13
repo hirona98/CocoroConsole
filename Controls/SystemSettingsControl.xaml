@@ -21,7 +21,6 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <!-- 説明テキスト -->
@@ -187,19 +186,6 @@
                                 </ItemsControl>
                             </ScrollViewer>
                         </Border>
-
-                        <!-- ボタンエリア -->
-                        <StackPanel Grid.Row="4"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Left"
-                                    Margin="0,10,0,0"
-                                    IsEnabled="{Binding IsChecked, ElementName=EnableReminderCheckBox}">
-                            <Button x:Name="RefreshRemindersButton"
-                                    Content="リスト更新"
-                                    Padding="10,5"
-                                    Click="RefreshRemindersButton_Click"
-                                    ToolTip="リマインダーリストを最新の状態に更新"/>
-                        </StackPanel>
                     </Grid>
                 </GroupBox>
 
