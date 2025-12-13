@@ -16,6 +16,6 @@ CocoroAI は、cocoro_ghost、CocoroShell、CocoroConsole からなるAIパー�
 - ../UserData: CocoroConsole/CocoroShell用設定ファイル
 
 
-### WSL環境での開発の場合
+## コマンド
 
-- PowerShellコマンドは `powershell.exe` 経由で実行すること
+- PowerShellコマンドは `powershell.exe` 経由で実行すること（dotnetなど）

@@ -190,13 +190,25 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="APIキー:"
                                        Style="{StaticResource SettingLabelStyle}"/>
-                            <PasswordBox x:Name="LlmApiKeyPasswordBox"
-                                         Grid.Column="1"
-                                         Foreground="#FF0078D7"
-                                         Padding="2"
-                                         BorderBrush="#CCCCCC"
-                                         BorderThickness="1"
-                                         PasswordChanged="OnSettingChanged"/>
+                            <Grid Grid.Column="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <PasswordBox x:Name="LlmApiKeyPasswordBox"
+                                             Grid.Column="0"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"
+                                             BorderBrush="#CCCCCC"
+                                             BorderThickness="1"
+                                             PasswordChanged="OnSettingChanged"/>
+                                <Button Grid.Column="1"
+                                        Content="上書き貼付け"
+                                        Margin="10,0,0,0"
+                                        Padding="10,0,10,0"
+                                        Click="LlmApiKeyPasteOverrideButton_Click"
+                                        ToolTip="クリップボードのテキストで上書き"/>
+                            </Grid>
                         </Grid>
 
                         <!-- LLMモデル -->
@@ -317,13 +329,25 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Vision APIキー:"
                                        Style="{StaticResource SettingLabelStyle}"/>
-                            <PasswordBox x:Name="VisionApiKeyPasswordBox"
-                                         Grid.Column="1"
-                                         Foreground="#FF0078D7"
-                                         Padding="2"
-                                         BorderBrush="#CCCCCC"
-                                         BorderThickness="1"
-                                         PasswordChanged="OnSettingChanged"/>
+                            <Grid Grid.Column="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <PasswordBox x:Name="VisionApiKeyPasswordBox"
+                                             Grid.Column="0"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"
+                                             BorderBrush="#CCCCCC"
+                                             BorderThickness="1"
+                                             PasswordChanged="OnSettingChanged"/>
+                                <Button Grid.Column="1"
+                                        Content="上書き貼付け"
+                                        Margin="10,0,0,0"
+                                        Padding="10,0,10,0"
+                                        Click="VisionApiKeyPasteOverrideButton_Click"
+                                        ToolTip="クリップボードのテキストで上書き"/>
+                            </Grid>
                         </Grid>
 
                         <!-- Visionモデル -->

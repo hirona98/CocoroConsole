@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using CocoroConsole.Models.CocoroGhostApi;
 using CocoroConsole.Services;
+using CocoroConsole.Utilities;
 
 namespace CocoroConsole.Controls
 {
@@ -277,6 +278,16 @@ namespace CocoroConsole.Controls
 
             await SavePresetsToApiAsync();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void LlmApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.PasteOverwrite(LlmApiKeyPasswordBox);
+        }
+
+        private void VisionApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.PasteOverwrite(VisionApiKeyPasswordBox);
         }
 
         private async void DeletePresetButton_Click(object sender, RoutedEventArgs e)

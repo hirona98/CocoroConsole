@@ -1,5 +1,6 @@
 ﻿using CocoroConsole.Communication;
 using CocoroConsole.Services;
+using CocoroConsole.Utilities;
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
@@ -61,31 +62,12 @@ namespace CocoroConsole.Controls
 
         private void AivisCloudApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
         {
-            PasteFromClipboardIntoTextBox(AivisCloudApiKeyPasswordBox);
+            ClipboardPasteOverride.PasteOverwrite(AivisCloudApiKeyPasswordBox);
         }
 
         private void STTApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
         {
-            PasteFromClipboardIntoTextBox(STTApiKeyPasswordBox);
-        }
-
-        private void PasteFromClipboardIntoTextBox(TextBox target)
-        {
-            try
-            {
-                if (Clipboard.ContainsText())
-                {
-                    var text = Clipboard.GetText();
-                    if (!string.IsNullOrWhiteSpace(text))
-                    {
-                        target.Text = text.Trim();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Clipboard paste failed: {ex}");
-            }
+            ClipboardPasteOverride.PasteOverwrite(STTApiKeyPasswordBox);
         }
 
         /// <summary>
