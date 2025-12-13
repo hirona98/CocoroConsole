@@ -387,14 +387,14 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <PasswordBox Grid.Column="0"
-                                             x:Name="BearerTokenPasswordBox"
-                                             Padding="2"
-                                             VerticalAlignment="Center"
-                                             MaxWidth="300"
-                                             HorizontalAlignment="Left"
-                                             PasswordChanged="BearerTokenPasswordBox_PasswordChanged"
-                                             IsEnabled="False"/>
+                                <TextBox Grid.Column="0"
+                                         x:Name="BearerTokenPasswordBox"
+                                         Padding="2"
+                                         VerticalAlignment="Center"
+                                         MaxWidth="300"
+                                         HorizontalAlignment="Left"
+                                         TextChanged="BearerTokenPasswordBox_PasswordChanged"
+                                         IsEnabled="False"/>
                                 <Button Grid.Column="1"
                                         Content="コピー"
                                         Margin="10,0,0,0"

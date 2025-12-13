@@ -8,23 +8,37 @@
              d:DesignWidth="800">
 
     <UserControl.Resources>
-        <Style x:Key="SettingLabelStyle" TargetType="TextBlock">
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Margin" Value="0,0,10,0"/>
-            <Setter Property="Width" Value="160"/>
+        <Style x:Key="SettingLabelStyle"
+                TargetType="TextBlock">
+            <Setter Property="VerticalAlignment"
+                    Value="Center"/>
+            <Setter Property="Margin"
+                    Value="0,0,10,0"/>
+            <Setter Property="Width"
+                    Value="160"/>
         </Style>
-        <Style x:Key="SettingTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Foreground" Value="#FF0078D7"/>
-            <Setter Property="Padding" Value="2"/>
-            <Setter Property="BorderBrush" Value="#CCCCCC"/>
-            <Setter Property="BorderThickness" Value="1"/>
+        <Style x:Key="SettingTextBoxStyle"
+                TargetType="TextBox">
+            <Setter Property="Foreground"
+                    Value="#FF0078D7"/>
+            <Setter Property="Padding"
+                    Value="2"/>
+            <Setter Property="BorderBrush"
+                    Value="#CCCCCC"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
         </Style>
         <!-- プリセットボタン共通スタイル -->
-        <Style x:Key="PresetButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#4873CF"/>
-            <Setter Property="Foreground" Value="WhiteSmoke"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="10,5"/>
+        <Style x:Key="PresetButtonStyle"
+                TargetType="Button">
+            <Setter Property="Background"
+                    Value="#4873CF"/>
+            <Setter Property="Foreground"
+                    Value="WhiteSmoke"/>
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+            <Setter Property="Padding"
+                    Value="10,5"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -37,15 +51,22 @@
                                               TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Background" Value="#CCCCCC"/>
-                                <Setter Property="Foreground" Value="#888888"/>
+                            <Trigger Property="IsEnabled"
+                                    Value="False">
+                                <Setter Property="Background"
+                                        Value="#CCCCCC"/>
+                                <Setter Property="Foreground"
+                                        Value="#888888"/>
                             </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#5A84D9"/>
+                            <Trigger Property="IsMouseOver"
+                                    Value="True">
+                                <Setter Property="Background"
+                                        Value="#5A84D9"/>
                             </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#3A62B8"/>
+                            <Trigger Property="IsPressed"
+                                    Value="True">
+                                <Setter Property="Background"
+                                        Value="#3A62B8"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -53,11 +74,16 @@
             </Setter>
         </Style>
         <!-- 削除ボタンスタイル -->
-        <Style x:Key="DeleteButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#D50000"/>
-            <Setter Property="Foreground" Value="WhiteSmoke"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="10,5"/>
+        <Style x:Key="DeleteButtonStyle"
+                TargetType="Button">
+            <Setter Property="Background"
+                    Value="#D50000"/>
+            <Setter Property="Foreground"
+                    Value="WhiteSmoke"/>
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+            <Setter Property="Padding"
+                    Value="10,5"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -70,15 +96,22 @@
                                               TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Background" Value="#CCCCCC"/>
-                                <Setter Property="Foreground" Value="#888888"/>
+                            <Trigger Property="IsEnabled"
+                                    Value="False">
+                                <Setter Property="Background"
+                                        Value="#CCCCCC"/>
+                                <Setter Property="Foreground"
+                                        Value="#888888"/>
                             </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#E53935"/>
+                            <Trigger Property="IsMouseOver"
+                                    Value="True">
+                                <Setter Property="Background"
+                                        Value="#E53935"/>
                             </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#B71C1C"/>
+                            <Trigger Property="IsPressed"
+                                    Value="True">
+                                <Setter Property="Background"
+                                        Value="#B71C1C"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -170,18 +203,20 @@
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <Grid Grid.Column="1">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <PasswordBox x:Name="EmbeddingApiKeyPasswordBox"
-                                             Grid.Column="0"
-                                             Foreground="#FF0078D7"
-                                             Padding="2"
-                                             BorderBrush="#CCCCCC"
-                                             BorderThickness="1"
-                                             ToolTip="空欄の場合はLLM APIキーを使用"
-                                             PasswordChanged="OnSettingChanged"/>
+                                <TextBox x:Name="EmbeddingApiKeyPasswordBox"
+                                         Grid.Column="0"
+                                         Foreground="#FF0078D7"
+                                         Padding="2"
+                                         Width="100"
+                                         HorizontalAlignment="Left"
+                                         BorderBrush="#CCCCCC"
+                                         BorderThickness="1"
+                                         ToolTip="空欄の場合はLLM APIキーを使用"
+                                         TextChanged="OnSettingChanged"/>
                                 <Button Grid.Column="1"
                                         Content="コピー"
                                         Margin="10,0,0,0"

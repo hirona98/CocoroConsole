@@ -48,13 +48,13 @@ namespace CocoroConsole.Controls
             LlmPreset preset = _presets[_currentPresetIndex];
             preset.LlmPresetName = PresetNameTextBox.Text;
             preset.SystemPrompt = SystemPromptTextBox.Text;
-            preset.LlmApiKey = string.IsNullOrWhiteSpace(LlmApiKeyPasswordBox.Password) ? null : LlmApiKeyPasswordBox.Password;
+            preset.LlmApiKey = string.IsNullOrWhiteSpace(LlmApiKeyPasswordBox.Text) ? null : LlmApiKeyPasswordBox.Text;
             preset.LlmModel = LlmModelTextBox.Text;
             preset.LlmBaseUrl = string.IsNullOrWhiteSpace(LlmBaseUrlTextBox.Text) ? null : LlmBaseUrlTextBox.Text;
             preset.MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : 50;
             preset.MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : 4096;
             preset.ReasoningEffort = !string.IsNullOrWhiteSpace(ReasoningEffortTextBox.Text) ? ReasoningEffortTextBox.Text : null;
-            preset.ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Password) ? null : VisionApiKeyPasswordBox.Password;
+            preset.ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Text) ? null : VisionApiKeyPasswordBox.Text;
             preset.ImageModel = VisionModelTextBox.Text;
             preset.ImageLlmBaseUrl = string.IsNullOrWhiteSpace(VisionBaseUrlTextBox.Text) ? null : VisionBaseUrlTextBox.Text;
             preset.MaxTokensVision = int.TryParse(MaxTokensVisionTextBox.Text, out int maxTokensVision) ? maxTokensVision : 4096;
@@ -127,7 +127,7 @@ namespace CocoroConsole.Controls
         {
             PresetNameTextBox.Text = preset.LlmPresetName ?? string.Empty;
             SystemPromptTextBox.Text = preset.SystemPrompt ?? string.Empty;
-            LlmApiKeyPasswordBox.Password = preset.LlmApiKey ?? string.Empty;
+            LlmApiKeyPasswordBox.Text = preset.LlmApiKey ?? string.Empty;
             LlmModelTextBox.Text = preset.LlmModel ?? string.Empty;
             LlmBaseUrlTextBox.Text = preset.LlmBaseUrl ?? string.Empty;
             MaxTurnsWindowTextBox.Text = preset.MaxTurnsWindow?.ToString() ?? "50";
@@ -137,7 +137,7 @@ namespace CocoroConsole.Controls
             ReasoningEffortTextBox.Text = preset.ReasoningEffort ?? string.Empty;
 
             // Vision設定
-            VisionApiKeyPasswordBox.Password = preset.ImageModelApiKey ?? string.Empty;
+            VisionApiKeyPasswordBox.Text = preset.ImageModelApiKey ?? string.Empty;
             VisionModelTextBox.Text = preset.ImageModel ?? string.Empty;
             VisionBaseUrlTextBox.Text = preset.ImageLlmBaseUrl ?? string.Empty;
             MaxTokensVisionTextBox.Text = preset.MaxTokensVision?.ToString() ?? "4096";
@@ -157,13 +157,13 @@ namespace CocoroConsole.Controls
             {
                 LlmPresetId = currentPreset.LlmPresetId,
                 LlmPresetName = PresetNameTextBox.Text,
-                LlmApiKey = string.IsNullOrWhiteSpace(LlmApiKeyPasswordBox.Password) ? null : LlmApiKeyPasswordBox.Password,
+                LlmApiKey = string.IsNullOrWhiteSpace(LlmApiKeyPasswordBox.Text) ? null : LlmApiKeyPasswordBox.Text,
                 LlmModel = LlmModelTextBox.Text,
                 LlmBaseUrl = string.IsNullOrWhiteSpace(LlmBaseUrlTextBox.Text) ? null : LlmBaseUrlTextBox.Text,
                 SystemPrompt = SystemPromptTextBox.Text,
                 MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : 50,
                 MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : 4096,
-                ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Password) ? null : VisionApiKeyPasswordBox.Password,
+                ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Text) ? null : VisionApiKeyPasswordBox.Text,
                 ImageModel = VisionModelTextBox.Text,
                 ImageLlmBaseUrl = string.IsNullOrWhiteSpace(VisionBaseUrlTextBox.Text) ? null : VisionBaseUrlTextBox.Text,
                 MaxTokensVision = int.TryParse(MaxTokensVisionTextBox.Text, out int maxTokensVision) ? maxTokensVision : 4096,
@@ -180,13 +180,13 @@ namespace CocoroConsole.Controls
         {
             PresetNameTextBox.Text = string.Empty;
             SystemPromptTextBox.Text = string.Empty;
-            LlmApiKeyPasswordBox.Password = string.Empty;
+            LlmApiKeyPasswordBox.Text = string.Empty;
             LlmModelTextBox.Text = string.Empty;
             LlmBaseUrlTextBox.Text = string.Empty;
             ReasoningEffortTextBox.Text = string.Empty;
             MaxTurnsWindowTextBox.Text = "50";
             MaxTokensTextBox.Text = "4096";
-            VisionApiKeyPasswordBox.Password = string.Empty;
+            VisionApiKeyPasswordBox.Text = string.Empty;
             VisionModelTextBox.Text = string.Empty;
             VisionBaseUrlTextBox.Text = string.Empty;
             MaxTokensVisionTextBox.Text = "4096";

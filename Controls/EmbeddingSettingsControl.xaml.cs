@@ -47,7 +47,7 @@ namespace CocoroConsole.Controls
 
             EmbeddingPreset preset = _presets[_currentPresetIndex];
             preset.EmbeddingPresetName = MemoryIdTextBox.Text;
-            preset.EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Password) ? null : EmbeddingApiKeyPasswordBox.Password;
+            preset.EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Text) ? null : EmbeddingApiKeyPasswordBox.Text;
             preset.EmbeddingModel = EmbeddingModelTextBox.Text;
             preset.EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text;
             preset.EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 3072;
@@ -119,7 +119,7 @@ namespace CocoroConsole.Controls
         private void LoadPresetToUI(EmbeddingPreset preset)
         {
             MemoryIdTextBox.Text = preset.EmbeddingPresetName ?? string.Empty;
-            EmbeddingApiKeyPasswordBox.Password = preset.EmbeddingModelApiKey ?? string.Empty;
+            EmbeddingApiKeyPasswordBox.Text = preset.EmbeddingModelApiKey ?? string.Empty;
             EmbeddingModelTextBox.Text = preset.EmbeddingModel ?? string.Empty;
             EmbeddingBaseUrlTextBox.Text = preset.EmbeddingBaseUrl ?? string.Empty;
             EmbeddingDimensionTextBox.Text = preset.EmbeddingDimension?.ToString() ?? "3072";
@@ -139,7 +139,7 @@ namespace CocoroConsole.Controls
             {
                 EmbeddingPresetId = currentPreset.EmbeddingPresetId,
                 EmbeddingPresetName = MemoryIdTextBox.Text,
-                EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Password) ? null : EmbeddingApiKeyPasswordBox.Password,
+                EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Text) ? null : EmbeddingApiKeyPasswordBox.Text,
                 EmbeddingModel = EmbeddingModelTextBox.Text,
                 EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text,
                 EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 3072,
@@ -152,7 +152,7 @@ namespace CocoroConsole.Controls
         private void ClearSettings()
         {
             MemoryIdTextBox.Text = string.Empty;
-            EmbeddingApiKeyPasswordBox.Password = string.Empty;
+            EmbeddingApiKeyPasswordBox.Text = string.Empty;
             EmbeddingModelTextBox.Text = string.Empty;
             EmbeddingBaseUrlTextBox.Text = string.Empty;
             EmbeddingDimensionTextBox.Text = "3072";
