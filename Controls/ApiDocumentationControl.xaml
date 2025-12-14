@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="CocoroConsole.Controls.ExternalServicesSettingsControl"
+﻿<UserControl x:Class="CocoroConsole.Controls.ApiDocumentationControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -10,24 +10,21 @@
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <!-- API設定 -->
-                <GroupBox Header="API"
+                <GroupBox Header="API説明"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
-                        <!-- 説明テキスト -->
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666">
-                            外部連携はCocoroGhostのREST APIを利用します（Bearerトークン必須）
+                            APIを使って外部プログラムから通知・メタ要求を投げられます。
                         </TextBlock>
 
-                        <!-- 通知API使用例（エンドポイント/ボディ/レスポンス/使用例をすべて折りたたみ） -->
-                        <Expander x:Name="NotificationApiDetailsExpander"
-                                  Header="CocoroGhost 通知API使用例"
+                        <Expander x:Name="NotificationApiExpander"
+                                  Header="通知API（POST /api/v1/notification）"
                                   Foreground="#666666"
                                   IsExpanded="False"
                                   Margin="0,10,0,0">
-                            <TextBox x:Name="NotificationApiDetailsTextBox"
+                            <TextBox x:Name="NotificationApiTextBox"
                                      IsReadOnly="True"
                                      BorderThickness="0"
                                      VerticalScrollBarVisibility="Auto"
@@ -35,16 +32,16 @@
                                      Padding="2"
                                      TextWrapping="Wrap"
                                      AcceptsReturn="True"
+                                     FontFamily="Consolas"
                                      Margin="0,10,0,0"/>
                         </Expander>
 
-                        <!-- 直接要求API使用例（エンドポイント/ボディ/レスポンス/使用例をすべて折りたたみ） -->
-                        <Expander x:Name="DirectRequestApiDetailsExpander"
-                                  Header="CocoroGhost メタ要求API使用例"
+                        <Expander x:Name="MetaRequestApiExpander"
+                                  Header="メタ要求API（POST /api/v1/meta_request）"
                                   Foreground="#666666"
                                   IsExpanded="False"
                                   Margin="0,10,0,0">
-                            <TextBox x:Name="DirectRequestApiDetailsTextBox"
+                            <TextBox x:Name="MetaRequestApiTextBox"
                                      IsReadOnly="True"
                                      BorderThickness="0"
                                      VerticalScrollBarVisibility="Auto"
@@ -52,8 +49,10 @@
                                      Padding="2"
                                      TextWrapping="Wrap"
                                      AcceptsReturn="True"
+                                     FontFamily="Consolas"
                                      Margin="0,10,0,0"/>
                         </Expander>
+
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

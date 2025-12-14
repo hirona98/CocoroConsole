@@ -158,11 +158,11 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Web/API"
+            <TabItem Header="API説明"
                      Style="{StaticResource AdminTabItemStyle}"
-                     ToolTip="Web and API settings">
+                     ToolTip="API usage examples">
                 <Grid Margin="20,20,0,20">
-                    <local:ExternalServicesSettingsControl x:Name="ExternalServicesSettingsControl"/>
+                    <local:ApiDocumentationControl x:Name="ApiDocumentationControl"/>
                 </Grid>
             </TabItem>
 

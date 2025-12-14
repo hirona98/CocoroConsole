@@ -140,18 +140,6 @@ namespace CocoroConsole.Services
             }
         }
 
-        public Task<NotificationResponse> SendNotificationAsync(NotificationRequest request, CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendAsync<NotificationResponse>(HttpMethod.Post, "/api/notification", request, cancellationToken);
-        }
-
-        public Task<MetaRequestResponse> SendMetaRequestAsync(MetaRequest request, CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendAsync<MetaRequestResponse>(HttpMethod.Post, "/api/meta_request", request, cancellationToken);
-        }
-
         public Task<CaptureResponse> SendCaptureAsync(CaptureRequest request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -343,51 +331,6 @@ namespace CocoroConsole.Services
 
         [JsonPropertyName("code")]
         public string? Code { get; set; }
-    }
-
-    public class NotificationRequest
-    {
-        [JsonPropertyName("memory_id")]
-        public string? MemoryId { get; set; }
-
-        [JsonPropertyName("source_system")]
-        public string SourceSystem { get; set; } = string.Empty;
-
-        [JsonPropertyName("title")]
-        public string Title { get; set; } = string.Empty;
-
-        [JsonPropertyName("body")]
-        public string Body { get; set; } = string.Empty;
-
-        [JsonPropertyName("images")]
-        public List<CocoroGhostImage> Images { get; set; } = new List<CocoroGhostImage>();
-    }
-
-    public class NotificationResponse
-    {
-        [JsonPropertyName("unit_id")]
-        public int UnitId { get; set; }
-    }
-
-    public class MetaRequest
-    {
-        [JsonPropertyName("memory_id")]
-        public string? MemoryId { get; set; }
-
-        [JsonPropertyName("instruction")]
-        public string Instruction { get; set; } = string.Empty;
-
-        [JsonPropertyName("payload_text")]
-        public string PayloadText { get; set; } = string.Empty;
-
-        [JsonPropertyName("images")]
-        public List<CocoroGhostImage> Images { get; set; } = new List<CocoroGhostImage>();
-    }
-
-    public class MetaRequestResponse
-    {
-        [JsonPropertyName("unit_id")]
-        public int UnitId { get; set; }
     }
 
     public class CocoroGhostImage

@@ -72,8 +72,8 @@ namespace CocoroConsole.Controls
             // おまけ設定変更イベントを登録
             ExtrasControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
 
-            // 外部サービス設定コントロールを初期化
-            _ = ExternalServicesSettingsControl.InitializeAsync();
+            // API説明コントロールを初期化
+            _ = ApiDocumentationControl.InitializeAsync();
 
             // プリセット管理コントロールを初期化
             _ = InitializePresetControlsAsync();

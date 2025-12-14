@@ -28,9 +28,10 @@ namespace CocoroConsole
         private ScheduledCommandService? _scheduledCommandService;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
-        private int? _nextScreenshotInitialDelayMilliseconds;
-        private bool _isStreamingChatActive;
-        private bool _skipNextAssistantMessage;
+	        private int? _nextScreenshotInitialDelayMilliseconds;
+	        private bool _isStreamingChatActive;
+	        private bool _skipNextAssistantMessage;
+	        private string? _skipNextAssistantMessageContent;
 
 
         public MainWindow()
@@ -568,15 +569,21 @@ namespace CocoroConsole
         /// <summary>
         /// チャットメッセージ受信時のハンドラ（CocoroConsole APIから）
         /// </summary>
-        private void OnChatMessageReceived(object? sender, ChatRequest request)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                if (_skipNextAssistantMessage && request.role == "assistant")
-                {
-                    _skipNextAssistantMessage = false;
-                    return;
-                }
+	        private void OnChatMessageReceived(object? sender, ChatRequest request)
+	        {
+	            UIHelper.RunOnUIThread(() =>
+	            {
+	                if (_skipNextAssistantMessage && request.role == "assistant")
+	                {
+	                    var skipContent = _skipNextAssistantMessageContent;
+	                    _skipNextAssistantMessage = false;
+	                    _skipNextAssistantMessageContent = null;
+
+	                    if (string.IsNullOrEmpty(skipContent) || string.Equals(request.content, skipContent, StringComparison.Ordinal))
+	                    {
+	                        return;
+	                    }
+	                }
 
                 if (request.role == "user")
                 {
@@ -590,17 +597,18 @@ namespace CocoroConsole
             });
         }
 
-        private void OnStreamingChatReceived(object? sender, StreamingChatEventArgs e)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                if (e.IsError)
-                {
-                    ChatControlInstance.AddAiMessage($"[error] {e.ErrorMessage ?? "チャット中断"}");
-                    _isStreamingChatActive = false;
-                    _skipNextAssistantMessage = false;
-                    return;
-                }
+	        private void OnStreamingChatReceived(object? sender, StreamingChatEventArgs e)
+	        {
+	            UIHelper.RunOnUIThread(() =>
+	            {
+	                if (e.IsError)
+	                {
+	                    ChatControlInstance.AddAiMessage($"[error] {e.ErrorMessage ?? "チャット中断"}");
+	                    _isStreamingChatActive = false;
+	                    _skipNextAssistantMessage = false;
+	                    _skipNextAssistantMessageContent = null;
+	                    return;
+	                }
 
                 if (!e.IsFinished)
                 {
@@ -614,14 +622,15 @@ namespace CocoroConsole
                         ChatControlInstance.UpdateStreamingAiMessage(e.Content);
                     }
                 }
-                else
-                {
-                    ChatControlInstance.UpdateStreamingAiMessage(e.Content);
-                    _isStreamingChatActive = false;
-                    _skipNextAssistantMessage = true; // 直後の最終メッセージ表示を抑止
-                }
-            });
-        }
+	                else
+	                {
+	                    ChatControlInstance.UpdateStreamingAiMessage(e.Content);
+	                    _isStreamingChatActive = false;
+	                    _skipNextAssistantMessage = true; // 直後の最終メッセージ表示を抑止
+	                    _skipNextAssistantMessageContent = e.Content;
+	                }
+	            });
+	        }
 
         /// <summary>
         /// 通知メッセージ受信時のハンドラ

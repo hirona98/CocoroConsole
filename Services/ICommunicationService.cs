@@ -32,7 +32,7 @@ namespace CocoroConsole.Services
         event EventHandler<ChatRequest>? ChatMessageReceived;
 
         /// <summary>
-        /// 通知メッセージ受信イベント（Notification APIから）
+        /// 通知メッセージ受信イベント（cocoro_ghost events/stream 由来）
         /// </summary>
         event Action<ChatMessagePayload, List<System.Windows.Media.Imaging.BitmapSource>?>? NotificationMessageReceived;
 
@@ -133,16 +133,6 @@ namespace CocoroConsole.Services
         /// </summary>
         /// <param name="animationName">アニメーション名</param>
         Task SendAnimationToShellAsync(string animationName);
-
-        /// <summary>
-        /// 通知メッセージを処理（Notification API用）
-        /// </summary>
-        /// <param name="notification">通知メッセージ</param>
-        /// <param name="imageDataUrls">画像データURL配列（オプション）</param>
-        Task ProcessNotificationAsync(ChatMessagePayload notification, string[]? imageDataUrls = null);
-
-        Task ProcessDirectRequestAsync(ChatMessagePayload request, string[]? imageDataUrls = null);
-
 
         /// <summary>
         /// CocoroShellにTTS状態を送信
