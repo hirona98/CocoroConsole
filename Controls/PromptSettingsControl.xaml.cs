@@ -16,11 +16,9 @@ namespace CocoroConsole.Controls
         private CocoroGhostApiClient? _apiClient;
         private Func<Task>? _onPresetListChanged;
 
-        private readonly List<SystemPromptPreset> _systemPromptPresets = new();
         private readonly List<PersonaPreset> _personaPresets = new();
         private readonly List<ContractPreset> _contractPresets = new();
 
-        private int _currentSystemPromptPresetIndex = -1;
         private int _currentPersonaPresetIndex = -1;
         private int _currentContractPresetIndex = -1;
 
@@ -38,18 +36,15 @@ namespace CocoroConsole.Controls
         }
 
         public void LoadSettings(
-            List<SystemPromptPreset>? systemPromptPresets,
-            int? activeSystemPromptPresetId,
             List<PersonaPreset>? personaPresets,
-            int? activePersonaPresetId,
+            string? activePersonaPresetId,
             List<ContractPreset>? contractPresets,
-            int? activeContractPresetId
+            string? activeContractPresetId
         )
         {
             _isInitializing = true;
             try
             {
-                LoadSystemPromptPresets(systemPromptPresets, activeSystemPromptPresetId);
                 LoadPersonaPresets(personaPresets, activePersonaPresetId);
                 LoadContractPresets(contractPresets, activeContractPresetId);
             }
@@ -57,12 +52,6 @@ namespace CocoroConsole.Controls
             {
                 _isInitializing = false;
             }
-        }
-
-        public List<SystemPromptPreset> GetAllSystemPromptPresets()
-        {
-            SaveCurrentSystemPromptUiToPreset();
-            return _systemPromptPresets.ToList();
         }
 
         public List<PersonaPreset> GetAllPersonaPresets()
@@ -77,17 +66,7 @@ namespace CocoroConsole.Controls
             return _contractPresets.ToList();
         }
 
-        public int? GetActiveSystemPromptPresetId()
-        {
-            if (_currentSystemPromptPresetIndex < 0 || _currentSystemPromptPresetIndex >= _systemPromptPresets.Count)
-            {
-                return null;
-            }
-
-            return _systemPromptPresets[_currentSystemPromptPresetIndex].SystemPromptPresetId;
-        }
-
-        public int? GetActivePersonaPresetId()
+        public string? GetActivePersonaPresetId()
         {
             if (_currentPersonaPresetIndex < 0 || _currentPersonaPresetIndex >= _personaPresets.Count)
             {
@@ -97,7 +76,7 @@ namespace CocoroConsole.Controls
             return _personaPresets[_currentPersonaPresetIndex].PersonaPresetId;
         }
 
-        public int? GetActiveContractPresetId()
+        public string? GetActiveContractPresetId()
         {
             if (_currentContractPresetIndex < 0 || _currentContractPresetIndex >= _contractPresets.Count)
             {
@@ -124,31 +103,7 @@ namespace CocoroConsole.Controls
             }
         }
 
-        private void LoadSystemPromptPresets(List<SystemPromptPreset>? presets, int? activePresetId)
-        {
-            _systemPromptPresets.Clear();
-            SystemPromptPresetSelectComboBox.Items.Clear();
-
-            if (presets == null || presets.Count == 0)
-            {
-                _currentSystemPromptPresetIndex = -1;
-                ClearSystemPromptUi();
-                return;
-            }
-
-            _systemPromptPresets.AddRange(presets);
-            foreach (var preset in _systemPromptPresets)
-            {
-                SystemPromptPresetSelectComboBox.Items.Add(preset.SystemPromptPresetName);
-            }
-
-            var activeIndex = ResolveActiveIndex(_systemPromptPresets.Select(p => p.SystemPromptPresetId).ToList(), activePresetId);
-            _currentSystemPromptPresetIndex = activeIndex;
-            SystemPromptPresetSelectComboBox.SelectedIndex = activeIndex;
-            LoadSystemPromptPresetToUi(_systemPromptPresets[activeIndex]);
-        }
-
-        private void LoadPersonaPresets(List<PersonaPreset>? presets, int? activePresetId)
+        private void LoadPersonaPresets(List<PersonaPreset>? presets, string? activePresetId)
         {
             _personaPresets.Clear();
             PersonaPresetSelectComboBox.Items.Clear();
@@ -172,7 +127,7 @@ namespace CocoroConsole.Controls
             LoadPersonaPresetToUi(_personaPresets[activeIndex]);
         }
 
-        private void LoadContractPresets(List<ContractPreset>? presets, int? activePresetId)
+        private void LoadContractPresets(List<ContractPreset>? presets, string? activePresetId)
         {
             _contractPresets.Clear();
             ContractPresetSelectComboBox.Items.Clear();
@@ -196,21 +151,21 @@ namespace CocoroConsole.Controls
             LoadContractPresetToUi(_contractPresets[activeIndex]);
         }
 
-        private static int ResolveActiveIndex(IReadOnlyList<int> presetIds, int? activePresetId)
+        private static int ResolveActiveIndex(IReadOnlyList<string?> presetIds, string? activePresetId)
         {
             if (presetIds.Count == 0)
             {
                 return -1;
             }
 
-            if (!activePresetId.HasValue)
+            if (string.IsNullOrWhiteSpace(activePresetId))
             {
                 return 0;
             }
 
             for (var i = 0; i < presetIds.Count; i++)
             {
-                if (presetIds[i] == activePresetId.Value)
+                if (string.Equals(presetIds[i], activePresetId, StringComparison.OrdinalIgnoreCase))
                 {
                     return i;
                 }
@@ -241,18 +196,6 @@ namespace CocoroConsole.Controls
             return GenerateUniqueName(existingNames, baseName);
         }
 
-        private void SaveCurrentSystemPromptUiToPreset()
-        {
-            if (_currentSystemPromptPresetIndex < 0 || _currentSystemPromptPresetIndex >= _systemPromptPresets.Count)
-            {
-                return;
-            }
-
-            var preset = _systemPromptPresets[_currentSystemPromptPresetIndex];
-            preset.SystemPromptPresetName = SystemPromptPresetNameTextBox.Text;
-            preset.SystemPrompt = SystemPromptTextBox.Text;
-        }
-
         private void SaveCurrentPersonaUiToPreset()
         {
             if (_currentPersonaPresetIndex < 0 || _currentPersonaPresetIndex >= _personaPresets.Count)
@@ -277,123 +220,13 @@ namespace CocoroConsole.Controls
             preset.ContractText = ContractTextBox.Text;
         }
 
-        private async void AddSystemPromptPresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            SaveCurrentSystemPromptUiToPreset();
-
-            var newPreset = new SystemPromptPreset
-            {
-                SystemPromptPresetId = 0,
-                SystemPromptPresetName = GenerateUniqueName(_systemPromptPresets.Select(p => p.SystemPromptPresetName), "新規プリセット"),
-                SystemPrompt = string.Empty
-            };
-
-            _isInitializing = true;
-            try
-            {
-                _systemPromptPresets.Add(newPreset);
-                SystemPromptPresetSelectComboBox.Items.Add(newPreset.SystemPromptPresetName);
-                _currentSystemPromptPresetIndex = _systemPromptPresets.Count - 1;
-                SystemPromptPresetSelectComboBox.SelectedIndex = _currentSystemPromptPresetIndex;
-                LoadSystemPromptPresetToUi(newPreset);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            await SavePresetsToApiAsync();
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private async void DuplicateSystemPromptPresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentSystemPromptPresetIndex < 0 || _currentSystemPromptPresetIndex >= _systemPromptPresets.Count)
-            {
-                MessageBox.Show("複製するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            SaveCurrentSystemPromptUiToPreset();
-
-            var source = _systemPromptPresets[_currentSystemPromptPresetIndex];
-            var duplicate = new SystemPromptPreset
-            {
-                SystemPromptPresetId = 0,
-                SystemPromptPresetName = GenerateDuplicateName(_systemPromptPresets.Select(p => p.SystemPromptPresetName), source.SystemPromptPresetName),
-                SystemPrompt = source.SystemPrompt
-            };
-
-            _isInitializing = true;
-            try
-            {
-                _systemPromptPresets.Add(duplicate);
-                SystemPromptPresetSelectComboBox.Items.Add(duplicate.SystemPromptPresetName);
-                _currentSystemPromptPresetIndex = _systemPromptPresets.Count - 1;
-                SystemPromptPresetSelectComboBox.SelectedIndex = _currentSystemPromptPresetIndex;
-                LoadSystemPromptPresetToUi(duplicate);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            await SavePresetsToApiAsync();
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private async void DeleteSystemPromptPresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentSystemPromptPresetIndex < 0 || _currentSystemPromptPresetIndex >= _systemPromptPresets.Count)
-            {
-                MessageBox.Show("削除するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            if (_systemPromptPresets.Count <= 1)
-            {
-                MessageBox.Show("最後のプリセットは削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            string presetName = _systemPromptPresets[_currentSystemPromptPresetIndex].SystemPromptPresetName;
-            var result = MessageBox.Show(
-                $"プリセット「{presetName}」を削除しますか？",
-                "削除確認",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result != MessageBoxResult.Yes)
-            {
-                return;
-            }
-
-            _isInitializing = true;
-            try
-            {
-                _systemPromptPresets.RemoveAt(_currentSystemPromptPresetIndex);
-                SystemPromptPresetSelectComboBox.Items.RemoveAt(_currentSystemPromptPresetIndex);
-
-                _currentSystemPromptPresetIndex = Math.Min(_currentSystemPromptPresetIndex, _systemPromptPresets.Count - 1);
-                SystemPromptPresetSelectComboBox.SelectedIndex = _currentSystemPromptPresetIndex;
-                LoadSystemPromptPresetToUi(_systemPromptPresets[_currentSystemPromptPresetIndex]);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            await SavePresetsToApiAsync();
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
         private async void AddPersonaPresetButton_Click(object sender, RoutedEventArgs e)
         {
             SaveCurrentPersonaUiToPreset();
 
             var newPreset = new PersonaPreset
             {
-                PersonaPresetId = 0,
+                PersonaPresetId = Guid.NewGuid().ToString(),
                 PersonaPresetName = GenerateUniqueName(_personaPresets.Select(p => p.PersonaPresetName), "新規プリセット"),
                 PersonaText = string.Empty
             };
@@ -429,7 +262,7 @@ namespace CocoroConsole.Controls
             var source = _personaPresets[_currentPersonaPresetIndex];
             var duplicate = new PersonaPreset
             {
-                PersonaPresetId = 0,
+                PersonaPresetId = Guid.NewGuid().ToString(),
                 PersonaPresetName = GenerateDuplicateName(_personaPresets.Select(p => p.PersonaPresetName), source.PersonaPresetName),
                 PersonaText = source.PersonaText
             };
@@ -503,7 +336,7 @@ namespace CocoroConsole.Controls
 
             var newPreset = new ContractPreset
             {
-                ContractPresetId = 0,
+                ContractPresetId = Guid.NewGuid().ToString(),
                 ContractPresetName = GenerateUniqueName(_contractPresets.Select(p => p.ContractPresetName), "新規プリセット"),
                 ContractText = string.Empty
             };
@@ -539,7 +372,7 @@ namespace CocoroConsole.Controls
             var source = _contractPresets[_currentContractPresetIndex];
             var duplicate = new ContractPreset
             {
-                ContractPresetId = 0,
+                ContractPresetId = Guid.NewGuid().ToString(),
                 ContractPresetName = GenerateDuplicateName(_contractPresets.Select(p => p.ContractPresetName), source.ContractPresetName),
                 ContractText = source.ContractText
             };
@@ -607,12 +440,6 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void LoadSystemPromptPresetToUi(SystemPromptPreset preset)
-        {
-            SystemPromptPresetNameTextBox.Text = preset.SystemPromptPresetName;
-            SystemPromptTextBox.Text = preset.SystemPrompt;
-        }
-
         private void LoadPersonaPresetToUi(PersonaPreset preset)
         {
             PersonaPresetNameTextBox.Text = preset.PersonaPresetName;
@@ -625,12 +452,6 @@ namespace CocoroConsole.Controls
             ContractTextBox.Text = preset.ContractText;
         }
 
-        private void ClearSystemPromptUi()
-        {
-            SystemPromptPresetNameTextBox.Text = string.Empty;
-            SystemPromptTextBox.Text = string.Empty;
-        }
-
         private void ClearPersonaUi()
         {
             PersonaPresetNameTextBox.Text = string.Empty;
@@ -641,35 +462,6 @@ namespace CocoroConsole.Controls
         {
             ContractPresetNameTextBox.Text = string.Empty;
             ContractTextBox.Text = string.Empty;
-        }
-
-        private void SystemPromptPresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_isInitializing)
-            {
-                return;
-            }
-
-            SaveCurrentSystemPromptUiToPreset();
-
-            var selectedIndex = SystemPromptPresetSelectComboBox.SelectedIndex;
-            if (selectedIndex < 0 || selectedIndex >= _systemPromptPresets.Count)
-            {
-                return;
-            }
-
-            _currentSystemPromptPresetIndex = selectedIndex;
-            _isInitializing = true;
-            try
-            {
-                LoadSystemPromptPresetToUi(_systemPromptPresets[selectedIndex]);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void PersonaPresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -725,22 +517,6 @@ namespace CocoroConsole.Controls
             finally
             {
                 _isInitializing = false;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void OnSystemPromptSettingChanged(object sender, TextChangedEventArgs e)
-        {
-            if (_isInitializing)
-            {
-                return;
-            }
-
-            if (sender == SystemPromptPresetNameTextBox && _currentSystemPromptPresetIndex >= 0 && _currentSystemPromptPresetIndex < _systemPromptPresets.Count)
-            {
-                _systemPromptPresets[_currentSystemPromptPresetIndex].SystemPromptPresetName = SystemPromptPresetNameTextBox.Text;
-                RefreshComboBoxItems(SystemPromptPresetSelectComboBox, _systemPromptPresets.Select(p => p.SystemPromptPresetName).ToList(), _currentSystemPromptPresetIndex);
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);

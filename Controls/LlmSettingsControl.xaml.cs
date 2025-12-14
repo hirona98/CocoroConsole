@@ -90,7 +90,7 @@ namespace CocoroConsole.Controls
             }
         }
 
-        public void LoadSettingsList(List<LlmPreset>? presets, int? activePresetId = null)
+        public void LoadSettingsList(List<LlmPreset>? presets, string? activePresetId = null)
         {
             _isInitializing = true;
 
@@ -113,9 +113,9 @@ namespace CocoroConsole.Controls
                 }
 
                 var activeIndex = 0;
-                if (activePresetId.HasValue)
+                if (!string.IsNullOrWhiteSpace(activePresetId))
                 {
-                    activeIndex = _presets.FindIndex(p => p.LlmPresetId == activePresetId.Value);
+                    activeIndex = _presets.FindIndex(p => string.Equals(p.LlmPresetId, activePresetId, StringComparison.OrdinalIgnoreCase));
                     if (activeIndex < 0)
                     {
                         activeIndex = 0;
@@ -231,7 +231,7 @@ namespace CocoroConsole.Controls
 
             LlmPreset newPreset = new LlmPreset
             {
-                LlmPresetId = 0,
+                LlmPresetId = Guid.NewGuid().ToString(),
                 LlmPresetName = GenerateNewPresetName(),
                 LlmApiKey = string.Empty,
                 LlmModel = string.Empty,
@@ -267,7 +267,7 @@ namespace CocoroConsole.Controls
             LlmPreset source = _presets[_currentPresetIndex];
             LlmPreset duplicate = new LlmPreset
             {
-                LlmPresetId = 0,
+                LlmPresetId = Guid.NewGuid().ToString(),
                 LlmPresetName = GenerateDuplicatePresetName(source.LlmPresetName),
                 LlmApiKey = source.LlmApiKey,
                 LlmModel = source.LlmModel,
@@ -446,7 +446,7 @@ namespace CocoroConsole.Controls
             Utilities.UIHelper.HandleHyperlinkNavigation(e);
         }
 
-        public int? GetActivePresetId()
+        public string? GetActivePresetId()
         {
             if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
             {

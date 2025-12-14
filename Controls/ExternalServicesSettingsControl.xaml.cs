@@ -51,7 +51,7 @@ namespace CocoroConsole.Controls
             sb.AppendLine();
             sb.AppendLine("リクエストボディ (JSON):");
             sb.AppendLine("{");
-            sb.AppendLine("  \"memory_id\": \"default\",  // オプション");
+            sb.AppendLine("  \"memory_id\": \"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\",  // オプション（省略時は /api/settings の active_embedding_preset_id が使われる）");
             sb.AppendLine("  \"source_system\": \"gmail\",");
             sb.AppendLine("  \"title\": \"件名\",");
             sb.AppendLine("  \"body\": \"本文\",");
@@ -98,7 +98,7 @@ namespace CocoroConsole.Controls
             sb.AppendLine();
             sb.AppendLine("リクエストボディ (JSON):");
             sb.AppendLine("{");
-            sb.AppendLine("  \"memory_id\": \"default\",  // オプション");
+            sb.AppendLine("  \"memory_id\": \"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\",  // オプション（省略時は /api/settings の active_embedding_preset_id が使われる）");
             sb.AppendLine("  \"instruction\": \"任意の指示文\",");
             sb.AppendLine("  \"payload_text\": \"任意のプロンプトやメッセージ\",");
             sb.AppendLine("  \"images\": [  // オプション");

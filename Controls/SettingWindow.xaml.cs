@@ -164,8 +164,6 @@ namespace CocoroConsole.Controls
                 // Promptプリセットをロード
                 PromptSettingsControl.SetApiClient(_apiClient, SaveAllSettingsToApiAsync);
                 PromptSettingsControl.LoadSettings(
-                    settings.SystemPromptPreset ?? new List<SystemPromptPreset>(),
-                    settings.ActiveSystemPromptPresetId,
                     settings.PersonaPreset ?? new List<PersonaPreset>(),
                     settings.ActivePersonaPresetId,
                     settings.ContractPreset ?? new List<ContractPreset>(),
@@ -487,17 +485,23 @@ namespace CocoroConsole.Controls
                 List<CocoroGhostReminder> reminders = SystemSettingsControl.GetReminders();
                 List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
                 List<EmbeddingPreset> embeddingPresets = EmbeddingSettingsControl.GetAllPresets();
-                List<SystemPromptPreset> systemPromptPresets = PromptSettingsControl.GetAllSystemPromptPresets();
                 List<PersonaPreset> personaPresets = PromptSettingsControl.GetAllPersonaPresets();
                 List<ContractPreset> contractPresets = PromptSettingsControl.GetAllContractPresets();
 
+                EnsurePresetIds(llmPresets, p => p.LlmPresetId, (p, id) => p.LlmPresetId = id);
+                EnsurePresetIds(embeddingPresets, p => p.EmbeddingPresetId, (p, id) => p.EmbeddingPresetId = id);
+                EnsurePresetIds(personaPresets, p => p.PersonaPresetId, (p, id) => p.PersonaPresetId = id);
+                EnsurePresetIds(contractPresets, p => p.ContractPresetId, (p, id) => p.ContractPresetId = id);
+
                 var activeLlmId = LlmSettingsControl.GetActivePresetId() ?? llmPresets.FirstOrDefault()?.LlmPresetId;
                 var activeEmbeddingId = EmbeddingSettingsControl.GetActivePresetId() ?? embeddingPresets.FirstOrDefault()?.EmbeddingPresetId;
-                var activeSystemPromptId = PromptSettingsControl.GetActiveSystemPromptPresetId() ?? systemPromptPresets.FirstOrDefault()?.SystemPromptPresetId;
                 var activePersonaId = PromptSettingsControl.GetActivePersonaPresetId() ?? personaPresets.FirstOrDefault()?.PersonaPresetId;
                 var activeContractId = PromptSettingsControl.GetActiveContractPresetId() ?? contractPresets.FirstOrDefault()?.ContractPresetId;
 
-                if (!activeLlmId.HasValue || !activeEmbeddingId.HasValue || !activeSystemPromptId.HasValue || !activePersonaId.HasValue || !activeContractId.HasValue)
+                if (string.IsNullOrWhiteSpace(activeLlmId) ||
+                    string.IsNullOrWhiteSpace(activeEmbeddingId) ||
+                    string.IsNullOrWhiteSpace(activePersonaId) ||
+                    string.IsNullOrWhiteSpace(activeContractId))
                 {
                     Debug.WriteLine("[SettingWindow] 設定の保存に失敗しました: active preset id missing");
                     MessageBox.Show("アクティブなプリセットが選択されていません。cocoro_ghost側のsettings.dbを確認してください。", "エラー",
@@ -510,14 +514,12 @@ namespace CocoroConsole.Controls
                     ExcludeKeywords = excludeKeywords,
                     RemindersEnabled = remindersEnabled,
                     Reminders = reminders,
-                    ActiveLlmPresetId = activeLlmId.Value,
-                    ActiveEmbeddingPresetId = activeEmbeddingId.Value,
-                    ActiveSystemPromptPresetId = activeSystemPromptId.Value,
-                    ActivePersonaPresetId = activePersonaId.Value,
-                    ActiveContractPresetId = activeContractId.Value,
+                    ActiveLlmPresetId = activeLlmId!,
+                    ActiveEmbeddingPresetId = activeEmbeddingId!,
+                    ActivePersonaPresetId = activePersonaId!,
+                    ActiveContractPresetId = activeContractId!,
                     LlmPreset = llmPresets,
                     EmbeddingPreset = embeddingPresets,
-                    SystemPromptPreset = systemPromptPresets,
                     PersonaPreset = personaPresets,
                     ContractPreset = contractPresets
                 };
@@ -532,8 +534,6 @@ namespace CocoroConsole.Controls
                 EmbeddingSettingsControl.LoadSettingsList(updatedEmbeddingPresets, updated.ActiveEmbeddingPresetId);
 
                 PromptSettingsControl.LoadSettings(
-                    updated.SystemPromptPreset ?? new List<SystemPromptPreset>(),
-                    updated.ActiveSystemPromptPresetId,
                     updated.PersonaPreset ?? new List<PersonaPreset>(),
                     updated.ActivePersonaPresetId,
                     updated.ContractPreset ?? new List<ContractPreset>(),
@@ -544,6 +544,27 @@ namespace CocoroConsole.Controls
             {
                 Debug.WriteLine($"[SettingWindow] 設定の保存に失敗しました: {ex.Message}");
                 MessageBox.Show($"設定のAPI保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private static void EnsurePresetIds<T>(
+            IEnumerable<T> presets,
+            Func<T, string?> idGetter,
+            Action<T, string> idSetter
+        )
+        {
+            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var preset in presets)
+            {
+                var id = idGetter(preset);
+                if (string.IsNullOrWhiteSpace(id) || used.Contains(id))
+                {
+                    id = Guid.NewGuid().ToString();
+                    idSetter(preset, id);
+                }
+
+                used.Add(id);
             }
         }
 

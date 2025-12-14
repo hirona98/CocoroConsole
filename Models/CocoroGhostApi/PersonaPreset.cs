@@ -6,7 +6,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
     public class PersonaPreset
     {
         [JsonPropertyName("persona_preset_id")]
-        public int PersonaPresetId { get; set; }
+        public string? PersonaPresetId { get; set; }
 
         [JsonPropertyName("persona_preset_name")]
         public string PersonaPresetName { get; set; } = string.Empty;

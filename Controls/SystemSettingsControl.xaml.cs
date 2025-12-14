@@ -280,7 +280,7 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// exclude_keywordsをAPIに保存（/api/settings は全量POSTのため他項目も保全して送信）
+        /// exclude_keywordsをAPIに保存（/api/settings は全量PUTのため他項目も保全して送信）
         /// </summary>
         public async Task<bool> SaveExcludeKeywordsToApiAsync()
         {
@@ -300,11 +300,13 @@ namespace CocoroConsole.Controls
 
                 var activeLlmId = latestSettings.ActiveLlmPresetId ?? latestSettings.LlmPreset.FirstOrDefault()?.LlmPresetId;
                 var activeEmbeddingId = latestSettings.ActiveEmbeddingPresetId ?? latestSettings.EmbeddingPreset.FirstOrDefault()?.EmbeddingPresetId;
-                var activeSystemPromptId = latestSettings.ActiveSystemPromptPresetId ?? latestSettings.SystemPromptPreset.FirstOrDefault()?.SystemPromptPresetId;
                 var activePersonaId = latestSettings.ActivePersonaPresetId ?? latestSettings.PersonaPreset.FirstOrDefault()?.PersonaPresetId;
                 var activeContractId = latestSettings.ActiveContractPresetId ?? latestSettings.ContractPreset.FirstOrDefault()?.ContractPresetId;
 
-                if (!activeLlmId.HasValue || !activeEmbeddingId.HasValue || !activeSystemPromptId.HasValue || !activePersonaId.HasValue || !activeContractId.HasValue)
+                if (string.IsNullOrWhiteSpace(activeLlmId) ||
+                    string.IsNullOrWhiteSpace(activeEmbeddingId) ||
+                    string.IsNullOrWhiteSpace(activePersonaId) ||
+                    string.IsNullOrWhiteSpace(activeContractId))
                 {
                     MessageBox.Show("API設定のアクティブプリセットIDが取得できません。cocoro_ghost側のsettings.dbを確認してください。", "警告",
                         MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -316,14 +318,12 @@ namespace CocoroConsole.Controls
                     ExcludeKeywords = patterns,
                     RemindersEnabled = latestSettings.RemindersEnabled,
                     Reminders = latestSettings.Reminders ?? new List<CocoroGhostReminder>(),
-                    ActiveLlmPresetId = activeLlmId.Value,
-                    ActiveEmbeddingPresetId = activeEmbeddingId.Value,
-                    ActiveSystemPromptPresetId = activeSystemPromptId.Value,
-                    ActivePersonaPresetId = activePersonaId.Value,
-                    ActiveContractPresetId = activeContractId.Value,
+                    ActiveLlmPresetId = activeLlmId!,
+                    ActiveEmbeddingPresetId = activeEmbeddingId!,
+                    ActivePersonaPresetId = activePersonaId!,
+                    ActiveContractPresetId = activeContractId!,
                     LlmPreset = latestSettings.LlmPreset ?? new List<LlmPreset>(),
                     EmbeddingPreset = latestSettings.EmbeddingPreset ?? new List<EmbeddingPreset>(),
-                    SystemPromptPreset = latestSettings.SystemPromptPreset ?? new List<SystemPromptPreset>(),
                     PersonaPreset = latestSettings.PersonaPreset ?? new List<PersonaPreset>(),
                     ContractPreset = latestSettings.ContractPreset ?? new List<ContractPreset>()
                 };

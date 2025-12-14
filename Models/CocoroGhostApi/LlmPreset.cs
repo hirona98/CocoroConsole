@@ -6,7 +6,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
     public class LlmPreset
     {
         [JsonPropertyName("llm_preset_id")]
-        public int LlmPresetId { get; set; }
+        public string? LlmPresetId { get; set; }
 
         [JsonPropertyName("llm_preset_name")]
         public string LlmPresetName { get; set; } = string.Empty;

@@ -6,7 +6,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
     public class SystemPromptPreset
     {
         [JsonPropertyName("system_prompt_preset_id")]
-        public int SystemPromptPresetId { get; set; }
+        public string? SystemPromptPresetId { get; set; }
 
         [JsonPropertyName("system_prompt_preset_name")]
         public string SystemPromptPresetName { get; set; } = string.Empty;

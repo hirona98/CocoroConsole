@@ -84,7 +84,7 @@ namespace CocoroConsole.Controls
             }
         }
 
-        public void LoadSettingsList(List<EmbeddingPreset>? presets, int? activePresetId = null)
+        public void LoadSettingsList(List<EmbeddingPreset>? presets, string? activePresetId = null)
         {
             _isInitializing = true;
 
@@ -106,9 +106,9 @@ namespace CocoroConsole.Controls
                     PresetSelectComboBox.Items.Add(preset.EmbeddingPresetName);
                 }
                 var activeIndex = 0;
-                if (activePresetId.HasValue)
+                if (!string.IsNullOrWhiteSpace(activePresetId))
                 {
-                    activeIndex = _presets.FindIndex(p => p.EmbeddingPresetId == activePresetId.Value);
+                    activeIndex = _presets.FindIndex(p => string.Equals(p.EmbeddingPresetId, activePresetId, StringComparison.OrdinalIgnoreCase));
                     if (activeIndex < 0)
                     {
                         activeIndex = 0;
@@ -200,7 +200,7 @@ namespace CocoroConsole.Controls
 
             EmbeddingPreset newPreset = new EmbeddingPreset
             {
-                EmbeddingPresetId = 0,
+                EmbeddingPresetId = Guid.NewGuid().ToString(),
                 EmbeddingPresetName = GenerateNewPresetName(),
                 EmbeddingModelApiKey = null,
                 EmbeddingModel = string.Empty,
@@ -230,7 +230,7 @@ namespace CocoroConsole.Controls
             EmbeddingPreset source = _presets[_currentPresetIndex];
             EmbeddingPreset duplicate = new EmbeddingPreset
             {
-                EmbeddingPresetId = 0,
+                EmbeddingPresetId = Guid.NewGuid().ToString(),
                 EmbeddingPresetName = GenerateDuplicatePresetName(source.EmbeddingPresetName),
                 EmbeddingModelApiKey = source.EmbeddingModelApiKey,
                 EmbeddingModel = source.EmbeddingModel,
@@ -385,7 +385,7 @@ namespace CocoroConsole.Controls
             Utilities.UIHelper.HandleHyperlinkNavigation(e);
         }
 
-        public int? GetActivePresetId()
+        public string? GetActivePresetId()
         {
             if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
             {

@@ -6,7 +6,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
     public class EmbeddingPreset
     {
         [JsonPropertyName("embedding_preset_id")]
-        public int EmbeddingPresetId { get; set; }
+        public string? EmbeddingPresetId { get; set; }
 
         [JsonPropertyName("embedding_preset_name")]
         public string EmbeddingPresetName { get; set; } = string.Empty;

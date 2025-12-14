@@ -6,7 +6,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
     public class ContractPreset
     {
         [JsonPropertyName("contract_preset_id")]
-        public int ContractPresetId { get; set; }
+        public string? ContractPresetId { get; set; }
 
         [JsonPropertyName("contract_preset_name")]
         public string ContractPresetName { get; set; } = string.Empty;

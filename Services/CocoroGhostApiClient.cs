@@ -51,7 +51,7 @@ namespace CocoroConsole.Services
 
         public Task<CocoroGhostSettings> UpdateSettingsAsync(CocoroGhostSettingsUpdateRequest request, CancellationToken cancellationToken = default)
         {
-            return SendAsync<CocoroGhostSettings>(HttpMethod.Post, "/api/settings", request, cancellationToken);
+            return SendAsync<CocoroGhostSettings>(HttpMethod.Put, "/api/settings", request, cancellationToken);
         }
 
         public async IAsyncEnumerable<ChatStreamEvent> StreamChatAsync(ChatStreamRequest requestPayload, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
