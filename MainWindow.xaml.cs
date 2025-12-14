@@ -28,6 +28,7 @@ namespace CocoroConsole
         private ScheduledCommandService? _scheduledCommandService;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
+        private DebugTraceListener? _debugTraceListener;
 	        private int? _nextScreenshotInitialDelayMilliseconds;
 	        private bool _isStreamingChatActive;
 	        private bool _skipNextAssistantMessage;
@@ -714,10 +715,12 @@ namespace CocoroConsole
             _logViewerWindow = new LogViewerWindow();
             _logViewerWindow.Owner = this;
             AttachLogStreamHandlers();
+            AttachDebugTraceListener();
 
             // ウィンドウが閉じられた時の処理
             _logViewerWindow.Closed += async (sender, args) =>
             {
+                DetachDebugTraceListener();
                 DetachLogStreamHandlers();
                 if (_communicationService != null)
                 {
@@ -754,6 +757,33 @@ namespace CocoroConsole
             _communicationService.LogStreamError -= OnLogStreamError;
         }
 
+        private void AttachDebugTraceListener()
+        {
+            if (_debugTraceListener != null) return;
+
+            _debugTraceListener = DebugTraceListener.Register();
+            _debugTraceListener.LogMessageReceived += OnDebugLogMessageReceived;
+        }
+
+        private void DetachDebugTraceListener()
+        {
+            if (_debugTraceListener == null) return;
+
+            _debugTraceListener.LogMessageReceived -= OnDebugLogMessageReceived;
+            _debugTraceListener.Unregister();
+            _debugTraceListener = null;
+        }
+
+        private void OnDebugLogMessageReceived(object? sender, LogMessage logMessage)
+        {
+            if (_logViewerWindow == null || _logViewerWindow.IsClosed) return;
+
+            UIHelper.RunOnUIThread(() =>
+            {
+                _logViewerWindow?.AddLogMessage(logMessage);
+            });
+        }
+
         private void OnLogStreamMessagesReceived(object? sender, IReadOnlyList<LogMessage> logs)
         {
             if (_logViewerWindow == null || _logViewerWindow.IsClosed) return;
@@ -788,6 +818,9 @@ namespace CocoroConsole
             {
                 // イベントハンドラの購読解除
                 AppSettings.SettingsSaved -= OnSettingsSaved;
+
+                // DebugTraceListenerの解除
+                DetachDebugTraceListener();
 
                 // スケジュールコマンドサービスを停止
                 if (_scheduledCommandService != null)
