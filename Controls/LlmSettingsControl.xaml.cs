@@ -47,15 +47,14 @@ namespace CocoroConsole.Controls
 
             LlmPreset preset = _presets[_currentPresetIndex];
             preset.LlmPresetName = PresetNameTextBox.Text;
-            preset.SystemPrompt = SystemPromptTextBox.Text;
-            preset.LlmApiKey = string.IsNullOrWhiteSpace(LlmApiKeyPasswordBox.Text) ? null : LlmApiKeyPasswordBox.Text;
-            preset.LlmModel = LlmModelTextBox.Text;
+            preset.LlmApiKey = LlmApiKeyPasswordBox.Text ?? string.Empty;
+            preset.LlmModel = LlmModelTextBox.Text ?? string.Empty;
             preset.LlmBaseUrl = string.IsNullOrWhiteSpace(LlmBaseUrlTextBox.Text) ? null : LlmBaseUrlTextBox.Text;
             preset.MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : 50;
             preset.MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : 4096;
             preset.ReasoningEffort = !string.IsNullOrWhiteSpace(ReasoningEffortTextBox.Text) ? ReasoningEffortTextBox.Text : null;
             preset.ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Text) ? null : VisionApiKeyPasswordBox.Text;
-            preset.ImageModel = VisionModelTextBox.Text;
+            preset.ImageModel = VisionModelTextBox.Text ?? string.Empty;
             preset.ImageLlmBaseUrl = string.IsNullOrWhiteSpace(VisionBaseUrlTextBox.Text) ? null : VisionBaseUrlTextBox.Text;
             preset.MaxTokensVision = int.TryParse(MaxTokensVisionTextBox.Text, out int maxTokensVision) ? maxTokensVision : 4096;
             preset.ImageTimeoutSeconds = int.TryParse(ImageTimeoutSecondsTextBox.Text, out int imageTimeout) ? imageTimeout : 60;
@@ -91,7 +90,7 @@ namespace CocoroConsole.Controls
             }
         }
 
-        public void LoadSettingsList(List<LlmPreset>? presets)
+        public void LoadSettingsList(List<LlmPreset>? presets, int? activePresetId = null)
         {
             _isInitializing = true;
 
@@ -112,10 +111,21 @@ namespace CocoroConsole.Controls
                 {
                     PresetSelectComboBox.Items.Add(preset.LlmPresetName);
                 }
-                PresetSelectComboBox.SelectedIndex = 0;
-                _currentPresetIndex = 0;
 
-                LoadPresetToUI(presets[0]);
+                var activeIndex = 0;
+                if (activePresetId.HasValue)
+                {
+                    activeIndex = _presets.FindIndex(p => p.LlmPresetId == activePresetId.Value);
+                    if (activeIndex < 0)
+                    {
+                        activeIndex = 0;
+                    }
+                }
+
+                PresetSelectComboBox.SelectedIndex = activeIndex;
+                _currentPresetIndex = activeIndex;
+
+                LoadPresetToUI(_presets[activeIndex]);
             }
             finally
             {
@@ -126,12 +136,11 @@ namespace CocoroConsole.Controls
         private void LoadPresetToUI(LlmPreset preset)
         {
             PresetNameTextBox.Text = preset.LlmPresetName ?? string.Empty;
-            SystemPromptTextBox.Text = preset.SystemPrompt ?? string.Empty;
             LlmApiKeyPasswordBox.Text = preset.LlmApiKey ?? string.Empty;
             LlmModelTextBox.Text = preset.LlmModel ?? string.Empty;
             LlmBaseUrlTextBox.Text = preset.LlmBaseUrl ?? string.Empty;
-            MaxTurnsWindowTextBox.Text = preset.MaxTurnsWindow?.ToString() ?? "50";
-            MaxTokensTextBox.Text = preset.MaxTokens?.ToString() ?? "4096";
+            MaxTurnsWindowTextBox.Text = preset.MaxTurnsWindow.ToString();
+            MaxTokensTextBox.Text = preset.MaxTokens.ToString();
 
             // Reasoning Effort
             ReasoningEffortTextBox.Text = preset.ReasoningEffort ?? string.Empty;
@@ -140,8 +149,8 @@ namespace CocoroConsole.Controls
             VisionApiKeyPasswordBox.Text = preset.ImageModelApiKey ?? string.Empty;
             VisionModelTextBox.Text = preset.ImageModel ?? string.Empty;
             VisionBaseUrlTextBox.Text = preset.ImageLlmBaseUrl ?? string.Empty;
-            MaxTokensVisionTextBox.Text = preset.MaxTokensVision?.ToString() ?? "4096";
-            ImageTimeoutSecondsTextBox.Text = preset.ImageTimeoutSeconds?.ToString() ?? "60";
+            MaxTokensVisionTextBox.Text = preset.MaxTokensVision.ToString();
+            ImageTimeoutSecondsTextBox.Text = preset.ImageTimeoutSeconds.ToString();
         }
 
         public LlmPreset? GetSettings()
@@ -157,14 +166,13 @@ namespace CocoroConsole.Controls
             {
                 LlmPresetId = currentPreset.LlmPresetId,
                 LlmPresetName = PresetNameTextBox.Text,
-                LlmApiKey = string.IsNullOrWhiteSpace(LlmApiKeyPasswordBox.Text) ? null : LlmApiKeyPasswordBox.Text,
-                LlmModel = LlmModelTextBox.Text,
+                LlmApiKey = LlmApiKeyPasswordBox.Text ?? string.Empty,
+                LlmModel = LlmModelTextBox.Text ?? string.Empty,
                 LlmBaseUrl = string.IsNullOrWhiteSpace(LlmBaseUrlTextBox.Text) ? null : LlmBaseUrlTextBox.Text,
-                SystemPrompt = SystemPromptTextBox.Text,
                 MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : 50,
                 MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : 4096,
                 ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Text) ? null : VisionApiKeyPasswordBox.Text,
-                ImageModel = VisionModelTextBox.Text,
+                ImageModel = VisionModelTextBox.Text ?? string.Empty,
                 ImageLlmBaseUrl = string.IsNullOrWhiteSpace(VisionBaseUrlTextBox.Text) ? null : VisionBaseUrlTextBox.Text,
                 MaxTokensVision = int.TryParse(MaxTokensVisionTextBox.Text, out int maxTokensVision) ? maxTokensVision : 4096,
                 ImageTimeoutSeconds = int.TryParse(ImageTimeoutSecondsTextBox.Text, out int imageTimeout) ? imageTimeout : 60
@@ -179,7 +187,6 @@ namespace CocoroConsole.Controls
         private void ClearSettings()
         {
             PresetNameTextBox.Text = string.Empty;
-            SystemPromptTextBox.Text = string.Empty;
             LlmApiKeyPasswordBox.Text = string.Empty;
             LlmModelTextBox.Text = string.Empty;
             LlmBaseUrlTextBox.Text = string.Empty;
@@ -197,6 +204,9 @@ namespace CocoroConsole.Controls
         {
             if (_isInitializing) return;
 
+            // 現在のUI値を保存
+            SaveCurrentUIToPreset();
+
             int selectedIndex = PresetSelectComboBox.SelectedIndex;
             if (selectedIndex >= 0 && selectedIndex < _presets.Count)
             {
@@ -211,25 +221,27 @@ namespace CocoroConsole.Controls
                     _isInitializing = false;
                 }
             }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private async void AddPresetButton_Click(object sender, RoutedEventArgs e)
         {
-            // 現在のUI値を保存
             SaveCurrentUIToPreset();
 
-            // 新規プリセットを作成
             LlmPreset newPreset = new LlmPreset
             {
                 LlmPresetId = 0,
                 LlmPresetName = GenerateNewPresetName(),
-                SystemPrompt = string.Empty,
-                LlmApiKey = null,
+                LlmApiKey = string.Empty,
                 LlmModel = string.Empty,
+                ReasoningEffort = null,
                 LlmBaseUrl = null,
-                ImageModel = string.Empty,
                 MaxTurnsWindow = 50,
                 MaxTokens = 4096,
+                ImageModelApiKey = null,
+                ImageModel = string.Empty,
+                ImageLlmBaseUrl = null,
                 MaxTokensVision = 4096,
                 ImageTimeoutSeconds = 60
             };
@@ -250,15 +262,13 @@ namespace CocoroConsole.Controls
                 return;
             }
 
-            // 現在のUI値を保存
             SaveCurrentUIToPreset();
 
             LlmPreset source = _presets[_currentPresetIndex];
             LlmPreset duplicate = new LlmPreset
             {
-                LlmPresetId = source.LlmPresetId ?? 0,
-                LlmPresetName = source.LlmPresetName + " (コピー)",
-                SystemPrompt = source.SystemPrompt,
+                LlmPresetId = 0,
+                LlmPresetName = GenerateDuplicatePresetName(source.LlmPresetName),
                 LlmApiKey = source.LlmApiKey,
                 LlmModel = source.LlmModel,
                 LlmBaseUrl = source.LlmBaseUrl,
@@ -361,6 +371,21 @@ namespace CocoroConsole.Controls
             return name;
         }
 
+        private string GenerateDuplicatePresetName(string sourceName)
+        {
+            int counter = 1;
+            string baseName = $"{sourceName} (コピー)";
+            string name = baseName;
+
+            while (_presets.Any(p => p.LlmPresetName == name))
+            {
+                counter++;
+                name = $"{baseName} {counter}";
+            }
+
+            return name;
+        }
+
         private async Task SavePresetsToApiAsync()
         {
             if (_apiClient == null || _onPresetListChanged == null) return;
@@ -419,6 +444,16 @@ namespace CocoroConsole.Controls
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
             Utilities.UIHelper.HandleHyperlinkNavigation(e);
+        }
+
+        public int? GetActivePresetId()
+        {
+            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            {
+                return null;
+            }
+
+            return _presets[_currentPresetIndex].LlmPresetId;
         }
     }
 }

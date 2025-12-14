@@ -48,7 +48,7 @@ namespace CocoroConsole.Controls
             EmbeddingPreset preset = _presets[_currentPresetIndex];
             preset.EmbeddingPresetName = MemoryIdTextBox.Text;
             preset.EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Text) ? null : EmbeddingApiKeyPasswordBox.Text;
-            preset.EmbeddingModel = EmbeddingModelTextBox.Text;
+            preset.EmbeddingModel = EmbeddingModelTextBox.Text ?? string.Empty;
             preset.EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text;
             preset.EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 3072;
             preset.SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : 5;
@@ -84,7 +84,7 @@ namespace CocoroConsole.Controls
             }
         }
 
-        public void LoadSettingsList(List<EmbeddingPreset>? presets)
+        public void LoadSettingsList(List<EmbeddingPreset>? presets, int? activePresetId = null)
         {
             _isInitializing = true;
 
@@ -105,10 +105,20 @@ namespace CocoroConsole.Controls
                 {
                     PresetSelectComboBox.Items.Add(preset.EmbeddingPresetName);
                 }
-                PresetSelectComboBox.SelectedIndex = 0;
-                _currentPresetIndex = 0;
+                var activeIndex = 0;
+                if (activePresetId.HasValue)
+                {
+                    activeIndex = _presets.FindIndex(p => p.EmbeddingPresetId == activePresetId.Value);
+                    if (activeIndex < 0)
+                    {
+                        activeIndex = 0;
+                    }
+                }
 
-                LoadPresetToUI(presets[0]);
+                PresetSelectComboBox.SelectedIndex = activeIndex;
+                _currentPresetIndex = activeIndex;
+
+                LoadPresetToUI(_presets[activeIndex]);
             }
             finally
             {
@@ -122,8 +132,8 @@ namespace CocoroConsole.Controls
             EmbeddingApiKeyPasswordBox.Text = preset.EmbeddingModelApiKey ?? string.Empty;
             EmbeddingModelTextBox.Text = preset.EmbeddingModel ?? string.Empty;
             EmbeddingBaseUrlTextBox.Text = preset.EmbeddingBaseUrl ?? string.Empty;
-            EmbeddingDimensionTextBox.Text = preset.EmbeddingDimension?.ToString() ?? "3072";
-            SimilarEpisodesLimitTextBox.Text = preset.SimilarEpisodesLimit?.ToString() ?? "5";
+            EmbeddingDimensionTextBox.Text = preset.EmbeddingDimension.ToString();
+            SimilarEpisodesLimitTextBox.Text = preset.SimilarEpisodesLimit.ToString();
         }
 
         public EmbeddingPreset? GetSettings()
@@ -140,7 +150,7 @@ namespace CocoroConsole.Controls
                 EmbeddingPresetId = currentPreset.EmbeddingPresetId,
                 EmbeddingPresetName = MemoryIdTextBox.Text,
                 EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Text) ? null : EmbeddingApiKeyPasswordBox.Text,
-                EmbeddingModel = EmbeddingModelTextBox.Text,
+                EmbeddingModel = EmbeddingModelTextBox.Text ?? string.Empty,
                 EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text,
                 EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 3072,
                 SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : 5
@@ -180,14 +190,14 @@ namespace CocoroConsole.Controls
                     _isInitializing = false;
                 }
             }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private async void AddPresetButton_Click(object sender, RoutedEventArgs e)
         {
-            // 現在のUI値を保存
             SaveCurrentUIToPreset();
 
-            // 新規プリセットを作成
             EmbeddingPreset newPreset = new EmbeddingPreset
             {
                 EmbeddingPresetId = 0,
@@ -215,14 +225,13 @@ namespace CocoroConsole.Controls
                 return;
             }
 
-            // 現在のUI値を保存
             SaveCurrentUIToPreset();
 
             EmbeddingPreset source = _presets[_currentPresetIndex];
             EmbeddingPreset duplicate = new EmbeddingPreset
             {
                 EmbeddingPresetId = 0,
-                EmbeddingPresetName = source.EmbeddingPresetName + " (コピー)",
+                EmbeddingPresetName = GenerateDuplicatePresetName(source.EmbeddingPresetName),
                 EmbeddingModelApiKey = source.EmbeddingModelApiKey,
                 EmbeddingModel = source.EmbeddingModel,
                 EmbeddingBaseUrl = source.EmbeddingBaseUrl,
@@ -309,6 +318,21 @@ namespace CocoroConsole.Controls
             return name;
         }
 
+        private string GenerateDuplicatePresetName(string sourceName)
+        {
+            int counter = 1;
+            string baseName = $"{sourceName} (コピー)";
+            string name = baseName;
+
+            while (_presets.Any(p => p.EmbeddingPresetName == name))
+            {
+                counter++;
+                name = $"{baseName} {counter}";
+            }
+
+            return name;
+        }
+
         private async Task SavePresetsToApiAsync()
         {
             if (_apiClient == null || _onPresetListChanged == null) return;
@@ -359,6 +383,16 @@ namespace CocoroConsole.Controls
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
             Utilities.UIHelper.HandleHyperlinkNavigation(e);
+        }
+
+        public int? GetActivePresetId()
+        {
+            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            {
+                return null;
+            }
+
+            return _presets[_currentPresetIndex].EmbeddingPresetId;
         }
     }
 }

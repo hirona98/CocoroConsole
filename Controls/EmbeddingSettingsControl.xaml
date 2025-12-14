@@ -146,6 +146,7 @@
                                 Margin="0,5,0,5"
                                 Padding="10,5"
                                 Click="AddPresetButton_Click"
+                                ToolTipService.ShowOnDisabled="True"
                                 ToolTip="プリセットを追加"/>
 
                         <Button x:Name="DuplicatePresetButton"
@@ -154,6 +155,7 @@
                                 Margin="5,5,0,5"
                                 Padding="10,5"
                                 Click="DuplicatePresetButton_Click"
+                                ToolTipService.ShowOnDisabled="True"
                                 ToolTip="現在のプリセットを複製"/>
 
                         <Button x:Name="DeletePresetButton"
@@ -163,6 +165,7 @@
                                 Padding="10,5"
                                 Style="{StaticResource DeleteButtonStyle}"
                                 Click="DeletePresetButton_Click"
+                                ToolTipService.ShowOnDisabled="True"
                                 ToolTip="このプリセットを削除"/>
                     </Grid>
                 </GroupBox>

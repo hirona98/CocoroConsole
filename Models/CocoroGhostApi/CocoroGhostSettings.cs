@@ -14,11 +14,35 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonPropertyName("reminders")]
         public List<CocoroGhostReminder> Reminders { get; set; } = new List<CocoroGhostReminder>();
 
+        [JsonPropertyName("active_llm_preset_id")]
+        public int? ActiveLlmPresetId { get; set; }
+
+        [JsonPropertyName("active_embedding_preset_id")]
+        public int? ActiveEmbeddingPresetId { get; set; }
+
+        [JsonPropertyName("active_system_prompt_preset_id")]
+        public int? ActiveSystemPromptPresetId { get; set; }
+
+        [JsonPropertyName("active_persona_preset_id")]
+        public int? ActivePersonaPresetId { get; set; }
+
+        [JsonPropertyName("active_contract_preset_id")]
+        public int? ActiveContractPresetId { get; set; }
+
         [JsonPropertyName("llm_preset")]
         public List<LlmPreset> LlmPreset { get; set; } = new List<LlmPreset>();
 
         [JsonPropertyName("embedding_preset")]
         public List<EmbeddingPreset> EmbeddingPreset { get; set; } = new List<EmbeddingPreset>();
+
+        [JsonPropertyName("system_prompt_preset")]
+        public List<SystemPromptPreset> SystemPromptPreset { get; set; } = new List<SystemPromptPreset>();
+
+        [JsonPropertyName("persona_preset")]
+        public List<PersonaPreset> PersonaPreset { get; set; } = new List<PersonaPreset>();
+
+        [JsonPropertyName("contract_preset")]
+        public List<ContractPreset> ContractPreset { get; set; } = new List<ContractPreset>();
     }
 
     public class CocoroGhostReminder
@@ -41,10 +65,34 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonPropertyName("reminders")]
         public List<CocoroGhostReminder> Reminders { get; set; } = new List<CocoroGhostReminder>();
 
+        [JsonPropertyName("active_llm_preset_id")]
+        public int ActiveLlmPresetId { get; set; }
+
+        [JsonPropertyName("active_embedding_preset_id")]
+        public int ActiveEmbeddingPresetId { get; set; }
+
+        [JsonPropertyName("active_system_prompt_preset_id")]
+        public int ActiveSystemPromptPresetId { get; set; }
+
+        [JsonPropertyName("active_persona_preset_id")]
+        public int ActivePersonaPresetId { get; set; }
+
+        [JsonPropertyName("active_contract_preset_id")]
+        public int ActiveContractPresetId { get; set; }
+
         [JsonPropertyName("llm_preset")]
         public List<LlmPreset> LlmPreset { get; set; } = new List<LlmPreset>();
 
         [JsonPropertyName("embedding_preset")]
         public List<EmbeddingPreset> EmbeddingPreset { get; set; } = new List<EmbeddingPreset>();
+
+        [JsonPropertyName("system_prompt_preset")]
+        public List<SystemPromptPreset> SystemPromptPreset { get; set; } = new List<SystemPromptPreset>();
+
+        [JsonPropertyName("persona_preset")]
+        public List<PersonaPreset> PersonaPreset { get; set; } = new List<PersonaPreset>();
+
+        [JsonPropertyName("contract_preset")]
+        public List<ContractPreset> ContractPreset { get; set; } = new List<ContractPreset>();
     }
 }

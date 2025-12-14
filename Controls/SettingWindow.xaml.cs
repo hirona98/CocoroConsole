@@ -153,50 +153,29 @@ namespace CocoroConsole.Controls
 
                 // LLM設定をリスト全体でロード
                 List<LlmPreset> llmPresets = settings.LlmPreset ?? new List<LlmPreset>();
-                if (llmPresets.Count == 0)
-                {
-                    llmPresets.Add(new LlmPreset
-                    {
-                        LlmPresetId = 0,
-                        LlmPresetName = "デフォルト",
-                        SystemPrompt = string.Empty,
-                        LlmApiKey = null,
-                        LlmModel = string.Empty,
-                        ReasoningEffort = null,
-                        LlmBaseUrl = null,
-                        MaxTurnsWindow = 50,
-                        MaxTokens = 4096,
-                        ImageModelApiKey = null,
-                        ImageModel = string.Empty,
-                        ImageLlmBaseUrl = null,
-                        MaxTokensVision = 4096,
-                        ImageTimeoutSeconds = 60
-                    });
-                }
                 LlmSettingsControl.SetApiClient(_apiClient, SaveLlmPresetsToApiAsync);
-                LlmSettingsControl.LoadSettingsList(llmPresets);
+                LlmSettingsControl.LoadSettingsList(llmPresets, settings.ActiveLlmPresetId);
 
                 // Embedding設定をリスト全体でロード
                 List<EmbeddingPreset> embeddingPresets = settings.EmbeddingPreset ?? new List<EmbeddingPreset>();
-                if (embeddingPresets.Count == 0)
-                {
-                    embeddingPresets.Add(new EmbeddingPreset
-                    {
-                        EmbeddingPresetId = 0,
-                        EmbeddingPresetName = "デフォルト",
-                        EmbeddingModelApiKey = null,
-                        EmbeddingModel = string.Empty,
-                        EmbeddingBaseUrl = null,
-                        EmbeddingDimension = 3072,
-                        SimilarEpisodesLimit = 5
-                    });
-                }
                 EmbeddingSettingsControl.SetApiClient(_apiClient, SaveEmbeddingPresetsToApiAsync);
-                EmbeddingSettingsControl.LoadSettingsList(embeddingPresets);
+                EmbeddingSettingsControl.LoadSettingsList(embeddingPresets, settings.ActiveEmbeddingPresetId);
+
+                // Promptプリセットをロード
+                PromptSettingsControl.SetApiClient(_apiClient, SaveAllSettingsToApiAsync);
+                PromptSettingsControl.LoadSettings(
+                    settings.SystemPromptPreset ?? new List<SystemPromptPreset>(),
+                    settings.ActiveSystemPromptPresetId,
+                    settings.PersonaPreset ?? new List<PersonaPreset>(),
+                    settings.ActivePersonaPresetId,
+                    settings.ContractPreset ?? new List<ContractPreset>(),
+                    settings.ActiveContractPresetId
+                );
 
                 // 設定変更イベントを登録
                 LlmSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 EmbeddingSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
+                PromptSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
             }
             catch (Exception ex)
             {
@@ -508,22 +487,63 @@ namespace CocoroConsole.Controls
                 List<CocoroGhostReminder> reminders = SystemSettingsControl.GetReminders();
                 List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
                 List<EmbeddingPreset> embeddingPresets = EmbeddingSettingsControl.GetAllPresets();
+                List<SystemPromptPreset> systemPromptPresets = PromptSettingsControl.GetAllSystemPromptPresets();
+                List<PersonaPreset> personaPresets = PromptSettingsControl.GetAllPersonaPresets();
+                List<ContractPreset> contractPresets = PromptSettingsControl.GetAllContractPresets();
+
+                var activeLlmId = LlmSettingsControl.GetActivePresetId() ?? llmPresets.FirstOrDefault()?.LlmPresetId;
+                var activeEmbeddingId = EmbeddingSettingsControl.GetActivePresetId() ?? embeddingPresets.FirstOrDefault()?.EmbeddingPresetId;
+                var activeSystemPromptId = PromptSettingsControl.GetActiveSystemPromptPresetId() ?? systemPromptPresets.FirstOrDefault()?.SystemPromptPresetId;
+                var activePersonaId = PromptSettingsControl.GetActivePersonaPresetId() ?? personaPresets.FirstOrDefault()?.PersonaPresetId;
+                var activeContractId = PromptSettingsControl.GetActiveContractPresetId() ?? contractPresets.FirstOrDefault()?.ContractPresetId;
+
+                if (!activeLlmId.HasValue || !activeEmbeddingId.HasValue || !activeSystemPromptId.HasValue || !activePersonaId.HasValue || !activeContractId.HasValue)
+                {
+                    Debug.WriteLine("[SettingWindow] 設定の保存に失敗しました: active preset id missing");
+                    MessageBox.Show("アクティブなプリセットが選択されていません。cocoro_ghost側のsettings.dbを確認してください。", "エラー",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
                 CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
                 {
                     ExcludeKeywords = excludeKeywords,
                     RemindersEnabled = remindersEnabled,
                     Reminders = reminders,
+                    ActiveLlmPresetId = activeLlmId.Value,
+                    ActiveEmbeddingPresetId = activeEmbeddingId.Value,
+                    ActiveSystemPromptPresetId = activeSystemPromptId.Value,
+                    ActivePersonaPresetId = activePersonaId.Value,
+                    ActiveContractPresetId = activeContractId.Value,
                     LlmPreset = llmPresets,
-                    EmbeddingPreset = embeddingPresets
+                    EmbeddingPreset = embeddingPresets,
+                    SystemPromptPreset = systemPromptPresets,
+                    PersonaPreset = personaPresets,
+                    ContractPreset = contractPresets
                 };
 
-                await _apiClient.UpdateSettingsAsync(request);
+                CocoroGhostSettings updated = await _apiClient.UpdateSettingsAsync(request);
                 Debug.WriteLine("[SettingWindow] 設定をAPIに保存しました");
+
+                List<LlmPreset> updatedLlmPresets = updated.LlmPreset ?? new List<LlmPreset>();
+                LlmSettingsControl.LoadSettingsList(updatedLlmPresets, updated.ActiveLlmPresetId);
+
+                List<EmbeddingPreset> updatedEmbeddingPresets = updated.EmbeddingPreset ?? new List<EmbeddingPreset>();
+                EmbeddingSettingsControl.LoadSettingsList(updatedEmbeddingPresets, updated.ActiveEmbeddingPresetId);
+
+                PromptSettingsControl.LoadSettings(
+                    updated.SystemPromptPreset ?? new List<SystemPromptPreset>(),
+                    updated.ActiveSystemPromptPresetId,
+                    updated.PersonaPreset ?? new List<PersonaPreset>(),
+                    updated.ActivePersonaPresetId,
+                    updated.ContractPreset ?? new List<ContractPreset>(),
+                    updated.ActiveContractPresetId
+                );
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[SettingWindow] 設定の保存に失敗しました: {ex.Message}");
+                MessageBox.Show($"設定のAPI保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

@@ -146,6 +146,7 @@
                                 Margin="0,5,0,5"
                                 Padding="10,5"
                                 Click="AddPresetButton_Click"
+                                ToolTipService.ShowOnDisabled="True"
                                 ToolTip="プリセットを追加"/>
 
                         <Button x:Name="DuplicatePresetButton"
@@ -154,6 +155,7 @@
                                 Margin="5,5,0,5"
                                 Padding="10,5"
                                 Click="DuplicatePresetButton_Click"
+                                ToolTipService.ShowOnDisabled="True"
                                 ToolTip="現在のプリセットを複製"/>
 
                         <Button x:Name="DeletePresetButton"
@@ -163,6 +165,7 @@
                                 Padding="10,5"
                                 Style="{StaticResource DeleteButtonStyle}"
                                 Click="DeletePresetButton_Click"
+                                ToolTipService.ShowOnDisabled="True"
                                 ToolTip="このプリセットを削除"/>
                     </Grid>
                 </GroupBox>
@@ -185,28 +188,10 @@
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
-
-                        <!-- システムプロンプト -->
-                        <Expander IsExpanded="False"
-                                  Margin="0,10,0,0">
-                            <Expander.Header>
-                                <TextBlock Text="システムプロンプト"
-                                           Foreground="#FF4873CF"/>
-                            </Expander.Header>
-                            <Border BorderBrush="#CCCCCC"
-                                    BorderThickness="1"
-                                    Margin="0,10,0,0"
-                                    Padding="5">
-                                <TextBox x:Name="SystemPromptTextBox"
-                                         AcceptsReturn="True"
-                                         TextWrapping="Wrap"
-                                         VerticalScrollBarVisibility="Auto"
-                                         Height="800"
-                                         BorderThickness="0"
-                                         Foreground="#FF0078D7"
-                                         TextChanged="OnSettingChanged"/>
-                            </Border>
-                        </Expander>
+                        <TextBlock Margin="0,8,0,0"
+                                   Foreground="#666666"
+                                   Text="システムプロンプトは「Prompt」タブで設定します。"
+                                   TextWrapping="Wrap"/>
                     </StackPanel>
                 </GroupBox>
 

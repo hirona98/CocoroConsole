@@ -7,8 +7,8 @@
         xmlns:converters="clr-namespace:CocoroConsole.Converters"
         mc:Ignorable="d"
         Title="設定"
-        Height="800"
-        Width="800"
+        Height="1000"
+        Width="900"
         WindowStartupLocation="CenterOwner">
 
     <Window.Resources>
@@ -131,6 +131,14 @@
                      ToolTip="Embedding setting">
                 <Grid Margin="20,20,0,20">
                     <local:EmbeddingSettingsControl x:Name="EmbeddingSettingsControl"/>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Prompt"
+                     Style="{StaticResource AdminTabItemStyle}"
+                     ToolTip="Prompt preset setting">
+                <Grid Margin="20,20,0,20">
+                    <local:PromptSettingsControl x:Name="PromptSettingsControl"/>
                 </Grid>
             </TabItem>
 

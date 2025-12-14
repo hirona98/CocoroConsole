@@ -298,13 +298,34 @@ namespace CocoroConsole.Controls
                 var latestSettings = await _apiClient.GetSettingsAsync();
                 latestSettings ??= new CocoroGhostSettings();
 
+                var activeLlmId = latestSettings.ActiveLlmPresetId ?? latestSettings.LlmPreset.FirstOrDefault()?.LlmPresetId;
+                var activeEmbeddingId = latestSettings.ActiveEmbeddingPresetId ?? latestSettings.EmbeddingPreset.FirstOrDefault()?.EmbeddingPresetId;
+                var activeSystemPromptId = latestSettings.ActiveSystemPromptPresetId ?? latestSettings.SystemPromptPreset.FirstOrDefault()?.SystemPromptPresetId;
+                var activePersonaId = latestSettings.ActivePersonaPresetId ?? latestSettings.PersonaPreset.FirstOrDefault()?.PersonaPresetId;
+                var activeContractId = latestSettings.ActiveContractPresetId ?? latestSettings.ContractPreset.FirstOrDefault()?.ContractPresetId;
+
+                if (!activeLlmId.HasValue || !activeEmbeddingId.HasValue || !activeSystemPromptId.HasValue || !activePersonaId.HasValue || !activeContractId.HasValue)
+                {
+                    MessageBox.Show("API設定のアクティブプリセットIDが取得できません。cocoro_ghost側のsettings.dbを確認してください。", "警告",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+
                 var request = new CocoroGhostSettingsUpdateRequest
                 {
                     ExcludeKeywords = patterns,
                     RemindersEnabled = latestSettings.RemindersEnabled,
                     Reminders = latestSettings.Reminders ?? new List<CocoroGhostReminder>(),
+                    ActiveLlmPresetId = activeLlmId.Value,
+                    ActiveEmbeddingPresetId = activeEmbeddingId.Value,
+                    ActiveSystemPromptPresetId = activeSystemPromptId.Value,
+                    ActivePersonaPresetId = activePersonaId.Value,
+                    ActiveContractPresetId = activeContractId.Value,
                     LlmPreset = latestSettings.LlmPreset ?? new List<LlmPreset>(),
-                    EmbeddingPreset = latestSettings.EmbeddingPreset ?? new List<EmbeddingPreset>()
+                    EmbeddingPreset = latestSettings.EmbeddingPreset ?? new List<EmbeddingPreset>(),
+                    SystemPromptPreset = latestSettings.SystemPromptPreset ?? new List<SystemPromptPreset>(),
+                    PersonaPreset = latestSettings.PersonaPreset ?? new List<PersonaPreset>(),
+                    ContractPreset = latestSettings.ContractPreset ?? new List<ContractPreset>()
                 };
 
                 await _apiClient.UpdateSettingsAsync(request);
