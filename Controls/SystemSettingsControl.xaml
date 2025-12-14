@@ -355,7 +355,7 @@
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666"
                                    Margin="0,0,0,10">
-                            CocoroGhost APIとの通信に使用するBearer Tokenを設定します。（今は気にしないでください）
+                            APIで使用するBearer Tokenを設定します。
                         </TextBlock>
 
                         <!-- Bearer Token設定 -->
