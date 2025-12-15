@@ -158,17 +158,19 @@
                                                     Width="120"
                                                     CanUserResize="True"/>
 
-                                <!-- メッセージ -->
-                                <DataGridTextColumn Header="メッセージ"
-                                                    Binding="{Binding message}"
-                                                    Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                                <Style TargetType="TextBlock">
-                                                        <Setter Property="TextWrapping"
-                                                                        Value="Wrap"/>
-                                                </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                </DataGridTextColumn>
+                                <!-- メッセージ（3行に制限） -->
+                                <DataGridTemplateColumn Header="メッセージ"
+                                                        Width="*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                        <TextBlock Text="{Binding message}"
+                                                                   TextWrapping="Wrap"
+                                                                   MaxHeight="54"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   ToolTip="{Binding message}"/>
+                                                </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                         </DataGrid.Columns>
                 </DataGrid>
 
