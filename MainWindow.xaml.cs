@@ -713,7 +713,6 @@ namespace CocoroConsole
 
             // ログビューアーを新規作成
             _logViewerWindow = new LogViewerWindow();
-            _logViewerWindow.Owner = this;
             AttachLogStreamHandlers();
             AttachDebugTraceListener();
 
@@ -892,7 +891,6 @@ namespace CocoroConsole
 
                 // 設定画面を新規作成
                 _settingWindow = new SettingWindow(_communicationService);
-                _settingWindow.Owner = this; // メインウィンドウを親に設定
 
                 // ウィンドウが閉じられた時にボタンの状態を更新
                 _settingWindow.Closed += SettingWindow_Closed;
