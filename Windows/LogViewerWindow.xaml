@@ -76,19 +76,17 @@
                                 <Label Content="レベル:"
                                        VerticalAlignment="Center"/>
                                 <ComboBox x:Name="LevelFilterComboBox"
-                                          Width="100"
+                                          Width="120"
                                           Margin="5,0"
                                           SelectionChanged="LevelFilterComboBox_SelectionChanged">
                                         <ComboBoxItem Content="全て"
                                                       IsSelected="True"
                                                       Tag=""/>
-                                        <ComboBoxItem Content="DEBUG"
-                                                      Tag="DEBUG"/>
-                                        <ComboBoxItem Content="INFO"
+                                        <ComboBoxItem Content="INFO以上"
                                                       Tag="INFO"/>
-                                        <ComboBoxItem Content="WARNING"
+                                        <ComboBoxItem Content="WARNING以上"
                                                       Tag="WARNING"/>
-                                        <ComboBoxItem Content="ERROR"
+                                        <ComboBoxItem Content="ERRORのみ"
                                                       Tag="ERROR"/>
                                 </ComboBox>
 

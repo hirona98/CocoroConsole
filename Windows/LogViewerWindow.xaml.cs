@@ -228,9 +228,14 @@ namespace CocoroConsole.Windows
         {
             if (item is not LogMessage log) return false;
 
-            // レベルフィルター
-            if (!string.IsNullOrEmpty(_levelFilter) && log.level != _levelFilter)
-                return false;
+            // レベルフィルター（指定レベル以上を表示）
+            if (!string.IsNullOrEmpty(_levelFilter))
+            {
+                var logLevel = GetLogLevelPriority(log.level);
+                var filterLevel = GetLogLevelPriority(_levelFilter);
+                if (logLevel < filterLevel)
+                    return false;
+            }
 
             // コンポーネントフィルター
             if (!string.IsNullOrEmpty(_componentFilter) && log.component != _componentFilter)
@@ -238,6 +243,18 @@ namespace CocoroConsole.Windows
 
             return true;
         }
+
+        /// <summary>
+        /// ログレベルの優先度を取得（DEBUG=0, INFO=1, WARNING=2, ERROR=3）
+        /// </summary>
+        private static int GetLogLevelPriority(string level) => level switch
+        {
+            "DEBUG" => 0,
+            "INFO" => 1,
+            "WARNING" => 2,
+            "ERROR" => 3,
+            _ => -1
+        };
 
         /// <summary>
         /// ログ件数を更新
