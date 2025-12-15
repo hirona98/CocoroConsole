@@ -238,8 +238,21 @@ namespace CocoroConsole.Windows
             }
 
             // コンポーネントフィルター
-            if (!string.IsNullOrEmpty(_componentFilter) && log.component != _componentFilter)
-                return false;
+            if (!string.IsNullOrEmpty(_componentFilter))
+            {
+                if (_componentFilter == "CocoroConsole")
+                {
+                    // CocoroConsoleのログのみ表示
+                    if (log.component != "CocoroConsole")
+                        return false;
+                }
+                else if (_componentFilter == "CocoroGhost")
+                {
+                    // CocoroConsole以外（Python側からのログ）を表示
+                    if (log.component == "CocoroConsole" || log.component == "SEPARATOR")
+                        return false;
+                }
+            }
 
             return true;
         }

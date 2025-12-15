@@ -100,6 +100,8 @@
                                         <ComboBoxItem Content="全て"
                                                       IsSelected="True"
                                                       Tag=""/>
+                                        <ComboBoxItem Content="CocoroConsole"
+                                                      Tag="CocoroConsole"/>
                                         <ComboBoxItem Content="CocoroGhost"
                                                       Tag="CocoroGhost"/>
                                 </ComboBox>
