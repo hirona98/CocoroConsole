@@ -145,7 +145,7 @@ namespace CocoroConsole.Controls
             // Reasoning Effort
             ReasoningEffortTextBox.Text = preset.ReasoningEffort ?? string.Empty;
 
-            // Vision設定
+            // 画像認識LLM設定
             VisionApiKeyPasswordBox.Text = preset.ImageModelApiKey ?? string.Empty;
             VisionModelTextBox.Text = preset.ImageModel ?? string.Empty;
             VisionBaseUrlTextBox.Text = preset.ImageLlmBaseUrl ?? string.Empty;

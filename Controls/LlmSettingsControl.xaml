@@ -9,7 +9,7 @@
 
     <UserControl.Resources>
         <Style x:Key="SettingLabelStyle"
-                TargetType="TextBlock">
+               TargetType="TextBlock">
             <Setter Property="VerticalAlignment"
                     Value="Center"/>
             <Setter Property="Margin"
@@ -18,7 +18,7 @@
                     Value="140"/>
         </Style>
         <Style x:Key="SettingTextBoxStyle"
-                TargetType="TextBox">
+               TargetType="TextBox">
             <Setter Property="Foreground"
                     Value="#FF0078D7"/>
             <Setter Property="Padding"
@@ -30,7 +30,7 @@
         </Style>
         <!-- プリセットボタン共通スタイル -->
         <Style x:Key="PresetButtonStyle"
-                TargetType="Button">
+               TargetType="Button">
             <Setter Property="Background"
                     Value="#4873CF"/>
             <Setter Property="Foreground"
@@ -52,19 +52,19 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsEnabled"
-                                    Value="False">
+                                     Value="False">
                                 <Setter Property="Background"
                                         Value="#CCCCCC"/>
                                 <Setter Property="Foreground"
                                         Value="#888888"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver"
-                                    Value="True">
+                                     Value="True">
                                 <Setter Property="Background"
                                         Value="#5A84D9"/>
                             </Trigger>
                             <Trigger Property="IsPressed"
-                                    Value="True">
+                                     Value="True">
                                 <Setter Property="Background"
                                         Value="#3A62B8"/>
                             </Trigger>
@@ -75,7 +75,7 @@
         </Style>
         <!-- 削除ボタンスタイル -->
         <Style x:Key="DeleteButtonStyle"
-                TargetType="Button">
+               TargetType="Button">
             <Setter Property="Background"
                     Value="#D50000"/>
             <Setter Property="Foreground"
@@ -97,19 +97,19 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsEnabled"
-                                    Value="False">
+                                     Value="False">
                                 <Setter Property="Background"
                                         Value="#CCCCCC"/>
                                 <Setter Property="Foreground"
                                         Value="#888888"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver"
-                                    Value="True">
+                                     Value="True">
                                 <Setter Property="Background"
                                         Value="#E53935"/>
                             </Trigger>
                             <Trigger Property="IsPressed"
-                                    Value="True">
+                                     Value="True">
                                 <Setter Property="Background"
                                         Value="#B71C1C"/>
                             </Trigger>
@@ -343,8 +343,8 @@
                     </StackPanel>
                 </GroupBox>
 
-                <!-- Vision設定 -->
-                <GroupBox Header="Vision設定"
+                <!-- 画像認識LLM設定（マルチモーダルLLM） -->
+                <GroupBox Header="画像認識用LLM設定（マルチモーダルLLM）"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
@@ -354,7 +354,7 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Vision APIキー:"
+                            <TextBlock Text="APIキー:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <Grid Grid.Column="1">
                                 <Grid.ColumnDefinitions>
@@ -392,7 +392,7 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Visionモデル:"
+                            <TextBlock Text="モデル:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="VisionModelTextBox"
                                      Grid.Column="1"
@@ -406,7 +406,7 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Vision Base URL:"
+                            <TextBlock Text="Base URL:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="VisionBaseUrlTextBox"
                                      Grid.Column="1"
@@ -420,7 +420,7 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="80"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Vision最大トークン:"
+                            <TextBlock Text="最大トークン:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="MaxTokensVisionTextBox"
                                      Grid.Column="1"
