@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace CocoroConsole.Models.CocoroGhostApi
@@ -13,8 +12,5 @@ namespace CocoroConsole.Models.CocoroGhostApi
 
         [JsonPropertyName("persona_text")]
         public string PersonaText { get; set; } = string.Empty;
-
-        [JsonExtensionData]
-        public Dictionary<string, object?>? AdditionalFields { get; set; }
     }
 }

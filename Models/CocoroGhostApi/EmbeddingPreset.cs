@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace CocoroConsole.Models.CocoroGhostApi
@@ -25,8 +24,5 @@ namespace CocoroConsole.Models.CocoroGhostApi
 
         [JsonPropertyName("similar_episodes_limit")]
         public int SimilarEpisodesLimit { get; set; }
-
-        [JsonExtensionData]
-        public Dictionary<string, object?>? AdditionalFields { get; set; }
     }
 }

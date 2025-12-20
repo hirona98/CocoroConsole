@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace CocoroConsole.Models.CocoroGhostApi
@@ -43,8 +42,5 @@ namespace CocoroConsole.Models.CocoroGhostApi
 
         [JsonPropertyName("image_timeout_seconds")]
         public int ImageTimeoutSeconds { get; set; }
-
-        [JsonExtensionData]
-        public Dictionary<string, object?>? AdditionalFields { get; set; }
     }
 }
