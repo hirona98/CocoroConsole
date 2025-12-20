@@ -220,7 +220,7 @@ namespace CocoroConsole.Controls
             preset.ContractText = ContractTextBox.Text;
         }
 
-        private async void AddPersonaPresetButton_Click(object sender, RoutedEventArgs e)
+        private void AddPersonaPresetButton_Click(object sender, RoutedEventArgs e)
         {
             SaveCurrentPersonaUiToPreset();
 
@@ -245,11 +245,10 @@ namespace CocoroConsole.Controls
                 _isInitializing = false;
             }
 
-            await SavePresetsToApiAsync();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private async void DuplicatePersonaPresetButton_Click(object sender, RoutedEventArgs e)
+        private void DuplicatePersonaPresetButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentPersonaPresetIndex < 0 || _currentPersonaPresetIndex >= _personaPresets.Count)
             {
@@ -281,11 +280,10 @@ namespace CocoroConsole.Controls
                 _isInitializing = false;
             }
 
-            await SavePresetsToApiAsync();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private async void DeletePersonaPresetButton_Click(object sender, RoutedEventArgs e)
+        private void DeletePersonaPresetButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentPersonaPresetIndex < 0 || _currentPersonaPresetIndex >= _personaPresets.Count)
             {
@@ -326,11 +324,10 @@ namespace CocoroConsole.Controls
                 _isInitializing = false;
             }
 
-            await SavePresetsToApiAsync();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private async void AddContractPresetButton_Click(object sender, RoutedEventArgs e)
+        private void AddContractPresetButton_Click(object sender, RoutedEventArgs e)
         {
             SaveCurrentContractUiToPreset();
 
@@ -355,11 +352,10 @@ namespace CocoroConsole.Controls
                 _isInitializing = false;
             }
 
-            await SavePresetsToApiAsync();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private async void DuplicateContractPresetButton_Click(object sender, RoutedEventArgs e)
+        private void DuplicateContractPresetButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentContractPresetIndex < 0 || _currentContractPresetIndex >= _contractPresets.Count)
             {
@@ -391,11 +387,10 @@ namespace CocoroConsole.Controls
                 _isInitializing = false;
             }
 
-            await SavePresetsToApiAsync();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private async void DeleteContractPresetButton_Click(object sender, RoutedEventArgs e)
+        private void DeleteContractPresetButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentContractPresetIndex < 0 || _currentContractPresetIndex >= _contractPresets.Count)
             {
@@ -436,7 +431,6 @@ namespace CocoroConsole.Controls
                 _isInitializing = false;
             }
 
-            await SavePresetsToApiAsync();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 

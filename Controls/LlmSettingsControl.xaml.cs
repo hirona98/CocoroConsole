@@ -225,7 +225,7 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private async void AddPresetButton_Click(object sender, RoutedEventArgs e)
+        private void AddPresetButton_Click(object sender, RoutedEventArgs e)
         {
             SaveCurrentUIToPreset();
 
@@ -250,11 +250,10 @@ namespace CocoroConsole.Controls
             PresetSelectComboBox.Items.Add(newPreset.LlmPresetName);
             PresetSelectComboBox.SelectedIndex = _presets.Count - 1;
 
-            await SavePresetsToApiAsync();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private async void DuplicatePresetButton_Click(object sender, RoutedEventArgs e)
+        private void DuplicatePresetButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
             {
@@ -286,7 +285,6 @@ namespace CocoroConsole.Controls
             PresetSelectComboBox.Items.Add(duplicate.LlmPresetName);
             PresetSelectComboBox.SelectedIndex = _presets.Count - 1;
 
-            await SavePresetsToApiAsync();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
@@ -310,7 +308,7 @@ namespace CocoroConsole.Controls
             ClipboardPasteOverride.CopyToClipboard(VisionApiKeyPasswordBox);
         }
 
-        private async void DeletePresetButton_Click(object sender, RoutedEventArgs e)
+        private void DeletePresetButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
             {
@@ -352,7 +350,6 @@ namespace CocoroConsole.Controls
                 _isInitializing = false;
             }
 
-            await SavePresetsToApiAsync();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
