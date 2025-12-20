@@ -11,6 +11,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Forms = System.Windows.Forms;
+using System.Windows.Interop;
 
 namespace CocoroConsole
 {
@@ -56,6 +58,48 @@ namespace CocoroConsole
         {
             ChatControlInstance.ClearChat();
             _communicationService?.StartNewConversation();
+        }
+
+        private void PositionWindowNearMain(Window child)
+        {
+            if (!IsLoaded)
+            {
+                Loaded += (_, __) => PositionWindowNearMain(child);
+                return;
+            }
+
+            var handle = new WindowInteropHelper(this).Handle;
+            var screen = Forms.Screen.FromHandle(handle);
+            var workArea = screen.WorkingArea;
+
+            child.WindowStartupLocation = WindowStartupLocation.Manual;
+
+            void ApplyPosition()
+            {
+                var targetLeft = Left + 40;
+                var targetTop = Top + 40;
+                var childWidth = Math.Max(child.ActualWidth, child.Width);
+                var childHeight = Math.Max(child.ActualHeight, child.Height);
+
+                if (double.IsNaN(childWidth) || childWidth <= 0)
+                {
+                    childWidth = child.Width;
+                }
+
+                if (double.IsNaN(childHeight) || childHeight <= 0)
+                {
+                    childHeight = child.Height;
+                }
+
+                var left = Math.Min(Math.Max(targetLeft, workArea.Left), workArea.Right - childWidth);
+                var top = Math.Min(Math.Max(targetTop, workArea.Top), workArea.Bottom - childHeight);
+
+                child.Left = left;
+                child.Top = top;
+            }
+
+            child.Loaded += (_, __) => ApplyPosition();
+            ApplyPosition();
         }
 
         /// <summary>
@@ -713,6 +757,7 @@ namespace CocoroConsole
 
             // ログビューアーを新規作成
             _logViewerWindow = new LogViewerWindow();
+            PositionWindowNearMain(_logViewerWindow);
             AttachLogStreamHandlers();
             AttachDebugTraceListener();
 
@@ -891,6 +936,7 @@ namespace CocoroConsole
 
                 // 設定画面を新規作成
                 _settingWindow = new SettingWindow(_communicationService);
+                PositionWindowNearMain(_settingWindow);
 
                 // ウィンドウが閉じられた時にボタンの状態を更新
                 _settingWindow.Closed += SettingWindow_Closed;
