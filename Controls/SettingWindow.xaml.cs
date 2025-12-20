@@ -493,10 +493,10 @@ namespace CocoroConsole.Controls
                 EnsurePresetIds(personaPresets, p => p.PersonaPresetId, (p, id) => p.PersonaPresetId = id);
                 EnsurePresetIds(contractPresets, p => p.ContractPresetId, (p, id) => p.ContractPresetId = id);
 
-                var activeLlmId = LlmSettingsControl.GetActivePresetId() ?? llmPresets.FirstOrDefault()?.LlmPresetId;
-                var activeEmbeddingId = EmbeddingSettingsControl.GetActivePresetId() ?? embeddingPresets.FirstOrDefault()?.EmbeddingPresetId;
-                var activePersonaId = PromptSettingsControl.GetActivePersonaPresetId() ?? personaPresets.FirstOrDefault()?.PersonaPresetId;
-                var activeContractId = PromptSettingsControl.GetActiveContractPresetId() ?? contractPresets.FirstOrDefault()?.ContractPresetId;
+                var activeLlmId = ResolveActivePresetId(llmPresets, LlmSettingsControl.GetActivePresetId(), p => p.LlmPresetId);
+                var activeEmbeddingId = ResolveActivePresetId(embeddingPresets, EmbeddingSettingsControl.GetActivePresetId(), p => p.EmbeddingPresetId);
+                var activePersonaId = ResolveActivePresetId(personaPresets, PromptSettingsControl.GetActivePersonaPresetId(), p => p.PersonaPresetId);
+                var activeContractId = ResolveActivePresetId(contractPresets, PromptSettingsControl.GetActiveContractPresetId(), p => p.ContractPresetId);
 
                 if (string.IsNullOrWhiteSpace(activeLlmId) ||
                     string.IsNullOrWhiteSpace(activeEmbeddingId) ||
@@ -558,14 +558,44 @@ namespace CocoroConsole.Controls
             foreach (var preset in presets)
             {
                 var id = idGetter(preset);
-                if (string.IsNullOrWhiteSpace(id) || used.Contains(id))
+                var normalized = id?.Trim();
+
+                if (string.IsNullOrWhiteSpace(normalized) || used.Contains(normalized))
                 {
-                    id = Guid.NewGuid().ToString();
-                    idSetter(preset, id);
+                    normalized = Guid.NewGuid().ToString();
+                    idSetter(preset, normalized);
+                }
+                else if (!string.Equals(id, normalized, StringComparison.Ordinal))
+                {
+                    idSetter(preset, normalized);
                 }
 
-                used.Add(id);
+                used.Add(normalized);
             }
+        }
+
+        private static string? ResolveActivePresetId<T>(
+            IReadOnlyList<T> presets,
+            string? activePresetId,
+            Func<T, string?> idGetter
+        ) where T : class
+        {
+            if (presets.Count == 0)
+            {
+                return null;
+            }
+
+            var normalizedActiveId = activePresetId?.Trim();
+            T? resolved = string.IsNullOrWhiteSpace(normalizedActiveId)
+                ? null
+                : presets.FirstOrDefault(p => string.Equals(idGetter(p), normalizedActiveId, StringComparison.OrdinalIgnoreCase));
+
+            if (resolved == null || string.IsNullOrWhiteSpace(idGetter(resolved)))
+            {
+                resolved = presets.FirstOrDefault(p => !string.IsNullOrWhiteSpace(idGetter(p))) ?? presets[0];
+            }
+
+            return idGetter(resolved)?.Trim();
         }
 
         private Task SaveLlmPresetsToApiAsync() => SaveAllSettingsToApiAsync();
