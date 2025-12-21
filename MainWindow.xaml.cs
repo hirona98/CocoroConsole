@@ -31,10 +31,10 @@ namespace CocoroConsole
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
         private DebugTraceListener? _debugTraceListener;
-	        private int? _nextScreenshotInitialDelayMilliseconds;
-	        private bool _isStreamingChatActive;
-	        private bool _skipNextAssistantMessage;
-	        private string? _skipNextAssistantMessageContent;
+        private int? _nextScreenshotInitialDelayMilliseconds;
+        private bool _isStreamingChatActive;
+        private bool _skipNextAssistantMessage;
+        private string? _skipNextAssistantMessageContent;
 
 
         public MainWindow()
@@ -292,9 +292,7 @@ namespace CocoroConsole
         {
             try
             {
-                // 現在のキャラクター設定を取得してLLMの使用状況を確認
-                var currentCharacter = GetStoredCharacterSetting();
-                bool isLLMEnabled = currentCharacter?.isUseLLM ?? false;
+                bool isLLMEnabled = _appSettings.IsUseLLM;
 
                 // LLMが無効の場合は画像表示のみ行い、送信はしない
                 UIHelper.RunOnUIThread(() =>
@@ -477,9 +475,7 @@ namespace CocoroConsole
         /// <param name="status">CocoroGhostのステータス</param>
         private void UpdateCocoroGhostStatusDisplay(CocoroGhostStatus status)
         {
-            // 現在のキャラクター設定を取得してLLMの使用状況を確認
-            var currentCharacter = GetStoredCharacterSetting();
-            bool isLLMEnabled = currentCharacter?.isUseLLM ?? false;
+            bool isLLMEnabled = _appSettings.IsUseLLM;
 
             string statusText = status switch
             {
@@ -614,21 +610,21 @@ namespace CocoroConsole
         /// <summary>
         /// チャットメッセージ受信時のハンドラ（CocoroConsole APIから）
         /// </summary>
-	        private void OnChatMessageReceived(object? sender, ChatRequest request)
-	        {
-	            UIHelper.RunOnUIThread(() =>
-	            {
-	                if (_skipNextAssistantMessage && request.role == "assistant")
-	                {
-	                    var skipContent = _skipNextAssistantMessageContent;
-	                    _skipNextAssistantMessage = false;
-	                    _skipNextAssistantMessageContent = null;
+        private void OnChatMessageReceived(object? sender, ChatRequest request)
+        {
+            UIHelper.RunOnUIThread(() =>
+            {
+                if (_skipNextAssistantMessage && request.role == "assistant")
+                {
+                    var skipContent = _skipNextAssistantMessageContent;
+                    _skipNextAssistantMessage = false;
+                    _skipNextAssistantMessageContent = null;
 
-	                    if (string.IsNullOrEmpty(skipContent) || string.Equals(request.content, skipContent, StringComparison.Ordinal))
-	                    {
-	                        return;
-	                    }
-	                }
+                    if (string.IsNullOrEmpty(skipContent) || string.Equals(request.content, skipContent, StringComparison.Ordinal))
+                    {
+                        return;
+                    }
+                }
 
                 if (request.role == "user")
                 {
@@ -642,18 +638,18 @@ namespace CocoroConsole
             });
         }
 
-	        private void OnStreamingChatReceived(object? sender, StreamingChatEventArgs e)
-	        {
-	            UIHelper.RunOnUIThread(() =>
-	            {
-	                if (e.IsError)
-	                {
-	                    ChatControlInstance.AddAiMessage($"[error] {e.ErrorMessage ?? "チャット中断"}");
-	                    _isStreamingChatActive = false;
-	                    _skipNextAssistantMessage = false;
-	                    _skipNextAssistantMessageContent = null;
-	                    return;
-	                }
+        private void OnStreamingChatReceived(object? sender, StreamingChatEventArgs e)
+        {
+            UIHelper.RunOnUIThread(() =>
+            {
+                if (e.IsError)
+                {
+                    ChatControlInstance.AddAiMessage($"[error] {e.ErrorMessage ?? "チャット中断"}");
+                    _isStreamingChatActive = false;
+                    _skipNextAssistantMessage = false;
+                    _skipNextAssistantMessageContent = null;
+                    return;
+                }
 
                 if (!e.IsFinished)
                 {
@@ -667,15 +663,15 @@ namespace CocoroConsole
                         ChatControlInstance.UpdateStreamingAiMessage(e.Content);
                     }
                 }
-	                else
-	                {
-	                    ChatControlInstance.UpdateStreamingAiMessage(e.Content);
-	                    _isStreamingChatActive = false;
-	                    _skipNextAssistantMessage = true; // 直後の最終メッセージ表示を抑止
-	                    _skipNextAssistantMessageContent = e.Content;
-	                }
-	            });
-	        }
+                else
+                {
+                    ChatControlInstance.UpdateStreamingAiMessage(e.Content);
+                    _isStreamingChatActive = false;
+                    _skipNextAssistantMessage = true; // 直後の最終メッセージ表示を抑止
+                    _skipNextAssistantMessageContent = e.Content;
+                }
+            });
+        }
 
         /// <summary>
         /// 通知メッセージ受信時のハンドラ
@@ -1133,9 +1129,7 @@ namespace CocoroConsole
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
         private void LaunchCocoroGhost(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
-            if (_appSettings.CharacterList.Count > 0 &&
-               _appSettings.CurrentCharacterIndex < _appSettings.CharacterList.Count &&
-               _appSettings.CharacterList[_appSettings.CurrentCharacterIndex].isUseLLM)
+            if (_appSettings.IsUseLLM)
             {
                 // 起動監視を開始
                 if (operation != ProcessOperation.Terminate)
@@ -1168,9 +1162,7 @@ namespace CocoroConsole
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
         private async Task LaunchCocoroGhostAsync(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
-            if (_appSettings.CharacterList.Count > 0 &&
-               _appSettings.CurrentCharacterIndex < _appSettings.CharacterList.Count &&
-               _appSettings.CharacterList[_appSettings.CurrentCharacterIndex].isUseLLM)
+            if (_appSettings.IsUseLLM)
             {
                 // 起動監視を開始
                 if (operation != ProcessOperation.Terminate)
@@ -1350,10 +1342,10 @@ namespace CocoroConsole
             {
                 if (_communicationService != null)
                 {
-                    var currentCharacter = GetStoredCharacterSetting();
-                    if (currentCharacter != null && currentCharacter.isUseLLM)
+                    if (_appSettings.IsUseLLM)
                     {
-                        await _communicationService.SendChatToCoreUnifiedAsync(message, currentCharacter.modelName, imageData);
+                        var currentCharacter = GetStoredCharacterSetting();
+                        await _communicationService.SendChatToCoreUnifiedAsync(message, currentCharacter?.modelName, imageData);
                     }
                 }
             }
@@ -1508,9 +1500,7 @@ namespace CocoroConsole
                 this.Topmost = true;
                 this.Activate();
 
-                // LLMが有効かどうかを確認してシャットダウンメッセージを設定
-                var currentCharacter = GetStoredCharacterSetting();
-                bool isLLMEnabled = currentCharacter?.isUseLLM ?? false;
+                bool isLLMEnabled = _appSettings.IsUseLLM;
 
                 if (!isLLMEnabled)
                 {

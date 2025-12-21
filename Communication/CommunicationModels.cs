@@ -83,7 +83,6 @@ namespace CocoroConsole.Communication
         public bool isReadOnly { get; set; }
         public string modelName { get; set; } = string.Empty;
         public string vrmFilePath { get; set; } = string.Empty;
-        public bool isUseLLM { get; set; }
         public bool isUseTTS { get; set; }
 
         public string ttsType { get; set; } = string.Empty; // "voicevox" or "style-bert-vits2" or "aivis-cloud"
@@ -115,7 +114,6 @@ namespace CocoroConsole.Communication
                 isReadOnly = this.isReadOnly,
                 modelName = this.modelName,
                 vrmFilePath = this.vrmFilePath,
-                isUseLLM = this.isUseLLM,
                 isUseTTS = this.isUseTTS,
                 ttsType = this.ttsType,
 
@@ -275,6 +273,7 @@ namespace CocoroConsole.Communication
         public int cocoroCorePort { get; set; }
         public int cocoroShellPort { get; set; }
         public string? cocoroGhostBearerToken { get; set; }
+        public bool isUseLLM { get; set; }
         public bool isRestoreWindowPosition { get; set; }
         public bool isTopmost { get; set; }
         public bool isEscapeCursor { get; set; }
@@ -312,6 +311,7 @@ namespace CocoroConsole.Communication
                 cocoroCorePort = this.cocoroCorePort,
                 cocoroShellPort = this.cocoroShellPort,
                 cocoroGhostBearerToken = this.cocoroGhostBearerToken,
+                isUseLLM = this.isUseLLM,
                 isRestoreWindowPosition = this.isRestoreWindowPosition,
                 isTopmost = this.isTopmost,
                 isEscapeCursor = this.isEscapeCursor,

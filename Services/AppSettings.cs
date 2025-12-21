@@ -46,6 +46,8 @@ namespace CocoroConsole.Services
         public int CocoroShellPort { get; set; }
         // cocoro_ghost API Bearer トークン
         public string CocoroGhostBearerToken { get; set; } = string.Empty;
+        // LLMを使用するか
+        public bool IsUseLLM { get; set; } = false;
         // UI設定
         public bool IsRestoreWindowPosition { get; set; }
         public bool IsTopmost { get; set; }
@@ -140,6 +142,7 @@ namespace CocoroConsole.Services
             CocoroGhostPort = config.cocoroCorePort;
             CocoroShellPort = config.cocoroShellPort;
             CocoroGhostBearerToken = config.cocoroGhostBearerToken ?? string.Empty;
+            IsUseLLM = config.isUseLLM;
             IsRestoreWindowPosition = config.isRestoreWindowPosition;
             IsTopmost = config.isTopmost;
             IsEscapeCursor = config.isEscapeCursor;
@@ -201,7 +204,7 @@ namespace CocoroConsole.Services
         /// </summary>
         private void EnsureCharacterSchemaConsistency()
         {
-            // LLM関連の設定はAPI経由で管理されるため、ここでは何もしない
+            // キャラクター設定の不足補完が必要になった場合はここで行う
         }
 
         /// <summary>
@@ -230,6 +233,7 @@ namespace CocoroConsole.Services
                 cocoroCorePort = CocoroGhostPort,
                 cocoroShellPort = CocoroShellPort,
                 cocoroGhostBearerToken = CocoroGhostBearerToken,
+                isUseLLM = IsUseLLM,
                 isRestoreWindowPosition = IsRestoreWindowPosition,
                 isTopmost = IsTopmost,
                 isEscapeCursor = IsEscapeCursor,
@@ -362,6 +366,8 @@ namespace CocoroConsole.Services
                 var defaultNode = JsonNode.Parse(defaultJson) as JsonObject ?? new JsonObject();
                 var userNode = JsonNode.Parse(userSettingsJson) as JsonObject ?? new JsonObject();
 
+                MigrateIsUseLlmToGlobal(userNode);
+
                 var merged = (JsonObject)defaultNode.DeepClone();
                 MergeJsonObject(merged, userNode);
 
@@ -375,6 +381,61 @@ namespace CocoroConsole.Services
             {
                 Debug.WriteLine($"設定マージエラー: {ex.Message}");
                 return userSettingsJson;
+            }
+        }
+
+        private static void MigrateIsUseLlmToGlobal(JsonObject userNode)
+        {
+            if (userNode.ContainsKey("isUseLLM"))
+            {
+                return;
+            }
+
+            if (userNode["characterList"] is not JsonArray characterList || characterList.Count == 0)
+            {
+                return;
+            }
+
+            int currentCharacterIndex = 0;
+            if (userNode["currentCharacterIndex"] is JsonValue idxValue &&
+                idxValue.TryGetValue(out int idx))
+            {
+                currentCharacterIndex = idx;
+            }
+
+            bool? derived = null;
+
+            if (currentCharacterIndex >= 0 &&
+                currentCharacterIndex < characterList.Count &&
+                characterList[currentCharacterIndex] is JsonObject currentCharacter &&
+                currentCharacter["isUseLLM"] is JsonValue currentUseLlmValue &&
+                currentUseLlmValue.TryGetValue(out bool currentUseLlm))
+            {
+                derived = currentUseLlm;
+            }
+
+            if (!derived.HasValue)
+            {
+                foreach (var item in characterList)
+                {
+                    if (item is not JsonObject character ||
+                        character["isUseLLM"] is not JsonValue useLlmValue ||
+                        !useLlmValue.TryGetValue(out bool useLlm))
+                    {
+                        continue;
+                    }
+
+                    if (useLlm)
+                    {
+                        derived = true;
+                        break;
+                    }
+                }
+            }
+
+            if (derived.HasValue)
+            {
+                userNode["isUseLLM"] = derived.Value;
             }
         }
 

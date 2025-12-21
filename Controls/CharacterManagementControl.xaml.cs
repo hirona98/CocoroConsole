@@ -133,7 +133,6 @@ namespace CocoroConsole.Controls
             character.isConvertMToon = ConvertMToonCheckBox.IsChecked ?? false;
             character.isEnableShadowOff = EnableShadowOffCheckBox.IsChecked ?? false;
             character.shadowOffMesh = ShadowOffMeshTextBox.Text;
-            character.isUseLLM = IsUseLLMCheckBox.IsChecked ?? false;
             character.isUseSTT = IsUseSTTCheckBox.IsChecked ?? false;
             character.sttEngine = STTEngineComboBox.SelectedItem is ComboBoxItem selectedSttEngine ? selectedSttEngine.Tag?.ToString() ?? "amivoice" : "amivoice";
             character.sttWakeWord = STTWakeWordTextBox.Text;
@@ -244,9 +243,6 @@ namespace CocoroConsole.Controls
             EnableShadowOffCheckBox.IsChecked = character.isEnableShadowOff;
             ShadowOffMeshTextBox.Text = character.shadowOffMesh;
             ShadowOffMeshTextBox.IsEnabled = character.isEnableShadowOff;
-
-            // LLM設定（有効/無効のみ、詳細設定はAPI経由）
-            IsUseLLMCheckBox.IsChecked = character.isUseLLM;
 
             // STT設定
             IsUseSTTCheckBox.IsChecked = character.isUseSTT;
@@ -436,7 +432,6 @@ namespace CocoroConsole.Controls
                 {
                     modelName = newName,
                     vrmFilePath = sourceCharacter.vrmFilePath,
-                    isUseLLM = sourceCharacter.isUseLLM,
                     isUseTTS = sourceCharacter.isUseTTS,
                     ttsType = sourceCharacter.ttsType,
 

@@ -41,6 +41,23 @@ namespace CocoroConsole.Controls
             return _presets.ToList();
         }
 
+        public bool IsUseLlm
+        {
+            get => IsUseLLMCheckBox.IsChecked ?? false;
+            set
+            {
+                _isInitializing = true;
+                try
+                {
+                    IsUseLLMCheckBox.IsChecked = value;
+                }
+                finally
+                {
+                    _isInitializing = false;
+                }
+            }
+        }
+
         private void SaveCurrentUIToPreset()
         {
             if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count) return;
@@ -222,6 +239,12 @@ namespace CocoroConsole.Controls
                 }
             }
 
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void IsUseLLMCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 

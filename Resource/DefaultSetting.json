@@ -3,6 +3,7 @@
   "cocoroCorePort": 55601,
   "cocoroShellPort": 55605,
   "cocoroGhostBearerToken": "cocoro_token",
+  "isUseLLM": false,
   "isRestoreWindowPosition": false,
   "isTopmost": true,
   "isEscapeCursor": false,
@@ -60,7 +61,6 @@
       "isReadOnly": true,
       "modelName": "初音ミクSD",
       "vrmFilePath": "default",
-      "isUseLLM": false,
       "isUseTTS": false,
       "ttsType": "voicevox",
       "voicevoxConfig": {

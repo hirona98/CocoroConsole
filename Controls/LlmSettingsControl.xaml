@@ -123,6 +123,15 @@
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
+                <!-- 有効化 -->
+                <CheckBox x:Name="IsUseLLMCheckBox"
+                          Content="会話機能（LLM）を使用する"
+                          Foreground="#FF4873CF"
+                          Checked="IsUseLLMCheckBox_Changed"
+                          Unchecked="IsUseLLMCheckBox_Changed"
+                          Margin="0,5,0,20"
+                          ToolTip="Use LLM"/>
+
                 <!-- プリセット選択 -->
                 <GroupBox Header="プリセット選択"
                           Margin="0,0,20,20"

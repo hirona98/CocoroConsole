@@ -49,6 +49,9 @@ namespace CocoroConsole.Controls
 
             _communicationService = communicationService;
 
+            // LLM使用設定（全体設定）を初期表示に反映
+            LlmSettingsControl.IsUseLlm = AppSettings.Instance.IsUseLLM;
+
             // cocoro_ghost APIクライアントを初期化
             InitializeApiClient();
 
@@ -639,7 +642,6 @@ namespace CocoroConsole.Controls
             {
                 modelName = source.modelName,
                 vrmFilePath = source.vrmFilePath,
-                isUseLLM = source.isUseLLM,
                 isUseTTS = source.isUseTTS,
                 ttsType = source.ttsType,
                 voicevoxConfig = new VoicevoxConfig
@@ -758,6 +760,7 @@ namespace CocoroConsole.Controls
         {
             var appSettings = AppSettings.Instance;
             appSettings.CurrentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
+            appSettings.IsUseLLM = LlmSettingsControl.IsUseLlm;
 
             var currentCharacterSetting = CharacterManagementControl.GetCurrentCharacterSettingFromUI();
             if (currentCharacterSetting != null)
@@ -1035,6 +1038,9 @@ namespace CocoroConsole.Controls
             // 現在の設定のディープコピーを作成
             var config = AppSettings.Instance.GetConfigSettings().DeepCopy();
 
+            // LLM使用設定
+            config.isUseLLM = LlmSettingsControl.IsUseLlm;
+
             // Character設定の取得（ディープコピーを使用）
             config.currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
             var currentCharacterSetting = CharacterManagementControl.GetCurrentCharacterSettingFromUI();
@@ -1063,6 +1069,11 @@ namespace CocoroConsole.Controls
                 return true;
             }
 
+            if (currentSettings.isUseLLM != previousSettings.isUseLLM)
+            {
+                return true;
+            }
+
             // キャラクターリストの比較
             if (currentSettings.characterList.Count != previousSettings.characterList.Count)
             {
@@ -1075,9 +1086,8 @@ namespace CocoroConsole.Controls
                 var current = currentSettings.characterList[i];
                 var previous = previousSettings.characterList[i];
 
-                // LLM/埋め込み設定はAPI経由で管理されるため、ここではisUseLLMとisEnableMemoryのみ比較
-                if (current.isUseLLM != previous.isUseLLM ||
-                    current.isEnableMemory != previous.isEnableMemory)
+                // 埋め込み設定はAPI経由で管理されるため、ここでは isEnableMemory のみ比較
+                if (current.isEnableMemory != previous.isEnableMemory)
                 {
                     return true;
                 }

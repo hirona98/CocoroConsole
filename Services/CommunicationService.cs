@@ -269,11 +269,8 @@ namespace CocoroConsole.Services
         {
             try
             {
-                // 現在のキャラクター設定を取得
-                var currentCharacter = GetStoredCharacterSetting();
-
                 // LLMが無効の場合は処理しない
-                if (currentCharacter == null || !currentCharacter.isUseLLM)
+                if (!_appSettings.IsUseLLM)
                 {
                     Debug.WriteLine("チャット送信: LLMが無効のためスキップ");
                     return;
@@ -345,19 +342,19 @@ namespace CocoroConsole.Services
 	                                content = replyText
 	                            };
 
-	                            StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
-	                            {
-	                                Content = replyText,
-	                                IsFinished = true,
-	                                IsError = false
-	                            });
+		                            StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+		                            {
+		                                Content = replyText,
+		                                IsFinished = true,
+		                                IsError = false
+		                            });
 
-	                            ChatMessageReceived?.Invoke(this, chatReply);
-	                            ForwardMessageToShellAsync(replyText, currentCharacter);
+		                            ChatMessageReceived?.Invoke(this, chatReply);
+		                            ForwardMessageToShellAsync(replyText, GetStoredCharacterSetting());
 
-	                            _statusPollingService.SetNormalStatus();
-	                            StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット完了"));
-	                            return;
+		                            _statusPollingService.SetNormalStatus();
+		                            StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット完了"));
+		                            return;
                         case "error":
                             var errorMessage = ev.ErrorMessage ?? "チャットAPIエラーが発生しました";
                             StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
