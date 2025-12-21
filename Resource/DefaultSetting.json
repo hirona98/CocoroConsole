@@ -59,7 +59,7 @@
     {
       "isReadOnly": true,
       "modelName": "初音ミクSD",
-      "vrmFilePath": "",
+      "vrmFilePath": "default",
       "isUseLLM": false,
       "isUseTTS": false,
       "ttsType": "voicevox",
