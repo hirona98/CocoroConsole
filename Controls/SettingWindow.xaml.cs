@@ -162,6 +162,7 @@ namespace CocoroConsole.Controls
                 // Embedding設定をリスト全体でロード
                 List<EmbeddingPreset> embeddingPresets = settings.EmbeddingPreset ?? new List<EmbeddingPreset>();
                 EmbeddingSettingsControl.SetApiClient(_apiClient, SaveEmbeddingPresetsToApiAsync);
+                EmbeddingSettingsControl.IsMemoryEnabled = settings.MemoryEnabled;
                 EmbeddingSettingsControl.LoadSettingsList(embeddingPresets, settings.ActiveEmbeddingPresetId);
 
                 // Promptプリセットをロード
@@ -484,6 +485,7 @@ namespace CocoroConsole.Controls
             try
             {
                 List<string> excludeKeywords = SystemSettingsControl.GetExcludeKeywords();
+                bool memoryEnabled = EmbeddingSettingsControl.IsMemoryEnabled;
                 bool remindersEnabled = SystemSettingsControl.GetIsEnableReminder();
                 List<CocoroGhostReminder> reminders = SystemSettingsControl.GetReminders();
                 List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
@@ -515,6 +517,7 @@ namespace CocoroConsole.Controls
                 CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
                 {
                     ExcludeKeywords = excludeKeywords,
+                    MemoryEnabled = memoryEnabled,
                     RemindersEnabled = remindersEnabled,
                     Reminders = reminders,
                     ActiveLlmPresetId = activeLlmId!,
@@ -534,6 +537,7 @@ namespace CocoroConsole.Controls
                 LlmSettingsControl.LoadSettingsList(updatedLlmPresets, updated.ActiveLlmPresetId);
 
                 List<EmbeddingPreset> updatedEmbeddingPresets = updated.EmbeddingPreset ?? new List<EmbeddingPreset>();
+                EmbeddingSettingsControl.IsMemoryEnabled = updated.MemoryEnabled;
                 EmbeddingSettingsControl.LoadSettingsList(updatedEmbeddingPresets, updated.ActiveEmbeddingPresetId);
 
                 PromptSettingsControl.LoadSettings(

@@ -25,6 +25,23 @@ namespace CocoroConsole.Controls
             InitializeComponent();
         }
 
+        public bool IsMemoryEnabled
+        {
+            get => MemoryEnabledCheckBox.IsChecked ?? false;
+            set
+            {
+                _isInitializing = true;
+                try
+                {
+                    MemoryEnabledCheckBox.IsChecked = value;
+                }
+                finally
+                {
+                    _isInitializing = false;
+                }
+            }
+        }
+
         public void SetApiClient(CocoroGhostApiClient apiClient, Func<Task> onPresetListChanged)
         {
             _apiClient = apiClient;
@@ -191,6 +208,12 @@ namespace CocoroConsole.Controls
                 }
             }
 
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void MemoryEnabledCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 

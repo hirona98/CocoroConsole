@@ -9,7 +9,7 @@
 
     <UserControl.Resources>
         <Style x:Key="SettingLabelStyle"
-                TargetType="TextBlock">
+               TargetType="TextBlock">
             <Setter Property="VerticalAlignment"
                     Value="Center"/>
             <Setter Property="Margin"
@@ -18,7 +18,7 @@
                     Value="160"/>
         </Style>
         <Style x:Key="SettingTextBoxStyle"
-                TargetType="TextBox">
+               TargetType="TextBox">
             <Setter Property="Foreground"
                     Value="#FF0078D7"/>
             <Setter Property="Padding"
@@ -30,7 +30,7 @@
         </Style>
         <!-- プリセットボタン共通スタイル -->
         <Style x:Key="PresetButtonStyle"
-                TargetType="Button">
+               TargetType="Button">
             <Setter Property="Background"
                     Value="#4873CF"/>
             <Setter Property="Foreground"
@@ -52,19 +52,19 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsEnabled"
-                                    Value="False">
+                                     Value="False">
                                 <Setter Property="Background"
                                         Value="#CCCCCC"/>
                                 <Setter Property="Foreground"
                                         Value="#888888"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver"
-                                    Value="True">
+                                     Value="True">
                                 <Setter Property="Background"
                                         Value="#5A84D9"/>
                             </Trigger>
                             <Trigger Property="IsPressed"
-                                    Value="True">
+                                     Value="True">
                                 <Setter Property="Background"
                                         Value="#3A62B8"/>
                             </Trigger>
@@ -75,7 +75,7 @@
         </Style>
         <!-- 削除ボタンスタイル -->
         <Style x:Key="DeleteButtonStyle"
-                TargetType="Button">
+               TargetType="Button">
             <Setter Property="Background"
                     Value="#D50000"/>
             <Setter Property="Foreground"
@@ -97,19 +97,19 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsEnabled"
-                                    Value="False">
+                                     Value="False">
                                 <Setter Property="Background"
                                         Value="#CCCCCC"/>
                                 <Setter Property="Foreground"
                                         Value="#888888"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver"
-                                    Value="True">
+                                     Value="True">
                                 <Setter Property="Background"
                                         Value="#E53935"/>
                             </Trigger>
                             <Trigger Property="IsPressed"
-                                    Value="True">
+                                     Value="True">
                                 <Setter Property="Background"
                                         Value="#B71C1C"/>
                             </Trigger>
@@ -123,6 +123,15 @@
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
+                <!-- 有効化 -->
+                <CheckBox x:Name="MemoryEnabledCheckBox"
+                          Content="記憶機能（Embedding）を使用する"
+                          Foreground="#FF4873CF"
+                          Checked="MemoryEnabledCheckBox_Changed"
+                          Unchecked="MemoryEnabledCheckBox_Changed"
+                          Margin="0,5,0,20"
+                          ToolTip="Enable memory (embeddings)"/>
+
                 <!-- プリセット選択 -->
                 <GroupBox Header="プリセット選択"
                           Margin="0,0,20,20"
