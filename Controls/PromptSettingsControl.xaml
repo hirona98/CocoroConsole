@@ -154,8 +154,8 @@
                     </StackPanel>
                 </Expander>
 
-                <!-- Contract -->
-                <Expander Header="Contract"
+                <!-- Addon -->
+                <Expander Header="Addon"
                           Style="{StaticResource PromptExpanderStyle}"
                           IsExpanded="False">
                     <StackPanel>
@@ -171,31 +171,31 @@
                                 <ColumnDefinition Width="85"/>
                             </Grid.ColumnDefinitions>
 
-                            <ComboBox x:Name="ContractPresetSelectComboBox"
+                            <ComboBox x:Name="AddonPresetSelectComboBox"
                                       Grid.Column="0"
                                       Margin="0,5,10,5"
-                                      SelectionChanged="ContractPresetSelectComboBox_SelectionChanged"/>
+                                      SelectionChanged="AddonPresetSelectComboBox_SelectionChanged"/>
 
                             <Button Grid.Column="1"
                                     Content="追加"
                                     Margin="0,5,0,5"
                                     Padding="10,5"
                                     Style="{StaticResource PresetButtonStyle}"
-                                    Click="AddContractPresetButton_Click"/>
+                                    Click="AddAddonPresetButton_Click"/>
 
                             <Button Grid.Column="2"
                                     Content="複製"
                                     Margin="5,5,0,5"
                                     Padding="10,5"
                                     Style="{StaticResource PresetButtonStyle}"
-                                    Click="DuplicateContractPresetButton_Click"/>
+                                    Click="DuplicateAddonPresetButton_Click"/>
 
                             <Button Grid.Column="3"
                                     Content="削除"
                                     Margin="5,5,0,5"
                                     Padding="10,5"
                                     Style="{StaticResource DeleteButtonStyle}"
-                                    Click="DeleteContractPresetButton_Click"/>
+                                    Click="DeleteAddonPresetButton_Click"/>
                         </Grid>
 
                         <!-- 設定 -->
@@ -206,24 +206,24 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="名前:"
                                        Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="ContractPresetNameTextBox"
+                            <TextBox x:Name="AddonPresetNameTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnContractSettingChanged"/>
+                                     TextChanged="OnAddonSettingChanged"/>
                         </Grid>
 
                         <Border BorderBrush="#CCCCCC"
                                 BorderThickness="1"
                                 Margin="0,10,0,0"
                                 Padding="5">
-                            <TextBox x:Name="ContractTextBox"
+                            <TextBox x:Name="AddonTextBox"
                                      AcceptsReturn="True"
                                      TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Auto"
                                      Height="200"
                                      BorderThickness="0"
                                      Foreground="#FF0078D7"
-                                     TextChanged="OnContractSettingChanged"/>
+                                     TextChanged="OnAddonSettingChanged"/>
                         </Border>
                     </StackPanel>
                 </Expander>

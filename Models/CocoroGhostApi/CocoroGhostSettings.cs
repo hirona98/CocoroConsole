@@ -26,8 +26,8 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonPropertyName("active_persona_preset_id")]
         public string? ActivePersonaPresetId { get; set; }
 
-        [JsonPropertyName("active_contract_preset_id")]
-        public string? ActiveContractPresetId { get; set; }
+        [JsonPropertyName("active_addon_preset_id")]
+        public string? ActiveAddonPresetId { get; set; }
 
         [JsonPropertyName("llm_preset")]
         public List<LlmPreset> LlmPreset { get; set; } = new List<LlmPreset>();
@@ -38,8 +38,8 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonPropertyName("persona_preset")]
         public List<PersonaPreset> PersonaPreset { get; set; } = new List<PersonaPreset>();
 
-        [JsonPropertyName("contract_preset")]
-        public List<ContractPreset> ContractPreset { get; set; } = new List<ContractPreset>();
+        [JsonPropertyName("addon_preset")]
+        public List<AddonPreset> AddonPreset { get; set; } = new List<AddonPreset>();
     }
 
     public class CocoroGhostReminder
@@ -74,8 +74,8 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonPropertyName("active_persona_preset_id")]
         public string ActivePersonaPresetId { get; set; } = string.Empty;
 
-        [JsonPropertyName("active_contract_preset_id")]
-        public string ActiveContractPresetId { get; set; } = string.Empty;
+        [JsonPropertyName("active_addon_preset_id")]
+        public string ActiveAddonPresetId { get; set; } = string.Empty;
 
         [JsonPropertyName("llm_preset")]
         public List<LlmPreset> LlmPreset { get; set; } = new List<LlmPreset>();
@@ -86,7 +86,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonPropertyName("persona_preset")]
         public List<PersonaPreset> PersonaPreset { get; set; } = new List<PersonaPreset>();
 
-        [JsonPropertyName("contract_preset")]
-        public List<ContractPreset> ContractPreset { get; set; } = new List<ContractPreset>();
+        [JsonPropertyName("addon_preset")]
+        public List<AddonPreset> AddonPreset { get; set; } = new List<AddonPreset>();
     }
 }

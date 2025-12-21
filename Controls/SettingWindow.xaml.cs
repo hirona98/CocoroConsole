@@ -170,8 +170,8 @@ namespace CocoroConsole.Controls
                 PromptSettingsControl.LoadSettings(
                     settings.PersonaPreset ?? new List<PersonaPreset>(),
                     settings.ActivePersonaPresetId,
-                    settings.ContractPreset ?? new List<ContractPreset>(),
-                    settings.ActiveContractPresetId
+                    settings.AddonPreset ?? new List<AddonPreset>(),
+                    settings.ActiveAddonPresetId
                 );
 
                 // 設定変更イベントを登録
@@ -491,22 +491,22 @@ namespace CocoroConsole.Controls
                 List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
                 List<EmbeddingPreset> embeddingPresets = EmbeddingSettingsControl.GetAllPresets();
                 List<PersonaPreset> personaPresets = PromptSettingsControl.GetAllPersonaPresets();
-                List<ContractPreset> contractPresets = PromptSettingsControl.GetAllContractPresets();
+                List<AddonPreset> addonPresets = PromptSettingsControl.GetAllAddonPresets();
 
                 EnsurePresetIds(llmPresets, p => p.LlmPresetId, (p, id) => p.LlmPresetId = id);
                 EnsurePresetIds(embeddingPresets, p => p.EmbeddingPresetId, (p, id) => p.EmbeddingPresetId = id);
                 EnsurePresetIds(personaPresets, p => p.PersonaPresetId, (p, id) => p.PersonaPresetId = id);
-                EnsurePresetIds(contractPresets, p => p.ContractPresetId, (p, id) => p.ContractPresetId = id);
+                EnsurePresetIds(addonPresets, p => p.AddonPresetId, (p, id) => p.AddonPresetId = id);
 
                 var activeLlmId = ResolveActivePresetId(llmPresets, LlmSettingsControl.GetActivePresetId(), p => p.LlmPresetId);
                 var activeEmbeddingId = ResolveActivePresetId(embeddingPresets, EmbeddingSettingsControl.GetActivePresetId(), p => p.EmbeddingPresetId);
                 var activePersonaId = ResolveActivePresetId(personaPresets, PromptSettingsControl.GetActivePersonaPresetId(), p => p.PersonaPresetId);
-                var activeContractId = ResolveActivePresetId(contractPresets, PromptSettingsControl.GetActiveContractPresetId(), p => p.ContractPresetId);
+                var activeAddonId = ResolveActivePresetId(addonPresets, PromptSettingsControl.GetActiveAddonPresetId(), p => p.AddonPresetId);
 
                 if (string.IsNullOrWhiteSpace(activeLlmId) ||
                     string.IsNullOrWhiteSpace(activeEmbeddingId) ||
                     string.IsNullOrWhiteSpace(activePersonaId) ||
-                    string.IsNullOrWhiteSpace(activeContractId))
+                    string.IsNullOrWhiteSpace(activeAddonId))
                 {
                     Debug.WriteLine("[SettingWindow] 設定の保存に失敗しました: active preset id missing");
                     MessageBox.Show("アクティブなプリセットが選択されていません。cocoro_ghost側のsettings.dbを確認してください。", "エラー",
@@ -523,11 +523,11 @@ namespace CocoroConsole.Controls
                     ActiveLlmPresetId = activeLlmId!,
                     ActiveEmbeddingPresetId = activeEmbeddingId!,
                     ActivePersonaPresetId = activePersonaId!,
-                    ActiveContractPresetId = activeContractId!,
+                    ActiveAddonPresetId = activeAddonId!,
                     LlmPreset = llmPresets,
                     EmbeddingPreset = embeddingPresets,
                     PersonaPreset = personaPresets,
-                    ContractPreset = contractPresets
+                    AddonPreset = addonPresets
                 };
 
                 CocoroGhostSettings updated = await _apiClient.UpdateSettingsAsync(request);
@@ -543,8 +543,8 @@ namespace CocoroConsole.Controls
                 PromptSettingsControl.LoadSettings(
                     updated.PersonaPreset ?? new List<PersonaPreset>(),
                     updated.ActivePersonaPresetId,
-                    updated.ContractPreset ?? new List<ContractPreset>(),
-                    updated.ActiveContractPresetId
+                    updated.AddonPreset ?? new List<AddonPreset>(),
+                    updated.ActiveAddonPresetId
                 );
             }
             catch (Exception ex)

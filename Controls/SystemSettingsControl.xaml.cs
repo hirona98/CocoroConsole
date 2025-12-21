@@ -301,12 +301,12 @@ namespace CocoroConsole.Controls
                 var activeLlmId = latestSettings.ActiveLlmPresetId ?? latestSettings.LlmPreset.FirstOrDefault()?.LlmPresetId;
                 var activeEmbeddingId = latestSettings.ActiveEmbeddingPresetId ?? latestSettings.EmbeddingPreset.FirstOrDefault()?.EmbeddingPresetId;
                 var activePersonaId = latestSettings.ActivePersonaPresetId ?? latestSettings.PersonaPreset.FirstOrDefault()?.PersonaPresetId;
-                var activeContractId = latestSettings.ActiveContractPresetId ?? latestSettings.ContractPreset.FirstOrDefault()?.ContractPresetId;
+                var activeAddonId = latestSettings.ActiveAddonPresetId ?? latestSettings.AddonPreset.FirstOrDefault()?.AddonPresetId;
 
                 if (string.IsNullOrWhiteSpace(activeLlmId) ||
                     string.IsNullOrWhiteSpace(activeEmbeddingId) ||
                     string.IsNullOrWhiteSpace(activePersonaId) ||
-                    string.IsNullOrWhiteSpace(activeContractId))
+                    string.IsNullOrWhiteSpace(activeAddonId))
                 {
                     MessageBox.Show("API設定のアクティブプリセットIDが取得できません。cocoro_ghost側のsettings.dbを確認してください。", "警告",
                         MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -321,11 +321,11 @@ namespace CocoroConsole.Controls
                     ActiveLlmPresetId = activeLlmId!,
                     ActiveEmbeddingPresetId = activeEmbeddingId!,
                     ActivePersonaPresetId = activePersonaId!,
-                    ActiveContractPresetId = activeContractId!,
+                    ActiveAddonPresetId = activeAddonId!,
                     LlmPreset = latestSettings.LlmPreset ?? new List<LlmPreset>(),
                     EmbeddingPreset = latestSettings.EmbeddingPreset ?? new List<EmbeddingPreset>(),
                     PersonaPreset = latestSettings.PersonaPreset ?? new List<PersonaPreset>(),
-                    ContractPreset = latestSettings.ContractPreset ?? new List<ContractPreset>()
+                    AddonPreset = latestSettings.AddonPreset ?? new List<AddonPreset>()
                 };
 
                 await _apiClient.UpdateSettingsAsync(request);

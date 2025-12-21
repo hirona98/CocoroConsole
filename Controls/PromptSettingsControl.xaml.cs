@@ -17,10 +17,10 @@ namespace CocoroConsole.Controls
         private Func<Task>? _onPresetListChanged;
 
         private readonly List<PersonaPreset> _personaPresets = new();
-        private readonly List<ContractPreset> _contractPresets = new();
+        private readonly List<AddonPreset> _addonPresets = new();
 
         private int _currentPersonaPresetIndex = -1;
-        private int _currentContractPresetIndex = -1;
+        private int _currentAddonPresetIndex = -1;
 
         public event EventHandler? SettingsChanged;
 
@@ -38,15 +38,15 @@ namespace CocoroConsole.Controls
         public void LoadSettings(
             List<PersonaPreset>? personaPresets,
             string? activePersonaPresetId,
-            List<ContractPreset>? contractPresets,
-            string? activeContractPresetId
+            List<AddonPreset>? addonPresets,
+            string? activeAddonPresetId
         )
         {
             _isInitializing = true;
             try
             {
                 LoadPersonaPresets(personaPresets, activePersonaPresetId);
-                LoadContractPresets(contractPresets, activeContractPresetId);
+                LoadAddonPresets(addonPresets, activeAddonPresetId);
             }
             finally
             {
@@ -60,10 +60,10 @@ namespace CocoroConsole.Controls
             return _personaPresets.ToList();
         }
 
-        public List<ContractPreset> GetAllContractPresets()
+        public List<AddonPreset> GetAllAddonPresets()
         {
-            SaveCurrentContractUiToPreset();
-            return _contractPresets.ToList();
+            SaveCurrentAddonUiToPreset();
+            return _addonPresets.ToList();
         }
 
         public string? GetActivePersonaPresetId()
@@ -76,14 +76,14 @@ namespace CocoroConsole.Controls
             return _personaPresets[_currentPersonaPresetIndex].PersonaPresetId;
         }
 
-        public string? GetActiveContractPresetId()
+        public string? GetActiveAddonPresetId()
         {
-            if (_currentContractPresetIndex < 0 || _currentContractPresetIndex >= _contractPresets.Count)
+            if (_currentAddonPresetIndex < 0 || _currentAddonPresetIndex >= _addonPresets.Count)
             {
                 return null;
             }
 
-            return _contractPresets[_currentContractPresetIndex].ContractPresetId;
+            return _addonPresets[_currentAddonPresetIndex].AddonPresetId;
         }
 
         private async Task SavePresetsToApiAsync()
@@ -127,28 +127,28 @@ namespace CocoroConsole.Controls
             LoadPersonaPresetToUi(_personaPresets[activeIndex]);
         }
 
-        private void LoadContractPresets(List<ContractPreset>? presets, string? activePresetId)
+        private void LoadAddonPresets(List<AddonPreset>? presets, string? activePresetId)
         {
-            _contractPresets.Clear();
-            ContractPresetSelectComboBox.Items.Clear();
+            _addonPresets.Clear();
+            AddonPresetSelectComboBox.Items.Clear();
 
             if (presets == null || presets.Count == 0)
             {
-                _currentContractPresetIndex = -1;
-                ClearContractUi();
+                _currentAddonPresetIndex = -1;
+                ClearAddonUi();
                 return;
             }
 
-            _contractPresets.AddRange(presets);
-            foreach (var preset in _contractPresets)
+            _addonPresets.AddRange(presets);
+            foreach (var preset in _addonPresets)
             {
-                ContractPresetSelectComboBox.Items.Add(preset.ContractPresetName);
+                AddonPresetSelectComboBox.Items.Add(preset.AddonPresetName);
             }
 
-            var activeIndex = ResolveActiveIndex(_contractPresets.Select(p => p.ContractPresetId).ToList(), activePresetId);
-            _currentContractPresetIndex = activeIndex;
-            ContractPresetSelectComboBox.SelectedIndex = activeIndex;
-            LoadContractPresetToUi(_contractPresets[activeIndex]);
+            var activeIndex = ResolveActiveIndex(_addonPresets.Select(p => p.AddonPresetId).ToList(), activePresetId);
+            _currentAddonPresetIndex = activeIndex;
+            AddonPresetSelectComboBox.SelectedIndex = activeIndex;
+            LoadAddonPresetToUi(_addonPresets[activeIndex]);
         }
 
         private static int ResolveActiveIndex(IReadOnlyList<string?> presetIds, string? activePresetId)
@@ -208,16 +208,16 @@ namespace CocoroConsole.Controls
             preset.PersonaText = PersonaTextBox.Text;
         }
 
-        private void SaveCurrentContractUiToPreset()
+        private void SaveCurrentAddonUiToPreset()
         {
-            if (_currentContractPresetIndex < 0 || _currentContractPresetIndex >= _contractPresets.Count)
+            if (_currentAddonPresetIndex < 0 || _currentAddonPresetIndex >= _addonPresets.Count)
             {
                 return;
             }
 
-            var preset = _contractPresets[_currentContractPresetIndex];
-            preset.ContractPresetName = ContractPresetNameTextBox.Text;
-            preset.ContractText = ContractTextBox.Text;
+            var preset = _addonPresets[_currentAddonPresetIndex];
+            preset.AddonPresetName = AddonPresetNameTextBox.Text;
+            preset.AddonText = AddonTextBox.Text;
         }
 
         private void AddPersonaPresetButton_Click(object sender, RoutedEventArgs e)
@@ -327,25 +327,25 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void AddContractPresetButton_Click(object sender, RoutedEventArgs e)
+        private void AddAddonPresetButton_Click(object sender, RoutedEventArgs e)
         {
-            SaveCurrentContractUiToPreset();
+            SaveCurrentAddonUiToPreset();
 
-            var newPreset = new ContractPreset
+            var newPreset = new AddonPreset
             {
-                ContractPresetId = Guid.NewGuid().ToString(),
-                ContractPresetName = GenerateUniqueName(_contractPresets.Select(p => p.ContractPresetName), "新規プリセット"),
-                ContractText = string.Empty
+                AddonPresetId = Guid.NewGuid().ToString(),
+                AddonPresetName = GenerateUniqueName(_addonPresets.Select(p => p.AddonPresetName), "新規プリセット"),
+                AddonText = string.Empty
             };
 
             _isInitializing = true;
             try
             {
-                _contractPresets.Add(newPreset);
-                ContractPresetSelectComboBox.Items.Add(newPreset.ContractPresetName);
-                _currentContractPresetIndex = _contractPresets.Count - 1;
-                ContractPresetSelectComboBox.SelectedIndex = _currentContractPresetIndex;
-                LoadContractPresetToUi(newPreset);
+                _addonPresets.Add(newPreset);
+                AddonPresetSelectComboBox.Items.Add(newPreset.AddonPresetName);
+                _currentAddonPresetIndex = _addonPresets.Count - 1;
+                AddonPresetSelectComboBox.SelectedIndex = _currentAddonPresetIndex;
+                LoadAddonPresetToUi(newPreset);
             }
             finally
             {
@@ -355,32 +355,32 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void DuplicateContractPresetButton_Click(object sender, RoutedEventArgs e)
+        private void DuplicateAddonPresetButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_currentContractPresetIndex < 0 || _currentContractPresetIndex >= _contractPresets.Count)
+            if (_currentAddonPresetIndex < 0 || _currentAddonPresetIndex >= _addonPresets.Count)
             {
                 MessageBox.Show("複製するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            SaveCurrentContractUiToPreset();
+            SaveCurrentAddonUiToPreset();
 
-            var source = _contractPresets[_currentContractPresetIndex];
-            var duplicate = new ContractPreset
+            var source = _addonPresets[_currentAddonPresetIndex];
+            var duplicate = new AddonPreset
             {
-                ContractPresetId = Guid.NewGuid().ToString(),
-                ContractPresetName = GenerateDuplicateName(_contractPresets.Select(p => p.ContractPresetName), source.ContractPresetName),
-                ContractText = source.ContractText
+                AddonPresetId = Guid.NewGuid().ToString(),
+                AddonPresetName = GenerateDuplicateName(_addonPresets.Select(p => p.AddonPresetName), source.AddonPresetName),
+                AddonText = source.AddonText
             };
 
             _isInitializing = true;
             try
             {
-                _contractPresets.Add(duplicate);
-                ContractPresetSelectComboBox.Items.Add(duplicate.ContractPresetName);
-                _currentContractPresetIndex = _contractPresets.Count - 1;
-                ContractPresetSelectComboBox.SelectedIndex = _currentContractPresetIndex;
-                LoadContractPresetToUi(duplicate);
+                _addonPresets.Add(duplicate);
+                AddonPresetSelectComboBox.Items.Add(duplicate.AddonPresetName);
+                _currentAddonPresetIndex = _addonPresets.Count - 1;
+                AddonPresetSelectComboBox.SelectedIndex = _currentAddonPresetIndex;
+                LoadAddonPresetToUi(duplicate);
             }
             finally
             {
@@ -390,21 +390,21 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void DeleteContractPresetButton_Click(object sender, RoutedEventArgs e)
+        private void DeleteAddonPresetButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_currentContractPresetIndex < 0 || _currentContractPresetIndex >= _contractPresets.Count)
+            if (_currentAddonPresetIndex < 0 || _currentAddonPresetIndex >= _addonPresets.Count)
             {
                 MessageBox.Show("削除するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            if (_contractPresets.Count <= 1)
+            if (_addonPresets.Count <= 1)
             {
                 MessageBox.Show("最後のプリセットは削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            string presetName = _contractPresets[_currentContractPresetIndex].ContractPresetName;
+            string presetName = _addonPresets[_currentAddonPresetIndex].AddonPresetName;
             var result = MessageBox.Show(
                 $"プリセット「{presetName}」を削除しますか？",
                 "削除確認",
@@ -419,12 +419,12 @@ namespace CocoroConsole.Controls
             _isInitializing = true;
             try
             {
-                _contractPresets.RemoveAt(_currentContractPresetIndex);
-                ContractPresetSelectComboBox.Items.RemoveAt(_currentContractPresetIndex);
+                _addonPresets.RemoveAt(_currentAddonPresetIndex);
+                AddonPresetSelectComboBox.Items.RemoveAt(_currentAddonPresetIndex);
 
-                _currentContractPresetIndex = Math.Min(_currentContractPresetIndex, _contractPresets.Count - 1);
-                ContractPresetSelectComboBox.SelectedIndex = _currentContractPresetIndex;
-                LoadContractPresetToUi(_contractPresets[_currentContractPresetIndex]);
+                _currentAddonPresetIndex = Math.Min(_currentAddonPresetIndex, _addonPresets.Count - 1);
+                AddonPresetSelectComboBox.SelectedIndex = _currentAddonPresetIndex;
+                LoadAddonPresetToUi(_addonPresets[_currentAddonPresetIndex]);
             }
             finally
             {
@@ -440,10 +440,10 @@ namespace CocoroConsole.Controls
             PersonaTextBox.Text = preset.PersonaText;
         }
 
-        private void LoadContractPresetToUi(ContractPreset preset)
+        private void LoadAddonPresetToUi(AddonPreset preset)
         {
-            ContractPresetNameTextBox.Text = preset.ContractPresetName;
-            ContractTextBox.Text = preset.ContractText;
+            AddonPresetNameTextBox.Text = preset.AddonPresetName;
+            AddonTextBox.Text = preset.AddonText;
         }
 
         private void ClearPersonaUi()
@@ -452,10 +452,10 @@ namespace CocoroConsole.Controls
             PersonaTextBox.Text = string.Empty;
         }
 
-        private void ClearContractUi()
+        private void ClearAddonUi()
         {
-            ContractPresetNameTextBox.Text = string.Empty;
-            ContractTextBox.Text = string.Empty;
+            AddonPresetNameTextBox.Text = string.Empty;
+            AddonTextBox.Text = string.Empty;
         }
 
         private void PersonaPresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -487,26 +487,26 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void ContractPresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void AddonPresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isInitializing)
             {
                 return;
             }
 
-            SaveCurrentContractUiToPreset();
+            SaveCurrentAddonUiToPreset();
 
-            var selectedIndex = ContractPresetSelectComboBox.SelectedIndex;
-            if (selectedIndex < 0 || selectedIndex >= _contractPresets.Count)
+            var selectedIndex = AddonPresetSelectComboBox.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= _addonPresets.Count)
             {
                 return;
             }
 
-            _currentContractPresetIndex = selectedIndex;
+            _currentAddonPresetIndex = selectedIndex;
             _isInitializing = true;
             try
             {
-                LoadContractPresetToUi(_contractPresets[selectedIndex]);
+                LoadAddonPresetToUi(_addonPresets[selectedIndex]);
             }
             finally
             {
@@ -532,17 +532,17 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void OnContractSettingChanged(object sender, TextChangedEventArgs e)
+        private void OnAddonSettingChanged(object sender, TextChangedEventArgs e)
         {
             if (_isInitializing)
             {
                 return;
             }
 
-            if (sender == ContractPresetNameTextBox && _currentContractPresetIndex >= 0 && _currentContractPresetIndex < _contractPresets.Count)
+            if (sender == AddonPresetNameTextBox && _currentAddonPresetIndex >= 0 && _currentAddonPresetIndex < _addonPresets.Count)
             {
-                _contractPresets[_currentContractPresetIndex].ContractPresetName = ContractPresetNameTextBox.Text;
-                RefreshComboBoxItems(ContractPresetSelectComboBox, _contractPresets.Select(p => p.ContractPresetName).ToList(), _currentContractPresetIndex);
+                _addonPresets[_currentAddonPresetIndex].AddonPresetName = AddonPresetNameTextBox.Text;
+                RefreshComboBoxItems(AddonPresetSelectComboBox, _addonPresets.Select(p => p.AddonPresetName).ToList(), _currentAddonPresetIndex);
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
