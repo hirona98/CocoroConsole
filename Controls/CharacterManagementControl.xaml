@@ -106,10 +106,22 @@
                         <TextBlock Foreground="#666666"
                                    TextWrapping="Wrap"
                                    Margin="130,0,0,0">
-                            何も指定しない場合はVRM表示機能が無効になります。
+                            未指定の場合はVRM表示が無効になります。
+                        </TextBlock>
+                        <CheckBox x:Name="IsUseLLMCheckBox"
+                                  Content="LLMを使う"
+                                  Foreground="#FF4873CF"
+                                  Margin="0,10,0,0"
+                                  ToolTip="Use LLM"/>
+                        <TextBlock Foreground="#666666"
+                                   TextWrapping="Wrap"
+                                   Margin="0,10,0,0">
+                            LLMの詳細設定とプリセット管理は「LLM」と「Embedding」タブで行ってください。
                         </TextBlock>
                     </StackPanel>
                 </GroupBox>
+
+                <!-- LLMパラメータ -->
 
                 <!-- マテリアル・影設定 -->
                 <GroupBox Header="マテリアル・影設定"
@@ -154,22 +166,6 @@
                     </StackPanel>
                 </GroupBox>
 
-                <!-- LLMパラメータ -->
-                <GroupBox Header="言語生成AI"
-                          Margin="0,0,20,20"
-                          Padding="10">
-                    <StackPanel>
-                        <CheckBox x:Name="IsUseLLMCheckBox"
-                                  Content="LLMを使用する"
-                                  Foreground="#FF4873CF"
-                                  ToolTip="Use LLM"/>
-                        <TextBlock Foreground="#666666"
-                                   TextWrapping="Wrap"
-                                   Margin="0,10,0,0">
-                        LLMの詳細設定とプリセット管理は「LLM」と「Embedding」タブで行ってください。
-                        </TextBlock>
-                    </StackPanel>
-                </GroupBox>
                 <!-- TTSパラメータ -->
                 <GroupBox Header="音声合成"
                           Margin="0,0,20,0"
