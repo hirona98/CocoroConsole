@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 
 namespace CocoroConsole.Services
 {
@@ -336,8 +335,7 @@ namespace CocoroConsole.Services
         private void LoadExistingSettingsFile()
         {
             string userSettingsJson = File.ReadAllText(AppSettingsFilePath);
-            string mergedJson = MergeWithDefaultSettingsJson(userSettingsJson);
-            ProcessCurrentFormatSettings(mergedJson);
+            ProcessCurrentFormatSettings(userSettingsJson);
         }
 
         /// <summary>
@@ -351,108 +349,6 @@ namespace CocoroConsole.Services
                 UpdateSettings(userSettings);
             }
         }
-
-        /// <summary>
-        /// User設定(JSON)をDefaultSetting.jsonにマージして、欠けているキーの既定値をDefaultSetting.jsonから補完する
-        /// </summary>
-        private string MergeWithDefaultSettingsJson(string userSettingsJson)
-        {
-            try
-            {
-                var defaultJson = File.Exists(DefaultSettingsFilePath)
-                    ? File.ReadAllText(DefaultSettingsFilePath)
-                    : "{}";
-
-                var defaultNode = JsonNode.Parse(defaultJson) as JsonObject ?? new JsonObject();
-                var userNode = JsonNode.Parse(userSettingsJson) as JsonObject ?? new JsonObject();
-
-                MigrateIsUseLlmToGlobal(userNode);
-
-                var merged = (JsonObject)defaultNode.DeepClone();
-                MergeJsonObject(merged, userNode);
-
-                return merged.ToJsonString(new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                });
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"設定マージエラー: {ex.Message}");
-                return userSettingsJson;
-            }
-        }
-
-        private static void MigrateIsUseLlmToGlobal(JsonObject userNode)
-        {
-            if (userNode.ContainsKey("isUseLLM"))
-            {
-                return;
-            }
-
-            if (userNode["characterList"] is not JsonArray characterList || characterList.Count == 0)
-            {
-                return;
-            }
-
-            int currentCharacterIndex = 0;
-            if (userNode["currentCharacterIndex"] is JsonValue idxValue &&
-                idxValue.TryGetValue(out int idx))
-            {
-                currentCharacterIndex = idx;
-            }
-
-            bool? derived = null;
-
-            if (currentCharacterIndex >= 0 &&
-                currentCharacterIndex < characterList.Count &&
-                characterList[currentCharacterIndex] is JsonObject currentCharacter &&
-                currentCharacter["isUseLLM"] is JsonValue currentUseLlmValue &&
-                currentUseLlmValue.TryGetValue(out bool currentUseLlm))
-            {
-                derived = currentUseLlm;
-            }
-
-            if (!derived.HasValue)
-            {
-                foreach (var item in characterList)
-                {
-                    if (item is not JsonObject character ||
-                        character["isUseLLM"] is not JsonValue useLlmValue ||
-                        !useLlmValue.TryGetValue(out bool useLlm))
-                    {
-                        continue;
-                    }
-
-                    if (useLlm)
-                    {
-                        derived = true;
-                        break;
-                    }
-                }
-            }
-
-            if (derived.HasValue)
-            {
-                userNode["isUseLLM"] = derived.Value;
-            }
-        }
-
-        private static void MergeJsonObject(JsonObject target, JsonObject overlay)
-        {
-            foreach (var (key, value) in overlay)
-            {
-                if (value is JsonObject overlayObject && target[key] is JsonObject targetObject)
-                {
-                    MergeJsonObject(targetObject, overlayObject);
-                    continue;
-                }
-
-                target[key] = value?.DeepClone();
-            }
-        }
-
 
         /// <summary>
         /// デフォルト設定ファイルを読み込む
