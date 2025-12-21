@@ -427,22 +427,6 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// 通知リクエスト
-    /// </summary>
-    public class NotificationRequest
-    {
-        public string from { get; set; } = string.Empty;
-        public string message { get; set; } = string.Empty;
-        public string[]? images { get; set; } // Base64エンコードされた画像データ配列（data URL形式、最大5枚）
-    }
-
-    public class DirectRequestRequest
-    {
-        public string prompt { get; set; } = string.Empty;
-        public string[]? images { get; set; } // Base64エンコードされた画像データ配列（data URL形式、最大5枚）
-    }
-
-    /// <summary>
     /// 標準レスポンス
     /// </summary>
     public class StandardResponse
@@ -580,21 +564,6 @@ namespace CocoroConsole.Communication
         public string content { get; set; } = string.Empty; // メッセージ内容
         public string timestamp { get; set; } = string.Empty; // メッセージ時刻（ISO形式）
     }
-
-    /// <summary>
-    /// CocoroGhost チャットAPIリクエスト
-    /// </summary>
-    public class CocoroGhostChatRequest
-    {
-        public string query { get; set; } = string.Empty; // ユーザークエリ（必須）
-        public string chat_type { get; set; } = "text"; // "text" | "text_image" | "notification" | "desktop_watch"
-        public List<ImageData>? images { get; set; } // 画像データ配列（オプション）
-        public NotificationData? notification { get; set; } // 通知データ（オプション）
-        public List<HistoryMessage>? history { get; set; } // 会話履歴（オプション）
-        public bool? internet_search { get; set; } // インターネット検索有効化（オプション）
-        public string? request_id { get; set; } // リクエスト識別ID（オプション）
-    }
-
 
     /// <summary>
     /// ストリーミングチャットイベントデータ
