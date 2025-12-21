@@ -300,7 +300,7 @@
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="200"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Reasoning Effort:"
                                        Style="{StaticResource SettingLabelStyle}"/>
