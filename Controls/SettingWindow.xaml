@@ -118,7 +118,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="会話"
+            <TabItem Header="LLM"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="LLM setting">
                 <Grid Margin="20,20,0,20">
@@ -126,7 +126,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="記憶"
+            <TabItem Header="Memory"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="Embedding setting">
                 <Grid Margin="20,20,0,20">
