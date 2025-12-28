@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="ログビューアー"
         Width="1000"
-        Height="600"
+        Height="1000"
         WindowState="Normal"
         WindowStartupLocation="CenterOwner"
         Icon="/Resource/logo.ico">

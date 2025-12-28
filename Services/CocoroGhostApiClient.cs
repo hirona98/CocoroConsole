@@ -146,6 +146,31 @@ namespace CocoroConsole.Services
             return SendAsync<CaptureResponse>(HttpMethod.Post, "/api/capture", request, cancellationToken);
         }
 
+        public Task<OtomeKairoSnapshotResponse> GetOtomeKairoAsync(int? scanLimit = null, bool includeComputed = true, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            var query = new List<string>();
+            if (scanLimit.HasValue)
+            {
+                query.Add($"scan_limit={scanLimit.Value}");
+            }
+
+            query.Add($"include_computed={(includeComputed ? "true" : "false")}");
+
+            var path = query.Count > 0
+                ? $"/api/otome_kairo?{string.Join("&", query)}"
+                : "/api/otome_kairo";
+
+            return SendAsync<OtomeKairoSnapshotResponse>(HttpMethod.Get, path, null, cancellationToken);
+        }
+
+        public Task<OtomeKairoSnapshotResponse> UpdateOtomeKairoOverrideAsync(OtomeKairoOverrideRequest request, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendAsync<OtomeKairoSnapshotResponse>(HttpMethod.Put, "/api/otome_kairo/override", request, cancellationToken);
+        }
+
         private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
         {
             var request = new HttpRequestMessage(method, BuildUrl(path));

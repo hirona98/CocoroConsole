@@ -1,4 +1,5 @@
 ﻿using CocoroConsole.Communication;
+using CocoroConsole.Models.CocoroGhostApi;
 using CocoroConsole.Windows;
 using CocoroAI.Services;
 using System;
@@ -20,11 +21,11 @@ namespace CocoroConsole.Services
 
         private readonly CocoroConsoleApiServer _apiServer;
         private readonly CocoroShellClient _shellClient;
-	        private readonly IAppSettings _appSettings;
-	        private readonly StatusPollingService _statusPollingService;
-	        private readonly CocoroGhostApiClient? _cocoroGhostApiClient;
-	        private LogStreamClient? _logStreamClient;
-	        private EventsStreamClient? _eventsStreamClient;
+        private readonly IAppSettings _appSettings;
+        private readonly StatusPollingService _statusPollingService;
+        private readonly CocoroGhostApiClient? _cocoroGhostApiClient;
+        private LogStreamClient? _logStreamClient;
+        private EventsStreamClient? _eventsStreamClient;
 
         // メッセージ順序保証用セマフォ
         private readonly SemaphoreSlim _forwardMessageSemaphore = new SemaphoreSlim(1, 1);
@@ -162,27 +163,27 @@ namespace CocoroConsole.Services
         /// <summary>
         /// StatusPollingServiceのステータス変更ハンドラ
         /// </summary>
-	        private void OnStatusPollingServiceStatusChanged(object? sender, CocoroGhostStatus status)
-	        {
-	            // 外部イベントに転送
-	            StatusChanged?.Invoke(this, status);
+        private void OnStatusPollingServiceStatusChanged(object? sender, CocoroGhostStatus status)
+        {
+            // 外部イベントに転送
+            StatusChanged?.Invoke(this, status);
 
             // 初回Normal時にcocoro_ghostから設定を取得
-	            if (!_initialSettingsFetched && status == CocoroGhostStatus.Normal)
-	            {
-	                _initialSettingsFetched = true;
-	                _ = FetchAndApplySettingsFromCocoroGhostAsync();
-	            }
+            if (!_initialSettingsFetched && status == CocoroGhostStatus.Normal)
+            {
+                _initialSettingsFetched = true;
+                _ = FetchAndApplySettingsFromCocoroGhostAsync();
+            }
 
-	            if (status == CocoroGhostStatus.Normal)
-	            {
-	                _ = StartEventsStreamAsync();
-	            }
-	            else if (status == CocoroGhostStatus.WaitingForStartup)
-	            {
-	                _ = StopEventsStreamAsync();
-	            }
-	        }
+            if (status == CocoroGhostStatus.Normal)
+            {
+                _ = StartEventsStreamAsync();
+            }
+            else if (status == CocoroGhostStatus.WaitingForStartup)
+            {
+                _ = StopEventsStreamAsync();
+            }
+        }
 
         /// <summary>
         /// cocoro_ghostから設定を取得してAppSettingsに反映
@@ -330,31 +331,31 @@ namespace CocoroConsole.Services
                                 });
                             }
                             break;
-	                        case "done":
-	                            var replyText = ev.ReplyText ?? buffer.ToString();
-	                            var memoryId = _cachedMemoryId;
-	                            var chatReply = new ChatRequest
-	                            {
-	                                memoryId = memoryId,
-	                                sessionId = _currentSessionId,
-	                                message = replyText,
-	                                role = "assistant",
-	                                content = replyText
-	                            };
+                        case "done":
+                            var replyText = ev.ReplyText ?? buffer.ToString();
+                            var memoryId = _cachedMemoryId;
+                            var chatReply = new ChatRequest
+                            {
+                                memoryId = memoryId,
+                                sessionId = _currentSessionId,
+                                message = replyText,
+                                role = "assistant",
+                                content = replyText
+                            };
 
-		                            StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
-		                            {
-		                                Content = replyText,
-		                                IsFinished = true,
-		                                IsError = false
-		                            });
+                            StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                            {
+                                Content = replyText,
+                                IsFinished = true,
+                                IsError = false
+                            });
 
-		                            ChatMessageReceived?.Invoke(this, chatReply);
-		                            ForwardMessageToShellAsync(replyText, GetStoredCharacterSetting());
+                            ChatMessageReceived?.Invoke(this, chatReply);
+                            ForwardMessageToShellAsync(replyText, GetStoredCharacterSetting());
 
-		                            _statusPollingService.SetNormalStatus();
-		                            StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット完了"));
-		                            return;
+                            _statusPollingService.SetNormalStatus();
+                            StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット完了"));
+                            return;
                         case "error":
                             var errorMessage = ev.ErrorMessage ?? "チャットAPIエラーが発生しました";
                             StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
@@ -428,10 +429,10 @@ namespace CocoroConsole.Services
         /// CocoroShellにアニメーションコマンドを送信
         /// </summary>
         /// <param name="animationName">アニメーション名</param>
-	        public async Task SendAnimationToShellAsync(string animationName)
-	        {
-	            try
-	            {
+        public async Task SendAnimationToShellAsync(string animationName)
+        {
+            try
+            {
                 var request = new AnimationRequest
                 {
                     animationName = animationName
@@ -446,8 +447,8 @@ namespace CocoroConsole.Services
             {
                 Debug.WriteLine($"アニメーションコマンド送信エラー: {ex.Message}");
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"アニメーション制御エラー: {ex.Message}"));
-	            }
-	        }
+            }
+        }
 
         /// <summary>
         /// 保存済みの現在のキャラクター設定を取得（キャッシュ使用）
@@ -465,10 +466,10 @@ namespace CocoroConsole.Services
             return null;
         }
 
-	        private string? ExtractBase64(string? dataUrl)
-	        {
-	            if (string.IsNullOrWhiteSpace(dataUrl))
-	            {
+        private string? ExtractBase64(string? dataUrl)
+        {
+            if (string.IsNullOrWhiteSpace(dataUrl))
+            {
                 return null;
             }
 
@@ -479,8 +480,8 @@ namespace CocoroConsole.Services
                 return dataUrl.Substring(index + marker.Length);
             }
 
-	            return dataUrl;
-	        }
+            return dataUrl;
+        }
 
         /// <summary>
         /// CocoroShellにメッセージを転送（ノンブロッキング）
@@ -571,6 +572,37 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
+        /// otome_kairo（感情）デバッグ画面を開く
+        /// </summary>
+        public void OpenOtomeKairoDebug()
+        {
+            if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.OpenOtomeKairoDebug();
+            }
+        }
+
+        public Task<OtomeKairoSnapshotResponse> GetOtomeKairoAsync(int? scanLimit = null, bool includeComputed = true)
+        {
+            if (_cocoroGhostApiClient == null)
+            {
+                throw new InvalidOperationException("cocoro_ghostのBearerトークンが設定されていません");
+            }
+
+            return _cocoroGhostApiClient.GetOtomeKairoAsync(scanLimit, includeComputed);
+        }
+
+        public Task<OtomeKairoSnapshotResponse> UpdateOtomeKairoOverrideAsync(OtomeKairoOverrideRequest request)
+        {
+            if (_cocoroGhostApiClient == null)
+            {
+                throw new InvalidOperationException("cocoro_ghostのBearerトークンが設定されていません");
+            }
+
+            return _cocoroGhostApiClient.UpdateOtomeKairoOverrideAsync(request);
+        }
+
+        /// <summary>
         /// ログストリーム接続を開始
         /// </summary>
         public async Task StartLogStreamAsync()
@@ -638,172 +670,172 @@ namespace CocoroConsole.Services
             LogStreamConnectionChanged?.Invoke(this, isConnected);
         }
 
-	        private void OnLogStreamErrorOccurred(object? sender, string errorMessage)
-	        {
-	            LogStreamError?.Invoke(this, errorMessage);
-	        }
+        private void OnLogStreamErrorOccurred(object? sender, string errorMessage)
+        {
+            LogStreamError?.Invoke(this, errorMessage);
+        }
 
-	        private async Task StartEventsStreamAsync()
-	        {
-	            if (_eventsStreamClient != null)
-	            {
-	                return;
-	            }
+        private async Task StartEventsStreamAsync()
+        {
+            if (_eventsStreamClient != null)
+            {
+                return;
+            }
 
-	            var bearerToken = _appSettings.CocoroGhostBearerToken;
-	            if (string.IsNullOrWhiteSpace(bearerToken))
-	            {
-	                return;
-	            }
+            var bearerToken = _appSettings.CocoroGhostBearerToken;
+            if (string.IsNullOrWhiteSpace(bearerToken))
+            {
+                return;
+            }
 
-	            var eventsStreamUri = new Uri($"ws://127.0.0.1:{_appSettings.CocoroGhostPort}/api/events/stream");
-	            _eventsStreamClient = new EventsStreamClient(eventsStreamUri, bearerToken);
-	            _eventsStreamClient.EventReceived += OnEventsStreamEventReceived;
-	            _eventsStreamClient.ErrorOccurred += OnEventsStreamErrorOccurred;
+            var eventsStreamUri = new Uri($"ws://127.0.0.1:{_appSettings.CocoroGhostPort}/api/events/stream");
+            _eventsStreamClient = new EventsStreamClient(eventsStreamUri, bearerToken);
+            _eventsStreamClient.EventReceived += OnEventsStreamEventReceived;
+            _eventsStreamClient.ErrorOccurred += OnEventsStreamErrorOccurred;
 
-	            try
-	            {
-	                await _eventsStreamClient.StartAsync();
-	            }
-	            catch (Exception ex)
-	            {
-	                Debug.WriteLine($"イベントストリーム接続に失敗しました: {ex.Message}");
-	                await StopEventsStreamAsync();
-	            }
-	        }
+            try
+            {
+                await _eventsStreamClient.StartAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"イベントストリーム接続に失敗しました: {ex.Message}");
+                await StopEventsStreamAsync();
+            }
+        }
 
-	        private async Task StopEventsStreamAsync()
-	        {
-	            if (_eventsStreamClient == null)
-	            {
-	                return;
-	            }
+        private async Task StopEventsStreamAsync()
+        {
+            if (_eventsStreamClient == null)
+            {
+                return;
+            }
 
-	            try
-	            {
-	                await _eventsStreamClient.StopAsync();
-	            }
-	            finally
-	            {
-	                _eventsStreamClient.EventReceived -= OnEventsStreamEventReceived;
-	                _eventsStreamClient.ErrorOccurred -= OnEventsStreamErrorOccurred;
-	                _eventsStreamClient.Dispose();
-	                _eventsStreamClient = null;
-	            }
-	        }
+            try
+            {
+                await _eventsStreamClient.StopAsync();
+            }
+            finally
+            {
+                _eventsStreamClient.EventReceived -= OnEventsStreamEventReceived;
+                _eventsStreamClient.ErrorOccurred -= OnEventsStreamErrorOccurred;
+                _eventsStreamClient.Dispose();
+                _eventsStreamClient = null;
+            }
+        }
 
-	        private void OnEventsStreamEventReceived(object? sender, CocoroGhostEvent ev)
-	        {
-	            try
-	            {
-	                if (string.Equals(ev.Type, "notification", StringComparison.OrdinalIgnoreCase))
-	                {
-	                    var systemText = BuildNotificationDisplayText(ev.Data.SystemText, ev.Data.Title, ev.Data.Body);
-	                    if (!string.IsNullOrWhiteSpace(systemText))
-	                    {
-	                        var extractedSourceSystem = TryExtractBracketedSourceSystem(systemText);
-	                        var from = ev.Data.SourceSystem ?? extractedSourceSystem ?? "notification";
-	                        var displayText = systemText;
-	                        if (!string.IsNullOrWhiteSpace(extractedSourceSystem))
-	                        {
-	                            var prefix = $"[{extractedSourceSystem}]";
-	                            if (displayText.StartsWith(prefix, StringComparison.Ordinal))
-	                            {
-	                                displayText = displayText.Substring(prefix.Length).TrimStart();
-	                            }
-	                        }
-	                        NotificationMessageReceived?.Invoke(new ChatMessagePayload
-	                        {
-	                            from = from,
-	                            sessionId = ev.EventId ?? ev.UnitId?.ToString() ?? string.Empty,
-	                            message = displayText
-	                        }, null);
-	                    }
+        private void OnEventsStreamEventReceived(object? sender, CocoroGhostEvent ev)
+        {
+            try
+            {
+                if (string.Equals(ev.Type, "notification", StringComparison.OrdinalIgnoreCase))
+                {
+                    var systemText = BuildNotificationDisplayText(ev.Data.SystemText, ev.Data.Title, ev.Data.Body);
+                    if (!string.IsNullOrWhiteSpace(systemText))
+                    {
+                        var extractedSourceSystem = TryExtractBracketedSourceSystem(systemText);
+                        var from = ev.Data.SourceSystem ?? extractedSourceSystem ?? "notification";
+                        var displayText = systemText;
+                        if (!string.IsNullOrWhiteSpace(extractedSourceSystem))
+                        {
+                            var prefix = $"[{extractedSourceSystem}]";
+                            if (displayText.StartsWith(prefix, StringComparison.Ordinal))
+                            {
+                                displayText = displayText.Substring(prefix.Length).TrimStart();
+                            }
+                        }
+                        NotificationMessageReceived?.Invoke(new ChatMessagePayload
+                        {
+                            from = from,
+                            sessionId = ev.EventId ?? ev.UnitId?.ToString() ?? string.Empty,
+                            message = displayText
+                        }, null);
+                    }
 
-	                    // New behavior: /api/notification generates partner "message" and pushes it via /api/events/stream
-	                    var partnerMessage = ev.Data.Message;
-	                    if (!string.IsNullOrWhiteSpace(partnerMessage))
-	                    {
-	                        HandlePartnerMessageFromEvent(ev, partnerMessage);
-	                    }
-	                    return;
-	                }
+                    // New behavior: /api/notification generates partner "message" and pushes it via /api/events/stream
+                    var partnerMessage = ev.Data.Message;
+                    if (!string.IsNullOrWhiteSpace(partnerMessage))
+                    {
+                        HandlePartnerMessageFromEvent(ev, partnerMessage);
+                    }
+                    return;
+                }
 
-	                if (string.Equals(ev.Type, "meta_request", StringComparison.OrdinalIgnoreCase))
-	                {
-	                    // New behavior: result is delivered via events stream as data.message
-	                    var resultText = ev.Data.Message ?? ev.Data.ResultText;
-	                    if (string.IsNullOrWhiteSpace(resultText))
-	                    {
-	                        return;
-	                    }
-	                    HandlePartnerMessageFromEvent(ev, resultText);
-	                }
-	            }
-	            catch (Exception ex)
-	            {
-	                Debug.WriteLine($"イベント処理エラー: {ex.Message}");
-	            }
-	        }
+                if (string.Equals(ev.Type, "meta_request", StringComparison.OrdinalIgnoreCase))
+                {
+                    // New behavior: result is delivered via events stream as data.message
+                    var resultText = ev.Data.Message ?? ev.Data.ResultText;
+                    if (string.IsNullOrWhiteSpace(resultText))
+                    {
+                        return;
+                    }
+                    HandlePartnerMessageFromEvent(ev, resultText);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"イベント処理エラー: {ex.Message}");
+            }
+        }
 
-	        private static string BuildNotificationDisplayText(string? systemText, string? title, string? body)
-	        {
-	            var systemTextTrimmed = systemText?.Trim();
-	            if (!string.IsNullOrEmpty(systemTextTrimmed))
-	            {
-	                return systemTextTrimmed;
-	            }
+        private static string BuildNotificationDisplayText(string? systemText, string? title, string? body)
+        {
+            var systemTextTrimmed = systemText?.Trim();
+            if (!string.IsNullOrEmpty(systemTextTrimmed))
+            {
+                return systemTextTrimmed;
+            }
 
-	            var titleText = title?.Trim();
-	            var bodyText = body?.Trim();
+            var titleText = title?.Trim();
+            var bodyText = body?.Trim();
 
-	            if (!string.IsNullOrEmpty(titleText) && !string.IsNullOrEmpty(bodyText))
-	            {
-	                return $"{titleText}\n{bodyText}";
-	            }
+            if (!string.IsNullOrEmpty(titleText) && !string.IsNullOrEmpty(bodyText))
+            {
+                return $"{titleText}\n{bodyText}";
+            }
 
-	            return bodyText ?? titleText ?? string.Empty;
-	        }
+            return bodyText ?? titleText ?? string.Empty;
+        }
 
-	        private void HandlePartnerMessageFromEvent(CocoroGhostEvent ev, string partnerMessage)
-	        {
-	            var chatReply = new ChatRequest
-	            {
-	                memoryId = ev.MemoryId ?? string.Empty,
-	                sessionId = ev.EventId ?? ev.UnitId?.ToString() ?? string.Empty,
-	                message = partnerMessage,
-	                role = "assistant",
-	                content = partnerMessage
-	            };
+        private void HandlePartnerMessageFromEvent(CocoroGhostEvent ev, string partnerMessage)
+        {
+            var chatReply = new ChatRequest
+            {
+                memoryId = ev.MemoryId ?? string.Empty,
+                sessionId = ev.EventId ?? ev.UnitId?.ToString() ?? string.Empty,
+                message = partnerMessage,
+                role = "assistant",
+                content = partnerMessage
+            };
 
-	            ChatMessageReceived?.Invoke(this, chatReply);
+            ChatMessageReceived?.Invoke(this, chatReply);
 
-	            var currentCharacter = GetStoredCharacterSetting();
-	            ForwardMessageToShellAsync(partnerMessage, currentCharacter);
-	        }
+            var currentCharacter = GetStoredCharacterSetting();
+            ForwardMessageToShellAsync(partnerMessage, currentCharacter);
+        }
 
-	        private static string? TryExtractBracketedSourceSystem(string text)
-	        {
-	            // system_text format example: "[gmail] ...", extract gmail for display if possible
-	            if (string.IsNullOrWhiteSpace(text) || text[0] != '[')
-	            {
-	                return null;
-	            }
+        private static string? TryExtractBracketedSourceSystem(string text)
+        {
+            // system_text format example: "[gmail] ...", extract gmail for display if possible
+            if (string.IsNullOrWhiteSpace(text) || text[0] != '[')
+            {
+                return null;
+            }
 
-	            var closeIndex = text.IndexOf(']');
-	            if (closeIndex <= 1)
-	            {
-	                return null;
-	            }
+            var closeIndex = text.IndexOf(']');
+            if (closeIndex <= 1)
+            {
+                return null;
+            }
 
-	            var extracted = text.Substring(1, closeIndex - 1).Trim();
-	            return string.IsNullOrEmpty(extracted) ? null : extracted;
-	        }
+            var extracted = text.Substring(1, closeIndex - 1).Trim();
+            return string.IsNullOrEmpty(extracted) ? null : extracted;
+        }
 
-	        private void OnEventsStreamErrorOccurred(object? sender, string errorMessage)
-	        {
-	            Debug.WriteLine($"イベントストリームエラー: {errorMessage}");
-	        }
+        private void OnEventsStreamErrorOccurred(object? sender, string errorMessage)
+        {
+            Debug.WriteLine($"イベントストリームエラー: {errorMessage}");
+        }
 
 
         /// <summary>
@@ -856,19 +888,19 @@ namespace CocoroConsole.Services
         /// <summary>
         /// リソースの解放
         /// </summary>
-	        public void Dispose()
-	        {
+        public void Dispose()
+        {
             // イベント購読解除
             AppSettings.SettingsSaved -= OnSettingsSaved;
 
             // セマフォの解放
             _forwardMessageSemaphore?.Dispose();
 
-	            _statusPollingService?.Dispose();
-	            _apiServer?.Dispose();
-	            _shellClient?.Dispose();
-	            _logStreamClient?.Dispose();
-	            _eventsStreamClient?.Dispose();
-	        }
-	    }
-	}
+            _statusPollingService?.Dispose();
+            _apiServer?.Dispose();
+            _shellClient?.Dispose();
+            _logStreamClient?.Dispose();
+            _eventsStreamClient?.Dispose();
+        }
+    }
+}

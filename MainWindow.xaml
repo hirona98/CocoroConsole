@@ -34,10 +34,12 @@
                                             Orientation="Horizontal"
                                             VerticalAlignment="Center"
                                             Margin="20,0">
-                                        <TextBlock Text="CocoroAI"
+                                        <TextBlock x:Name="CocoroAiTitleText"
+                                                   Text="CocoroAI"
                                                    FontSize="24"
                                                    Foreground="WhiteSmoke"
-                                                   FontWeight="SemiBold"/>
+                                                   FontWeight="SemiBold"
+                                                   MouseLeftButtonUp="CocoroAiTitleText_MouseLeftButtonUp"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="1"

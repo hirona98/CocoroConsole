@@ -11,6 +11,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using Forms = System.Windows.Forms;
 using System.Windows.Interop;
 
@@ -30,6 +31,7 @@ namespace CocoroConsole
         private ScheduledCommandService? _scheduledCommandService;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
+        private OtomeKairoDebugWindow? _otomeKairoDebugWindow;
         private DebugTraceListener? _debugTraceListener;
         private int? _nextScreenshotInitialDelayMilliseconds;
         private bool _isStreamingChatActive;
@@ -49,6 +51,11 @@ namespace CocoroConsole
 
             // 初期化と接続
             InitializeApp();
+        }
+
+        private void CocoroAiTitleText_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            OpenOtomeKairoDebug();
         }
 
         /// <summary>
@@ -777,6 +784,30 @@ namespace CocoroConsole
             }
 
             _logViewerWindow.Show();
+        }
+
+        /// <summary>
+        /// otome_kairo（感情）デバッグ画面を開く
+        /// </summary>
+        public void OpenOtomeKairoDebug()
+        {
+            if (_communicationService == null)
+            {
+                UIHelper.ShowError("エラー", "通信サービスが初期化されていません");
+                return;
+            }
+
+            if (_otomeKairoDebugWindow != null && !_otomeKairoDebugWindow.IsClosed)
+            {
+                _otomeKairoDebugWindow.Activate();
+                _otomeKairoDebugWindow.WindowState = WindowState.Normal;
+                return;
+            }
+
+            _otomeKairoDebugWindow = new OtomeKairoDebugWindow(_communicationService);
+            PositionWindowNearMain(_otomeKairoDebugWindow);
+            _otomeKairoDebugWindow.Closed += (_, __) => _otomeKairoDebugWindow = null;
+            _otomeKairoDebugWindow.Show();
         }
 
         private void AttachLogStreamHandlers()

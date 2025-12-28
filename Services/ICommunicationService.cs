@@ -1,5 +1,6 @@
 ﻿using CocoroConsole.Communication;
 using CocoroAI.Services;
+using CocoroConsole.Models.CocoroGhostApi;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -157,6 +158,24 @@ namespace CocoroConsole.Services
         /// </summary>
         void OpenLogViewer();
 
+        /// <summary>
+        /// otome_kairo（感情）デバッグ画面を開く
+        /// </summary>
+        void OpenOtomeKairoDebug();
+
+        /// <summary>
+        /// 現在の otome_kairo を取得（デバッグ）
+        /// </summary>
+        Task<OtomeKairoSnapshotResponse> GetOtomeKairoAsync(int? scanLimit = null, bool includeComputed = true);
+
+        /// <summary>
+        /// in-memory override を設定（デバッグ、完全上書き）
+        /// </summary>
+        Task<OtomeKairoSnapshotResponse> UpdateOtomeKairoOverrideAsync(OtomeKairoOverrideRequest request);
+
+        /// <summary>
+        /// in-memory override を解除（デバッグ）
+        /// </summary>
         /// <summary>
         /// CocoroShellから現在のキャラクター位置を取得
         /// </summary>
