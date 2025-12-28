@@ -297,18 +297,6 @@ namespace CocoroConsole.Controls
                 return;
             }
 
-            string presetName = _personaPresets[_currentPersonaPresetIndex].PersonaPresetName;
-            var result = MessageBox.Show(
-                $"プリセット「{presetName}」を削除しますか？",
-                "削除確認",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result != MessageBoxResult.Yes)
-            {
-                return;
-            }
-
             _isInitializing = true;
             try
             {
@@ -401,18 +389,6 @@ namespace CocoroConsole.Controls
             if (_addonPresets.Count <= 1)
             {
                 MessageBox.Show("最後のプリセットは削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            string presetName = _addonPresets[_currentAddonPresetIndex].AddonPresetName;
-            var result = MessageBox.Show(
-                $"プリセット「{presetName}」を削除しますか？",
-                "削除確認",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result != MessageBoxResult.Yes)
-            {
                 return;
             }
 

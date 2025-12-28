@@ -291,16 +291,6 @@ namespace CocoroConsole.Controls
                 MessageBox.Show("最後のプリセットは削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-
-            string presetName = _presets[_currentPresetIndex].EmbeddingPresetName ?? "不明";
-            MessageBoxResult result = MessageBox.Show(
-                $"プリセット「{presetName}」を削除しますか？",
-                "削除確認",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result != MessageBoxResult.Yes) return;
-
             _isInitializing = true;
             try
             {

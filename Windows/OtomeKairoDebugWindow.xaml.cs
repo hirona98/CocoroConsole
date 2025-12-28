@@ -38,11 +38,6 @@ namespace CocoroConsole.Windows
             };
         }
 
-        private async void RefreshButton_Click(object sender, RoutedEventArgs e)
-        {
-            await RefreshAsync();
-        }
-
         private async void ApplyOverrideButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -79,8 +74,7 @@ namespace CocoroConsole.Windows
             try
             {
                 var snapshot = await _communicationService.GetOtomeKairoAsync();
-                ApplyComputedToUi(snapshot.Computed);
-                ApplyEffectiveSummaryToUi(snapshot.Effective);
+                ApplyCurrentValuesToUi(snapshot.Effective);
             }
             catch
             {
@@ -90,32 +84,43 @@ namespace CocoroConsole.Windows
 
         private void ApplySnapshotToUi(OtomeKairoSnapshotResponse snapshot)
         {
-            ApplyComputedToUi(snapshot.Computed);
-            ApplyEffectiveSummaryToUi(snapshot.Effective);
+            ApplyCurrentValuesToUi(snapshot.Effective);
 
             // 参照用と入力用を分けず、入力欄に現在値を反映する。
             // override があれば override を、なければ effective を反映する。
             ApplyOverrideInputsFromState(snapshot.Override ?? snapshot.Effective);
         }
 
-        private void ApplyComputedToUi(OtomeKairoState? computed)
+        private void ApplyCurrentValuesToUi(OtomeKairoState? state)
         {
-            var label = computed?.Label ?? "(null)";
-            var intensity = computed?.Intensity.HasValue == true
-                ? computed!.Intensity!.Value.ToString("0.###", CultureInfo.InvariantCulture)
-                : "(null)";
+            LabelCurrentText.Text = state?.Label ?? "-";
+            IntensityCurrentText.Text = FormatDouble(state?.Intensity);
 
-            ComputedSummaryText.Text = $"label={label}, intensity={intensity}";
+            JoyCurrentText.Text = GetNumericComponentForDisplay(state, "joy");
+            SadnessCurrentText.Text = GetNumericComponentForDisplay(state, "sadness");
+            AngerCurrentText.Text = GetNumericComponentForDisplay(state, "anger");
+            FearCurrentText.Text = GetNumericComponentForDisplay(state, "fear");
+
+            CooperationCurrentText.Text = FormatDouble(state?.Policy?.Cooperation);
+            RefusalBiasCurrentText.Text = FormatDouble(state?.Policy?.RefusalBias);
+            RefusalAllowedCurrentText.Text = state?.Policy?.RefusalAllowed?.ToString() ?? "-";
         }
 
-        private void ApplyEffectiveSummaryToUi(OtomeKairoState? effective)
+        private static string FormatDouble(double? value)
         {
-            var label = effective?.Label ?? "(null)";
-            var intensity = effective?.Intensity.HasValue == true
-                ? effective!.Intensity!.Value.ToString("0.###", CultureInfo.InvariantCulture)
-                : "(null)";
+            return value.HasValue
+                ? value.Value.ToString("0.###", CultureInfo.InvariantCulture)
+                : "-";
+        }
 
-            EffectiveSummaryText.Text = $"label={label}, intensity={intensity}";
+        private static string GetNumericComponentForDisplay(OtomeKairoState? state, string key)
+        {
+            if (state?.Components == null || !state.Components.TryGetValue(key, out var value))
+            {
+                return "-";
+            }
+
+            return value.ToString("0.###", CultureInfo.InvariantCulture);
         }
 
         private void ApplyOverrideInputsFromState(OtomeKairoState? state)

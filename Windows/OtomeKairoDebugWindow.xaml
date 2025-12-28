@@ -11,218 +11,230 @@
 
     <Grid Margin="12">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- 上部：更新ボタン -->
-        <Button Grid.Row="0"
-                x:Name="RefreshButton"
-                Content="更新"
-                Width="90"
-                Height="28"
-                HorizontalAlignment="Right"
-                Click="RefreshButton_Click"/>
-
-        <!-- 中央 -->
-        <ScrollViewer Grid.Row="1"
-                      Margin="0,10,0,10"
+        <!-- メイン -->
+        <ScrollViewer Grid.Row="0"
                       VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <!-- 現在の状態 -->
-                <GroupBox Header="現在の状態"
-                          Margin="0,0,0,10">
-                    <Grid Margin="10">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+            <StackPanel Margin="4">
 
-                        <TextBlock Grid.Row="0"
-                                   Grid.Column="0"
-                                   Text="effective"
-                                   FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="0"
-                                   Grid.Column="1"
-                                   x:Name="EffectiveSummaryText"/>
+                <!-- ヘッダー行 -->
+                <Grid Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="1"
+                               Text="現在値"
+                               FontWeight="SemiBold"
+                               Foreground="#666666"/>
+                    <TextBlock Grid.Column="2"
+                               Text="上書き値"
+                               FontWeight="SemiBold"
+                               Foreground="#666666"/>
+                </Grid>
 
-                        <TextBlock Grid.Row="1"
-                                   Grid.Column="0"
-                                   Text="computed"
-                                   FontWeight="SemiBold"
-                                   Margin="0,6,0,0"/>
-                        <TextBlock Grid.Row="1"
-                                   Grid.Column="1"
-                                   x:Name="ComputedSummaryText"
-                                   Margin="0,6,0,0"/>
-                    </Grid>
-                </GroupBox>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                <!-- override設定 -->
-                <GroupBox Header="override（完全上書き）">
-                    <StackPanel Margin="10">
-                        <TextBlock Text="※ すべて入力必須（数値は 0..1）"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,10"/>
+                    <TextBlock Grid.Row="0"
+                               Grid.Column="0"
+                               Text="label"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Grid.Row="0"
+                               Grid.Column="1"
+                               x:Name="LabelCurrentText"
+                               VerticalAlignment="Center"/>
+                    <ComboBox x:Name="LabelComboBox"
+                              Grid.Row="0"
+                              Grid.Column="2"
+                              Height="26">
+                        <ComboBoxItem Content="joy"/>
+                        <ComboBoxItem Content="sadness"/>
+                        <ComboBoxItem Content="anger"/>
+                        <ComboBoxItem Content="fear"/>
+                        <ComboBoxItem Content="neutral"/>
+                    </ComboBox>
 
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Row="1"
+                               Grid.Column="0"
+                               Text="intensity"
+                               VerticalAlignment="Center"
+                               Margin="0,6,0,0"/>
+                    <TextBlock Grid.Row="1"
+                               Grid.Column="1"
+                               x:Name="IntensityCurrentText"
+                               VerticalAlignment="Center"
+                               Margin="0,6,0,0"/>
+                    <TextBox x:Name="IntensityTextBox"
+                             Grid.Row="1"
+                             Grid.Column="2"
+                             Height="24"
+                             Margin="0,6,0,0"/>
+                </Grid>
 
-                            <TextBlock Grid.Row="0"
-                                       Grid.Column="0"
-                                       Text="label"
-                                       VerticalAlignment="Center"/>
-                            <ComboBox x:Name="LabelComboBox"
-                                      Grid.Row="0"
-                                      Grid.Column="1"
-                                      Height="26">
-                                <ComboBoxItem Content="joy"/>
-                                <ComboBoxItem Content="sadness"/>
-                                <ComboBoxItem Content="anger"/>
-                                <ComboBoxItem Content="fear"/>
-                                <ComboBoxItem Content="neutral"/>
-                            </ComboBox>
+                <!-- components -->
+                <TextBlock Text="components"
+                           FontWeight="SemiBold"
+                           Margin="0,12,0,6"/>
+                <Grid Margin="20,0,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                            <TextBlock Grid.Row="1"
-                                       Grid.Column="0"
-                                       Text="intensity"
-                                       VerticalAlignment="Center"
-                                       Margin="0,6,0,0"/>
-                            <TextBox x:Name="IntensityTextBox"
-                                     Grid.Row="1"
-                                     Grid.Column="1"
-                                     Height="24"
-                                     Margin="0,6,0,0"/>
-                        </Grid>
+                    <TextBlock Grid.Row="0"
+                               Grid.Column="0"
+                               Text="joy"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Grid.Row="0"
+                               Grid.Column="1"
+                               x:Name="JoyCurrentText"
+                               VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="0"
+                             Grid.Column="2"
+                             x:Name="JoyTextBox"
+                             Height="24"/>
 
-                        <!-- components -->
-                        <TextBlock Text="components"
-                                   FontWeight="SemiBold"
-                                   Margin="0,12,0,6"/>
-                        <Grid Margin="20,0,0,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Row="1"
+                               Grid.Column="0"
+                               Text="sadness"
+                               VerticalAlignment="Center"
+                               Margin="0,4,0,0"/>
+                    <TextBlock Grid.Row="1"
+                               Grid.Column="1"
+                               x:Name="SadnessCurrentText"
+                               VerticalAlignment="Center"
+                               Margin="0,4,0,0"/>
+                    <TextBox Grid.Row="1"
+                             Grid.Column="2"
+                             x:Name="SadnessTextBox"
+                             Height="24"
+                             Margin="0,4,0,0"/>
 
-                            <TextBlock Grid.Row="0"
-                                       Grid.Column="0"
-                                       Text="joy"
-                                       VerticalAlignment="Center"/>
-                            <TextBox Grid.Row="0"
-                                     Grid.Column="1"
-                                     x:Name="JoyTextBox"
-                                     Height="24"/>
+                    <TextBlock Grid.Row="2"
+                               Grid.Column="0"
+                               Text="anger"
+                               VerticalAlignment="Center"
+                               Margin="0,4,0,0"/>
+                    <TextBlock Grid.Row="2"
+                               Grid.Column="1"
+                               x:Name="AngerCurrentText"
+                               VerticalAlignment="Center"
+                               Margin="0,4,0,0"/>
+                    <TextBox Grid.Row="2"
+                             Grid.Column="2"
+                             x:Name="AngerTextBox"
+                             Height="24"
+                             Margin="0,4,0,0"/>
 
-                            <TextBlock Grid.Row="1"
-                                       Grid.Column="0"
-                                       Text="sadness"
-                                       VerticalAlignment="Center"
-                                       Margin="0,4,0,0"/>
-                            <TextBox Grid.Row="1"
-                                     Grid.Column="1"
-                                     x:Name="SadnessTextBox"
-                                     Height="24"
-                                     Margin="0,4,0,0"/>
+                    <TextBlock Grid.Row="3"
+                               Grid.Column="0"
+                               Text="fear"
+                               VerticalAlignment="Center"
+                               Margin="0,4,0,0"/>
+                    <TextBlock Grid.Row="3"
+                               Grid.Column="1"
+                               x:Name="FearCurrentText"
+                               VerticalAlignment="Center"
+                               Margin="0,4,0,0"/>
+                    <TextBox Grid.Row="3"
+                             Grid.Column="2"
+                             x:Name="FearTextBox"
+                             Height="24"
+                             Margin="0,4,0,0"/>
+                </Grid>
 
-                            <TextBlock Grid.Row="2"
-                                       Grid.Column="0"
-                                       Text="anger"
-                                       VerticalAlignment="Center"
-                                       Margin="0,4,0,0"/>
-                            <TextBox Grid.Row="2"
-                                     Grid.Column="1"
-                                     x:Name="AngerTextBox"
-                                     Height="24"
-                                     Margin="0,4,0,0"/>
+                <!-- policy -->
+                <TextBlock Text="policy"
+                           FontWeight="SemiBold"
+                           Margin="0,12,0,6"/>
+                <Grid Margin="20,0,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                            <TextBlock Grid.Row="3"
-                                       Grid.Column="0"
-                                       Text="fear"
-                                       VerticalAlignment="Center"
-                                       Margin="0,4,0,0"/>
-                            <TextBox Grid.Row="3"
-                                     Grid.Column="1"
-                                     x:Name="FearTextBox"
-                                     Height="24"
-                                     Margin="0,4,0,0"/>
-                        </Grid>
+                    <TextBlock Grid.Row="0"
+                               Grid.Column="0"
+                               Text="cooperation"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Grid.Row="0"
+                               Grid.Column="1"
+                               x:Name="CooperationCurrentText"
+                               VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="0"
+                             Grid.Column="2"
+                             x:Name="CooperationTextBox"
+                             Height="24"/>
 
-                        <!-- policy -->
-                        <TextBlock Text="policy"
-                                   FontWeight="SemiBold"
-                                   Margin="0,12,0,6"/>
-                        <Grid Margin="20,0,0,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Row="1"
+                               Grid.Column="0"
+                               Text="refusal_bias"
+                               VerticalAlignment="Center"
+                               Margin="0,4,0,0"/>
+                    <TextBlock Grid.Row="1"
+                               Grid.Column="1"
+                               x:Name="RefusalBiasCurrentText"
+                               VerticalAlignment="Center"
+                               Margin="0,4,0,0"/>
+                    <TextBox Grid.Row="1"
+                             Grid.Column="2"
+                             x:Name="RefusalBiasTextBox"
+                             Height="24"
+                             Margin="0,4,0,0"/>
 
-                            <TextBlock Grid.Row="0"
-                                       Grid.Column="0"
-                                       Text="cooperation"
-                                       VerticalAlignment="Center"/>
-                            <TextBox Grid.Row="0"
-                                     Grid.Column="1"
-                                     x:Name="CooperationTextBox"
-                                     Height="24"/>
+                    <TextBlock Grid.Row="2"
+                               Grid.Column="0"
+                               Text="refusal_allowed"
+                               VerticalAlignment="Center"
+                               Margin="0,6,0,0"/>
+                    <TextBlock Grid.Row="2"
+                               Grid.Column="1"
+                               x:Name="RefusalAllowedCurrentText"
+                               VerticalAlignment="Center"
+                               Margin="0,6,0,0"/>
+                    <CheckBox Grid.Row="2"
+                              Grid.Column="2"
+                              x:Name="RefusalAllowedCheckBox"
+                              Margin="0,6,0,0"/>
+                </Grid>
 
-                            <TextBlock Grid.Row="1"
-                                       Grid.Column="0"
-                                       Text="refusal_bias"
-                                       VerticalAlignment="Center"
-                                       Margin="0,4,0,0"/>
-                            <TextBox Grid.Row="1"
-                                     Grid.Column="1"
-                                     x:Name="RefusalBiasTextBox"
-                                     Height="24"
-                                     Margin="0,4,0,0"/>
-
-                            <CheckBox Grid.Row="2"
-                                      Grid.ColumnSpan="2"
-                                      x:Name="RefusalAllowedCheckBox"
-                                      Content="refusal_allowed"
-                                      Margin="0,6,0,0"/>
-                        </Grid>
-
-                        <Button x:Name="ApplyOverrideButton"
-                                Content="override適用"
-                                Width="110"
-                                Height="28"
-                                HorizontalAlignment="Right"
-                                Margin="0,16,0,0"
-                                Click="ApplyOverrideButton_Click"/>
-                    </StackPanel>
-                </GroupBox>
+                <Button x:Name="ApplyOverrideButton"
+                        Content="適用"
+                        Width="110"
+                        Height="28"
+                        HorizontalAlignment="Right"
+                        Margin="0,16,0,0"
+                        Click="ApplyOverrideButton_Click"/>
             </StackPanel>
         </ScrollViewer>
 
-        <TextBlock Grid.Row="2"
+        <TextBlock Grid.Row="1"
                    x:Name="StatusText"
                    Foreground="#666666"/>
     </Grid>
