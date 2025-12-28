@@ -106,7 +106,7 @@ namespace CocoroConsole.Windows
         private static string FormatDouble(double? value)
         {
             return value.HasValue
-                ? value.Value.ToString("0.###", CultureInfo.InvariantCulture)
+                ? value.Value.ToString("0.00", CultureInfo.InvariantCulture)
                 : "-";
         }
 
@@ -117,7 +117,7 @@ namespace CocoroConsole.Windows
                 return "-";
             }
 
-            return value.ToString("0.###", CultureInfo.InvariantCulture);
+            return value.ToString("0.00", CultureInfo.InvariantCulture);
         }
 
         private void ApplyOverrideInputsFromState(OtomeKairoState? state)
@@ -141,24 +141,24 @@ namespace CocoroConsole.Windows
 
             if (state.Intensity.HasValue)
             {
-                IntensityTextBox.Text = state.Intensity.Value.ToString("0.###", CultureInfo.InvariantCulture);
+                IntensitySlider.Value = state.Intensity.Value;
             }
 
-            JoyTextBox.Text = GetNumericComponentForEdit(state, "joy");
-            SadnessTextBox.Text = GetNumericComponentForEdit(state, "sadness");
-            AngerTextBox.Text = GetNumericComponentForEdit(state, "anger");
-            FearTextBox.Text = GetNumericComponentForEdit(state, "fear");
+            ApplySliderComponentFromState(state, "joy", JoySlider);
+            ApplySliderComponentFromState(state, "sadness", SadnessSlider);
+            ApplySliderComponentFromState(state, "anger", AngerSlider);
+            ApplySliderComponentFromState(state, "fear", FearSlider);
 
             if (state.Policy != null)
             {
                 if (state.Policy.Cooperation.HasValue)
                 {
-                    CooperationTextBox.Text = state.Policy.Cooperation.Value.ToString("0.###", CultureInfo.InvariantCulture);
+                    CooperationSlider.Value = state.Policy.Cooperation.Value;
                 }
 
                 if (state.Policy.RefusalBias.HasValue)
                 {
-                    RefusalBiasTextBox.Text = state.Policy.RefusalBias.Value.ToString("0.###", CultureInfo.InvariantCulture);
+                    RefusalBiasSlider.Value = state.Policy.RefusalBias.Value;
                 }
 
                 if (state.Policy.RefusalAllowed.HasValue)
@@ -168,19 +168,19 @@ namespace CocoroConsole.Windows
             }
         }
 
-        private static string GetNumericComponentForEdit(OtomeKairoState state, string key)
+        private static void ApplySliderComponentFromState(OtomeKairoState state, string key, Slider slider)
         {
             if (state.Components == null)
             {
-                return string.Empty;
+                return;
             }
 
             if (!state.Components.TryGetValue(key, out var value))
             {
-                return string.Empty;
+                return;
             }
 
-            return value.ToString("0.###", CultureInfo.InvariantCulture);
+            slider.Value = value;
         }
 
         private OtomeKairoOverrideRequest BuildOverrideRequestFromUi()
@@ -193,20 +193,19 @@ namespace CocoroConsole.Windows
                 throw new FormatException("label を選択してください");
             }
 
-            var intensity = ParseRequiredDouble(IntensityTextBox.Text, "intensity");
-            ValidateRange01(intensity, "intensity");
+            var intensity = IntensitySlider.Value;
+            var joy = JoySlider.Value;
+            var sadness = SadnessSlider.Value;
+            var anger = AngerSlider.Value;
+            var fear = FearSlider.Value;
+            var cooperation = CooperationSlider.Value;
+            var refusalBias = RefusalBiasSlider.Value;
 
-            var joy = ParseRequiredDouble(JoyTextBox.Text, "joy");
-            var sadness = ParseRequiredDouble(SadnessTextBox.Text, "sadness");
-            var anger = ParseRequiredDouble(AngerTextBox.Text, "anger");
-            var fear = ParseRequiredDouble(FearTextBox.Text, "fear");
+            ValidateRange01(intensity, "intensity");
             ValidateRange01(joy, "joy");
             ValidateRange01(sadness, "sadness");
             ValidateRange01(anger, "anger");
             ValidateRange01(fear, "fear");
-
-            var cooperation = ParseRequiredDouble(CooperationTextBox.Text, "cooperation");
-            var refusalBias = ParseRequiredDouble(RefusalBiasTextBox.Text, "refusal_bias");
             ValidateRange01(cooperation, "cooperation");
             ValidateRange01(refusalBias, "refusal_bias");
 
@@ -228,32 +227,6 @@ namespace CocoroConsole.Windows
                     RefusalAllowed = RefusalAllowedCheckBox.IsChecked == true
                 }
             };
-        }
-
-        private static double? TryParseNullableDouble(string? text, string fieldName)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return null;
-            }
-
-            if (double.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
-            {
-                return value;
-            }
-
-            throw new FormatException($"{fieldName} は数値（例: 0.8）で入力してください");
-        }
-
-        private static double ParseRequiredDouble(string? text, string fieldName)
-        {
-            var value = TryParseNullableDouble(text, fieldName);
-            if (!value.HasValue)
-            {
-                throw new FormatException($"{fieldName} を入力してください");
-            }
-
-            return value.Value;
         }
 
         private static void ValidateRange01(double value, string fieldName)

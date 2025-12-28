@@ -9,6 +9,26 @@
         Width="350"
         WindowStartupLocation="CenterOwner">
 
+    <Window.Resources>
+        <Style x:Key="OtomeKairoSliderStyle"
+               TargetType="Slider">
+            <Setter Property="Minimum"
+                    Value="0"/>
+            <Setter Property="Maximum"
+                    Value="1"/>
+            <Setter Property="TickFrequency"
+                    Value="0.01"/>
+            <Setter Property="IsSnapToTickEnabled"
+                    Value="True"/>
+            <Setter Property="SmallChange"
+                    Value="0.01"/>
+            <Setter Property="LargeChange"
+                    Value="0.05"/>
+            <Setter Property="VerticalAlignment"
+                    Value="Center"/>
+        </Style>
+    </Window.Resources>
+
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -77,11 +97,23 @@
                                x:Name="IntensityCurrentText"
                                VerticalAlignment="Center"
                                Margin="0,6,0,0"/>
-                    <TextBox x:Name="IntensityTextBox"
-                             Grid.Row="1"
-                             Grid.Column="2"
-                             Height="24"
-                             Margin="0,6,0,0"/>
+                    <Grid Grid.Row="1"
+                          Grid.Column="2"
+                          Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="IntensitySlider"
+                                Height="26"
+                                Style="{StaticResource OtomeKairoSliderStyle}"/>
+                        <TextBlock Grid.Column="1"
+                                   Margin="6,0,0,0"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   TextAlignment="Right"
+                                   Text="{Binding ElementName=IntensitySlider, Path=Value, StringFormat=0.00}"/>
+                    </Grid>
                 </Grid>
 
                 <!-- components -->
@@ -109,10 +141,22 @@
                                Grid.Column="1"
                                x:Name="JoyCurrentText"
                                VerticalAlignment="Center"/>
-                    <TextBox Grid.Row="0"
-                             Grid.Column="2"
-                             x:Name="JoyTextBox"
-                             Height="24"/>
+                    <Grid Grid.Row="0"
+                          Grid.Column="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="JoySlider"
+                                Height="26"
+                                Style="{StaticResource OtomeKairoSliderStyle}"/>
+                        <TextBlock Grid.Column="1"
+                                   Margin="6,0,0,0"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   TextAlignment="Right"
+                                   Text="{Binding ElementName=JoySlider, Path=Value, StringFormat=0.00}"/>
+                    </Grid>
 
                     <TextBlock Grid.Row="1"
                                Grid.Column="0"
@@ -124,11 +168,23 @@
                                x:Name="SadnessCurrentText"
                                VerticalAlignment="Center"
                                Margin="0,4,0,0"/>
-                    <TextBox Grid.Row="1"
-                             Grid.Column="2"
-                             x:Name="SadnessTextBox"
-                             Height="24"
-                             Margin="0,4,0,0"/>
+                    <Grid Grid.Row="1"
+                          Grid.Column="2"
+                          Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="SadnessSlider"
+                                Height="26"
+                                Style="{StaticResource OtomeKairoSliderStyle}"/>
+                        <TextBlock Grid.Column="1"
+                                   Margin="6,0,0,0"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   TextAlignment="Right"
+                                   Text="{Binding ElementName=SadnessSlider, Path=Value, StringFormat=0.00}"/>
+                    </Grid>
 
                     <TextBlock Grid.Row="2"
                                Grid.Column="0"
@@ -140,11 +196,23 @@
                                x:Name="AngerCurrentText"
                                VerticalAlignment="Center"
                                Margin="0,4,0,0"/>
-                    <TextBox Grid.Row="2"
-                             Grid.Column="2"
-                             x:Name="AngerTextBox"
-                             Height="24"
-                             Margin="0,4,0,0"/>
+                    <Grid Grid.Row="2"
+                          Grid.Column="2"
+                          Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="AngerSlider"
+                                Height="26"
+                                Style="{StaticResource OtomeKairoSliderStyle}"/>
+                        <TextBlock Grid.Column="1"
+                                   Margin="6,0,0,0"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   TextAlignment="Right"
+                                   Text="{Binding ElementName=AngerSlider, Path=Value, StringFormat=0.00}"/>
+                    </Grid>
 
                     <TextBlock Grid.Row="3"
                                Grid.Column="0"
@@ -156,11 +224,23 @@
                                x:Name="FearCurrentText"
                                VerticalAlignment="Center"
                                Margin="0,4,0,0"/>
-                    <TextBox Grid.Row="3"
-                             Grid.Column="2"
-                             x:Name="FearTextBox"
-                             Height="24"
-                             Margin="0,4,0,0"/>
+                    <Grid Grid.Row="3"
+                          Grid.Column="2"
+                          Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="FearSlider"
+                                Height="26"
+                                Style="{StaticResource OtomeKairoSliderStyle}"/>
+                        <TextBlock Grid.Column="1"
+                                   Margin="6,0,0,0"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   TextAlignment="Right"
+                                   Text="{Binding ElementName=FearSlider, Path=Value, StringFormat=0.00}"/>
+                    </Grid>
                 </Grid>
 
                 <!-- policy -->
@@ -187,10 +267,22 @@
                                Grid.Column="1"
                                x:Name="CooperationCurrentText"
                                VerticalAlignment="Center"/>
-                    <TextBox Grid.Row="0"
-                             Grid.Column="2"
-                             x:Name="CooperationTextBox"
-                             Height="24"/>
+                    <Grid Grid.Row="0"
+                          Grid.Column="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="CooperationSlider"
+                                Height="26"
+                                Style="{StaticResource OtomeKairoSliderStyle}"/>
+                        <TextBlock Grid.Column="1"
+                                   Margin="6,0,0,0"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   TextAlignment="Right"
+                                   Text="{Binding ElementName=CooperationSlider, Path=Value, StringFormat=0.00}"/>
+                    </Grid>
 
                     <TextBlock Grid.Row="1"
                                Grid.Column="0"
@@ -202,11 +294,23 @@
                                x:Name="RefusalBiasCurrentText"
                                VerticalAlignment="Center"
                                Margin="0,4,0,0"/>
-                    <TextBox Grid.Row="1"
-                             Grid.Column="2"
-                             x:Name="RefusalBiasTextBox"
-                             Height="24"
-                             Margin="0,4,0,0"/>
+                    <Grid Grid.Row="1"
+                          Grid.Column="2"
+                          Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Name="RefusalBiasSlider"
+                                Height="26"
+                                Style="{StaticResource OtomeKairoSliderStyle}"/>
+                        <TextBlock Grid.Column="1"
+                                   Margin="6,0,0,0"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   TextAlignment="Right"
+                                   Text="{Binding ElementName=RefusalBiasSlider, Path=Value, StringFormat=0.00}"/>
+                    </Grid>
 
                     <TextBlock Grid.Row="2"
                                Grid.Column="0"

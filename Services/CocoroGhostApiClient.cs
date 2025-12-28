@@ -163,24 +163,8 @@ namespace CocoroConsole.Services
         {
             var url = BuildUrl(path);
             var request = new HttpRequestMessage(method, url);
-
-#if DEBUG
-            var isOtomeKairo = path.StartsWith("/api/otome_kairo", StringComparison.OrdinalIgnoreCase);
-            if (isOtomeKairo)
-            {
-                Debug.WriteLine($"[otome_kairo][HTTP] --> {method} {url}");
-            }
-#endif
-
             if (payload != null)
             {
-#if DEBUG
-                if (isOtomeKairo)
-                {
-                    var requestJson = JsonSerializer.Serialize(payload, _serializerOptions);
-                    Debug.WriteLine("[otome_kairo][HTTP] Request JSON:\n" + TryPrettyJson(requestJson));
-                }
-#endif
                 request.Content = CreateJsonContent(payload);
             }
 
@@ -188,14 +172,6 @@ namespace CocoroConsole.Services
             {
                 using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
                 var responseBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-
-#if DEBUG
-                if (isOtomeKairo)
-                {
-                    Debug.WriteLine($"[otome_kairo][HTTP] <-- {(int)response.StatusCode} {response.ReasonPhrase}");
-                    Debug.WriteLine("[otome_kairo][HTTP] Response Body:\n" + TryPrettyJson(responseBody));
-                }
-#endif
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -227,26 +203,6 @@ namespace CocoroConsole.Services
                 request.Dispose();
             }
         }
-
-#if DEBUG
-        private static string TryPrettyJson(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return string.Empty;
-            }
-
-            try
-            {
-                using var doc = JsonDocument.Parse(text);
-                return JsonSerializer.Serialize(doc.RootElement, new JsonSerializerOptions { WriteIndented = true });
-            }
-            catch
-            {
-                return text;
-            }
-        }
-#endif
 
         private StringContent CreateJsonContent(object payload)
         {
