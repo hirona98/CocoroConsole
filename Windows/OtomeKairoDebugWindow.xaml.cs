@@ -6,12 +6,14 @@ using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace CocoroConsole.Windows
 {
     public partial class OtomeKairoDebugWindow : Window
     {
         private readonly ICommunicationService _communicationService;
+        private readonly DispatcherTimer _pollingTimer;
 
         public bool IsClosed { get; private set; }
 
@@ -21,8 +23,19 @@ namespace CocoroConsole.Windows
 
             InitializeComponent();
 
-            Loaded += async (_, __) => await RefreshAsync();
-            Closed += (_, __) => IsClosed = true;
+            _pollingTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _pollingTimer.Tick += async (_, __) => await PollAsync();
+
+            Loaded += async (_, __) =>
+            {
+                await RefreshAsync();
+                _pollingTimer.Start();
+            };
+            Closed += (_, __) =>
+            {
+                _pollingTimer.Stop();
+                IsClosed = true;
+            };
         }
 
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -42,7 +55,6 @@ namespace CocoroConsole.Windows
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"override の適用に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 SetStatus("override 適用に失敗しました");
             }
         }
@@ -52,15 +64,27 @@ namespace CocoroConsole.Windows
             try
             {
                 SetStatus("取得中...");
-                // サーバ側の既定値に任せる（scan_limit=500, include_computed=true）
                 var snapshot = await _communicationService.GetOtomeKairoAsync();
                 ApplySnapshotToUi(snapshot);
                 SetStatus("取得しました");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"otome_kairo の取得に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
                 SetStatus("取得に失敗しました");
+            }
+        }
+
+        private async Task PollAsync()
+        {
+            try
+            {
+                var snapshot = await _communicationService.GetOtomeKairoAsync();
+                ApplyComputedToUi(snapshot.Computed);
+                ApplyEffectiveSummaryToUi(snapshot.Effective);
+            }
+            catch
+            {
+                // ポーリング中のエラーは無視
             }
         }
 
