@@ -166,12 +166,12 @@ namespace CocoroConsole.Services
         /// <summary>
         /// 現在の otome_kairo を取得（デバッグ）
         /// </summary>
-        Task<OtomeKairoSnapshotResponse> GetOtomeKairoAsync(int? scanLimit = null, bool includeComputed = true);
+        Task<OtomeKairoState> GetOtomeKairoAsync();
 
         /// <summary>
         /// in-memory override を設定（デバッグ、完全上書き）
         /// </summary>
-        Task<OtomeKairoSnapshotResponse> UpdateOtomeKairoOverrideAsync(OtomeKairoOverrideRequest request);
+        Task<OtomeKairoState> UpdateOtomeKairoOverrideAsync(OtomeKairoOverrideRequest request);
 
         /// <summary>
         /// in-memory override を解除（デバッグ）

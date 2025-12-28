@@ -14,6 +14,7 @@ namespace CocoroConsole.Windows
     {
         private readonly ICommunicationService _communicationService;
         private readonly DispatcherTimer _pollingTimer;
+        private bool _isInitialLoad = true;
 
         public bool IsClosed { get; private set; }
 
@@ -44,11 +45,11 @@ namespace CocoroConsole.Windows
             {
                 var request = BuildOverrideRequestFromUi();
                 SetStatus("override 適用中...");
-                var snapshot = await _communicationService.UpdateOtomeKairoOverrideAsync(request);
-                ApplySnapshotToUi(snapshot);
+                var state = await _communicationService.UpdateOtomeKairoOverrideAsync(request);
+                ApplyCurrentValuesToUi(state);
                 SetStatus("override を適用しました");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 SetStatus("override 適用に失敗しました");
             }
@@ -59,11 +60,16 @@ namespace CocoroConsole.Windows
             try
             {
                 SetStatus("取得中...");
-                var snapshot = await _communicationService.GetOtomeKairoAsync();
-                ApplySnapshotToUi(snapshot);
+                var state = await _communicationService.GetOtomeKairoAsync();
+                ApplyCurrentValuesToUi(state);
+                if (_isInitialLoad)
+                {
+                    ApplyOverrideInputsFromState(state);
+                    _isInitialLoad = false;
+                }
                 SetStatus("取得しました");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 SetStatus("取得に失敗しました");
             }
@@ -73,22 +79,13 @@ namespace CocoroConsole.Windows
         {
             try
             {
-                var snapshot = await _communicationService.GetOtomeKairoAsync();
-                ApplyCurrentValuesToUi(snapshot.Effective);
+                var state = await _communicationService.GetOtomeKairoAsync();
+                ApplyCurrentValuesToUi(state);
             }
             catch
             {
                 // ポーリング中のエラーは無視
             }
-        }
-
-        private void ApplySnapshotToUi(OtomeKairoSnapshotResponse snapshot)
-        {
-            ApplyCurrentValuesToUi(snapshot.Effective);
-
-            // 参照用と入力用を分けず、入力欄に現在値を反映する。
-            // override があれば override を、なければ effective を反映する。
-            ApplyOverrideInputsFromState(snapshot.Override ?? snapshot.Effective);
         }
 
         private void ApplyCurrentValuesToUi(OtomeKairoState? state)
@@ -188,7 +185,7 @@ namespace CocoroConsole.Windows
 
         private OtomeKairoOverrideRequest BuildOverrideRequestFromUi()
         {
-            // API仕様: PUT /api/otome_kairo/override は「完全上書きのみ」
+            // API仕様: PUT /api/otome_kairo は「完全上書きのみ」
             // label/intensity/components(4種)/policy(3種) をすべて指定する。
 
             if (LabelComboBox.SelectedItem is not ComboBoxItem item || item.Content is not string label || string.IsNullOrWhiteSpace(label))

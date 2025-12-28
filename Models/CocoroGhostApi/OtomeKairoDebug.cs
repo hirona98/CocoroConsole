@@ -3,18 +3,6 @@ using System.Text.Json.Serialization;
 
 namespace CocoroConsole.Models.CocoroGhostApi
 {
-    public class OtomeKairoSnapshotResponse
-    {
-        [JsonPropertyName("computed")]
-        public OtomeKairoState? Computed { get; set; }
-
-        [JsonPropertyName("override")]
-        public OtomeKairoState? Override { get; set; }
-
-        [JsonPropertyName("effective")]
-        public OtomeKairoState? Effective { get; set; }
-    }
-
     public class OtomeKairoState
     {
         [JsonPropertyName("label")]

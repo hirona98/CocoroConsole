@@ -1,6 +1,7 @@
 using CocoroConsole.Models.CocoroGhostApi;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -146,37 +147,40 @@ namespace CocoroConsole.Services
             return SendAsync<CaptureResponse>(HttpMethod.Post, "/api/capture", request, cancellationToken);
         }
 
-        public Task<OtomeKairoSnapshotResponse> GetOtomeKairoAsync(int? scanLimit = null, bool includeComputed = true, CancellationToken cancellationToken = default)
+        public Task<OtomeKairoState> GetOtomeKairoAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-
-            var query = new List<string>();
-            if (scanLimit.HasValue)
-            {
-                query.Add($"scan_limit={scanLimit.Value}");
-            }
-
-            query.Add($"include_computed={(includeComputed ? "true" : "false")}");
-
-            var path = query.Count > 0
-                ? $"/api/otome_kairo?{string.Join("&", query)}"
-                : "/api/otome_kairo";
-
-            return SendAsync<OtomeKairoSnapshotResponse>(HttpMethod.Get, path, null, cancellationToken);
+            return SendAsync<OtomeKairoState>(HttpMethod.Get, "/api/otome_kairo", null, cancellationToken);
         }
 
-        public Task<OtomeKairoSnapshotResponse> UpdateOtomeKairoOverrideAsync(OtomeKairoOverrideRequest request, CancellationToken cancellationToken = default)
+        public Task<OtomeKairoState> UpdateOtomeKairoOverrideAsync(OtomeKairoOverrideRequest request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendAsync<OtomeKairoSnapshotResponse>(HttpMethod.Put, "/api/otome_kairo/override", request, cancellationToken);
+            return SendAsync<OtomeKairoState>(HttpMethod.Put, "/api/otome_kairo", request, cancellationToken);
         }
 
         private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
         {
-            var request = new HttpRequestMessage(method, BuildUrl(path));
+            var url = BuildUrl(path);
+            var request = new HttpRequestMessage(method, url);
+
+#if DEBUG
+            var isOtomeKairo = path.StartsWith("/api/otome_kairo", StringComparison.OrdinalIgnoreCase);
+            if (isOtomeKairo)
+            {
+                Debug.WriteLine($"[otome_kairo][HTTP] --> {method} {url}");
+            }
+#endif
 
             if (payload != null)
             {
+#if DEBUG
+                if (isOtomeKairo)
+                {
+                    var requestJson = JsonSerializer.Serialize(payload, _serializerOptions);
+                    Debug.WriteLine("[otome_kairo][HTTP] Request JSON:\n" + TryPrettyJson(requestJson));
+                }
+#endif
                 request.Content = CreateJsonContent(payload);
             }
 
@@ -184,6 +188,14 @@ namespace CocoroConsole.Services
             {
                 using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
                 var responseBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+#if DEBUG
+                if (isOtomeKairo)
+                {
+                    Debug.WriteLine($"[otome_kairo][HTTP] <-- {(int)response.StatusCode} {response.ReasonPhrase}");
+                    Debug.WriteLine("[otome_kairo][HTTP] Response Body:\n" + TryPrettyJson(responseBody));
+                }
+#endif
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -215,6 +227,26 @@ namespace CocoroConsole.Services
                 request.Dispose();
             }
         }
+
+#if DEBUG
+        private static string TryPrettyJson(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(text);
+                return JsonSerializer.Serialize(doc.RootElement, new JsonSerializerOptions { WriteIndented = true });
+            }
+            catch
+            {
+                return text;
+            }
+        }
+#endif
 
         private StringContent CreateJsonContent(object payload)
         {

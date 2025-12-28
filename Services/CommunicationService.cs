@@ -582,17 +582,17 @@ namespace CocoroConsole.Services
             }
         }
 
-        public Task<OtomeKairoSnapshotResponse> GetOtomeKairoAsync(int? scanLimit = null, bool includeComputed = true)
+        public Task<OtomeKairoState> GetOtomeKairoAsync()
         {
             if (_cocoroGhostApiClient == null)
             {
                 throw new InvalidOperationException("cocoro_ghostのBearerトークンが設定されていません");
             }
 
-            return _cocoroGhostApiClient.GetOtomeKairoAsync(scanLimit, includeComputed);
+            return _cocoroGhostApiClient.GetOtomeKairoAsync();
         }
 
-        public Task<OtomeKairoSnapshotResponse> UpdateOtomeKairoOverrideAsync(OtomeKairoOverrideRequest request)
+        public Task<OtomeKairoState> UpdateOtomeKairoOverrideAsync(OtomeKairoOverrideRequest request)
         {
             if (_cocoroGhostApiClient == null)
             {
