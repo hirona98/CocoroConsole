@@ -81,14 +81,11 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,0,0,20">
                                 <!-- Persona -->
-                                <Expander Header="Persona"
+                                <Expander Header="ペルソナ（人物像）"
                                           Style="{StaticResource PromptExpanderStyle}"
-                                          IsExpanded="False">
+                                          IsExpanded="True">
                                         <StackPanel>
                                                 <!-- プリセット選択 -->
-                                                <TextBlock Text="プリセット選択（選択中が有効になります）"
-                                                           Style="{StaticResource ContentTextBlockStyle}"
-                                                           Margin="0,5,0,10"/>
                                                 <Grid Margin="0,0,0,15">
                                                         <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*"/>
@@ -155,14 +152,11 @@
                                 </Expander>
 
                                 <!-- Addon -->
-                                <Expander Header="Addon"
+                                <Expander Header="追加プロンプト（任意）"
                                           Style="{StaticResource PromptExpanderStyle}"
-                                          IsExpanded="False">
+                                          IsExpanded="True">
                                         <StackPanel>
                                                 <!-- プリセット選択 -->
-                                                <TextBlock Text="プリセット選択（選択中が有効になります）"
-                                                           Style="{StaticResource ContentTextBlockStyle}"
-                                                           Margin="0,5,0,10"/>
                                                 <Grid Margin="0,0,0,15">
                                                         <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*"/>
