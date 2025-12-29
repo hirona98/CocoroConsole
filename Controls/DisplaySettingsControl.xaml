@@ -81,117 +81,123 @@
                           Margin="0,5,0,10"
                           ToolTip="Auto move (unstable)"
                           Foreground="#FF4873CF"/>
-                <CheckBox x:Name="AmbientOcclusionCheckBox"
-                          Content="Ambient Occlusion"
-                          Margin="0,5,0,10"
-                          ToolTip="Ambient Occlusion"
-                          Foreground="#FF4873CF"/>
+                <GroupBox Header="画質設定"
+                          Margin="0,15,0,0"
+                          Padding="10">
+                    <StackPanel>
+                        <CheckBox x:Name="AmbientOcclusionCheckBox"
+                                  Content="Ambient Occlusion"
+                                  Margin="0,5,0,10"
+                                  ToolTip="Ambient Occlusion"
+                                  Foreground="#FF4873CF"/>
 
-                <!-- アンチエイリアシング設定 -->
-                <StackPanel Orientation="Horizontal"
-                            Margin="0,5">
-                    <TextBlock Text="アンチエイリアシング（MSAA）"
-                               VerticalAlignment="Center"
-                               Foreground="#FF4873CF"
-                               Width="200"
-                               ToolTip="Anti-aliasing (MSAA)"/>
-                    <ComboBox x:Name="MSAAComboBox"
-                              Width="120"
-                              Foreground="#FF4873CF">
-                        <ComboBoxItem Content="Disable"
-                                      Tag="0"/>
-                        <ComboBoxItem Content="2x"
-                                      Tag="2"/>
-                        <ComboBoxItem Content="4x"
-                                      Tag="4"/>
-                        <ComboBoxItem Content="8x"
-                                      Tag="8"/>
-                    </ComboBox>
-                </StackPanel>
+                        <!-- アンチエイリアシング設定 -->
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,5">
+                            <TextBlock Text="アンチエイリアシング（MSAA）"
+                                       VerticalAlignment="Center"
+                                       Foreground="#FF4873CF"
+                                       Width="200"
+                                       ToolTip="Anti-aliasing (MSAA)"/>
+                            <ComboBox x:Name="MSAAComboBox"
+                                      Width="120"
+                                      Foreground="#FF4873CF">
+                                <ComboBoxItem Content="Disable"
+                                              Tag="0"/>
+                                <ComboBoxItem Content="2x"
+                                              Tag="2"/>
+                                <ComboBoxItem Content="4x"
+                                              Tag="4"/>
+                                <ComboBoxItem Content="8x"
+                                              Tag="8"/>
+                            </ComboBox>
+                        </StackPanel>
 
-                <!-- キャラクターシャドウ設定 -->
-                <StackPanel Orientation="Horizontal"
-                            Margin="0,5">
-                    <TextBlock Text="キャラクターの影"
-                               VerticalAlignment="Center"
-                               Foreground="#FF4873CF"
-                               Width="200"
-                               ToolTip="Character Shadow"/>
-                    <ComboBox x:Name="CharacterShadowComboBox"
-                              Width="120"
-                              Foreground="#FF4873CF">
-                        <ComboBoxItem Content="Disable"
-                                      Tag="0"/>
-                        <ComboBoxItem Content="Hard Shadow"
-                                      Tag="1"/>
-                        <ComboBoxItem Content="Soft Shadow"
-                                      Tag="2"/>
-                    </ComboBox>
-                </StackPanel>
+                        <!-- キャラクターシャドウ設定 -->
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,5">
+                            <TextBlock Text="キャラクターの影"
+                                       VerticalAlignment="Center"
+                                       Foreground="#FF4873CF"
+                                       Width="200"
+                                       ToolTip="Character Shadow"/>
+                            <ComboBox x:Name="CharacterShadowComboBox"
+                                      Width="120"
+                                      Foreground="#FF4873CF">
+                                <ComboBoxItem Content="Disable"
+                                              Tag="0"/>
+                                <ComboBoxItem Content="Hard Shadow"
+                                              Tag="1"/>
+                                <ComboBoxItem Content="Soft Shadow"
+                                              Tag="2"/>
+                            </ComboBox>
+                        </StackPanel>
 
-                <!-- キャラクターシャドウレゾリューション -->
-                <StackPanel Orientation="Horizontal"
-                            Margin="0,5">
-                    <TextBlock Text="キャラクターの影の解像度"
-                               VerticalAlignment="Center"
-                               Foreground="#FF4873CF"
-                               Width="200"
-                               ToolTip="Character Shadow Resolution"/>
-                    <ComboBox x:Name="CharacterShadowResolutionComboBox"
-                              Width="120"
-                              Foreground="#FF4873CF">
-                        <ComboBoxItem Content="Low"
-                                      Tag="0"/>
-                        <ComboBoxItem Content="Medium"
-                                      Tag="1"/>
-                        <ComboBoxItem Content="High"
-                                      Tag="2"/>
-                        <ComboBoxItem Content="Very High"
-                                      Tag="3"/>
-                    </ComboBox>
-                </StackPanel>
+                        <!-- キャラクターシャドウレゾリューション -->
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,5">
+                            <TextBlock Text="キャラクターの影の解像度"
+                                       VerticalAlignment="Center"
+                                       Foreground="#FF4873CF"
+                                       Width="200"
+                                       ToolTip="Character Shadow Resolution"/>
+                            <ComboBox x:Name="CharacterShadowResolutionComboBox"
+                                      Width="120"
+                                      Foreground="#FF4873CF">
+                                <ComboBoxItem Content="Low"
+                                              Tag="0"/>
+                                <ComboBoxItem Content="Medium"
+                                              Tag="1"/>
+                                <ComboBoxItem Content="High"
+                                              Tag="2"/>
+                                <ComboBoxItem Content="Very High"
+                                              Tag="3"/>
+                            </ComboBox>
+                        </StackPanel>
 
-                <!-- バックグラウンドシャドウ設定 -->
-                <StackPanel Orientation="Horizontal"
-                            Margin="0,5">
-                    <TextBlock Text="背景の影"
-                               VerticalAlignment="Center"
-                               Foreground="#FF4873CF"
-                               Width="200"
-                               ToolTip="Background Shadow"/>
-                    <ComboBox x:Name="BackgroundShadowComboBox"
-                              Width="120"
-                              Foreground="#FF4873CF">
-                        <ComboBoxItem Content="Disable"
-                                      Tag="0"/>
-                        <ComboBoxItem Content="Hard Shadow"
-                                      Tag="1"/>
-                        <ComboBoxItem Content="Soft Shadow"
-                                      Tag="2"/>
-                    </ComboBox>
-                </StackPanel>
+                        <!-- バックグラウンドシャドウ設定 -->
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,5">
+                            <TextBlock Text="背景の影"
+                                       VerticalAlignment="Center"
+                                       Foreground="#FF4873CF"
+                                       Width="200"
+                                       ToolTip="Background Shadow"/>
+                            <ComboBox x:Name="BackgroundShadowComboBox"
+                                      Width="120"
+                                      Foreground="#FF4873CF">
+                                <ComboBoxItem Content="Disable"
+                                              Tag="0"/>
+                                <ComboBoxItem Content="Hard Shadow"
+                                              Tag="1"/>
+                                <ComboBoxItem Content="Soft Shadow"
+                                              Tag="2"/>
+                            </ComboBox>
+                        </StackPanel>
 
-                <!-- バックグラウンドシャドウレゾリューション -->
-                <StackPanel Orientation="Horizontal"
-                            Margin="0,5">
-                    <TextBlock Text="背景の影の解像度"
-                               VerticalAlignment="Center"
-                               Foreground="#FF4873CF"
-                               Width="200"
-                               ToolTip="Background Shadow Resolution"/>
-                    <ComboBox x:Name="BackgroundShadowResolutionComboBox"
-                              Width="120"
-                              Foreground="#FF4873CF">
-                        <ComboBoxItem Content="Low"
-                                      Tag="0"/>
-                        <ComboBoxItem Content="Medium"
-                                      Tag="1"/>
-                        <ComboBoxItem Content="High"
-                                      Tag="2"/>
-                        <ComboBoxItem Content="Very High"
-                                      Tag="3"/>
-                    </ComboBox>
-                </StackPanel>
+                        <!-- バックグラウンドシャドウレゾリューション -->
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,5">
+                            <TextBlock Text="背景の影の解像度"
+                                       VerticalAlignment="Center"
+                                       Foreground="#FF4873CF"
+                                       Width="200"
+                                       ToolTip="Background Shadow Resolution"/>
+                            <ComboBox x:Name="BackgroundShadowResolutionComboBox"
+                                      Width="120"
+                                      Foreground="#FF4873CF">
+                                <ComboBoxItem Content="Low"
+                                              Tag="0"/>
+                                <ComboBoxItem Content="Medium"
+                                              Tag="1"/>
+                                <ComboBoxItem Content="High"
+                                              Tag="2"/>
+                                <ComboBoxItem Content="Very High"
+                                              Tag="3"/>
+                            </ComboBox>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
 
                 <!-- ウィンドウサイズ設定 -->
                 <GroupBox Header="キャラクターサイズ"
