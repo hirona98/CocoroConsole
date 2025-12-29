@@ -176,7 +176,7 @@ namespace CocoroConsole.Controls
             _displaySettings["TopMost"] = TopMostCheckBox.IsChecked ?? false;
             _displaySettings["EscapeCursor"] = EscapeCursorCheckBox.IsChecked ?? false;
 
-            // 逃げ先座標
+            // 移動先座標
             _displaySettings["EscapePositions"] = EscapePositionControl.GetEscapePositions();
 
             _displaySettings["InputVirtualKey"] = InputVirtualKeyCheckBox.IsChecked ?? false;

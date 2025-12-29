@@ -50,7 +50,7 @@ namespace CocoroConsole.Services
         bool IsEscapeCursor { get; set; }
 
         /// <summary>
-        /// 逃げ先座標リスト
+        /// 移動先座標リスト
         /// </summary>
         List<EscapePosition> EscapePositions { get; set; }
 

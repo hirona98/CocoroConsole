@@ -225,7 +225,7 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// 逃げ先座標設定クラス
+    /// 移動先座標設定クラス
     /// </summary>
     public class EscapePosition
     {

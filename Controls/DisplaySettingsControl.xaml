@@ -44,7 +44,7 @@
                           Margin="0,5,0,10"
                           Foreground="#FF4873CF"/>
 
-                <!-- 逃げ先座標設定 -->
+                <!-- 移動先座標設定 -->
                 <local:EscapePositionControl x:Name="EscapePositionControl"/>
 
                 <Grid Margin="0,5,0,10"
@@ -235,7 +235,8 @@
                                   Foreground="#FF4873CF"/>
 
                         <!-- 最大メッセージ数設定 -->
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,5">
                             <TextBlock Text="最大メッセージ数"
                                        VerticalAlignment="Center"
                                        Foreground="#FF4873CF"
@@ -250,7 +251,8 @@
                         </StackPanel>
 
                         <!-- 最大合計文字数設定 -->
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,5">
                             <TextBlock Text="最大合計文字数"
                                        VerticalAlignment="Center"
                                        Foreground="#FF4873CF"
@@ -264,7 +266,8 @@
                         </StackPanel>
 
                         <!-- 最小ウィンドウサイズ設定 -->
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,5">
                             <TextBlock Text="最小ウィンドウサイズ"
                                        VerticalAlignment="Center"
                                        Foreground="#FF4873CF"
@@ -278,7 +281,8 @@
                         </StackPanel>
 
                         <!-- 最大ウィンドウサイズ設定 -->
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,5">
                             <TextBlock Text="最大ウィンドウサイズ"
                                        VerticalAlignment="Center"
                                        Foreground="#FF4873CF"
@@ -292,7 +296,8 @@
                         </StackPanel>
 
                         <!-- フォントサイズ設定 -->
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,5">
                             <TextBlock Text="フォントサイズ"
                                        VerticalAlignment="Center"
                                        Foreground="#FF4873CF"
@@ -308,7 +313,8 @@
                         </StackPanel>
 
                         <!-- 水平オフセット設定 -->
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,5">
                             <TextBlock Text="水平オフセット"
                                        VerticalAlignment="Center"
                                        Foreground="#FF4873CF"
@@ -324,7 +330,8 @@
                         </StackPanel>
 
                         <!-- 垂直オフセット設定 -->
-                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,5">
                             <TextBlock Text="垂直オフセット"
                                        VerticalAlignment="Center"
                                        Foreground="#FF4873CF"
