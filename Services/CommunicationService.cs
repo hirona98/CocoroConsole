@@ -572,44 +572,44 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// otome_kairo（感情）デバッグ画面を開く
+        /// partner_mood（機嫌）デバッグ画面を開く
         /// </summary>
-        public void OpenOtomeKairoDebug()
+        public void OpenPartnerMoodDebug()
         {
             if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
             {
-                mainWindow.OpenOtomeKairoDebug();
+                mainWindow.OpenPartnerMoodDebug();
             }
         }
 
-        public Task<OtomeKairoState> GetOtomeKairoAsync()
+        public Task<PartnerMoodState> GetPartnerMoodAsync()
         {
             if (_cocoroGhostApiClient == null)
             {
                 throw new InvalidOperationException("cocoro_ghostのBearerトークンが設定されていません");
             }
 
-            return _cocoroGhostApiClient.GetOtomeKairoAsync();
+            return _cocoroGhostApiClient.GetPartnerMoodAsync();
         }
 
-        public Task<OtomeKairoState> UpdateOtomeKairoOverrideAsync(OtomeKairoOverrideRequest request)
+        public Task<PartnerMoodState> UpdatePartnerMoodOverrideAsync(PartnerMoodOverrideRequest request)
         {
             if (_cocoroGhostApiClient == null)
             {
                 throw new InvalidOperationException("cocoro_ghostのBearerトークンが設定されていません");
             }
 
-            return _cocoroGhostApiClient.UpdateOtomeKairoOverrideAsync(request);
+            return _cocoroGhostApiClient.UpdatePartnerMoodOverrideAsync(request);
         }
 
-        public Task<OtomeKairoState> ClearOtomeKairoOverrideAsync()
+        public Task<PartnerMoodState> ClearPartnerMoodOverrideAsync()
         {
             if (_cocoroGhostApiClient == null)
             {
                 throw new InvalidOperationException("cocoro_ghostのBearerトークンが設定されていません");
             }
 
-            return _cocoroGhostApiClient.ClearOtomeKairoOverrideAsync();
+            return _cocoroGhostApiClient.ClearPartnerMoodOverrideAsync();
         }
 
         /// <summary>

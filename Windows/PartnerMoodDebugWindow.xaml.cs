@@ -10,7 +10,7 @@ using System.Windows.Threading;
 
 namespace CocoroConsole.Windows
 {
-    public partial class OtomeKairoDebugWindow : Window
+    public partial class PartnerMoodDebugWindow : Window
     {
         private readonly ICommunicationService _communicationService;
         private readonly DispatcherTimer _pollingTimer;
@@ -18,7 +18,7 @@ namespace CocoroConsole.Windows
 
         public bool IsClosed { get; private set; }
 
-        public OtomeKairoDebugWindow(ICommunicationService communicationService)
+        public PartnerMoodDebugWindow(ICommunicationService communicationService)
         {
             _communicationService = communicationService ?? throw new ArgumentNullException(nameof(communicationService));
 
@@ -45,7 +45,7 @@ namespace CocoroConsole.Windows
             {
                 var request = BuildOverrideRequestFromUi();
                 SetStatus("override 適用中...");
-                await _communicationService.UpdateOtomeKairoOverrideAsync(request);
+                await _communicationService.UpdatePartnerMoodOverrideAsync(request);
                 SetStatus("override を設定しました（前回使用値はチャット後に更新）");
             }
             catch (Exception)
@@ -59,7 +59,7 @@ namespace CocoroConsole.Windows
             try
             {
                 SetStatus("override 解除中...");
-                await _communicationService.ClearOtomeKairoOverrideAsync();
+                await _communicationService.ClearPartnerMoodOverrideAsync();
                 SetStatus("override を解除しました（前回使用値は変わりません）");
             }
             catch (Exception)
@@ -73,7 +73,7 @@ namespace CocoroConsole.Windows
             try
             {
                 SetStatus("取得中...");
-                var state = await _communicationService.GetOtomeKairoAsync();
+                var state = await _communicationService.GetPartnerMoodAsync();
                 ApplyCurrentValuesToUi(state);
                 if (_isInitialLoad)
                 {
@@ -92,7 +92,7 @@ namespace CocoroConsole.Windows
         {
             try
             {
-                var state = await _communicationService.GetOtomeKairoAsync();
+                var state = await _communicationService.GetPartnerMoodAsync();
                 ApplyCurrentValuesToUi(state);
             }
             catch
@@ -101,7 +101,7 @@ namespace CocoroConsole.Windows
             }
         }
 
-        private void ApplyCurrentValuesToUi(OtomeKairoState? state)
+        private void ApplyCurrentValuesToUi(PartnerMoodState? state)
         {
             LabelCurrentText.Text = state?.Label ?? "-";
             IntensityCurrentText.Text = FormatDouble(state?.Intensity);
@@ -111,9 +111,9 @@ namespace CocoroConsole.Windows
             AngerCurrentText.Text = GetNumericComponentForDisplay(state, "anger");
             FearCurrentText.Text = GetNumericComponentForDisplay(state, "fear");
 
-            CooperationCurrentText.Text = FormatDouble(state?.Policy?.Cooperation);
-            RefusalBiasCurrentText.Text = FormatDouble(state?.Policy?.RefusalBias);
-            RefusalAllowedCurrentText.Text = state?.Policy?.RefusalAllowed?.ToString() ?? "-";
+            CooperationCurrentText.Text = FormatDouble(state?.ResponsePolicy?.Cooperation);
+            RefusalBiasCurrentText.Text = FormatDouble(state?.ResponsePolicy?.RefusalBias);
+            RefusalAllowedCurrentText.Text = state?.ResponsePolicy?.RefusalAllowed?.ToString() ?? "-";
         }
 
         private static string FormatDouble(double? value)
@@ -123,7 +123,7 @@ namespace CocoroConsole.Windows
                 : "-";
         }
 
-        private static string GetNumericComponentForDisplay(OtomeKairoState? state, string key)
+        private static string GetNumericComponentForDisplay(PartnerMoodState? state, string key)
         {
             if (state?.Components == null || !state.Components.TryGetValue(key, out var value))
             {
@@ -133,7 +133,7 @@ namespace CocoroConsole.Windows
             return value.ToString("0.00", CultureInfo.InvariantCulture);
         }
 
-        private void ApplyOverrideInputsFromState(OtomeKairoState? state)
+        private void ApplyOverrideInputsFromState(PartnerMoodState? state)
         {
             if (state == null)
             {
@@ -162,26 +162,26 @@ namespace CocoroConsole.Windows
             ApplySliderComponentFromState(state, "anger", AngerSlider);
             ApplySliderComponentFromState(state, "fear", FearSlider);
 
-            if (state.Policy != null)
+            if (state.ResponsePolicy != null)
             {
-                if (state.Policy.Cooperation.HasValue)
+                if (state.ResponsePolicy.Cooperation.HasValue)
                 {
-                    CooperationSlider.Value = state.Policy.Cooperation.Value;
+                    CooperationSlider.Value = state.ResponsePolicy.Cooperation.Value;
                 }
 
-                if (state.Policy.RefusalBias.HasValue)
+                if (state.ResponsePolicy.RefusalBias.HasValue)
                 {
-                    RefusalBiasSlider.Value = state.Policy.RefusalBias.Value;
+                    RefusalBiasSlider.Value = state.ResponsePolicy.RefusalBias.Value;
                 }
 
-                if (state.Policy.RefusalAllowed.HasValue)
+                if (state.ResponsePolicy.RefusalAllowed.HasValue)
                 {
-                    RefusalAllowedCheckBox.IsChecked = state.Policy.RefusalAllowed.Value;
+                    RefusalAllowedCheckBox.IsChecked = state.ResponsePolicy.RefusalAllowed.Value;
                 }
             }
         }
 
-        private static void ApplySliderComponentFromState(OtomeKairoState state, string key, Slider slider)
+        private static void ApplySliderComponentFromState(PartnerMoodState state, string key, Slider slider)
         {
             if (state.Components == null)
             {
@@ -196,10 +196,10 @@ namespace CocoroConsole.Windows
             slider.Value = value;
         }
 
-        private OtomeKairoOverrideRequest BuildOverrideRequestFromUi()
+        private PartnerMoodOverrideRequest BuildOverrideRequestFromUi()
         {
-            // API仕様: PUT /api/otome_kairo は「完全上書きのみ」
-            // label/intensity/components(4種)/policy(3種) をすべて指定する。
+            // API仕様: PUT /api/partner_mood は「完全上書きのみ」
+            // label/intensity/components(4種)/response_policy(3種) をすべて指定する。
 
             if (LabelComboBox.SelectedItem is not ComboBoxItem item || item.Content is not string label || string.IsNullOrWhiteSpace(label))
             {
@@ -222,7 +222,7 @@ namespace CocoroConsole.Windows
             ValidateRange01(cooperation, "cooperation");
             ValidateRange01(refusalBias, "refusal_bias");
 
-            return new OtomeKairoOverrideRequest
+            return new PartnerMoodOverrideRequest
             {
                 Label = label,
                 Intensity = intensity,
@@ -233,7 +233,7 @@ namespace CocoroConsole.Windows
                     ["anger"] = anger,
                     ["fear"] = fear
                 },
-                Policy = new OtomeKairoPolicy
+                ResponsePolicy = new PartnerMoodResponsePolicy
                 {
                     Cooperation = cooperation,
                     RefusalBias = refusalBias,

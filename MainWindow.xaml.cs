@@ -31,7 +31,7 @@ namespace CocoroConsole
         private ScheduledCommandService? _scheduledCommandService;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
-        private OtomeKairoDebugWindow? _otomeKairoDebugWindow;
+        private PartnerMoodDebugWindow? _partnerMoodDebugWindow;
         private DebugTraceListener? _debugTraceListener;
         private int? _nextScreenshotInitialDelayMilliseconds;
         private bool _isStreamingChatActive;
@@ -55,7 +55,7 @@ namespace CocoroConsole
 
         private void CocoroAiTitleText_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            OpenOtomeKairoDebug();
+            OpenPartnerMoodDebug();
         }
 
         /// <summary>
@@ -787,9 +787,9 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// otome_kairo（感情）デバッグ画面を開く
+        /// partner_mood（機嫌）デバッグ画面を開く
         /// </summary>
-        public void OpenOtomeKairoDebug()
+        public void OpenPartnerMoodDebug()
         {
             if (_communicationService == null)
             {
@@ -797,17 +797,17 @@ namespace CocoroConsole
                 return;
             }
 
-            if (_otomeKairoDebugWindow != null && !_otomeKairoDebugWindow.IsClosed)
+            if (_partnerMoodDebugWindow != null && !_partnerMoodDebugWindow.IsClosed)
             {
-                _otomeKairoDebugWindow.Activate();
-                _otomeKairoDebugWindow.WindowState = WindowState.Normal;
+                _partnerMoodDebugWindow.Activate();
+                _partnerMoodDebugWindow.WindowState = WindowState.Normal;
                 return;
             }
 
-            _otomeKairoDebugWindow = new OtomeKairoDebugWindow(_communicationService);
-            PositionWindowNearMain(_otomeKairoDebugWindow);
-            _otomeKairoDebugWindow.Closed += (_, __) => _otomeKairoDebugWindow = null;
-            _otomeKairoDebugWindow.Show();
+            _partnerMoodDebugWindow = new PartnerMoodDebugWindow(_communicationService);
+            PositionWindowNearMain(_partnerMoodDebugWindow);
+            _partnerMoodDebugWindow.Closed += (_, __) => _partnerMoodDebugWindow = null;
+            _partnerMoodDebugWindow.Show();
         }
 
         private void AttachLogStreamHandlers()

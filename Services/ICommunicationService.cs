@@ -159,24 +159,24 @@ namespace CocoroConsole.Services
         void OpenLogViewer();
 
         /// <summary>
-        /// otome_kairo（感情）デバッグ画面を開く
+        /// partner_mood（機嫌）デバッグ画面を開く
         /// </summary>
-        void OpenOtomeKairoDebug();
+        void OpenPartnerMoodDebug();
 
         /// <summary>
-        /// otome_kairo の前回使用値（last used）を取得（デバッグ）
+        /// partner_mood の前回使用値（last used）を取得（デバッグ）
         /// </summary>
-        Task<OtomeKairoState> GetOtomeKairoAsync();
+        Task<PartnerMoodState> GetPartnerMoodAsync();
 
         /// <summary>
         /// in-memory override を設定（デバッグ、完全上書き）
         /// </summary>
-        Task<OtomeKairoState> UpdateOtomeKairoOverrideAsync(OtomeKairoOverrideRequest request);
+        Task<PartnerMoodState> UpdatePartnerMoodOverrideAsync(PartnerMoodOverrideRequest request);
 
         /// <summary>
         /// in-memory override を解除（デバッグ）
         /// </summary>
-        Task<OtomeKairoState> ClearOtomeKairoOverrideAsync();
+        Task<PartnerMoodState> ClearPartnerMoodOverrideAsync();
 
         /// <summary>
         /// CocoroShellから現在のキャラクター位置を取得

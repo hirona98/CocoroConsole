@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace CocoroConsole.Models.CocoroGhostApi
 {
-    public class OtomeKairoState
+    public class PartnerMoodState
     {
         [JsonPropertyName("label")]
         public string? Label { get; set; }
@@ -14,11 +14,11 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonPropertyName("components")]
         public Dictionary<string, double>? Components { get; set; }
 
-        [JsonPropertyName("policy")]
-        public OtomeKairoPolicy? Policy { get; set; }
+        [JsonPropertyName("response_policy")]
+        public PartnerMoodResponsePolicy? ResponsePolicy { get; set; }
     }
 
-    public class OtomeKairoPolicy
+    public class PartnerMoodResponsePolicy
     {
         [JsonPropertyName("cooperation")]
         public double? Cooperation { get; set; }
@@ -30,7 +30,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
         public bool? RefusalAllowed { get; set; }
     }
 
-    public class OtomeKairoOverrideRequest
+    public class PartnerMoodOverrideRequest
     {
         [JsonPropertyName("label")]
         public string? Label { get; set; }
@@ -41,7 +41,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonPropertyName("components")]
         public Dictionary<string, double>? Components { get; set; }
 
-        [JsonPropertyName("policy")]
-        public OtomeKairoPolicy? Policy { get; set; }
+        [JsonPropertyName("response_policy")]
+        public PartnerMoodResponsePolicy? ResponsePolicy { get; set; }
     }
 }

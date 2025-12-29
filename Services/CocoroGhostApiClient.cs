@@ -147,22 +147,22 @@ namespace CocoroConsole.Services
             return SendAsync<CaptureResponse>(HttpMethod.Post, "/api/capture", request, cancellationToken);
         }
 
-        public Task<OtomeKairoState> GetOtomeKairoAsync(CancellationToken cancellationToken = default)
+        public Task<PartnerMoodState> GetPartnerMoodAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendAsync<OtomeKairoState>(HttpMethod.Get, "/api/otome_kairo", null, cancellationToken);
+            return SendAsync<PartnerMoodState>(HttpMethod.Get, "/api/partner_mood", null, cancellationToken);
         }
 
-        public Task<OtomeKairoState> UpdateOtomeKairoOverrideAsync(OtomeKairoOverrideRequest request, CancellationToken cancellationToken = default)
+        public Task<PartnerMoodState> UpdatePartnerMoodOverrideAsync(PartnerMoodOverrideRequest request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendAsync<OtomeKairoState>(HttpMethod.Put, "/api/otome_kairo", request, cancellationToken);
+            return SendAsync<PartnerMoodState>(HttpMethod.Put, "/api/partner_mood", request, cancellationToken);
         }
 
-        public Task<OtomeKairoState> ClearOtomeKairoOverrideAsync(CancellationToken cancellationToken = default)
+        public Task<PartnerMoodState> ClearPartnerMoodOverrideAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendAsync<OtomeKairoState>(HttpMethod.Delete, "/api/otome_kairo", null, cancellationToken);
+            return SendAsync<PartnerMoodState>(HttpMethod.Delete, "/api/partner_mood", null, cancellationToken);
         }
 
         private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
