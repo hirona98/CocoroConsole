@@ -288,16 +288,34 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Base URL:"
                                        Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="LlmBaseUrlTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="ローカルLLM使用時のベースURL（例: http://localhost:11434/v1）"
-                                     TextChanged="OnSettingChanged"/>
+                            <Grid Grid.Column="1">
+                                <TextBox x:Name="LlmBaseUrlTextBox"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         ToolTip="ローカルLLM使用時のベースURL（例: http://localhost:11434/v1）"
+                                         TextChanged="OnSettingChanged"/>
+                                <TextBlock Text="必要に応じてベースURLを設定できます（例: http://localhost:11434/v1）"
+                                           Foreground="#999999"
+                                           Margin="6,0,6,0"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           IsHitTestVisible="False">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility"
+                                                    Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Text, ElementName=LlmBaseUrlTextBox}"
+                                                             Value="">
+                                                    <Setter Property="Visibility"
+                                                            Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
                         </Grid>
-                        <TextBlock Foreground="#666666"
-                                   Margin="140,0,0,5"
-                                   Text="必要に応じてベースURLを設定できます（例: http://localhost:11434/v1）"
-                                   TextWrapping="Wrap"/>
 
                         <!-- Reasoning Effort -->
                         <Grid Margin="0,5">
