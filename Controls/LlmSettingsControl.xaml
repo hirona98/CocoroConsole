@@ -136,47 +136,54 @@
                 <GroupBox Header="プリセット選択"
                           Margin="0,0,20,20"
                           Padding="10">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="85"/>
-                        </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="85"/>
+                            </Grid.ColumnDefinitions>
 
-                        <ComboBox x:Name="PresetSelectComboBox"
-                                  Grid.Column="0"
-                                  Margin="0,5,10,5"
-                                  SelectionChanged="PresetSelectComboBox_SelectionChanged"/>
+                            <ComboBox x:Name="PresetSelectComboBox"
+                                      Grid.Column="0"
+                                      Margin="0,5,10,5"
+                                      SelectionChanged="PresetSelectComboBox_SelectionChanged"/>
 
-                        <Button x:Name="AddPresetButton"
-                                Grid.Column="1"
-                                Content="追加"
-                                Margin="0,5,0,5"
-                                Padding="10,5"
-                                Click="AddPresetButton_Click"
-                                ToolTipService.ShowOnDisabled="True"
-                                ToolTip="プリセットを追加"/>
+                            <Button x:Name="AddPresetButton"
+                                    Grid.Column="1"
+                                    Content="追加"
+                                    Margin="0,5,0,5"
+                                    Padding="10,5"
+                                    Click="AddPresetButton_Click"
+                                    ToolTipService.ShowOnDisabled="True"
+                                    ToolTip="プリセットを追加"/>
 
-                        <Button x:Name="DuplicatePresetButton"
-                                Grid.Column="2"
-                                Content="複製"
-                                Margin="5,5,0,5"
-                                Padding="10,5"
-                                Click="DuplicatePresetButton_Click"
-                                ToolTipService.ShowOnDisabled="True"
-                                ToolTip="現在のプリセットを複製"/>
+                            <Button x:Name="DuplicatePresetButton"
+                                    Grid.Column="2"
+                                    Content="複製"
+                                    Margin="5,5,0,5"
+                                    Padding="10,5"
+                                    Click="DuplicatePresetButton_Click"
+                                    ToolTipService.ShowOnDisabled="True"
+                                    ToolTip="現在のプリセットを複製"/>
 
-                        <Button x:Name="DeletePresetButton"
-                                Grid.Column="3"
-                                Content="削除"
-                                Margin="5,5,0,5"
-                                Padding="10,5"
-                                Style="{StaticResource DeleteButtonStyle}"
-                                Click="DeletePresetButton_Click"
-                                ToolTipService.ShowOnDisabled="True"
-                                ToolTip="このプリセットを削除"/>
-                    </Grid>
+                            <Button x:Name="DeletePresetButton"
+                                    Grid.Column="3"
+                                    Content="削除"
+                                    Margin="5,5,0,5"
+                                    Padding="10,5"
+                                    Style="{StaticResource DeleteButtonStyle}"
+                                    Click="DeletePresetButton_Click"
+                                    ToolTipService.ShowOnDisabled="True"
+                                    ToolTip="このプリセットを削除"/>
+                        </Grid>
+
+                        <TextBlock Margin="0,8,0,0"
+                                   Foreground="#666666"
+                                   Text="システムプロンプトは「Prompt」タブで設定します。"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
                 </GroupBox>
 
                 <!-- 基本設定 -->
@@ -197,10 +204,6 @@
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
-                        <TextBlock Margin="0,8,0,0"
-                                   Foreground="#666666"
-                                   Text="システムプロンプトは「Prompt」タブで設定します。"
-                                   TextWrapping="Wrap"/>
                     </StackPanel>
                 </GroupBox>
 
