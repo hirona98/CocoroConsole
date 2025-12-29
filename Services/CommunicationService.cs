@@ -602,6 +602,16 @@ namespace CocoroConsole.Services
             return _cocoroGhostApiClient.UpdateOtomeKairoOverrideAsync(request);
         }
 
+        public Task<OtomeKairoState> ClearOtomeKairoOverrideAsync()
+        {
+            if (_cocoroGhostApiClient == null)
+            {
+                throw new InvalidOperationException("cocoro_ghostのBearerトークンが設定されていません");
+            }
+
+            return _cocoroGhostApiClient.ClearOtomeKairoOverrideAsync();
+        }
+
         /// <summary>
         /// ログストリーム接続を開始
         /// </summary>

@@ -164,7 +164,7 @@ namespace CocoroConsole.Services
         void OpenOtomeKairoDebug();
 
         /// <summary>
-        /// 現在の otome_kairo を取得（デバッグ）
+        /// otome_kairo の前回使用値（last used）を取得（デバッグ）
         /// </summary>
         Task<OtomeKairoState> GetOtomeKairoAsync();
 
@@ -176,6 +176,8 @@ namespace CocoroConsole.Services
         /// <summary>
         /// in-memory override を解除（デバッグ）
         /// </summary>
+        Task<OtomeKairoState> ClearOtomeKairoOverrideAsync();
+
         /// <summary>
         /// CocoroShellから現在のキャラクター位置を取得
         /// </summary>

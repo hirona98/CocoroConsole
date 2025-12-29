@@ -45,13 +45,26 @@ namespace CocoroConsole.Windows
             {
                 var request = BuildOverrideRequestFromUi();
                 SetStatus("override 適用中...");
-                var state = await _communicationService.UpdateOtomeKairoOverrideAsync(request);
-                ApplyCurrentValuesToUi(state);
-                SetStatus("override を適用しました");
+                await _communicationService.UpdateOtomeKairoOverrideAsync(request);
+                SetStatus("override を設定しました（前回使用値はチャット後に更新）");
             }
             catch (Exception)
             {
                 SetStatus("override 適用に失敗しました");
+            }
+        }
+
+        private async void ClearOverrideButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetStatus("override 解除中...");
+                await _communicationService.ClearOtomeKairoOverrideAsync();
+                SetStatus("override を解除しました（前回使用値は変わりません）");
+            }
+            catch (Exception)
+            {
+                SetStatus("override 解除に失敗しました");
             }
         }
 

@@ -48,7 +48,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="1"
-                               Text="現在値"
+                               Text="前回使用値"
                                FontWeight="SemiBold"
                                Foreground="#666666"/>
                     <TextBlock Grid.Column="2"
@@ -328,13 +328,28 @@
                               Margin="0,6,0,0"/>
                 </Grid>
 
-                <Button x:Name="ApplyOverrideButton"
-                        Content="適用"
-                        Width="110"
-                        Height="28"
-                        HorizontalAlignment="Right"
-                        Margin="0,16,0,0"
-                        Click="ApplyOverrideButton_Click"/>
+                <Grid Margin="0,16,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button x:Name="ClearOverrideButton"
+                            Grid.Column="1"
+                            Content="解除"
+                            Width="110"
+                            Height="28"
+                            Click="ClearOverrideButton_Click"/>
+
+                    <Button x:Name="ApplyOverrideButton"
+                            Grid.Column="3"
+                            Content="適用"
+                            Width="110"
+                            Height="28"
+                            Click="ApplyOverrideButton_Click"/>
+                </Grid>
             </StackPanel>
         </ScrollViewer>
 

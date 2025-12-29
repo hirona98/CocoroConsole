@@ -159,6 +159,12 @@ namespace CocoroConsole.Services
             return SendAsync<OtomeKairoState>(HttpMethod.Put, "/api/otome_kairo", request, cancellationToken);
         }
 
+        public Task<OtomeKairoState> ClearOtomeKairoOverrideAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendAsync<OtomeKairoState>(HttpMethod.Delete, "/api/otome_kairo", null, cancellationToken);
+        }
+
         private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
         {
             var url = BuildUrl(path);
