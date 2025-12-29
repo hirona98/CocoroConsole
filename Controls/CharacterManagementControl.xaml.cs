@@ -489,7 +489,6 @@ namespace CocoroConsole.Controls
                         outputSamplingRate = sourceCharacter.aivisCloudConfig.outputSamplingRate,
                         outputAudioChannels = sourceCharacter.aivisCloudConfig.outputAudioChannels,
                     },
-                    isEnableMemory = sourceCharacter.isEnableMemory,
                     isUseSTT = sourceCharacter.isUseSTT,
                     sttEngine = sourceCharacter.sttEngine,
                     sttWakeWord = sourceCharacter.sttWakeWord,

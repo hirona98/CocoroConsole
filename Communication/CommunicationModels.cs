@@ -92,7 +92,6 @@ namespace CocoroConsole.Communication
         public StyleBertVits2Config styleBertVits2Config { get; set; } = new StyleBertVits2Config();
         public AivisCloudConfig aivisCloudConfig { get; set; } = new AivisCloudConfig();
 
-        public bool isEnableMemory { get; set; } // メモリ機能の有効/無効
         public bool isUseSTT { get; set; } // STT（音声認識）機能の有効/無効
         public string sttEngine { get; set; } = string.Empty; // STTエンジン ("amivoice" | "openai")
         public string sttWakeWord { get; set; } = string.Empty; // STT起動ワード
@@ -176,7 +175,6 @@ namespace CocoroConsole.Communication
                     outputAudioChannels = this.aivisCloudConfig.outputAudioChannels
                 },
 
-                isEnableMemory = this.isEnableMemory,
                 isUseSTT = this.isUseSTT,
                 sttEngine = this.sttEngine,
                 sttWakeWord = this.sttWakeWord,

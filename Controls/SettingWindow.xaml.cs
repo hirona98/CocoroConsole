@@ -701,7 +701,6 @@ namespace CocoroConsole.Controls
                     outputSamplingRate = source.aivisCloudConfig.outputSamplingRate,
                     outputAudioChannels = source.aivisCloudConfig.outputAudioChannels
                 },
-                isEnableMemory = source.isEnableMemory,
                 isUseSTT = source.isUseSTT,
                 sttEngine = source.sttEngine,
                 sttWakeWord = source.sttWakeWord,
@@ -1082,19 +1081,6 @@ namespace CocoroConsole.Controls
             if (currentSettings.characterList.Count != previousSettings.characterList.Count)
             {
                 return true;
-            }
-
-            // キャラクターの比較
-            for (int i = 0; i < currentSettings.characterList.Count; i++)
-            {
-                var current = currentSettings.characterList[i];
-                var previous = previousSettings.characterList[i];
-
-                // 埋め込み設定はAPI経由で管理されるため、ここでは isEnableMemory のみ比較
-                if (current.isEnableMemory != previous.isEnableMemory)
-                {
-                    return true;
-                }
             }
 
             return false;
