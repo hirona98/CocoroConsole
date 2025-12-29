@@ -10,6 +10,24 @@
 
     <UserControl.Resources>
         <converters:AnimationTypeConverter x:Key="AnimationTypeConverter"/>
+
+        <Style x:Key="GroupBoxLikeExpanderStyle"
+               TargetType="Expander">
+            <Setter Property="Background"
+                    Value="White"/>
+            <Setter Property="BorderBrush"
+                    Value="#CCCCCC"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+            <Setter Property="Padding"
+                    Value="10"/>
+            <Setter Property="FontSize"
+                    Value="14"/>
+            <Setter Property="Foreground"
+                    Value="#4873CF"/>
+            <Setter Property="SnapsToDevicePixels"
+                    Value="True"/>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
