@@ -8,13 +8,34 @@
              d:DesignHeight="1200"
              d:DesignWidth="800">
 
+    <UserControl.Resources>
+        <Style x:Key="GroupBoxLikeExpanderStyle"
+               TargetType="Expander">
+            <Setter Property="Background"
+                    Value="White"/>
+            <Setter Property="BorderBrush"
+                    Value="#CCCCCC"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+            <Setter Property="Padding"
+                    Value="10"/>
+            <Setter Property="FontSize"
+                    Value="14"/>
+            <Setter Property="Foreground"
+                    Value="#4873CF"/>
+            <Setter Property="SnapsToDevicePixels"
+                    Value="True"/>
+        </Style>
+    </UserControl.Resources>
+
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!-- リマインダー設定 -->
-                <GroupBox Header="リマインダー（試験運用）"
+                <Expander Header="リマインダー（試験運用）"
                           Margin="0,0,20,20"
-                          Padding="10">
+                          IsExpanded="False"
+                          Style="{StaticResource GroupBoxLikeExpanderStyle}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -28,7 +49,7 @@
                                    TextWrapping="Wrap"
                                    Foreground="#666666"
                                    Margin="0,0,0,10">
-                            リマインダー機能を管理します。設定した時刻にキャラクターが知らせてくれます。
+                            設定した時刻にキャラクターが知らせてくれます。
                         </TextBlock>
 
                         <!-- リマインダー機能チェックボックス -->
@@ -187,20 +208,21 @@
                             </ScrollViewer>
                         </Border>
                     </Grid>
-                </GroupBox>
+                </Expander>
 
                 <!-- デスクトップウォッチ設定 -->
-                <GroupBox Header="デスクトップウォッチ"
+                <Expander Header="デスクトップウォッチ"
                           Margin="0,0,20,20"
-                          Padding="10">
+                          IsExpanded="False"
+                          Style="{StaticResource GroupBoxLikeExpanderStyle}">
                     <StackPanel>
                         <!-- 説明テキスト -->
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666"
                                    Margin="0,0,0,10">
-                            デスクトップの画面を定期的に取得し、内容に応じたコメントをします。マルチモーダルモデルが必要です。
+                            デスクトップの画面を定期的に取得し内容に応じたコメントをします。
                             <LineBreak/>
-                            意図せずともセンシティブな画像を送るとアカウント停止の可能性がありますので注意してください。
+                            センシティブな画像を送るとアカウント停止の可能性があるので注意してください。
                         </TextBlock>
 
                         <!-- ウォッチ機能の有効/無効設定 -->
@@ -296,12 +318,13 @@
                             　例: .*パスワード.* （パスワードを含むタイトルを除外）
                         </TextBlock>
                     </StackPanel>
-                </GroupBox>
+                </Expander>
 
                 <!-- マイク設定 -->
-                <GroupBox Header="マイク設定"
+                <Expander Header="マイク設定"
                           Margin="0,0,20,20"
-                          Padding="10">
+                          IsExpanded="False"
+                          Style="{StaticResource GroupBoxLikeExpanderStyle}">
                     <StackPanel>
                         <!-- 説明テキスト -->
                         <TextBlock TextWrapping="Wrap"
@@ -340,16 +363,17 @@
                             ※値が低いほど（-50dBに近いほど）音声を拾いやすくなりますが、環境音も拾いやすくなります。
                         </TextBlock>
                     </StackPanel>
-                </GroupBox>
+                </Expander>
 
                 <!-- 話者識別設定 -->
                 <local:SpeakerManagementControl x:Name="SpeakerManagementControl"
                                                 Margin="0,0,20,20"/>
 
                 <!-- API認証設定 -->
-                <GroupBox Header="API認証設定"
+                <Expander Header="API認証設定"
                           Margin="0,0,20,0"
-                          Padding="10">
+                          IsExpanded="False"
+                          Style="{StaticResource GroupBoxLikeExpanderStyle}">
                     <StackPanel>
                         <!-- 説明テキスト -->
                         <TextBlock TextWrapping="Wrap"
@@ -377,7 +401,7 @@
                                      IsEnabled="False"/>
                         </Grid>
                     </StackPanel>
-                </GroupBox>
+                </Expander>
             </StackPanel>
         </ScrollViewer>
     </Grid>

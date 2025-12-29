@@ -6,8 +6,29 @@
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="800">
-    <GroupBox Header="話者識別設定"
-              Padding="10">
+    <UserControl.Resources>
+        <Style x:Key="GroupBoxLikeExpanderStyle"
+               TargetType="Expander">
+            <Setter Property="Background"
+                    Value="White"/>
+            <Setter Property="BorderBrush"
+                    Value="#CCCCCC"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+            <Setter Property="Padding"
+                    Value="10"/>
+            <Setter Property="FontSize"
+                    Value="14"/>
+            <Setter Property="Foreground"
+                    Value="#4873CF"/>
+            <Setter Property="SnapsToDevicePixels"
+                    Value="True"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Expander Header="話者識別設定"
+              IsExpanded="False"
+              Style="{StaticResource GroupBoxLikeExpanderStyle}">
         <StackPanel>
             <!-- 登録済み話者リスト -->
             <Grid Margin="0,0,0,10">
@@ -107,5 +128,5 @@
                        Visibility="Collapsed"
                        HorizontalAlignment="Center"/>
         </StackPanel>
-    </GroupBox>
+    </Expander>
 </UserControl>
