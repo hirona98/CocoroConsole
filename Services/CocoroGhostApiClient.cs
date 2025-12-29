@@ -303,11 +303,11 @@ namespace CocoroConsole.Services
     public class ChatStreamRequest
     {
         [JsonPropertyName("user_id")]
-        [Obsolete("user_idは非推奨です。memory_id / user_text / images を使用してください。")]
+        [Obsolete("user_idは非推奨です。embedding_preset_id / user_text / images を使用してください。")]
         public string? UserId { get; set; }
 
-        [JsonPropertyName("memory_id")]
-        public string? MemoryId { get; set; }
+        [JsonPropertyName("embedding_preset_id")]
+        public string? EmbeddingPresetId { get; set; }
 
         [JsonPropertyName("user_text")]
         public string UserText { get; set; } = string.Empty;

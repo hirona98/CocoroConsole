@@ -39,6 +39,9 @@ namespace CocoroConsole.Services
         // memory_idキャッシュ
         private string _cachedMemoryId = "memory";
 
+        // cocoro_ghost /api/settings キャッシュ（EmbeddingPresetId解決に使用）
+        private CocoroConsole.Models.CocoroGhostApi.CocoroGhostSettings? _cachedCocoroGhostSettings;
+
         // 起動時の設定取得済みフラグ
         private bool _initialSettingsFetched = false;
 
@@ -201,6 +204,9 @@ namespace CocoroConsole.Services
                 Debug.WriteLine("[CommunicationService] cocoro_ghostから設定を取得中...");
                 var settings = await _cocoroGhostApiClient.GetSettingsAsync();
 
+                // チャット送信時に参照するためキャッシュ
+                _cachedCocoroGhostSettings = settings;
+
                 // AppSettingsに反映
                 ApplyCocoroGhostSettingsToAppSettings(settings);
 
@@ -298,8 +304,17 @@ namespace CocoroConsole.Services
 
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット送信開始"));
 
+                var embeddingPresetId = await ResolveEmbeddingPresetIdForChatAsync();
+                if (string.IsNullOrWhiteSpace(embeddingPresetId))
+                {
+                    _statusPollingService.SetNormalStatus();
+                    StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, "embedding_preset_idの取得に失敗しました（/api/settings を確認してください）"));
+                    return;
+                }
+
                 var chatRequest = new ChatStreamRequest
                 {
+                    EmbeddingPresetId = embeddingPresetId,
                     UserText = message,
                     Images = string.IsNullOrEmpty(imageBase64)
                         ? new List<CocoroGhostImage>()
@@ -385,6 +400,47 @@ namespace CocoroConsole.Services
                 // ステータスバーにエラー表示
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"チャット送信エラー: {ex.Message}"));
             }
+        }
+
+        private async Task<string?> ResolveEmbeddingPresetIdForChatAsync()
+        {
+            var cached = TryResolveEmbeddingPresetId(_cachedCocoroGhostSettings);
+            if (!string.IsNullOrWhiteSpace(cached))
+            {
+                return cached;
+            }
+
+            if (_cocoroGhostApiClient == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var settings = await _cocoroGhostApiClient.GetSettingsAsync();
+                _cachedCocoroGhostSettings = settings;
+                return TryResolveEmbeddingPresetId(settings);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string? TryResolveEmbeddingPresetId(CocoroConsole.Models.CocoroGhostApi.CocoroGhostSettings? settings)
+        {
+            if (settings == null)
+            {
+                return null;
+            }
+
+            var active = settings.ActiveEmbeddingPresetId;
+            if (!string.IsNullOrWhiteSpace(active))
+            {
+                return active;
+            }
+
+            return settings.EmbeddingPreset?.FirstOrDefault()?.EmbeddingPresetId;
         }
 
         /// <summary>
