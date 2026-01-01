@@ -93,7 +93,7 @@ namespace CocoroConsole.Controls
             sb.AppendLine();
 
             sb.AppendLine("エンドポイント:");
-            sb.AppendLine($"- POST http://127.0.0.1:{port}/api/v1/meta_request");
+            sb.AppendLine($"- POST http://127.0.0.1:{port}/api/v1/meta-request");
             sb.AppendLine();
 
             sb.AppendLine("認証:");
@@ -115,7 +115,7 @@ namespace CocoroConsole.Controls
             sb.AppendLine();
 
             sb.AppendLine("使用例 (cURL):");
-            sb.AppendLine($"curl -X POST http://127.0.0.1:{port}/api/v1/meta_request \\");
+            sb.AppendLine($"curl -X POST http://127.0.0.1:{port}/api/v1/meta-request \\");
             sb.AppendLine("  -H \"Authorization: Bearer cocoro_token\" \\");
             sb.AppendLine("  -H \"Content-Type: application/json\" \\");
             sb.AppendLine("  -d '{\"prompt\":\"これは直近1時間のニュースです。内容をユーザに説明するとともに感想を述べてください。：～ニュース内容～\"}'");
@@ -123,7 +123,7 @@ namespace CocoroConsole.Controls
 
             sb.AppendLine("使用例 (PowerShell):");
             sb.AppendLine("Invoke-RestMethod -Method Post `");
-            sb.AppendLine($"  -Uri \"http://127.0.0.1:{port}/api/v1/meta_request\" `");
+            sb.AppendLine($"  -Uri \"http://127.0.0.1:{port}/api/v1/meta-request\" `");
             sb.AppendLine("  -Headers @{ Authorization = \"Bearer cocoro_token\" } `");
             sb.AppendLine("  -ContentType \"application/json; charset=utf-8\" `");
             sb.AppendLine("  -Body '{\"prompt\":\"これは直近1時間のニュースです。内容をユーザに説明するとともに感想を述べてください。：～ニュース内容～\"}'");

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace CocoroConsole.Communication
 {
     /// <summary>
-    /// cocoro_ghost の /api/events/stream に接続してイベント(notification/meta_request)を受信するクライアント
+    /// cocoro_ghost の /api/events/stream に接続してイベント(notification/meta-request)を受信するクライアント
     /// </summary>
     public sealed class EventsStreamClient : IDisposable
     {

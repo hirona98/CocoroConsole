@@ -938,7 +938,7 @@ namespace CocoroConsole.Services
                     return;
                 }
 
-                if (string.Equals(ev.Type, "meta_request", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(ev.Type, "meta-request", StringComparison.OrdinalIgnoreCase))
                 {
                     // New behavior: result is delivered via events stream as data.message
                     var resultText = ev.Data.Message ?? ev.Data.ResultText;
