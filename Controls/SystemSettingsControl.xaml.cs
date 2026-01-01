@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -40,16 +39,6 @@ namespace CocoroConsole.Controls
         /// APIから取得したexclude_keywords
         /// </summary>
         private List<string> _apiExcludeKeywords = new();
-
-        /// <summary>
-        /// APIから取得したLLMプリセット
-        /// </summary>
-        private List<LlmPreset> _apiLlmPresets = new();
-
-        /// <summary>
-        /// APIから取得したEmbeddingプリセット
-        /// </summary>
-        private List<EmbeddingPreset> _apiEmbeddingPresets = new();
 
         /// <summary>
         /// APIから取得したreminders
@@ -257,8 +246,6 @@ namespace CocoroConsole.Controls
                     if (settings != null)
                     {
                         _apiExcludeKeywords = settings.ExcludeKeywords ?? new List<string>();
-                        _apiLlmPresets = settings.LlmPreset ?? new List<LlmPreset>();
-                        _apiEmbeddingPresets = settings.EmbeddingPreset ?? new List<EmbeddingPreset>();
                         _apiReminders = settings.Reminders ?? new List<CocoroGhostReminder>();
                         EnableReminderCheckBox.IsChecked = settings.RemindersEnabled;
                         ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, _apiExcludeKeywords);
@@ -428,14 +415,6 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// 現在時刻設定ボタンクリック
-        /// </summary>
-        private void SetCurrentTimeButton_Click(object sender, RoutedEventArgs e)
-        {
-            ReminderDateTimeTextBox.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
-        }
-
-        /// <summary>
         /// リマインダー追加ボタンクリック
         /// </summary>
         private void AddReminderButton_Click(object sender, RoutedEventArgs e)
@@ -512,74 +491,6 @@ namespace CocoroConsole.Controls
             {
                 MessageBox.Show($"リマインダー削除エラー: {ex.Message}", "エラー",
                     MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// リマインダー入力テキストをパース
-        /// </summary>
-        /// <param name="input">入力文字列</param>
-        /// <returns>予定時刻とメッセージのタプル</returns>
-        private (DateTime?, string) ParseReminderInput(string input)
-        {
-            try
-            {
-                // 「○時間後に〜」「○分後に〜」形式
-                var relativeMatch = Regex.Match(input, @"^(\d+)(時間|分)後に(.+)$");
-                if (relativeMatch.Success)
-                {
-                    var amount = int.Parse(relativeMatch.Groups[1].Value);
-                    var unit = relativeMatch.Groups[2].Value;
-                    var message = relativeMatch.Groups[3].Value;
-
-                    var scheduledAt = unit == "時間"
-                        ? DateTime.Now.AddHours(amount)
-                        : DateTime.Now.AddMinutes(amount);
-
-                    return (scheduledAt, message);
-                }
-
-                // 「HH:mmに〜」形式
-                var timeMatch = Regex.Match(input, @"^(\d{1,2}):(\d{2})に(.+)$");
-                if (timeMatch.Success)
-                {
-                    var hour = int.Parse(timeMatch.Groups[1].Value);
-                    var minute = int.Parse(timeMatch.Groups[2].Value);
-                    var message = timeMatch.Groups[3].Value;
-
-                    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59)
-                    {
-                        var now = DateTime.Now;
-                        var scheduledAt = new DateTime(now.Year, now.Month, now.Day, hour, minute, 0);
-
-                        // 指定時刻が現在時刻より前の場合は翌日に設定
-                        if (scheduledAt <= now)
-                        {
-                            scheduledAt = scheduledAt.AddDays(1);
-                        }
-
-                        return (scheduledAt, message);
-                    }
-                }
-
-                // 「yyyy-MM-dd HH:mmに〜」形式
-                var fullDateMatch = Regex.Match(input, @"^(\d{4}-\d{2}-\d{2} \d{1,2}:\d{2})に(.+)$");
-                if (fullDateMatch.Success)
-                {
-                    var dateTimeStr = fullDateMatch.Groups[1].Value;
-                    var message = fullDateMatch.Groups[2].Value;
-
-                    if (DateTime.TryParse(dateTimeStr, out var scheduledAt))
-                    {
-                        return (scheduledAt, message);
-                    }
-                }
-
-                return (null, input);
-            }
-            catch
-            {
-                return (null, input);
             }
         }
 

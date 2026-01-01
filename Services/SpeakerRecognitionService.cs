@@ -27,8 +27,6 @@ namespace CocoroConsole.Services
         // 定数
         private const int EMBEDDING_DIM = 256; // WeSpeaker ResNet34
         private const int SAMPLE_RATE = 16000;
-        private const int TARGET_SAMPLES = SAMPLE_RATE * 3; // 3秒
-
         /// <summary>
         /// コンストラクタ
         /// </summary>

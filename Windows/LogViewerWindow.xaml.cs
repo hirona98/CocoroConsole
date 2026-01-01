@@ -25,7 +25,6 @@ namespace CocoroConsole.Windows
 
         // スクロール位置保持用
         private ScrollViewer? _scrollViewer;
-        private double _lastVerticalOffset = 0;
 
         public LogViewerWindow()
         {
@@ -137,7 +136,6 @@ namespace CocoroConsole.Windows
                 if (shouldPreservePosition && _scrollViewer != null)
                 {
                     savedOffset = _scrollViewer.VerticalOffset;
-                    _lastVerticalOffset = savedOffset;
                 }
 
                 foreach (var logMessage in logMessages)

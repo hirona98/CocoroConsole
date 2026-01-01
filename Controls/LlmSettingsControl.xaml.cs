@@ -397,20 +397,6 @@ namespace CocoroConsole.Controls
             return name;
         }
 
-        private async Task SavePresetsToApiAsync()
-        {
-            if (_apiClient == null || _onPresetListChanged == null) return;
-
-            try
-            {
-                await _onPresetListChanged();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"プリセットの保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
         private void OnSettingChanged(object sender, RoutedEventArgs e)
         {
             if (!_isInitializing)

@@ -640,27 +640,6 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// テキストボックスのキー入力ハンドラ（Enterキーで送信）
-        /// </summary>
-        private void MessageTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            // Enterキーが押された場合
-            if (e.Key == Key.Enter)
-            {
-                // Shiftキーが押されていない場合は送信処理
-                if ((Keyboard.Modifiers & ModifierKeys.Shift) != ModifierKeys.Shift)
-                {
-                    // Enterキーのデフォルト動作（改行）を防止
-                    e.Handled = true;
-
-                    // 送信処理を実行
-                    SendMessage();
-                }
-                // Shift+Enterの場合はデフォルト動作（改行）をそのまま許可
-            }
-        }
-
-        /// <summary>
         /// テキストボックスのキー入力ハンドラ（Enterキーで送信、Shift+Enterで改行）
         /// </summary>
         private void MessageTextBox_KeyDown(object sender, KeyEventArgs e)
@@ -704,50 +683,6 @@ namespace CocoroConsole.Controls
                             e.Handled = true;
                         }
                     }
-                }
-            }
-        }
-
-        /// <summary>
-        /// テキストボックスのテキスト変更ハンドラ（内容に応じて高さを自動調整）
-        /// </summary>
-        private void MessageTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            // センダーをTextBoxとして安全に変換
-            if (sender is TextBox textBox)
-            {
-                // 内容に基づいて高さを自動調整
-                AdjustTextBoxHeight(textBox);
-            }
-        }
-
-        /// <summary>
-        /// テキストボックスの高さを内容に合わせて自動調整
-        /// </summary>
-        private void AdjustTextBoxHeight(TextBox textBox)
-        {
-            // 現在の行数を計算
-            int lineCount = textBox.LineCount;
-
-            // 行数に基づいて高さを調整（1行の場合は初期高さを維持）
-            if (lineCount <= 1)
-            {
-                textBox.Height = textBox.MinHeight;
-            }
-            else
-            {
-                // 1行あたりの高さを概算（フォントサイズ + パディング）
-                double lineHeight = textBox.FontSize + 8;
-
-                // 行数に基づいて高さを計算（最大5行まで）
-                int maxLines = 5;
-                int actualLines = Math.Min(lineCount, maxLines);
-
-                // 新しい高さを設定（基本の高さ + 追加行分の高さ）
-                double newHeight = textBox.MinHeight + (actualLines - 1) * lineHeight;
-
-                // 最大高さを超えないように制限
-                textBox.Height = Math.Min(newHeight, textBox.MaxHeight);
             }
         }
 

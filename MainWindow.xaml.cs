@@ -1191,7 +1191,7 @@ namespace CocoroConsole
         /// CocoroGhost.exeを起動する（既に起動している場合は終了してから再起動）（非同期版）
         /// </summary>
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
-        private async Task LaunchCocoroGhostAsync(ProcessOperation operation = ProcessOperation.RestartIfRunning)
+        internal async Task LaunchCocoroGhostAsync(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
             if (_appSettings.IsUseLLM)
             {

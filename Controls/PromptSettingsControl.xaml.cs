@@ -86,23 +86,6 @@ namespace CocoroConsole.Controls
             return _addonPresets[_currentAddonPresetIndex].AddonPresetId;
         }
 
-        private async Task SavePresetsToApiAsync()
-        {
-            if (_apiClient == null || _onPresetListChanged == null)
-            {
-                return;
-            }
-
-            try
-            {
-                await _onPresetListChanged();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"プリセットの保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
         private void LoadPersonaPresets(List<PersonaPreset>? presets, string? activePresetId)
         {
             _personaPresets.Clear();

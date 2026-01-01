@@ -22,9 +22,6 @@ namespace CocoroConsole.Controls
         private Dictionary<string, object> _originalDisplaySettings = new Dictionary<string, object>();
         private List<CharacterSettings> _originalCharacterList = new List<CharacterSettings>();
 
-        // 現在選択されているキャラクターのインデックス
-        private int _currentCharacterIndex = 0;
-
         // リマインダー有効/無効の前回値（ローカル設定には保存しない）
         private bool _previousRemindersEnabled = false;
 
@@ -197,15 +194,9 @@ namespace CocoroConsole.Controls
             // キャラクター変更イベントを登録
             CharacterManagementControl.CharacterChanged += (sender, args) =>
             {
-                // 現在のキャラクターインデックスを更新
-                _currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
-
                 // アニメーション設定を更新
                 AnimationSettingsControl.Initialize();
             };
-
-            // 現在のキャラクターインデックスを取得
-            _currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
 
             // アニメーション設定コントロールを初期化
             if (_communicationService != null)
@@ -327,15 +318,6 @@ namespace CocoroConsole.Controls
                     UIHelper.ShowError("通信エラー", "通信サービスが利用できません。");
                 }
             }
-        }
-
-        /// <summary>
-        /// キャラクター情報をUIに反映（CharacterManagementControlに移行済み）
-        /// </summary>
-        private void UpdateCharacterUI(int index)
-        {
-            // CharacterManagementControlに移行済み - このメソッドは使用されません
-            return;
         }
 
         #region 共通ボタンイベントハンドラ
@@ -720,17 +702,6 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// ボタンの有効/無効状態を設定する
-        /// </summary>
-        /// <param name="enabled">有効にするかどうか</param>
-        private void SetButtonsEnabled(bool enabled)
-        {
-            OkButton.IsEnabled = enabled;
-            ApplyButton.IsEnabled = enabled;
-            CancelButton.IsEnabled = enabled;
-        }
-
-        /// <summary>
         /// 表示設定を保存する
         /// </summary>
         // Display タブ以外の設定を AppSettings に適用
@@ -951,27 +922,13 @@ namespace CocoroConsole.Controls
                 var mainWindow = Application.Current.MainWindow as MainWindow;
                 if (mainWindow != null)
                 {
-                    // MainWindowのLaunchCocoroGhostAsyncメソッドを呼び出してCocoroGhostを再起動
-                    var launchMethod = mainWindow.GetType().GetMethod("LaunchCocoroGhostAsync",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    // ProcessOperation.RestartIfRunning を指定してCocoroGhostを再起動（非同期）
+                    await mainWindow.LaunchCocoroGhostAsync(ProcessOperation.RestartIfRunning);
+                    Debug.WriteLine("CocoroGhostを再起動要求をしました");
 
-                    if (launchMethod != null)
-                    {
-                        // ProcessOperation.RestartIfRunning を指定してCocoroGhostを再起動（非同期）
-                        var taskResult =
-                            launchMethod.Invoke(mainWindow, new object[] { ProcessOperation.RestartIfRunning });
-                        Debug.WriteLine("CocoroGhostを再起動要求をしました");
-
-                        // 非同期で再起動処理を待機
-                        if (taskResult is Task task)
-                        {
-                            await task;
-                        }
-
-                        // 再起動完了を待機
-                        await WaitForCocoroGhostRestartAsync();
-                        Debug.WriteLine("CocoroGhostの再起動が完了しました");
-                    }
+                    // 再起動完了を待機
+                    await WaitForCocoroGhostRestartAsync();
+                    Debug.WriteLine("CocoroGhostの再起動が完了しました");
                 }
             }
             catch (Exception ex)

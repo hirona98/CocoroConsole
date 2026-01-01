@@ -17,9 +17,6 @@ namespace CocoroConsole.Controls
         // 設定のスナップショット
         private Dictionary<string, object> _displaySettings = new();
 
-        // 通信サービス参照（必要なら親から提供）
-        private ICommunicationService? _communicationService;
-
         // キーボードフック用（Win/Alt検出とキャプチャ）
         private HwndSource? _source;
         private bool _isCapturingKey = false;
@@ -89,7 +86,6 @@ namespace CocoroConsole.Controls
 
         public void SetCommunicationService(ICommunicationService? service)
         {
-            _communicationService = service;
             if (service != null)
             {
                 EscapePositionControl.SetCommunicationService(service);
