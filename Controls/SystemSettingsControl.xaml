@@ -375,7 +375,7 @@
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666"
                                    Margin="0,0,0,10">
-                            APIで使用するBearer Tokenを設定します。
+                            APIで使用するBearer Tokenです。将来的に変更可能になります。
                         </TextBlock>
 
                         <!-- Bearer Token設定 -->
@@ -391,7 +391,7 @@
                                      x:Name="BearerTokenPasswordBox"
                                      Padding="2"
                                      VerticalAlignment="Center"
-                                     MaxWidth="300"
+                                     Width="200"
                                      HorizontalAlignment="Left"
                                      TextChanged="BearerTokenPasswordBox_PasswordChanged"
                                      IsEnabled="False"/>
