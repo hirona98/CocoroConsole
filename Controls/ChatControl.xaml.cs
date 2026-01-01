@@ -676,13 +676,16 @@ namespace CocoroConsole.Controls
                     var files = Clipboard.GetFileDropList();
                     if (files.Count > 0)
                     {
-                        string? filePath = files[0];
-                        if (filePath != null)
+                        foreach (var filePath in files)
                         {
-                            AddImageFromFile(filePath);
-                            e.Handled = true;
+                            if (!string.IsNullOrEmpty(filePath))
+                            {
+                                AddImageFromFile(filePath);
+                            }
                         }
+                        e.Handled = true;
                     }
+                }
             }
         }
 
@@ -736,8 +739,18 @@ namespace CocoroConsole.Controls
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if (files.Length > 0)
                 {
-                    string filePath = files[0];
-                    AddImageFromFile(filePath);
+                    foreach (string filePath in files)
+                    {
+                        AddImageFromFile(filePath);
+                    }
+                }
+            }
+            else if (e.Data.GetDataPresent(DataFormats.Bitmap))
+            {
+                var image = e.Data.GetData(DataFormats.Bitmap) as BitmapSource;
+                if (image != null)
+                {
+                    AddImageFromBitmapSource(image);
                 }
             }
             e.Handled = true;
@@ -778,6 +791,15 @@ namespace CocoroConsole.Controls
                 foreach (string filePath in files)
                 {
                     AddImageFromFile(filePath);
+                }
+                e.Handled = true;
+            }
+            else if (e.Data.GetDataPresent(DataFormats.Bitmap))
+            {
+                var image = e.Data.GetData(DataFormats.Bitmap) as BitmapSource;
+                if (image != null)
+                {
+                    AddImageFromBitmapSource(image);
                 }
                 e.Handled = true;
             }
@@ -992,20 +1014,6 @@ namespace CocoroConsole.Controls
                 UpdateImagePreview();
             }
         }
-
-        /// <summary>
-        /// 指定したインデックスの画像を削除
-        /// </summary>
-        private void RemoveImageAt(int index)
-        {
-            if (index >= 0 && index < _attachedImageSources.Count)
-            {
-                _attachedImageDataUrls.RemoveAt(index);
-                _attachedImageSources.RemoveAt(index);
-                UpdateImagePreview();
-            }
-        }
-
 
         /// <summary>
         /// 添付画像データ（複数）を取得してクリア

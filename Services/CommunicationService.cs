@@ -289,15 +289,27 @@ namespace CocoroConsole.Services
                     _currentSessionId = $"dock_{DateTime.Now:yyyyMMddHHmmssfff}";
                 }
 
-                // 画像データを変換
-                string? imageBase64 = null;
+                // 画像データを変換（複数対応）
+                var images = new List<CocoroGhostImage>();
                 if (imageDataUrls != null && imageDataUrls.Count > 0)
                 {
-                    imageBase64 = ExtractBase64(imageDataUrls.First());
+                    foreach (var dataUrl in imageDataUrls)
+                    {
+                        var base64 = ExtractBase64(dataUrl);
+                        if (string.IsNullOrWhiteSpace(base64))
+                        {
+                            continue;
+                        }
+                        images.Add(new CocoroGhostImage
+                        {
+                            Type = "desktop_capture",
+                            Base64 = base64
+                        });
+                    }
                 }
 
                 // 画像がある場合は画像処理中、そうでなければメッセージ処理中に設定
-                var processingStatus = (!string.IsNullOrEmpty(imageBase64))
+                var processingStatus = images.Count > 0
                     ? CocoroGhostStatus.ProcessingImage
                     : CocoroGhostStatus.ProcessingMessage;
                 _statusPollingService.SetProcessingStatus(processingStatus);
@@ -316,16 +328,7 @@ namespace CocoroConsole.Services
                 {
                     EmbeddingPresetId = embeddingPresetId,
                     UserText = message,
-                    Images = string.IsNullOrEmpty(imageBase64)
-                        ? new List<CocoroGhostImage>()
-                        : new List<CocoroGhostImage>
-                        {
-                            new CocoroGhostImage
-                            {
-                                Type = "desktop_capture",
-                                Base64 = imageBase64
-                            }
-                        }
+                    Images = images
                 };
 
                 var buffer = new StringBuilder();
