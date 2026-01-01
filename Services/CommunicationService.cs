@@ -19,11 +19,11 @@ namespace CocoroConsole.Services
     {
         // リアルタイムストリーミング設定（即座表示方式）
 
-        private readonly CocoroConsoleApiServer _apiServer;
-        private readonly CocoroShellClient _shellClient;
+        private CocoroConsoleApiServer _apiServer;
+        private CocoroShellClient _shellClient;
         private readonly IAppSettings _appSettings;
-        private readonly StatusPollingService _statusPollingService;
-        private readonly CocoroGhostApiClient? _cocoroGhostApiClient;
+        private StatusPollingService _statusPollingService;
+        private CocoroGhostApiClient? _cocoroGhostApiClient;
         private LogStreamClient? _logStreamClient;
         private EventsStreamClient? _eventsStreamClient;
 
@@ -72,14 +72,7 @@ namespace CocoroConsole.Services
             _appSettings = appSettings;
 
             // APIサーバーの初期化
-            _apiServer = new CocoroConsoleApiServer(_appSettings.CocoroConsolePort, _appSettings);
-            _apiServer.ChatMessageReceived += (sender, request) => ChatMessageReceived?.Invoke(this, request);
-            _apiServer.ControlCommandReceived += (sender, request) => ControlCommandReceived?.Invoke(this, request);
-            _apiServer.StatusUpdateReceived += (sender, request) =>
-            {
-                // ステータス更新イベントを発火
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, request.message));
-            };
+            _apiServer = CreateApiServer(_appSettings.CocoroConsolePort);
 
             // CocoroShellクライアントの初期化
             _shellClient = new CocoroShellClient(_appSettings.CocoroShellPort);
@@ -159,7 +152,122 @@ namespace CocoroConsole.Services
         /// </summary>
         private void OnSettingsSaved(object? sender, EventArgs e)
         {
+            var previousSettings = _cachedConfigSettings;
             RefreshSettingsCache();
+            ApplyRuntimeSettingsChanges(previousSettings, _cachedConfigSettings);
+        }
+
+        private CocoroConsoleApiServer CreateApiServer(int port)
+        {
+            var server = new CocoroConsoleApiServer(port, _appSettings);
+            server.ChatMessageReceived += (sender, request) => ChatMessageReceived?.Invoke(this, request);
+            server.ControlCommandReceived += (sender, request) => ControlCommandReceived?.Invoke(this, request);
+            server.StatusUpdateReceived += (sender, request) =>
+            {
+                // ステータス更新イベントを発火
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, request.message));
+            };
+            return server;
+        }
+
+        private void ApplyRuntimeSettingsChanges(ConfigSettings? previousSettings, ConfigSettings? currentSettings)
+        {
+            if (previousSettings == null || currentSettings == null)
+            {
+                return;
+            }
+
+            bool consolePortChanged = previousSettings.CocoroConsolePort != currentSettings.CocoroConsolePort;
+            bool shellPortChanged = previousSettings.cocoroShellPort != currentSettings.cocoroShellPort;
+            bool ghostPortChanged = previousSettings.cocoroCorePort != currentSettings.cocoroCorePort;
+            bool bearerTokenChanged = !string.Equals(previousSettings.cocoroGhostBearerToken ?? string.Empty,
+                currentSettings.cocoroGhostBearerToken ?? string.Empty, StringComparison.Ordinal);
+
+            if (consolePortChanged)
+            {
+                _ = RestartApiServerAsync(currentSettings.CocoroConsolePort);
+            }
+
+            if (shellPortChanged)
+            {
+                _shellClient?.Dispose();
+                _shellClient = new CocoroShellClient(currentSettings.cocoroShellPort);
+            }
+
+            if (ghostPortChanged)
+            {
+                ResetStatusPollingService(currentSettings.cocoroCorePort);
+            }
+
+            if (ghostPortChanged || bearerTokenChanged)
+            {
+                UpdateCocoroGhostApiClient(currentSettings);
+                _cachedCocoroGhostSettings = null;
+                _initialSettingsFetched = false;
+
+                _ = StopEventsStreamAsync();
+                _ = StopLogStreamAsync();
+            }
+        }
+
+        private async Task RestartApiServerAsync(int newPort)
+        {
+            var oldServer = _apiServer;
+            bool wasRunning = oldServer.IsRunning;
+            try
+            {
+                if (wasRunning)
+                {
+                    await oldServer.StopAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"CommunicationService: サーバー再起動停止エラー: {ex.Message}");
+            }
+            finally
+            {
+                oldServer.Dispose();
+            }
+
+            _apiServer = CreateApiServer(newPort);
+
+            if (wasRunning)
+            {
+                try
+                {
+                    await _apiServer.StartAsync();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"CommunicationService: サーバー再起動起動エラー: {ex.Message}");
+                    ErrorOccurred?.Invoke(this, $"サーバー再起動に失敗しました: {ex.Message}");
+                }
+            }
+        }
+
+        private void ResetStatusPollingService(int cocoroGhostPort)
+        {
+            _statusPollingService.StatusChanged -= OnStatusPollingServiceStatusChanged;
+            _statusPollingService.Dispose();
+
+            _statusPollingService = new StatusPollingService($"http://127.0.0.1:{cocoroGhostPort}");
+            _statusPollingService.StatusChanged += OnStatusPollingServiceStatusChanged;
+        }
+
+        private void UpdateCocoroGhostApiClient(ConfigSettings settings)
+        {
+            _cocoroGhostApiClient?.Dispose();
+            _cocoroGhostApiClient = null;
+
+            var bearerToken = settings.cocoroGhostBearerToken ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(bearerToken))
+            {
+                return;
+            }
+
+            var baseUrl = $"http://127.0.0.1:{settings.cocoroCorePort}";
+            _cocoroGhostApiClient = new CocoroGhostApiClient(baseUrl, bearerToken);
         }
 
 
@@ -965,7 +1073,11 @@ namespace CocoroConsole.Services
             // セマフォの解放
             _forwardMessageSemaphore?.Dispose();
 
-            _statusPollingService?.Dispose();
+            if (_statusPollingService != null)
+            {
+                _statusPollingService.StatusChanged -= OnStatusPollingServiceStatusChanged;
+                _statusPollingService.Dispose();
+            }
             _apiServer?.Dispose();
             _shellClient?.Dispose();
             _logStreamClient?.Dispose();
