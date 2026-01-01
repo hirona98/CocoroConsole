@@ -20,7 +20,7 @@
                         </TextBlock>
 
                         <Expander x:Name="NotificationApiExpander"
-                                  Header="通知API（POST /api/v1/notification）"
+                                  Header="通知API（POST /api/v2/notification）"
                                   Foreground="#666666"
                                   IsExpanded="False"
                                   Margin="0,10,0,0">
@@ -37,7 +37,7 @@
                         </Expander>
 
                         <Expander x:Name="MetaRequestApiExpander"
-                                  Header="メタ要求API（POST /api/v1/meta-request）"
+                                  Header="メタ要求API（POST /api/v2/meta-request）"
                                   Foreground="#666666"
                                   IsExpanded="False"
                                   Margin="0,10,0,0">
