@@ -320,8 +320,8 @@
                     </StackPanel>
                 </Expander>
 
-                <!-- マイク設定 -->
-                <Expander Header="マイク設定"
+                <!-- 音声認識設定 -->
+                <Expander Header="音声認識設定"
                           Margin="0,0,20,20"
                           IsExpanded="False"
                           Style="{StaticResource GroupBoxLikeExpanderStyle}">
@@ -330,10 +330,8 @@
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666"
                                    Margin="0,0,0,10">
-                            音声認識時のマイク入力感度を調整します。
+                            マイクと話者識別の設定を行います。話者登録すると特定の人物の声だけを認識します。
                         </TextBlock>
-
-                        <!-- しきい値設定 -->
                         <Grid Margin="0,5,0,5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="100"/>
@@ -356,18 +354,16 @@
                                        VerticalAlignment="Center"
                                        HorizontalAlignment="Center"/>
                         </Grid>
-
-                        <!-- しきい値説明テキスト -->
                         <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666">
+                                   Foreground="#666666"
+                                   Margin="0,0,0,10">
                             ※値が低いほど（-50dBに近いほど）音声を拾いやすくなりますが、環境音も拾いやすくなります。
                         </TextBlock>
+
+                        <local:SpeakerManagementControl x:Name="SpeakerManagementControl"
+                                                        Margin="0,6,0,0"/>
                     </StackPanel>
                 </Expander>
-
-                <!-- 話者識別設定 -->
-                <local:SpeakerManagementControl x:Name="SpeakerManagementControl"
-                                                Margin="0,0,20,20"/>
 
                 <!-- API認証設定 -->
                 <Expander Header="API認証設定"
