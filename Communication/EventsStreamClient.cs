@@ -15,11 +15,25 @@ namespace CocoroConsole.Communication
     /// </summary>
     public sealed class EventsStreamClient : IDisposable
     {
+        private static readonly TimeSpan[] ReconnectDelays =
+        {
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(10),
+            TimeSpan.FromSeconds(30),
+            TimeSpan.FromSeconds(60),
+        };
+
         private readonly Uri _webSocketUri;
         private readonly string _bearerToken;
         private ClientWebSocket? _webSocket;
-        private CancellationTokenSource? _cancellationTokenSource;
-        private Task? _receiveTask;
+        private CancellationTokenSource? _connectionTokenSource;
+        private CancellationTokenSource? _supervisorTokenSource;
+        private Task? _supervisorTask;
+        private bool _isConnected;
+        private int _reconnectAttempt;
+        private bool _reconnectDisabled;
         private bool _disposed;
 
         public event EventHandler<CocoroGhostEvent>? EventReceived;
@@ -36,123 +50,199 @@ namespace CocoroConsole.Communication
         {
             ThrowIfDisposed();
 
-            await StopAsync();
-
-            _webSocket = new ClientWebSocket();
-            _cancellationTokenSource = new CancellationTokenSource();
-
-            _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {_bearerToken}");
-            _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
-
-            try
+            if (_supervisorTask != null && !_supervisorTask.IsCompleted)
             {
-                await _webSocket.ConnectAsync(_webSocketUri, _cancellationTokenSource.Token);
-                ConnectionStateChanged?.Invoke(this, true);
-                _receiveTask = Task.Run(ReceiveLoopAsync);
+                return;
             }
-            catch (Exception ex)
-            {
-                ErrorOccurred?.Invoke(this, $"イベントストリーム接続失敗: {ex.Message}");
-                await StopAsync();
-                throw;
-            }
+
+            _reconnectDisabled = false;
+            _supervisorTokenSource = new CancellationTokenSource();
+            _supervisorTask = Task.Run(() => SupervisorLoopAsync(_supervisorTokenSource.Token));
+            await Task.CompletedTask;
         }
 
         public async Task StopAsync()
         {
-            if (_webSocket == null && _cancellationTokenSource == null && _receiveTask == null)
+            if (_supervisorTask == null && _connectionTokenSource == null && _webSocket == null)
             {
                 return;
             }
 
             try
             {
-                _cancellationTokenSource?.Cancel();
+                _supervisorTokenSource?.Cancel();
 
-                if (_receiveTask != null)
+                if (_supervisorTask != null)
                 {
                     try
                     {
-                        await Task.WhenAny(_receiveTask, Task.Delay(TimeSpan.FromSeconds(3)));
+                        await Task.WhenAny(_supervisorTask, Task.Delay(TimeSpan.FromSeconds(3)));
                     }
                     catch
                     {
                         // キャンセル時の例外は無視
                     }
                 }
-
-                if (_webSocket?.State == WebSocketState.Open || _webSocket?.State == WebSocketState.CloseReceived)
-                {
-                    try
-                    {
-                        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "停止", CancellationToken.None);
-                    }
-                    catch
-                    {
-                        // Close失敗は無視
-                    }
-                }
             }
             finally
             {
-                _webSocket?.Dispose();
-                _webSocket = null;
-                _receiveTask = null;
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = null;
-                ConnectionStateChanged?.Invoke(this, false);
+                await CloseAndCleanupAsync();
+                _supervisorTokenSource?.Dispose();
+                _supervisorTokenSource = null;
+                _supervisorTask = null;
+                _reconnectAttempt = 0;
+                _reconnectDisabled = false;
+                SetConnectionState(false);
             }
         }
 
-        private async Task ReceiveLoopAsync()
+        private async Task SupervisorLoopAsync(CancellationToken supervisorToken)
         {
-            if (_webSocket == null || _cancellationTokenSource == null)
-            {
-                return;
-            }
-
-            var buffer = new byte[8192];
-
             try
             {
-                while (_webSocket.State == WebSocketState.Open &&
-                       !(_cancellationTokenSource.Token.IsCancellationRequested))
+                while (!supervisorToken.IsCancellationRequested && !_reconnectDisabled)
                 {
-                    var messageBuffer = new List<byte>();
-                    WebSocketReceiveResult result;
-
-                    do
+                    var connected = false;
+                    try
                     {
-                        result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), _cancellationTokenSource.Token);
+                        await ConnectAsync(supervisorToken);
+                        connected = true;
+                        SetConnectionState(true);
+                        _reconnectAttempt = 0;
 
-                        if (result.MessageType == WebSocketMessageType.Close)
+                        var closeStatus = await ReceiveLoopAsync(supervisorToken);
+                        if (closeStatus == WebSocketCloseStatus.PolicyViolation)
                         {
-                            return;
+                            _reconnectDisabled = true;
+                            ErrorOccurred?.Invoke(this, "イベントストリーム認証エラーのため再接続を停止しました。");
                         }
-
-                        if (result.MessageType == WebSocketMessageType.Text)
-                        {
-                            messageBuffer.AddRange(buffer.Take(result.Count));
-                        }
-                    } while (!result.EndOfMessage);
-
-                    if (messageBuffer.Count == 0)
+                    }
+                    catch (OperationCanceledException) when (supervisorToken.IsCancellationRequested)
                     {
-                        continue;
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        var label = connected ? "イベントストリーム受信エラー" : "イベントストリーム接続失敗";
+                        ErrorOccurred?.Invoke(this, $"{label}: {ex.Message}");
+                    }
+                    finally
+                    {
+                        await CloseAndCleanupAsync();
+                        if (connected)
+                        {
+                            SetConnectionState(false);
+                        }
                     }
 
-                    var json = Encoding.UTF8.GetString(messageBuffer.ToArray());
-                    HandleMessage(json);
+                    if (supervisorToken.IsCancellationRequested || _reconnectDisabled)
+                    {
+                        break;
+                    }
+
+                    var delay = GetReconnectDelay(_reconnectAttempt++);
+                    await Task.Delay(delay, supervisorToken);
                 }
             }
             catch (OperationCanceledException)
             {
                 // 停止要求なので無視
             }
-            catch (Exception ex)
+        }
+
+        private async Task ConnectAsync(CancellationToken supervisorToken)
+        {
+            await CloseAndCleanupAsync();
+
+            _connectionTokenSource = CancellationTokenSource.CreateLinkedTokenSource(supervisorToken);
+            _webSocket = new ClientWebSocket();
+            _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {_bearerToken}");
+            _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+            await _webSocket.ConnectAsync(_webSocketUri, _connectionTokenSource.Token);
+        }
+
+        private async Task<WebSocketCloseStatus?> ReceiveLoopAsync(CancellationToken supervisorToken)
+        {
+            var ws = _webSocket;
+            if (ws == null)
             {
-                ErrorOccurred?.Invoke(this, $"イベントストリーム受信エラー: {ex.Message}");
+                return null;
             }
+
+            var token = _connectionTokenSource?.Token ?? supervisorToken;
+            var buffer = new byte[8192];
+
+            while (ws.State == WebSocketState.Open && !token.IsCancellationRequested)
+            {
+                var messageBuffer = new List<byte>();
+                WebSocketReceiveResult result;
+
+                do
+                {
+                    result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), token);
+
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        return result.CloseStatus;
+                    }
+
+                    if (result.MessageType == WebSocketMessageType.Text)
+                    {
+                        messageBuffer.AddRange(buffer.Take(result.Count));
+                    }
+                } while (!result.EndOfMessage);
+
+                if (messageBuffer.Count == 0)
+                {
+                    continue;
+                }
+
+                var json = Encoding.UTF8.GetString(messageBuffer.ToArray());
+                HandleMessage(json);
+            }
+
+            return null;
+        }
+
+        private async Task CloseAndCleanupAsync()
+        {
+            _connectionTokenSource?.Cancel();
+
+            if (_webSocket?.State == WebSocketState.Open || _webSocket?.State == WebSocketState.CloseReceived)
+            {
+                try
+                {
+                    await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "停止", CancellationToken.None);
+                }
+                catch
+                {
+                    // Close失敗は無視
+                }
+            }
+
+            _webSocket?.Dispose();
+            _webSocket = null;
+
+            _connectionTokenSource?.Dispose();
+            _connectionTokenSource = null;
+        }
+
+        private static TimeSpan GetReconnectDelay(int attempt)
+        {
+            var index = Math.Min(attempt, ReconnectDelays.Length - 1);
+            var jitterMs = Random.Shared.Next(0, 250);
+            return ReconnectDelays[index] + TimeSpan.FromMilliseconds(jitterMs);
+        }
+
+        private void SetConnectionState(bool isConnected)
+        {
+            if (_isConnected == isConnected)
+            {
+                return;
+            }
+
+            _isConnected = isConnected;
+            ConnectionStateChanged?.Invoke(this, isConnected);
         }
 
         private void HandleMessage(string json)
