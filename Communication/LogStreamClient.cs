@@ -216,6 +216,7 @@ namespace CocoroConsole.Communication
                 var level = element.TryGetProperty("level", out var levelElement) ? levelElement.GetString() : "INFO";
                 var logger = element.TryGetProperty("logger", out var loggerElement) ? loggerElement.GetString() : string.Empty;
                 var message = element.TryGetProperty("msg", out var msgElement) ? msgElement.GetString() : string.Empty;
+                message = CompactJsonWhitespaceInLog(message ?? string.Empty);
 
                 logMessage = new LogMessage
                 {
@@ -230,6 +231,113 @@ namespace CocoroConsole.Communication
             {
                 return false;
             }
+        }
+
+        private static string CompactJsonWhitespaceInLog(string message)
+        {
+            if (string.IsNullOrEmpty(message))
+            {
+                return message;
+            }
+
+            var markerIndex = FindFirstMarkerIndex(message);
+            if (markerIndex < 0)
+            {
+                return message;
+            }
+
+            var jsonStart = message.IndexOfAny(new[] { '{', '[' }, markerIndex);
+            if (jsonStart < 0)
+            {
+                return message;
+            }
+
+            var prefix = message.Substring(0, jsonStart);
+            var jsonPart = message.Substring(jsonStart);
+            var compacted = CollapseWhitespaceOutsideStrings(jsonPart);
+            return prefix + compacted;
+        }
+
+        private static int FindFirstMarkerIndex(string message)
+        {
+            string[] markers =
+            {
+                "LLM response (json)",
+                "LLM request (json)",
+                "LLM response (chat)",
+                "LLM request (chat)",
+                "LLM response (vision)",
+                "LLM request (vision)",
+            };
+
+            var bestIndex = -1;
+            foreach (var marker in markers)
+            {
+                var index = message.IndexOf(marker, StringComparison.Ordinal);
+                if (index < 0)
+                {
+                    continue;
+                }
+
+                if (bestIndex < 0 || index < bestIndex)
+                {
+                    bestIndex = index;
+                }
+            }
+
+            return bestIndex;
+        }
+
+        private static string CollapseWhitespaceOutsideStrings(string text)
+        {
+            var sb = new StringBuilder(text.Length);
+            bool inString = false;
+            bool escaped = false;
+            bool inWhitespace = false;
+
+            foreach (var ch in text)
+            {
+                if (inString)
+                {
+                    sb.Append(ch);
+                    if (escaped)
+                    {
+                        escaped = false;
+                    }
+                    else if (ch == '\\')
+                    {
+                        escaped = true;
+                    }
+                    else if (ch == '"')
+                    {
+                        inString = false;
+                    }
+                    continue;
+                }
+
+                if (ch == '"')
+                {
+                    inString = true;
+                    inWhitespace = false;
+                    sb.Append(ch);
+                    continue;
+                }
+
+                if (char.IsWhiteSpace(ch))
+                {
+                    if (!inWhitespace)
+                    {
+                        sb.Append(' ');
+                        inWhitespace = true;
+                    }
+                    continue;
+                }
+
+                inWhitespace = false;
+                sb.Append(ch);
+            }
+
+            return sb.ToString();
         }
 
         private void ThrowIfDisposed()
