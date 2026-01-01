@@ -160,7 +160,8 @@
 
                                 <!-- メッセージ（3行に制限） -->
                                 <DataGridTemplateColumn Header="メッセージ"
-                                                        Width="*">
+                                                        Width="*"
+                                                        ClipboardContentBinding="{Binding message}">
                                         <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                         <TextBlock Text="{Binding message}"
