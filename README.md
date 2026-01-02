@@ -1,6 +1,6 @@
 ﻿# CocoroConsole
 
-CocoroConsole は AIパートナー CocoroAI Ver.5 のチャットおよび設定用UIです
+CocoroConsole は AI人格システム CocoroAI Ver.5 のチャットおよび設定用UIです
 
 https://github.com/hirona98/CocoroDock をコピーして作成しています（ソリューションファイルのUUIDもCocoroDockのままです）
 
