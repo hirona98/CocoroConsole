@@ -435,7 +435,7 @@ namespace CocoroConsole.Services
                 var chatRequest = new ChatStreamRequest
                 {
                     EmbeddingPresetId = embeddingPresetId,
-                    UserText = message,
+                    InputText = message,
                     Images = images
                 };
 
