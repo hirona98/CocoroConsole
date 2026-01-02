@@ -153,35 +153,15 @@ namespace CocoroConsole.Services
 
 
 
-        /// <summary>
-        /// ログビューアーウィンドウを開く
-        /// </summary>
-        void OpenLogViewer();
+	        /// <summary>
+	        /// ログビューアーウィンドウを開く
+	        /// </summary>
+	        void OpenLogViewer();
 
-        /// <summary>
-        /// persona_mood（機嫌）デバッグ画面を開く
-        /// </summary>
-        void OpenPartnerMoodDebug();
-
-        /// <summary>
-        /// persona_mood の前回使用値（last used）を取得（デバッグ）
-        /// </summary>
-        Task<PartnerMoodState> GetPartnerMoodAsync();
-
-        /// <summary>
-        /// in-memory override を設定（デバッグ、完全上書き）
-        /// </summary>
-        Task<PartnerMoodState> UpdatePartnerMoodOverrideAsync(PartnerMoodOverrideRequest request);
-
-        /// <summary>
-        /// in-memory override を解除（デバッグ）
-        /// </summary>
-        Task<PartnerMoodState> ClearPartnerMoodOverrideAsync();
-
-        /// <summary>
-        /// CocoroShellから現在のキャラクター位置を取得
-        /// </summary>
-        Task<PositionResponse> GetShellPositionAsync();
+	        /// <summary>
+	        /// CocoroShellから現在のキャラクター位置を取得
+	        /// </summary>
+	        Task<PositionResponse> GetShellPositionAsync();
 
         /// <summary>
         /// CocoroShellに設定の部分更新を送信

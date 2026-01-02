@@ -20,21 +20,20 @@ namespace CocoroConsole
     /// <summary>
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
-    public partial class MainWindow : Window
-    {
-        private ICommunicationService? _communicationService;
-        private readonly IAppSettings _appSettings;
-        private ScreenshotService? _screenshotService;
+	    public partial class MainWindow : Window
+	    {
+	        private ICommunicationService? _communicationService;
+	        private readonly IAppSettings _appSettings;
+	        private ScreenshotService? _screenshotService;
         private bool _isScreenshotPaused = false;
-        private RealtimeVoiceRecognitionService? _voiceRecognitionService;
-        private ScheduledCommandService? _scheduledCommandService;
-        private SettingWindow? _settingWindow;
-        private LogViewerWindow? _logViewerWindow;
-        private PartnerMoodDebugWindow? _partnerMoodDebugWindow;
-        private DebugTraceListener? _debugTraceListener;
-        private int? _nextScreenshotInitialDelayMilliseconds;
-        private bool _isStreamingChatActive;
-        private bool _skipNextAssistantMessage;
+	        private RealtimeVoiceRecognitionService? _voiceRecognitionService;
+	        private ScheduledCommandService? _scheduledCommandService;
+	        private SettingWindow? _settingWindow;
+	        private LogViewerWindow? _logViewerWindow;
+	        private DebugTraceListener? _debugTraceListener;
+	        private int? _nextScreenshotInitialDelayMilliseconds;
+	        private bool _isStreamingChatActive;
+	        private bool _skipNextAssistantMessage;
         private string? _skipNextAssistantMessageContent;
 
 
@@ -52,15 +51,10 @@ namespace CocoroConsole
             InitializeApp();
         }
 
-        private void LogViewerMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            OpenLogViewer();
-        }
-
-        private void PartnerMoodDebugMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            OpenPartnerMoodDebug();
-        }
+	        private void LogViewerMenuItem_Click(object sender, RoutedEventArgs e)
+	        {
+	            OpenLogViewer();
+	        }
 
         /// <summary>
         /// チャット履歴をクリア
@@ -790,34 +784,10 @@ namespace CocoroConsole
             _logViewerWindow.Show();
         }
 
-        /// <summary>
-        /// persona_mood（機嫌）デバッグ画面を開く
-        /// </summary>
-        public void OpenPartnerMoodDebug()
-        {
-            if (_communicationService == null)
-            {
-                UIHelper.ShowError("エラー", "通信サービスが初期化されていません");
-                return;
-            }
-
-            if (_partnerMoodDebugWindow != null && !_partnerMoodDebugWindow.IsClosed)
-            {
-                _partnerMoodDebugWindow.Activate();
-                _partnerMoodDebugWindow.WindowState = WindowState.Normal;
-                return;
-            }
-
-            _partnerMoodDebugWindow = new PartnerMoodDebugWindow(_communicationService);
-            PositionWindowNearMain(_partnerMoodDebugWindow);
-            _partnerMoodDebugWindow.Closed += (_, __) => _partnerMoodDebugWindow = null;
-            _partnerMoodDebugWindow.Show();
-        }
-
-        private void AttachLogStreamHandlers()
-        {
-            if (_communicationService == null) return;
-
+	        private void AttachLogStreamHandlers()
+	        {
+	            if (_communicationService == null) return;
+	
             _communicationService.LogMessagesReceived += OnLogStreamMessagesReceived;
             _communicationService.LogStreamConnectionChanged += OnLogStreamConnectionChanged;
             _communicationService.LogStreamError += OnLogStreamError;

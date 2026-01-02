@@ -1,6 +1,5 @@
 ﻿using CocoroConsole.Communication;
 using CocoroConsole.Models.CocoroGhostApi;
-using CocoroConsole.Windows;
 using CocoroAI.Services;
 using System;
 using System.Collections.Generic;
@@ -729,60 +728,19 @@ namespace CocoroConsole.Services
         /// <summary>
         /// ログビューアーウィンドウを開く
         /// </summary>
-        public void OpenLogViewer()
-        {
-            // MainWindowのOpenLogViewerメソッドに委譲
-            if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
-            {
-                mainWindow.OpenLogViewer();
-            }
-        }
+	        public void OpenLogViewer()
+	        {
+	            // MainWindowのOpenLogViewerメソッドに委譲
+	            if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
+	            {
+	                mainWindow.OpenLogViewer();
+	            }
+	        }
 
-        /// <summary>
-        /// persona_mood（機嫌）デバッグ画面を開く
-        /// </summary>
-        public void OpenPartnerMoodDebug()
-        {
-            if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
-            {
-                mainWindow.OpenPartnerMoodDebug();
-            }
-        }
-
-        public Task<PartnerMoodState> GetPartnerMoodAsync()
-        {
-            if (_cocoroGhostApiClient == null)
-            {
-                throw new InvalidOperationException("cocoro_ghostのBearerトークンが設定されていません");
-            }
-
-            return _cocoroGhostApiClient.GetPartnerMoodAsync();
-        }
-
-        public Task<PartnerMoodState> UpdatePartnerMoodOverrideAsync(PartnerMoodOverrideRequest request)
-        {
-            if (_cocoroGhostApiClient == null)
-            {
-                throw new InvalidOperationException("cocoro_ghostのBearerトークンが設定されていません");
-            }
-
-            return _cocoroGhostApiClient.UpdatePartnerMoodOverrideAsync(request);
-        }
-
-        public Task<PartnerMoodState> ClearPartnerMoodOverrideAsync()
-        {
-            if (_cocoroGhostApiClient == null)
-            {
-                throw new InvalidOperationException("cocoro_ghostのBearerトークンが設定されていません");
-            }
-
-            return _cocoroGhostApiClient.ClearPartnerMoodOverrideAsync();
-        }
-
-        /// <summary>
-        /// ログストリーム接続を開始
-        /// </summary>
-        public async Task StartLogStreamAsync()
+	        /// <summary>
+	        /// ログストリーム接続を開始
+	        /// </summary>
+	        public async Task StartLogStreamAsync()
         {
             if (_logStreamClient != null)
             {

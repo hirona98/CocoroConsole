@@ -141,34 +141,16 @@ namespace CocoroConsole.Services
             }
         }
 
-        public Task<CaptureResponse> SendCaptureAsync(CaptureRequest request, CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendAsync<CaptureResponse>(HttpMethod.Post, "/api/capture", request, cancellationToken);
-        }
+	        public Task<CaptureResponse> SendCaptureAsync(CaptureRequest request, CancellationToken cancellationToken = default)
+	        {
+	            ThrowIfDisposed();
+	            return SendAsync<CaptureResponse>(HttpMethod.Post, "/api/capture", request, cancellationToken);
+	        }
 
-        public Task<PartnerMoodState> GetPartnerMoodAsync(CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendAsync<PartnerMoodState>(HttpMethod.Get, "/api/persona_mood", null, cancellationToken);
-        }
-
-        public Task<PartnerMoodState> UpdatePartnerMoodOverrideAsync(PartnerMoodOverrideRequest request, CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendAsync<PartnerMoodState>(HttpMethod.Put, "/api/persona_mood", request, cancellationToken);
-        }
-
-        public Task<PartnerMoodState> ClearPartnerMoodOverrideAsync(CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendAsync<PartnerMoodState>(HttpMethod.Delete, "/api/persona_mood", null, cancellationToken);
-        }
-
-        private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
-        {
-            var url = BuildUrl(path);
-            var request = new HttpRequestMessage(method, url);
+	        private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
+	        {
+	            var url = BuildUrl(path);
+	            var request = new HttpRequestMessage(method, url);
             if (payload != null)
             {
                 request.Content = CreateJsonContent(payload);
