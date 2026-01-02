@@ -11,7 +11,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
 using Forms = System.Windows.Forms;
 using System.Windows.Interop;
 
@@ -53,7 +52,12 @@ namespace CocoroConsole
             InitializeApp();
         }
 
-        private void CocoroAiTitleText_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private void LogViewerMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            OpenLogViewer();
+        }
+
+        private void PartnerMoodDebugMenuItem_Click(object sender, RoutedEventArgs e)
         {
             OpenPartnerMoodDebug();
         }
