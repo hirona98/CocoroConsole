@@ -198,7 +198,7 @@ namespace CocoroConsole.Windows
 
         private PartnerMoodOverrideRequest BuildOverrideRequestFromUi()
         {
-            // API仕様: PUT /api/partner_mood は「完全上書きのみ」
+            // API仕様: PUT /api/persona_mood は「完全上書きのみ」
             // label/intensity/components(4種)/response_policy(3種) をすべて指定する。
 
             if (LabelComboBox.SelectedItem is not ComboBoxItem item || item.Content is not string label || string.IsNullOrWhiteSpace(label))

@@ -159,12 +159,12 @@ namespace CocoroConsole.Services
         void OpenLogViewer();
 
         /// <summary>
-        /// partner_mood（機嫌）デバッグ画面を開く
+        /// persona_mood（機嫌）デバッグ画面を開く
         /// </summary>
         void OpenPartnerMoodDebug();
 
         /// <summary>
-        /// partner_mood の前回使用値（last used）を取得（デバッグ）
+        /// persona_mood の前回使用値（last used）を取得（デバッグ）
         /// </summary>
         Task<PartnerMoodState> GetPartnerMoodAsync();
 

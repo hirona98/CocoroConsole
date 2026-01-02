@@ -739,7 +739,7 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// partner_mood（機嫌）デバッグ画面を開く
+        /// persona_mood（機嫌）デバッグ画面を開く
         /// </summary>
         public void OpenPartnerMoodDebug()
         {
@@ -929,7 +929,7 @@ namespace CocoroConsole.Services
                         }, null);
                     }
 
-                    // New behavior: /api/notification generates partner "message" and pushes it via /api/events/stream
+                    // New behavior: /api/notification generates persona "message" and pushes it via /api/events/stream
                     var partnerMessage = ev.Data.Message;
                     if (!string.IsNullOrWhiteSpace(partnerMessage))
                     {

@@ -791,7 +791,7 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// partner_mood（機嫌）デバッグ画面を開く
+        /// persona_mood（機嫌）デバッグ画面を開く
         /// </summary>
         public void OpenPartnerMoodDebug()
         {

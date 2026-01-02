@@ -150,19 +150,19 @@ namespace CocoroConsole.Services
         public Task<PartnerMoodState> GetPartnerMoodAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendAsync<PartnerMoodState>(HttpMethod.Get, "/api/partner_mood", null, cancellationToken);
+            return SendAsync<PartnerMoodState>(HttpMethod.Get, "/api/persona_mood", null, cancellationToken);
         }
 
         public Task<PartnerMoodState> UpdatePartnerMoodOverrideAsync(PartnerMoodOverrideRequest request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendAsync<PartnerMoodState>(HttpMethod.Put, "/api/partner_mood", request, cancellationToken);
+            return SendAsync<PartnerMoodState>(HttpMethod.Put, "/api/persona_mood", request, cancellationToken);
         }
 
         public Task<PartnerMoodState> ClearPartnerMoodOverrideAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendAsync<PartnerMoodState>(HttpMethod.Delete, "/api/partner_mood", null, cancellationToken);
+            return SendAsync<PartnerMoodState>(HttpMethod.Delete, "/api/persona_mood", null, cancellationToken);
         }
 
         private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
