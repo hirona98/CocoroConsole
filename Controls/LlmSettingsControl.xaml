@@ -307,9 +307,9 @@
                                         <LineBreak/>
                                         <Run Text="openrouter/google/gemini-3-flash-preview"/>
                                         <LineBreak/>
-                                        <Run Text="ollama_chat/gemma3:12b"/>
+                                        <Run Text="ollama_chat/gemma3:12b（BASE URLはhttp://localhost:11434）"/>
                                         <LineBreak/>
-                                        <Run Text="lm_studio/google/gemma-3-4b"/>
+                                        <Run Text="lm_studio/google/gemma-3-4b（BASE URLはhttp://127.0.0.1:1234/v1）※未対応"/>
                                     </Paragraph>
                                 </FlowDocument>
                             </RichTextBox>
@@ -326,9 +326,9 @@
                             <Grid Grid.Column="1">
                                 <TextBox x:Name="LlmBaseUrlTextBox"
                                          Style="{StaticResource SettingTextBoxStyle}"
-                                         ToolTip="ローカルLLM使用時のベースURL（例: http://localhost:11434/v1）"
+                                         ToolTip="ローカルLLM使用時のベースURL（例: http://localhost:11434）"
                                          TextChanged="OnSettingChanged"/>
-                                <TextBlock Text="必要に応じてベースURLを設定できます（例: http://localhost:11434/v1）"
+                                <TextBlock Text="必要に応じてベースURLを設定できます（例: http://localhost:11434）"
                                            Foreground="#999999"
                                            Margin="6,0,6,0"
                                            VerticalAlignment="Center"

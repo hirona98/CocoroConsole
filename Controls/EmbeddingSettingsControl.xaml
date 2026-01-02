@@ -187,7 +187,7 @@
                         <!-- 警告テキスト -->
                         <TextBlock Foreground="Red"
                                    Margin="0,0,0,10">
-                            ※一度設定したら変更しないでください
+                            ※一度設定したら変更しないでください（APIキーを除く）
                         </TextBlock>
 
                         <!-- プリセット名(memory_id) -->
@@ -296,9 +296,9 @@
                                         <LineBreak/>
                                         <Run Text="openrouter/google/gemini-embedding-001"/>
                                         <LineBreak/>
-                                        <Run Text="ollama/XXX"/>
+                                        <Run Text="ollama/nomic-embed-text（BASE URLは http://localhost:11434）※問題あったら教えてね"/>
                                         <LineBreak/>
-                                        <Run Text="lm_studio/XXX"/>
+                                        <Run Text="lm_studio/XXX（BASE URLはhttp://127.0.0.1:1234/v1）※未対応"/>
                                         <LineBreak/>
                                         <Run Text="参考: "/>
                                         <Hyperlink NavigateUri="https://docs.litellm.ai/docs/embedding/supported_embedding"
