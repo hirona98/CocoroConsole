@@ -181,7 +181,7 @@
 
                         <TextBlock Margin="0,8,0,0"
                                    Foreground="#666666"
-                                   Text="システムプロンプトは「Prompt」タブで設定します。"
+                                   Text="システムプロンプトは「人格」タブで設定します。"
                                    TextWrapping="Wrap"/>
                     </StackPanel>
                 </GroupBox>
@@ -197,7 +197,7 @@
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="名前:"
+                            <TextBlock Text="プリセット名:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="PresetNameTextBox"
                                      Grid.Column="1"

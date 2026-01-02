@@ -15,16 +15,9 @@
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
-                        <!-- 説明テキスト -->
-                        <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,10">
-                            指定したコマンドを一定間隔で自動実行します。
-                        </TextBlock>
-
                         <!-- 有効化チェックボックス -->
                         <CheckBox x:Name="EnableScheduledCommandCheckBox"
-                                  Content="定期コマンド実行を有効にする"
+                                  Content="指定したコマンドを一定間隔で実行する"
                                   Margin="0,5,0,10"
                                   Foreground="#FF4873CF"
                                   ToolTip="Enable scheduled command execution"/>

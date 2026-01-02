@@ -245,11 +245,11 @@ namespace CocoroConsole.Controls
             switch (animationType)
             {
                 case 0:
-                    return "Standing Animation ON/OFF";
+                    return "立ち姿勢モーション ON/OFF";
                 case 1:
-                    return "Sitting Floor Animation ON/OFF";
+                    return "座り姿勢モーション ON/OFF";
                 case 2:
-                    return "Lying Down Animation ON/OFF";
+                    return "寝そべりモーション ON/OFF";
                 default:
                     return "Unknown";
             }

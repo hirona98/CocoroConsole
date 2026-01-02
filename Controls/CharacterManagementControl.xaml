@@ -69,7 +69,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0"
-                                       Text="名前:"
+                                       Text="プリセット名:"
                                        VerticalAlignment="Center"
                                        ToolTip="Name"/>
                             <TextBox Grid.Column="1"
@@ -125,7 +125,7 @@
 
                         <!-- 影オフメッシュ設定 -->
                         <CheckBox x:Name="EnableShadowOffCheckBox"
-                                  Content="指定したメッシュに影を落とさない"
+                                  Content="指定したメッシュに影を落とさない（顔などを想定）"
                                   Foreground="#FF4873CF"
                                   Checked="EnableShadowOffCheckBox_Checked"
                                   Unchecked="EnableShadowOffCheckBox_Unchecked"
@@ -147,12 +147,6 @@
                                      Padding="2"
                                      ToolTip="カンマ区切りでメッシュ名を入力 (例: Face, U_Char_1)"/>
                         </Grid>
-                        <!-- 影設定説明テキスト -->
-                        <TextBlock Foreground="#666666"
-                                   TextWrapping="Wrap"
-                                   Margin="130,0,0,10">
-                            顔など特定のメッシュに影を落としたくない場合に指定してください。
-                        </TextBlock>
                     </StackPanel>
                 </GroupBox>
 
@@ -824,6 +818,9 @@
                           Padding="10"
                           Margin="0,20,20,0">
                     <StackPanel>
+                        <TextBlock Text="システムタブも設定してください"
+                                   Foreground="#666666"
+                                   Margin="0,-5,0,10"/>
                         <Grid>
                             <CheckBox x:Name="IsUseSTTCheckBox"
                                       Content="STTを使用する"
