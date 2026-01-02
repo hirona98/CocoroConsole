@@ -263,22 +263,57 @@
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
-                        <!-- LLMモデル説明テキスト -->
-                        <TextBlock Foreground="#666666"
-                                   TextWrapping="Wrap"
-                                   Margin="140,0,0,5">
-                            <TextBlock.Inlines>
-                                <Run Text="LiteLLM の書式で記載してください"/>
-                                <Run Text="（詳細は "/>
-                                <Hyperlink NavigateUri="https://docs.litellm.ai/docs/providers"
-                                           RequestNavigate="Hyperlink_RequestNavigate">
-                                    <Run Text="https://docs.litellm.ai/docs/providers"/>
-                                </Hyperlink>
-                                <Run Text="）"/>
-                                <LineBreak/>
-                                <Run Text="ex) openai/gpt-4o-mini, gemini/gemini-2.0-flash, ollama_chat/gemma3:12b"/>
-                            </TextBlock.Inlines>
-                        </TextBlock>
+                        <!-- LLMモデル説明（折りたたみ） -->
+                        <Expander Header="モデル詳細説明"
+                                  Margin="140,0,0,5"
+                                  IsExpanded="False"
+                                  Foreground="#666666">
+                            <!-- RichTextBoxにすることでマウス選択/コピー可能にする -->
+                            <RichTextBox Margin="0,5,0,0"
+                                         IsReadOnly="True"
+                                         IsReadOnlyCaretVisible="False"
+                                         IsTabStop="False"
+                                         IsDocumentEnabled="True"
+                                         BorderThickness="0"
+                                         Background="Transparent"
+                                         Foreground="#666666"
+                                         Padding="0"
+                                         VerticalScrollBarVisibility="Disabled"
+                                         HorizontalScrollBarVisibility="Disabled">
+                                <RichTextBox.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="コピー"
+                                                  Command="ApplicationCommands.Copy"/>
+                                        <MenuItem Header="すべて選択"
+                                                  Command="ApplicationCommands.SelectAll"/>
+                                    </ContextMenu>
+                                </RichTextBox.ContextMenu>
+                                <FlowDocument PagePadding="0"
+                                              LineHeight="18">
+                                    <Paragraph Margin="0">
+                                        <Run Text="以下のようにLiteLLMの書式で記載してください"/>
+                                        <Run Text="（詳細は "/>
+                                        <Hyperlink NavigateUri="https://docs.litellm.ai/docs/providers"
+                                                   RequestNavigate="Hyperlink_RequestNavigate">
+                                            <Run Text="https://docs.litellm.ai/docs/providers"/>
+                                        </Hyperlink>
+                                        <Run Text="）"/>
+                                        <LineBreak/>
+                                        <Run Text="openai/gpt-5-mini"/>
+                                        <LineBreak/>
+                                        <Run Text="gemini/gemini-2.5-flash"/>
+                                        <LineBreak/>
+                                        <Run Text="xai/grok-4-fast-non-reasoning"/>
+                                        <LineBreak/>
+                                        <Run Text="openrouter/google/gemini-3-flash-preview"/>
+                                        <LineBreak/>
+                                        <Run Text="ollama_chat/gemma3:12b"/>
+                                        <LineBreak/>
+                                        <Run Text="lm_studio/google/gemma-3-4b"/>
+                                    </Paragraph>
+                                </FlowDocument>
+                            </RichTextBox>
+                        </Expander>
 
                         <!-- Base URL -->
                         <Grid Margin="0,5">
