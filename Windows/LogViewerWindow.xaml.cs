@@ -19,7 +19,6 @@ namespace CocoroConsole.Windows
         private ObservableCollection<LogMessage> _allLogs = new ObservableCollection<LogMessage>();
         private ICollectionView? _filteredLogs;
         private string _levelFilter = "";
-        private string _componentFilter = "";
         private const int MaxDisplayedLogs = 1000;
         public bool IsClosed { get; private set; } = false;
 
@@ -235,23 +234,6 @@ namespace CocoroConsole.Windows
                     return false;
             }
 
-            // コンポーネントフィルター
-            if (!string.IsNullOrEmpty(_componentFilter))
-            {
-                if (_componentFilter == "CocoroConsole")
-                {
-                    // CocoroConsoleのログのみ表示
-                    if (log.component != "CocoroConsole")
-                        return false;
-                }
-                else if (_componentFilter == "CocoroGhost")
-                {
-                    // CocoroConsole以外（Python側からのログ）を表示
-                    if (log.component == "CocoroConsole" || log.component == "SEPARATOR")
-                        return false;
-                }
-            }
-
             return true;
         }
 
@@ -325,36 +307,6 @@ namespace CocoroConsole.Windows
                 }
 
                 _levelFilter = selectedItem.Tag?.ToString() ?? "";
-                _filteredLogs?.Refresh();
-                UpdateLogCount();
-
-                // スクロール位置の復元
-                if (_scrollViewer != null && AutoScrollCheckBox.IsChecked != true)
-                {
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        _scrollViewer.ScrollToVerticalOffset(savedOffset);
-                    }, System.Windows.Threading.DispatcherPriority.Loaded);
-                }
-            }
-        }
-
-        /// <summary>
-        /// コンポーネントフィルター変更イベント
-        /// </summary>
-        private void ComponentFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            // UIが完全に初期化されていない場合は何もしない
-            if (ComponentFilterComboBox?.SelectedItem is ComboBoxItem selectedItem)
-            {
-                // フィルター変更時のスクロール位置保持
-                double savedOffset = 0;
-                if (_scrollViewer != null && AutoScrollCheckBox.IsChecked != true)
-                {
-                    savedOffset = _scrollViewer.VerticalOffset;
-                }
-
-                _componentFilter = selectedItem.Tag?.ToString() ?? "";
                 _filteredLogs?.Refresh();
                 UpdateLogCount();
 

@@ -90,22 +90,6 @@
                                                       Tag="ERROR"/>
                                 </ComboBox>
 
-                                <Label Content="コンポーネント:"
-                                       VerticalAlignment="Center"
-                                       Margin="20,0,0,0"/>
-                                <ComboBox x:Name="ComponentFilterComboBox"
-                                          Width="120"
-                                          Margin="5,0"
-                                          SelectionChanged="ComponentFilterComboBox_SelectionChanged">
-                                        <ComboBoxItem Content="全て"
-                                                      IsSelected="True"
-                                                      Tag=""/>
-                                        <ComboBoxItem Content="CocoroConsole"
-                                                      Tag="CocoroConsole"/>
-                                        <ComboBoxItem Content="CocoroGhost"
-                                                      Tag="CocoroGhost"/>
-                                </ComboBox>
-
                                 <Button x:Name="ClearButton"
                                         Content="クリア"
                                         Width="80"
