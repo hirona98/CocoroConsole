@@ -25,6 +25,11 @@ namespace CocoroConsole.Services
         int CocoroShellPort { get; set; }
 
         /// <summary>
+        /// /api/events/stream の hello に使うクライアントID（安定ID）
+        /// </summary>
+        string ClientId { get; set; }
+
+        /// <summary>
         /// cocoro_ghost API Bearer トークン
         /// </summary>
         string CocoroGhostBearerToken { get; set; }

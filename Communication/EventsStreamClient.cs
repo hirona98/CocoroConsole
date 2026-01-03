@@ -5,13 +5,14 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace CocoroConsole.Communication
 {
     /// <summary>
-    /// cocoro_ghost の /api/events/stream に接続してイベント(notification/meta-request)を受信するクライアント
+    /// cocoro_ghost の /api/events/stream に接続してイベント(notification/meta-request/desktop_watch + vision command)を受信するクライアント
     /// </summary>
     public sealed class EventsStreamClient : IDisposable
     {
@@ -27,6 +28,8 @@ namespace CocoroConsole.Communication
 
         private readonly Uri _webSocketUri;
         private readonly string _bearerToken;
+        private readonly string? _clientId;
+        private readonly IReadOnlyList<string>? _caps;
         private ClientWebSocket? _webSocket;
         private CancellationTokenSource? _connectionTokenSource;
         private CancellationTokenSource? _supervisorTokenSource;
@@ -40,10 +43,12 @@ namespace CocoroConsole.Communication
         public event EventHandler<bool>? ConnectionStateChanged;
         public event EventHandler<string>? ErrorOccurred;
 
-        public EventsStreamClient(Uri webSocketUri, string bearerToken)
+        public EventsStreamClient(Uri webSocketUri, string bearerToken, string? clientId = null, IReadOnlyList<string>? caps = null)
         {
             _webSocketUri = webSocketUri ?? throw new ArgumentNullException(nameof(webSocketUri));
             _bearerToken = bearerToken ?? throw new ArgumentNullException(nameof(bearerToken));
+            _clientId = string.IsNullOrWhiteSpace(clientId) ? null : clientId.Trim();
+            _caps = caps;
         }
 
         public async Task StartAsync()
@@ -159,6 +164,40 @@ namespace CocoroConsole.Communication
             _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {_bearerToken}");
             _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
             await _webSocket.ConnectAsync(_webSocketUri, _connectionTokenSource.Token);
+
+            await SendHelloIfNeededAsync(_connectionTokenSource.Token);
+        }
+
+        private async Task SendHelloIfNeededAsync(CancellationToken cancellationToken)
+        {
+            var ws = _webSocket;
+            if (ws == null || ws.State != WebSocketState.Open)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_clientId))
+            {
+                return;
+            }
+
+            try
+            {
+                var payload = new HelloMessage
+                {
+                    Type = "hello",
+                    ClientId = _clientId!,
+                    Caps = _caps?.ToArray() ?? new[] { "vision.desktop", "vision.camera" }
+                };
+
+                var json = JsonSerializer.Serialize(payload);
+                var bytes = Encoding.UTF8.GetBytes(json);
+                await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[EventsStream] hello send error: {ex.Message}");
+            }
         }
 
         private async Task<WebSocketCloseStatus?> ReceiveLoopAsync(CancellationToken supervisorToken)
@@ -316,6 +355,15 @@ namespace CocoroConsole.Communication
                     data.Title = dataElement.TryGetProperty("title", out var title) ? title.GetString() : null;
                     data.Body = dataElement.TryGetProperty("body", out var body) ? body.GetString() : null;
                     data.ResultText = dataElement.TryGetProperty("result_text", out var resultText) ? resultText.GetString() : null;
+
+                    // Vision command
+                    data.RequestId = dataElement.TryGetProperty("request_id", out var requestId) ? requestId.GetString() : null;
+                    data.Source = dataElement.TryGetProperty("source", out var source) ? source.GetString() : null;
+                    data.Mode = dataElement.TryGetProperty("mode", out var mode) ? mode.GetString() : null;
+                    data.Purpose = dataElement.TryGetProperty("purpose", out var purpose) ? purpose.GetString() : null;
+                    data.TimeoutMs = dataElement.TryGetProperty("timeout_ms", out var timeoutMs) && timeoutMs.TryGetInt32(out var timeoutValue)
+                        ? timeoutValue
+                        : null;
                 }
 
                 ev = new CocoroGhostEvent
@@ -377,5 +425,24 @@ namespace CocoroConsole.Communication
         public string? Title { get; set; }
         public string? Body { get; set; }
         public string? ResultText { get; set; }
+
+        // Vision command
+        public string? RequestId { get; set; }
+        public string? Source { get; set; }
+        public string? Mode { get; set; }
+        public string? Purpose { get; set; }
+        public int? TimeoutMs { get; set; }
+    }
+
+    internal sealed class HelloMessage
+    {
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "hello";
+
+        [JsonPropertyName("client_id")]
+        public string ClientId { get; set; } = string.Empty;
+
+        [JsonPropertyName("caps")]
+        public string[] Caps { get; set; } = Array.Empty<string>();
     }
 }

@@ -72,11 +72,8 @@ namespace CocoroConsole.Controls
             {
                 var appSettings = AppSettings.Instance;
 
-                // デスクトップウォッチ設定
-                ScreenshotEnabledCheckBox.IsChecked = appSettings.ScreenshotSettings.enabled;
-                CaptureActiveWindowOnlyCheckBox.IsChecked = appSettings.ScreenshotSettings.captureActiveWindowOnly;
-                ScreenshotIntervalTextBox.Text = appSettings.ScreenshotSettings.intervalMinutes.ToString();
-                IdleTimeoutTextBox.Text = appSettings.ScreenshotSettings.idleTimeoutMinutes.ToString();
+                // Client ID（このPC）
+                ClientIdTextBox.Text = appSettings.ClientId;
 
                 // /api/settings から設定を読み込み（API利用可能な場合）
                 await LoadSettingsFromApiAsync(appSettings);
@@ -116,14 +113,14 @@ namespace CocoroConsole.Controls
             EnableReminderCheckBox.Checked += OnSettingsChanged;
             EnableReminderCheckBox.Unchecked += OnSettingsChanged;
 
-            // デスクトップウォッチ設定
-            ScreenshotEnabledCheckBox.Checked += OnSettingsChanged;
-            ScreenshotEnabledCheckBox.Unchecked += OnSettingsChanged;
-            CaptureActiveWindowOnlyCheckBox.Checked += OnSettingsChanged;
-            CaptureActiveWindowOnlyCheckBox.Unchecked += OnSettingsChanged;
-            ScreenshotIntervalTextBox.TextChanged += OnSettingsChanged;
-            IdleTimeoutTextBox.TextChanged += OnSettingsChanged;
-            ExcludePatternsTextBox.TextChanged += OnSettingsChanged;
+            // 入力フィルタ（exclude_keywords）
+            ExcludeKeywordsTextBox.TextChanged += OnSettingsChanged;
+
+            // デスクトップウォッチ（cocoro_ghost側）
+            DesktopWatchEnabledCheckBox.Checked += OnSettingsChanged;
+            DesktopWatchEnabledCheckBox.Unchecked += OnSettingsChanged;
+            DesktopWatchIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
+            DesktopWatchTargetClientIdTextBox.TextChanged += OnSettingsChanged;
 
             // マイク設定
             MicThresholdSlider.ValueChanged += OnSettingsChanged;
@@ -150,6 +147,12 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private void SetDesktopWatchTargetToSelfButton_Click(object sender, RoutedEventArgs e)
+        {
+            DesktopWatchTargetClientIdTextBox.Text = AppSettings.Instance.ClientId;
+            MarkSettingsChanged();
+        }
+
         /// <summary>
         /// リマインダーの有効状態を取得
         /// </summary>
@@ -166,48 +169,25 @@ namespace CocoroConsole.Controls
             EnableReminderCheckBox.IsChecked = enabled;
         }
 
-        /// <summary>
-        /// スクリーンショット設定を取得
-        /// </summary>
-        public ScreenshotSettings GetScreenshotSettings()
+        public bool GetDesktopWatchEnabled()
         {
-            var settings = new ScreenshotSettings
-            {
-                enabled = ScreenshotEnabledCheckBox.IsChecked ?? false,
-                captureActiveWindowOnly = CaptureActiveWindowOnlyCheckBox.IsChecked ?? false
-            };
-
-            if (int.TryParse(ScreenshotIntervalTextBox.Text, out int interval))
-            {
-                settings.intervalMinutes = interval;
-            }
-
-            if (int.TryParse(IdleTimeoutTextBox.Text, out int timeout))
-            {
-                settings.idleTimeoutMinutes = timeout;
-            }
-
-            // 除外パターンを取得（空行を除外）
-            var patterns = ExcludePatternsTextBox.Text
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(p => p.Trim())
-                .Where(p => !string.IsNullOrEmpty(p))
-                .ToList();
-            settings.excludePatterns = patterns;
-
-            return settings;
+            return DesktopWatchEnabledCheckBox.IsChecked ?? false;
         }
 
-        /// <summary>
-        /// スクリーンショット設定を設定
-        /// </summary>
-        public void SetScreenshotSettings(ScreenshotSettings settings)
+        public int GetDesktopWatchIntervalSeconds()
         {
-            ScreenshotEnabledCheckBox.IsChecked = settings.enabled;
-            CaptureActiveWindowOnlyCheckBox.IsChecked = settings.captureActiveWindowOnly;
-            ScreenshotIntervalTextBox.Text = settings.intervalMinutes.ToString();
-            IdleTimeoutTextBox.Text = settings.idleTimeoutMinutes.ToString();
-            ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, settings.excludePatterns);
+            if (int.TryParse(DesktopWatchIntervalSecondsTextBox.Text, out var seconds) && seconds > 0)
+            {
+                return seconds;
+            }
+
+            return 300;
+        }
+
+        public string? GetDesktopWatchTargetClientId()
+        {
+            var text = DesktopWatchTargetClientIdTextBox.Text?.Trim() ?? string.Empty;
+            return string.IsNullOrWhiteSpace(text) ? null : text;
         }
 
         /// <summary>
@@ -248,7 +228,12 @@ namespace CocoroConsole.Controls
                         _apiExcludeKeywords = settings.ExcludeKeywords ?? new List<string>();
                         _apiReminders = settings.Reminders ?? new List<CocoroGhostReminder>();
                         EnableReminderCheckBox.IsChecked = settings.RemindersEnabled;
-                        ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, _apiExcludeKeywords);
+                        ExcludeKeywordsTextBox.Text = string.Join(Environment.NewLine, _apiExcludeKeywords);
+
+                        DesktopWatchEnabledCheckBox.IsChecked = settings.DesktopWatchEnabled;
+                        DesktopWatchIntervalSecondsTextBox.Text = (settings.DesktopWatchIntervalSeconds > 0 ? settings.DesktopWatchIntervalSeconds : 300).ToString();
+                        DesktopWatchTargetClientIdTextBox.Text = settings.DesktopWatchTargetClientId ?? string.Empty;
+
                         UpdateReminderListUI();
                         return;
                     }
@@ -260,8 +245,11 @@ namespace CocoroConsole.Controls
             }
 
             // APIが利用できない場合はローカル設定を使用
-            ExcludePatternsTextBox.Text = string.Join(Environment.NewLine, appSettings.ScreenshotSettings.excludePatterns);
+            ExcludeKeywordsTextBox.Text = string.Empty;
             EnableReminderCheckBox.IsChecked = false;
+            DesktopWatchEnabledCheckBox.IsChecked = false;
+            DesktopWatchIntervalSecondsTextBox.Text = "300";
+            DesktopWatchTargetClientIdTextBox.Text = appSettings.ClientId;
             _apiReminders = new List<CocoroGhostReminder>();
             UpdateReminderListUI();
         }
@@ -275,7 +263,7 @@ namespace CocoroConsole.Controls
 
             try
             {
-                var patterns = ExcludePatternsTextBox.Text
+                var patterns = ExcludeKeywordsTextBox.Text
                     .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(p => p.Trim())
                     .Where(p => !string.IsNullOrEmpty(p))
@@ -303,6 +291,10 @@ namespace CocoroConsole.Controls
                 var request = new CocoroGhostSettingsUpdateRequest
                 {
                     ExcludeKeywords = patterns,
+                    MemoryEnabled = latestSettings.MemoryEnabled,
+                    DesktopWatchEnabled = latestSettings.DesktopWatchEnabled,
+                    DesktopWatchIntervalSeconds = latestSettings.DesktopWatchIntervalSeconds,
+                    DesktopWatchTargetClientId = latestSettings.DesktopWatchTargetClientId,
                     RemindersEnabled = latestSettings.RemindersEnabled,
                     Reminders = latestSettings.Reminders ?? new List<CocoroGhostReminder>(),
                     ActiveLlmPresetId = activeLlmId!,
@@ -322,7 +314,7 @@ namespace CocoroConsole.Controls
             catch (Exception ex)
             {
                 Debug.WriteLine($"APIへのexclude_keywords保存に失敗: {ex.Message}");
-                MessageBox.Show($"除外パターンのAPI保存に失敗しました: {ex.Message}", "警告",
+                MessageBox.Show($"exclude_keywords のAPI保存に失敗しました: {ex.Message}", "警告",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
@@ -333,7 +325,7 @@ namespace CocoroConsole.Controls
         /// </summary>
         public List<string> GetExcludeKeywords()
         {
-            return ExcludePatternsTextBox.Text
+            return ExcludeKeywordsTextBox.Text
                 .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(p => p.Trim())
                 .Where(p => !string.IsNullOrEmpty(p))

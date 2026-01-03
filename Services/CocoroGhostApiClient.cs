@@ -141,11 +141,43 @@ namespace CocoroConsole.Services
             }
         }
 
-	        public Task<CaptureResponse> SendCaptureAsync(CaptureRequest request, CancellationToken cancellationToken = default)
-	        {
-	            ThrowIfDisposed();
-	            return SendAsync<CaptureResponse>(HttpMethod.Post, "/api/capture", request, cancellationToken);
-	        }
+        public Task SendVisionCaptureResponseAsync(VisionCaptureResponseRequest request, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendNoContentAsync(HttpMethod.Post, "/api/v2/vision/capture-response", request, cancellationToken);
+        }
+
+        private async Task SendNoContentAsync(HttpMethod method, string path, object payload, CancellationToken cancellationToken)
+        {
+            var url = BuildUrl(path);
+            using var request = new HttpRequestMessage(method, url)
+            {
+                Content = CreateJsonContent(payload)
+            };
+
+            try
+            {
+                using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException($"cocoro_ghost APIエラー: {(int)response.StatusCode} {response.ReasonPhrase} {responseBody}");
+                }
+            }
+            catch (TaskCanceledException ex)
+            {
+                throw new TimeoutException("cocoro_ghost APIリクエストがタイムアウトしました", ex);
+            }
+            catch (HttpRequestException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"cocoro_ghost API通信に失敗しました: {ex.Message}", ex);
+            }
+        }
 
 	        private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
 	        {
@@ -285,7 +317,10 @@ namespace CocoroConsole.Services
     public class ChatStreamRequest
     {
         [JsonPropertyName("embedding_preset_id")]
-        public string? EmbeddingPresetId { get; set; }
+        public string EmbeddingPresetId { get; set; } = string.Empty;
+
+        [JsonPropertyName("client_id")]
+        public string ClientId { get; set; } = string.Empty;
 
         [JsonPropertyName("input_text")]
         public string InputText { get; set; } = string.Empty;
@@ -294,7 +329,7 @@ namespace CocoroConsole.Services
         public List<CocoroGhostImage> Images { get; set; } = new List<CocoroGhostImage>();
 
         [JsonPropertyName("client_context")]
-        public Dictionary<string, object?>? ClientContext { get; set; }
+        public VisionClientContext? ClientContext { get; set; }
     }
 
     public class ChatStreamEvent
@@ -339,24 +374,33 @@ namespace CocoroConsole.Services
         public string Base64 { get; set; } = string.Empty;
     }
 
-    public class CaptureRequest
+    public class VisionClientContext
     {
-        [JsonPropertyName("capture_type")]
-        public string CaptureType { get; set; } = string.Empty;
+        [JsonPropertyName("active_app")]
+        public string? ActiveApp { get; set; }
 
-        [JsonPropertyName("image_base64")]
-        public string ImageBase64 { get; set; } = string.Empty;
+        [JsonPropertyName("window_title")]
+        public string? WindowTitle { get; set; }
 
-        [JsonPropertyName("context_text")]
-        public string? ContextText { get; set; }
+        [JsonPropertyName("locale")]
+        public string? Locale { get; set; }
     }
 
-    public class CaptureResponse
+    public class VisionCaptureResponseRequest
     {
-        [JsonPropertyName("episode_id")]
-        public int EpisodeId { get; set; }
+        [JsonPropertyName("request_id")]
+        public string RequestId { get; set; } = string.Empty;
 
-        [JsonPropertyName("stored")]
-        public bool Stored { get; set; }
+        [JsonPropertyName("client_id")]
+        public string ClientId { get; set; } = string.Empty;
+
+        [JsonPropertyName("images")]
+        public List<string> Images { get; set; } = new List<string>();
+
+        [JsonPropertyName("client_context")]
+        public VisionClientContext? ClientContext { get; set; }
+
+        [JsonPropertyName("error")]
+        public string? Error { get; set; }
     }
 }

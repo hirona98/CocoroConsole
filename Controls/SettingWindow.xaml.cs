@@ -246,13 +246,6 @@ namespace CocoroConsole.Controls
         {
             var dict = new Dictionary<string, object>();
 
-            var screenshotSettings = SystemSettingsControl.GetScreenshotSettings();
-            dict["ScreenshotEnabled"] = screenshotSettings.enabled;
-            dict["ScreenshotInterval"] = screenshotSettings.intervalMinutes;
-            dict["IdleTimeout"] = screenshotSettings.idleTimeoutMinutes;
-            dict["CaptureActiveWindowOnly"] = screenshotSettings.captureActiveWindowOnly;
-            dict["ExcludePatterns"] = screenshotSettings.excludePatterns;
-
             var microphoneSettings = SystemSettingsControl.GetMicrophoneSettings();
             dict["MicInputThreshold"] = microphoneSettings.inputThreshold;
             dict["SpeakerRecognitionThreshold"] = microphoneSettings.speakerRecognitionThreshold;
@@ -444,11 +437,13 @@ namespace CocoroConsole.Controls
                 // 設定をファイルに保存
                 AppSettings.Instance.SaveAppSettings();
 
-                // デスクトップウォッチの設定変更を反映
-                UpdateDesktopWatchSettings();
-
                 // 全設定をAPIに保存（1回のリクエストで送信）
                 await SaveAllSettingsToApiAsync();
+
+                if (_communicationService != null)
+                {
+                    await _communicationService.RefreshCocoroGhostSettingsAsync();
+                }
             }
             catch (System.Exception ex)
             {
@@ -468,6 +463,13 @@ namespace CocoroConsole.Controls
             {
                 List<string> excludeKeywords = SystemSettingsControl.GetExcludeKeywords();
                 bool memoryEnabled = EmbeddingSettingsControl.IsMemoryEnabled;
+                bool desktopWatchEnabled = SystemSettingsControl.GetDesktopWatchEnabled();
+                int desktopWatchIntervalSeconds = SystemSettingsControl.GetDesktopWatchIntervalSeconds();
+                var desktopWatchTargetClientId = SystemSettingsControl.GetDesktopWatchTargetClientId();
+                if (desktopWatchEnabled && string.IsNullOrWhiteSpace(desktopWatchTargetClientId))
+                {
+                    desktopWatchTargetClientId = AppSettings.Instance.ClientId;
+                }
                 bool remindersEnabled = SystemSettingsControl.GetIsEnableReminder();
                 List<CocoroGhostReminder> reminders = SystemSettingsControl.GetReminders();
                 List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
@@ -500,6 +502,9 @@ namespace CocoroConsole.Controls
                 {
                     ExcludeKeywords = excludeKeywords,
                     MemoryEnabled = memoryEnabled,
+                    DesktopWatchEnabled = desktopWatchEnabled,
+                    DesktopWatchIntervalSeconds = desktopWatchIntervalSeconds,
+                    DesktopWatchTargetClientId = desktopWatchTargetClientId,
                     RemindersEnabled = remindersEnabled,
                     Reminders = reminders,
                     ActiveLlmPresetId = activeLlmId!,
@@ -709,12 +714,6 @@ namespace CocoroConsole.Controls
         {
             var appSettings = AppSettings.Instance;
 
-            appSettings.ScreenshotSettings.enabled = (bool)snapshot["ScreenshotEnabled"];
-            appSettings.ScreenshotSettings.intervalMinutes = (int)snapshot["ScreenshotInterval"];
-            appSettings.ScreenshotSettings.idleTimeoutMinutes = (int)snapshot["IdleTimeout"];
-            appSettings.ScreenshotSettings.captureActiveWindowOnly = (bool)snapshot["CaptureActiveWindowOnly"];
-            appSettings.ScreenshotSettings.excludePatterns = (List<string>)snapshot["ExcludePatterns"];
-
             appSettings.MicrophoneSettings.inputThreshold = (int)snapshot["MicInputThreshold"];
             appSettings.MicrophoneSettings.speakerRecognitionThreshold = (float)snapshot["SpeakerRecognitionThreshold"];
 
@@ -823,34 +822,6 @@ namespace CocoroConsole.Controls
             catch (Exception ex)
             {
                 MessageBox.Show($"URLを開けませんでした: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// デスクトップウォッチ設定の変更を適用
-        /// </summary>
-        private void UpdateDesktopWatchSettings()
-        {
-            try
-            {
-                // MainWindowのインスタンスを取得
-                var mainWindow = Application.Current.MainWindow as MainWindow;
-                if (mainWindow != null)
-                {
-                    // MainWindowのUpdateScreenshotServiceメソッドを呼び出す
-                    var updateMethod = mainWindow.GetType().GetMethod("UpdateScreenshotService",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-                    if (updateMethod != null)
-                    {
-                        updateMethod.Invoke(mainWindow, null);
-                        Debug.WriteLine("デスクトップウォッチ設定を更新しました");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"デスクトップウォッチ設定の更新中にエラーが発生しました: {ex.Message}");
             }
         }
 

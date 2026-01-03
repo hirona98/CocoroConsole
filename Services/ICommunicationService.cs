@@ -63,6 +63,11 @@ namespace CocoroConsole.Services
         event EventHandler<CocoroGhostStatus>? StatusChanged;
 
         /// <summary>
+        /// cocoro_ghost の /api/settings 取得・更新後に発火
+        /// </summary>
+        event EventHandler<CocoroConsole.Models.CocoroGhostApi.CocoroGhostSettings>? CocoroGhostSettingsUpdated;
+
+        /// <summary>
         /// ログストリームメッセージ受信イベント
         /// </summary>
         event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
@@ -119,14 +124,8 @@ namespace CocoroConsole.Services
         Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, List<string>? imageDataUrls = null);
 
         /// <summary>
-        /// デスクトップウォッチ画像をCocoroGhostに送信
-        /// </summary>
-        /// <param name="screenshotData">スクリーンショットデータ</param>
-        Task SendDesktopWatchToCoreAsync(ScreenshotData screenshotData);
-
-        /// <summary>
-        /// 新しい会話セッションを開始
-        /// </summary>
+         /// 新しい会話セッションを開始
+         /// </summary>
         void StartNewConversation();
 
         /// <summary>
@@ -173,5 +172,15 @@ namespace CocoroConsole.Services
         /// 設定キャッシュを更新
         /// </summary>
         void RefreshSettingsCache();
+
+        /// <summary>
+        /// cocoro_ghost の /api/settings を再取得して反映する
+        /// </summary>
+        Task RefreshCocoroGhostSettingsAsync();
+
+        /// <summary>
+        /// デスクトップウォッチ（cocoro_ghost側）の有効/無効を更新する
+        /// </summary>
+        Task SetDesktopWatchEnabledAsync(bool enabled);
     }
 }

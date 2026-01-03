@@ -270,6 +270,8 @@ namespace CocoroConsole.Communication
         public int CocoroConsolePort { get; set; }
         public int cocoroCorePort { get; set; }
         public int cocoroShellPort { get; set; }
+        // /api/events/stream で hello を送るためのクライアントID（安定ID）
+        public string clientId { get; set; } = string.Empty;
         public string? cocoroGhostBearerToken { get; set; }
         public bool isUseLLM { get; set; }
         public bool isRestoreWindowPosition { get; set; }
@@ -308,6 +310,7 @@ namespace CocoroConsole.Communication
                 CocoroConsolePort = this.CocoroConsolePort,
                 cocoroCorePort = this.cocoroCorePort,
                 cocoroShellPort = this.cocoroShellPort,
+                clientId = this.clientId,
                 cocoroGhostBearerToken = this.cocoroGhostBearerToken,
                 isUseLLM = this.isUseLLM,
                 isRestoreWindowPosition = this.isRestoreWindowPosition,

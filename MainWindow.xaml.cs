@@ -1,6 +1,7 @@
 ﻿using CocoroAI.Services;
 using CocoroConsole.Communication;
 using CocoroConsole.Controls;
+using CocoroConsole.Models.CocoroGhostApi;
 using CocoroConsole.Services;
 using CocoroConsole.Utilities;
 using CocoroConsole.Windows;
@@ -20,20 +21,18 @@ namespace CocoroConsole
     /// <summary>
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
-	    public partial class MainWindow : Window
-	    {
-	        private ICommunicationService? _communicationService;
-	        private readonly IAppSettings _appSettings;
-	        private ScreenshotService? _screenshotService;
-        private bool _isScreenshotPaused = false;
-	        private RealtimeVoiceRecognitionService? _voiceRecognitionService;
-	        private ScheduledCommandService? _scheduledCommandService;
-	        private SettingWindow? _settingWindow;
-	        private LogViewerWindow? _logViewerWindow;
-	        private DebugTraceListener? _debugTraceListener;
-	        private int? _nextScreenshotInitialDelayMilliseconds;
-	        private bool _isStreamingChatActive;
-	        private bool _skipNextAssistantMessage;
+    public partial class MainWindow : Window
+    {
+        private ICommunicationService? _communicationService;
+        private readonly IAppSettings _appSettings;
+        private bool _isDesktopWatchEnabled = false;
+        private RealtimeVoiceRecognitionService? _voiceRecognitionService;
+        private ScheduledCommandService? _scheduledCommandService;
+        private SettingWindow? _settingWindow;
+        private LogViewerWindow? _logViewerWindow;
+        private DebugTraceListener? _debugTraceListener;
+        private bool _isStreamingChatActive;
+        private bool _skipNextAssistantMessage;
         private string? _skipNextAssistantMessageContent;
 
 
@@ -51,10 +50,10 @@ namespace CocoroConsole
             InitializeApp();
         }
 
-	        private void LogViewerMenuItem_Click(object sender, RoutedEventArgs e)
-	        {
-	            OpenLogViewer();
-	        }
+        private void LogViewerMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            OpenLogViewer();
+        }
 
         /// <summary>
         /// チャット履歴をクリア
@@ -130,9 +129,6 @@ namespace CocoroConsole
                 // CommunicationServiceが初回Normal時にcocoro_ghost設定を取得・反映する
                 InitializeCommunicationService();
 
-                // スクリーンショットサービスを初期化
-                InitializeScreenshotService();
-
                 // スケジュールコマンドサービスを初期化
                 InitializeScheduledCommandService();
 
@@ -166,24 +162,8 @@ namespace CocoroConsole
         /// </summary>
         private void InitializeButtonStates()
         {
-            // デスクトップウォッチの状態を反映
-            var screenshotSettings = _appSettings.ScreenshotSettings;
-            if (screenshotSettings != null)
-            {
-                _isScreenshotPaused = !screenshotSettings.enabled;
-                if (ScreenshotButtonImage != null)
-                {
-                    ScreenshotButtonImage.Source = new Uri(_isScreenshotPaused ?
-                        "pack://application:,,,/Resource/icon/ScreenShotOFF.svg" :
-                        "pack://application:,,,/Resource/icon/ScreenShotON.svg",
-                        UriKind.Absolute);
-                }
-                if (PauseScreenshotButton != null)
-                {
-                    PauseScreenshotButton.ToolTip = _isScreenshotPaused ? "デスクトップウォッチを有効にする" : "デスクトップウォッチを無効にする";
-                    PauseScreenshotButton.Opacity = _isScreenshotPaused ? 0.6 : 1.0;
-                }
-            }
+            // デスクトップウォッチの状態を反映（cocoro_ghost /api/settings 由来）
+            UpdateDesktopWatchButtonState();
 
             // 現在のキャラクターの設定を反映
             var currentCharacter = GetStoredCharacterSetting();
@@ -219,6 +199,23 @@ namespace CocoroConsole
             }
         }
 
+        private void UpdateDesktopWatchButtonState()
+        {
+            var isPaused = !_isDesktopWatchEnabled;
+            if (ScreenshotButtonImage != null)
+            {
+                ScreenshotButtonImage.Source = new Uri(isPaused
+                    ? "pack://application:,,,/Resource/icon/ScreenShotOFF.svg"
+                    : "pack://application:,,,/Resource/icon/ScreenShotON.svg",
+                    UriKind.Absolute);
+            }
+            if (PauseScreenshotButton != null)
+            {
+                PauseScreenshotButton.ToolTip = isPaused ? "デスクトップウォッチを有効にする" : "デスクトップウォッチを無効にする";
+                PauseScreenshotButton.Opacity = isPaused ? 0.6 : 1.0;
+            }
+        }
+
         /// <summary>
         /// 外部プロセスを初期化
         /// </summary>
@@ -243,36 +240,7 @@ namespace CocoroConsole
             _communicationService.ControlCommandReceived += OnControlCommandReceived;
             _communicationService.ErrorOccurred += OnErrorOccurred;
             _communicationService.StatusChanged += OnCocoroGhostStatusChanged;
-        }
-
-        /// <summary>
-        /// スクリーンショットサービスを初期化
-        /// </summary>
-        private void InitializeScreenshotService()
-        {
-            // スクリーンショット設定を確認
-            var screenshotSettings = _appSettings.ScreenshotSettings;
-            if (screenshotSettings != null && screenshotSettings.enabled)
-            {
-                // スクリーンショットサービスを初期化
-                _screenshotService = new ScreenshotService(
-                    screenshotSettings.intervalMinutes,
-                    async (screenshotData) => await OnScreenshotCaptured(screenshotData),
-                    async (message) => await OnScreenshotSkipped(message)
-                );
-
-                _screenshotService.CaptureActiveWindowOnly = screenshotSettings.captureActiveWindowOnly;
-                _screenshotService.IdleTimeoutMinutes = screenshotSettings.idleTimeoutMinutes;
-                _screenshotService.SetExcludePatterns(screenshotSettings.excludePatterns);
-
-
-                // サービスを開始
-                var initialDelay = _nextScreenshotInitialDelayMilliseconds;
-                _screenshotService.Start(initialDelay);
-                _nextScreenshotInitialDelayMilliseconds = null;
-
-                Debug.WriteLine($"スクリーンショットサービスを開始しました（間隔: {screenshotSettings.intervalMinutes}分）");
-            }
+            _communicationService.CocoroGhostSettingsUpdated += OnCocoroGhostSettingsUpdated;
         }
 
         /// <summary>
@@ -287,115 +255,6 @@ namespace CocoroConsole
                 _scheduledCommandService.SetCommand(settings.Command);
                 _scheduledCommandService.Start();
                 Debug.WriteLine($"スケジュールコマンドサービスを開始しました（間隔: {settings.IntervalMinutes}分）");
-            }
-        }
-
-        /// <summary>
-        /// スクリーンショットが撮影された時の処理
-        /// </summary>
-        private async Task OnScreenshotCaptured(ScreenshotData screenshotData)
-        {
-            try
-            {
-                bool isLLMEnabled = _appSettings.IsUseLLM;
-
-                // LLMが無効の場合は画像表示のみ行い、送信はしない
-                UIHelper.RunOnUIThread(() =>
-                {
-                    ChatControlInstance.AddDesktopMonitoringImage(screenshotData.ImageBase64);
-                });
-
-                if (!isLLMEnabled)
-                {
-                    Debug.WriteLine("デスクトップモニタリング: LLMが無効のため送信をスキップ");
-                    return;
-                }
-
-                // CommunicationServiceを使用してデスクトップウォッチを送信
-                if (_communicationService != null && _communicationService.IsServerRunning)
-                {
-                    // デスクトップウォッチ専用の送信処理を使用
-                    await _communicationService.SendDesktopWatchToCoreAsync(screenshotData);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"デスクトップモニタリング処理エラー: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// スクリーンショットがスキップされた時の処理
-        /// </summary>
-        private Task OnScreenshotSkipped(string message)
-        {
-            try
-            {
-                // UIスレッドでチャットコントロールに通知メッセージを追加
-                UIHelper.RunOnUIThread(() =>
-                {
-                    if (ChatControlInstance != null)
-                    {
-                        ChatControlInstance.AddSystemErrorMessage($"ℹ️ {message}");
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"スクリーンショットスキップ通知エラー: {ex.Message}");
-            }
-
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// スクリーンショットサービスの設定を更新
-        /// </summary>
-        private void UpdateScreenshotService()
-        {
-            var screenshotSettings = _appSettings.ScreenshotSettings;
-
-            // 現在のサービスが存在し、設定が無効になった場合は停止
-            if (_screenshotService != null && (screenshotSettings == null || !screenshotSettings.enabled))
-            {
-                _screenshotService.Stop();
-                _screenshotService.Dispose();
-                _screenshotService = null;
-                Debug.WriteLine("スクリーンショットサービスを停止しました");
-            }
-            // 設定が有効でサービスが存在しない場合は開始
-            else if (screenshotSettings != null && screenshotSettings.enabled && _screenshotService == null)
-            {
-                InitializeScreenshotService();
-            }
-            // サービスが存在し、設定が変更された場合は更新または再起動
-            else if (_screenshotService != null && screenshotSettings != null && screenshotSettings.enabled)
-            {
-                // 設定の変更を検出
-                bool needsRestart = false;
-
-                // 間隔が変更された場合は再起動が必要
-                if (_screenshotService.IntervalMinutes != screenshotSettings.intervalMinutes)
-                {
-                    needsRestart = true;
-                }
-
-                // その他の設定は動的に更新
-                _screenshotService.CaptureActiveWindowOnly = screenshotSettings.captureActiveWindowOnly;
-                _screenshotService.IdleTimeoutMinutes = screenshotSettings.idleTimeoutMinutes;
-                _screenshotService.SetExcludePatterns(screenshotSettings.excludePatterns);
-
-                if (needsRestart)
-                {
-                    _screenshotService.Stop();
-                    _screenshotService.Dispose();
-                    InitializeScreenshotService();
-                    Debug.WriteLine("スクリーンショットサービスを再起動しました");
-                }
-                else
-                {
-                    Debug.WriteLine("スクリーンショットサービスの設定を更新しました");
-                }
             }
         }
 
@@ -505,9 +364,6 @@ namespace CocoroConsole
         {
             UIHelper.RunOnUIThread(() =>
             {
-                // スクリーンショットサービスの設定を更新
-                UpdateScreenshotService();
-
                 // スケジュールコマンドサービスの設定を更新
                 UpdateScheduledCommandService();
             });
@@ -603,9 +459,6 @@ namespace CocoroConsole
                 });
                 Debug.WriteLine("[MainWindow] 音声認識サービスを停止しました");
             }
-
-            // デスクトップウォッチ設定の更新
-            UpdateScreenshotService();
         }
 
         #endregion
@@ -741,6 +594,15 @@ namespace CocoroConsole
             });
         }
 
+        private void OnCocoroGhostSettingsUpdated(object? sender, CocoroGhostSettings settings)
+        {
+            UIHelper.RunOnUIThread(() =>
+            {
+                _isDesktopWatchEnabled = settings.DesktopWatchEnabled;
+                UpdateDesktopWatchButtonState();
+            });
+        }
+
         #endregion
 
         /// <summary>
@@ -784,10 +646,10 @@ namespace CocoroConsole
             _logViewerWindow.Show();
         }
 
-	        private void AttachLogStreamHandlers()
-	        {
-	            if (_communicationService == null) return;
-	
+        private void AttachLogStreamHandlers()
+        {
+            if (_communicationService == null) return;
+
             _communicationService.LogMessagesReceived += OnLogStreamMessagesReceived;
             _communicationService.LogStreamConnectionChanged += OnLogStreamConnectionChanged;
             _communicationService.LogStreamError += OnLogStreamError;
@@ -966,42 +828,16 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// 画像送信一時停止ボタンクリック時のイベントハンドラ
+        /// デスクトップウォッチ（cocoro_ghost側）の有効/無効切替
         /// </summary>
-        private void PauseScreenshotButton_Click(object sender, RoutedEventArgs e)
+        private async void PauseScreenshotButton_Click(object sender, RoutedEventArgs e)
         {
-            // デスクトップウォッチ設定をトグル
-            var screenshotSettings = _appSettings.ScreenshotSettings;
-            if (screenshotSettings != null)
+            if (_communicationService == null)
             {
-                screenshotSettings.enabled = !screenshotSettings.enabled;
-                _isScreenshotPaused = !screenshotSettings.enabled;
-                _nextScreenshotInitialDelayMilliseconds = _isScreenshotPaused ? null : 5000;
-
-                // 設定を保存
-                _appSettings.SaveSettings();
-
-                // ボタンの画像を更新
-                if (ScreenshotButtonImage != null)
-                {
-                    ScreenshotButtonImage.Source = new Uri(_isScreenshotPaused ?
-                        "pack://application:,,,/Resource/icon/ScreenShotOFF.svg" :
-                        "pack://application:,,,/Resource/icon/ScreenShotON.svg",
-                        UriKind.Absolute);
-                }
-
-                // ツールチップを更新
-                if (PauseScreenshotButton != null)
-                {
-                    PauseScreenshotButton.ToolTip = _isScreenshotPaused ? "デスクトップウォッチを有効にする" : "デスクトップウォッチを無効にする";
-
-                    // 無効状態の場合は半透明にする
-                    PauseScreenshotButton.Opacity = _isScreenshotPaused ? 0.6 : 1.0;
-                }
-
-                // スクリーンショットサービスの状態を更新
-                UpdateScreenshotService();
+                return;
             }
+
+            await _communicationService.SetDesktopWatchEnabledAsync(!_isDesktopWatchEnabled);
         }
 
         /// <summary>
@@ -1408,11 +1244,6 @@ namespace CocoroConsole
             else
             {
                 // アプリケーション終了時のクリーンアップ
-                if (_screenshotService != null)
-                {
-                    _screenshotService.Dispose();
-                }
-
                 if (_voiceRecognitionService != null)
                 {
                     _voiceRecognitionService.Dispose();

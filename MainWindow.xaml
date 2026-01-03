@@ -83,7 +83,7 @@
                                         </Button>
 
                                         <Button x:Name="PauseScreenshotButton"
-                                                ToolTip="画像送信を一時停止"
+                                                ToolTip="デスクトップウォッチ"
                                                 Margin="0,0,10,0"
                                                 Padding="8"
                                                 Background="#4873CF"

@@ -43,6 +43,8 @@ namespace CocoroConsole.Services
         public int CocoroConsolePort { get; set; }
         public int CocoroGhostPort { get; set; }
         public int CocoroShellPort { get; set; }
+        // /api/events/stream で hello を送るためのクライアントID（安定ID）
+        public string ClientId { get; set; } = string.Empty;
         // cocoro_ghost API Bearer トークン
         public string CocoroGhostBearerToken { get; set; } = string.Empty;
         // LLMを使用するか
@@ -140,6 +142,11 @@ namespace CocoroConsole.Services
             CocoroConsolePort = config.CocoroConsolePort;
             CocoroGhostPort = config.cocoroCorePort;
             CocoroShellPort = config.cocoroShellPort;
+            ClientId = config.clientId;
+            if (string.IsNullOrWhiteSpace(ClientId))
+            {
+                ClientId = $"console-{Guid.NewGuid()}";
+            }
             CocoroGhostBearerToken = config.cocoroGhostBearerToken ?? string.Empty;
             IsUseLLM = config.isUseLLM;
             IsRestoreWindowPosition = config.isRestoreWindowPosition;
@@ -231,6 +238,7 @@ namespace CocoroConsole.Services
                 CocoroConsolePort = CocoroConsolePort,
                 cocoroCorePort = CocoroGhostPort,
                 cocoroShellPort = CocoroShellPort,
+                clientId = ClientId,
                 cocoroGhostBearerToken = CocoroGhostBearerToken,
                 isUseLLM = IsUseLLM,
                 isRestoreWindowPosition = IsRestoreWindowPosition,
@@ -346,7 +354,12 @@ namespace CocoroConsole.Services
             var userSettings = MessageHelper.DeserializeFromJson<ConfigSettings>(configJson);
             if (userSettings != null)
             {
+                var shouldPersistClientId = string.IsNullOrWhiteSpace(userSettings.clientId);
                 UpdateSettings(userSettings);
+                if (shouldPersistClientId && !string.IsNullOrWhiteSpace(ClientId))
+                {
+                    SaveAppSettings();
+                }
             }
         }
 

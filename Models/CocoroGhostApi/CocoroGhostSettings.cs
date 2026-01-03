@@ -11,6 +11,16 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonPropertyName("memory_enabled")]
         public bool MemoryEnabled { get; set; }
 
+        [JsonPropertyName("desktop_watch_enabled")]
+        public bool DesktopWatchEnabled { get; set; }
+
+        [JsonPropertyName("desktop_watch_interval_seconds")]
+        public int DesktopWatchIntervalSeconds { get; set; }
+
+        [JsonPropertyName("desktop_watch_target_client_id")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        public string? DesktopWatchTargetClientId { get; set; }
+
         [JsonPropertyName("reminders_enabled")]
         public bool RemindersEnabled { get; set; }
 
@@ -58,6 +68,16 @@ namespace CocoroConsole.Models.CocoroGhostApi
 
         [JsonPropertyName("memory_enabled")]
         public bool MemoryEnabled { get; set; }
+
+        [JsonPropertyName("desktop_watch_enabled")]
+        public bool DesktopWatchEnabled { get; set; }
+
+        [JsonPropertyName("desktop_watch_interval_seconds")]
+        public int DesktopWatchIntervalSeconds { get; set; }
+
+        [JsonPropertyName("desktop_watch_target_client_id")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        public string? DesktopWatchTargetClientId { get; set; }
 
         [JsonPropertyName("reminders_enabled")]
         public bool RemindersEnabled { get; set; }

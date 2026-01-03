@@ -202,8 +202,34 @@
                     </Grid>
                 </Expander>
 
+                <!-- 入力フィルタ（exclude_keywords） -->
+                <Expander Header="入力フィルタ（exclude_keywords）"
+                          Margin="0,0,20,20"
+                          IsExpanded="False"
+                          Style="{StaticResource GroupBoxLikeExpanderStyle}">
+                    <StackPanel>
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="#666666"
+                                   Margin="0,-10,0,10">
+                            ※現状は予約項目です。将来、入力フィルタ用途として利用します。
+                            <LineBreak/>
+                            （1行に1つ。トリムして保存されます）
+                        </TextBlock>
+
+                        <TextBox x:Name="ExcludeKeywordsTextBox"
+                                 Foreground="#FF0078D7"
+                                 Padding="2"
+                                 TextWrapping="Wrap"
+                                 AcceptsReturn="True"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Height="80"
+                                 Margin="0,0,0,5"
+                                 ToolTip="exclude_keywords（1行に1つ）"/>
+                    </StackPanel>
+                </Expander>
+
                 <!-- デスクトップウォッチ設定 -->
-                <Expander Header="デスクトップウォッチ"
+                <Expander Header="視覚（デスクトップウォッチ）"
                           Margin="0,0,20,20"
                           IsExpanded="False"
                           Style="{StaticResource GroupBoxLikeExpanderStyle}">
@@ -217,24 +243,17 @@
                             センシティブな画像を送るとアカウント停止の可能性があるので注意してください。
                         </TextBlock>
 
-                        <!-- ウォッチ機能の有効/無効設定 -->
-                        <CheckBox x:Name="ScreenshotEnabledCheckBox"
-                                  Content="デスクトップウォッチを有効にする（LLMに画像を送信します）"
-                                  Margin="0,5,0,5"
+                        <!-- ウォッチ機能の有効/無効設定（cocoro_ghost側） -->
+                        <CheckBox x:Name="DesktopWatchEnabledCheckBox"
+                                  Content="デスクトップウォッチを有効にする（cocoro_ghostが能動的に取得要求を出します）"
+                                  Margin="0,5,0,10"
                                   Foreground="#FF4873CF"
-                                  ToolTip="Enable desktop monitoring"/>
+                                  ToolTip="Enable desktop watch (server-driven)"/>
 
-                        <!-- アクティブウィンドウのみ設定 -->
-                        <CheckBox x:Name="CaptureActiveWindowOnlyCheckBox"
-                                  Content="アクティブウィンドウだけを対象にする"
-                                  Margin="0,10,0,5"
-                                  Foreground="#FF4873CF"
-                                  ToolTip="Capture active window only"/>
-
-                        <!-- ウォッチ間隔設定 -->
-                        <Grid Margin="0,5,0,5">
+                        <!-- ウォッチ間隔（秒） -->
+                        <Grid Margin="0,0,0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="28"/>
                             </Grid.ColumnDefinitions>
@@ -243,7 +262,7 @@
                                        VerticalAlignment="Center"
                                        Height="19"/>
                             <TextBox Grid.Column="1"
-                                     x:Name="ScreenshotIntervalTextBox"
+                                     x:Name="DesktopWatchIntervalSecondsTextBox"
                                      Foreground="#FF0078D7"
                                      Padding="2"
                                      VerticalAlignment="Center"
@@ -251,64 +270,50 @@
                                      HorizontalAlignment="Left"
                                      Margin="10,0,10,0"/>
                             <TextBlock Grid.Column="2"
-                                       Text="分"
+                                       Text="秒"
                                        VerticalAlignment="Center"
                                        HorizontalAlignment="Left"/>
                         </Grid>
 
-                        <!-- アイドルタイムアウト設定 -->
-                        <Grid Margin="0,0,0,5">
+                        <!-- desktop担当（client_id） -->
+                        <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="28"/>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0"
-                                       Text="アイドルタイムアウト:"
+                                       Text="担当client_id:"
                                        VerticalAlignment="Center"/>
                             <TextBox Grid.Column="1"
-                                     x:Name="IdleTimeoutTextBox"
+                                     x:Name="DesktopWatchTargetClientIdTextBox"
                                      Foreground="#FF0078D7"
                                      Padding="2"
                                      VerticalAlignment="Center"
-                                     Width="50"
-                                     HorizontalAlignment="Left"
-                                     Margin="10,0,10,0"/>
-                            <TextBlock Grid.Column="2"
-                                       Text="分"
-                                       VerticalAlignment="Center"
-                                       HorizontalAlignment="Left"/>
+                                     ToolTip="desktop_watch_target_client_id（空可）"/>
                         </Grid>
 
-                        <!-- アイドルタイムアウト説明テキスト -->
-                        <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,10">
-                            ※マウスやキーボードの操作がない時間が設定値を超えると、デスクトップウォッチを一時停止します。
-                        </TextBlock>
+                        <Button x:Name="SetDesktopWatchTargetToSelfButton"
+                                Content="このPCをデスクトップ担当にする"
+                                Padding="6,4"
+                                Margin="0,0,0,10"
+                                HorizontalAlignment="Left"
+                                Click="SetDesktopWatchTargetToSelfButton_Click"/>
 
-                        <!-- 除外パターン設定 -->
-                        <TextBlock Text="除外パターン（正規表現）:"
-                                   Margin="0,5,0,5"
-                                   VerticalAlignment="Center"/>
-                        <TextBox x:Name="ExcludePatternsTextBox"
-                                 Foreground="#FF0078D7"
-                                 Padding="2"
-                                 TextWrapping="Wrap"
-                                 AcceptsReturn="True"
-                                 VerticalScrollBarVisibility="Auto"
-                                 Height="80"
-                                 Margin="0,0,0,5"
-                                 ToolTip="ウィンドウタイトルにマッチする正規表現パターン（1行に1つ）"/>
-
-                        <!-- 除外パターン説明テキスト -->
-                        <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,5">
-                            ※ウィンドウタイトルが指定パターンにマッチした場合、スクリーンショットを取得しません。
-                            <LineBreak/>
-                            　例: .*パスワード.* （パスワードを含むタイトルを除外）
-                        </TextBlock>
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="このPCのID:"
+                                       VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1"
+                                     x:Name="ClientIdTextBox"
+                                     IsReadOnly="True"
+                                     Foreground="#FF0078D7"
+                                     Padding="2"
+                                     VerticalAlignment="Center"/>
+                        </Grid>
                     </StackPanel>
                 </Expander>
 
