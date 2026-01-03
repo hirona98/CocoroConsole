@@ -1111,7 +1111,15 @@ namespace CocoroConsole.Services
                         clientContext.WindowTitle = windowTitle;
                     }
 
-                    response.Images.Add(dataUri);
+                    if (!string.IsNullOrWhiteSpace(dataUri))
+                    {
+                        response.Images.Add(dataUri);
+                    }
+                    else
+                    {
+                        // 除外パターン等でキャプチャがスキップされた場合は画像なしで応答する
+                        response.Error = "capture skipped (excluded window title)";
+                    }
                 }
                 else
                 {
@@ -1137,11 +1145,16 @@ namespace CocoroConsole.Services
             }
         }
 
-        private async Task<(string DataUri, string? WindowTitle)> CaptureDesktopStillAsync(CancellationToken cancellationToken)
+        private async Task<(string? DataUri, string? WindowTitle)> CaptureDesktopStillAsync(CancellationToken cancellationToken)
         {
             using var service = new ScreenshotService(intervalMinutes: 1);
             service.SetExcludePatterns(_appSettings.ScreenshotSettings.excludePatterns);
             var screenshot = await service.CaptureActiveWindowAsync().WaitAsync(cancellationToken);
+            if (screenshot == null)
+            {
+                return (null, null);
+            }
+
             var dataUri = $"data:image/png;base64,{screenshot.ImageBase64}";
             return (dataUri, screenshot.WindowTitle);
         }

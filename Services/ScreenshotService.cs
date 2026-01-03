@@ -120,17 +120,16 @@ namespace CocoroAI.Services
         }
 
         /// <summary>
-        /// ウィンドウタイトルがフィルタリング対象かどうかを判定
+        /// ウィンドウタイトルが除外パターンにマッチするかを判定（最初にマッチしたRegexを返す）
         /// </summary>
         /// <param name="windowTitle">ウィンドウタイトル</param>
-        /// <returns>スキップすべき場合はtrue</returns>
-        private bool ShouldSkipCapture(string windowTitle)
+        private Regex? FindMatchedExcludePattern(string windowTitle)
         {
             if (_compiledExcludePatterns == null || _compiledExcludePatterns.Count == 0)
-                return false;
+                return null;
 
             if (string.IsNullOrWhiteSpace(windowTitle))
-                return false;
+                return null;
 
             try
             {
@@ -139,15 +138,15 @@ namespace CocoroAI.Services
                     if (regex.IsMatch(windowTitle))
                     {
                         Debug.WriteLine($"除外パターンマッチ: '{windowTitle}' - パターン: {regex}");
-                        return true;
+                        return regex;
                     }
                 }
-                return false;
+                return null;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"フィルタリング判定エラー: {ex.Message}");
-                return false;
+                return null;
             }
         }
 
@@ -180,9 +179,10 @@ namespace CocoroAI.Services
         /// <summary>
         /// アクティブウィンドウのスクリーンショットを取得
         /// </summary>
-        public async Task<ScreenshotData> CaptureActiveWindowAsync()
+        /// <returns>除外パターンにマッチした場合はnull（スキップ扱い）</returns>
+        public async Task<ScreenshotData?> CaptureActiveWindowAsync()
         {
-            return await Task.Run(() =>
+            return await Task.Run<ScreenshotData?>(() =>
             {
                 var hwnd = GetForegroundWindow();
                 if (hwnd == IntPtr.Zero)
@@ -197,9 +197,11 @@ namespace CocoroAI.Services
                 var windowTitle = titleBuilder.ToString();
 
                 // フィルタリング判定
-                if (ShouldSkipCapture(windowTitle))
+                var matched = FindMatchedExcludePattern(windowTitle);
+                if (matched != null)
                 {
-                    throw new InvalidOperationException($"フィルタリングによりスキップ: {windowTitle}");
+                    // フィルタ一致は例外ではなく通常フローとして扱う（呼び出し側でスキップ処理）
+                    return null;
                 }
 
                 // ウィンドウの位置とサイズを取得
@@ -291,25 +293,31 @@ namespace CocoroAI.Services
                     return;
                 }
 
-                var screenshot = CaptureActiveWindowOnly
-                    ? await CaptureActiveWindowAsync()
-                    : await CaptureFullScreenAsync();
+                ScreenshotData screenshot;
+                if (CaptureActiveWindowOnly)
+                {
+                    var captured = await CaptureActiveWindowAsync();
+                    if (captured == null)
+                    {
+                        // 除外パターンでスキップされた場合
+                        if (_onSkipped != null)
+                        {
+                            await _onSkipped("除外パターンにマッチしたため画面キャプチャをスキップしました");
+                        }
+                        return;
+                    }
+
+                    screenshot = captured;
+                }
+                else
+                {
+                    screenshot = await CaptureFullScreenAsync();
+                }
 
                 // コールバックを実行
                 if (_onCaptured != null)
                 {
                     await _onCaptured(screenshot);
-                }
-            }
-            catch (InvalidOperationException ex) when (ex.Message.StartsWith("フィルタリングによりスキップ"))
-            {
-                // フィルタリングでスキップされた場合はスキップコールバックを実行
-                var windowTitle = ex.Message.Replace("フィルタリングによりスキップ: ", "");
-                Debug.WriteLine($"除外パターンマッチによりスキップ: {windowTitle}");
-
-                if (_onSkipped != null)
-                {
-                    await _onSkipped($"除外パターンにマッチしたため画面キャプチャをスキップしました: {windowTitle}");
                 }
             }
             catch (Exception ex)

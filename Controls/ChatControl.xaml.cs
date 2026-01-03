@@ -483,8 +483,8 @@ namespace CocoroConsole.Controls
 
             var messageText = new TextBox
             {
-                Style = (Style)Resources["SystemMessageTextStyle"],
-                Text = $"[{from}] {message}"
+                Style = (Style)Resources["NotificationMessageTextStyle"],
+                Text = $"[{from}]\n{message}"
             };
 
             messageContent.Children.Add(messageText);
