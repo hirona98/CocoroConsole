@@ -202,35 +202,8 @@
                     </Grid>
                 </Expander>
 
-                <!-- スクショ除外（ウィンドウタイトル正規表現） -->
-                <Expander Header="スクショ除外（ウィンドウタイトル正規表現）"
-                          Margin="0,0,20,20"
-                          IsExpanded="False"
-                          Style="{StaticResource GroupBoxLikeExpanderStyle}">
-                    <StackPanel>
-                        <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,-10,0,10">
-                            アクティブウィンドウのタイトルに対して正規表現でマッチ判定し、
-                            マッチした場合は画面キャプチャをスキップします。
-                            <LineBreak/>
-                            （1行に1つ。トリムして保存されます。大文字小文字は区別しません）
-                        </TextBlock>
-
-                        <TextBox x:Name="ExcludeWindowTitlePatternsTextBox"
-                                 Foreground="#FF0078D7"
-                                 Padding="2"
-                                 TextWrapping="Wrap"
-                                 AcceptsReturn="True"
-                                 VerticalScrollBarVisibility="Auto"
-                                 Height="80"
-                                 Margin="0,0,0,5"
-                                 ToolTip="1行に1つ。正規表現。ウィンドウタイトルにマッチしたらキャプチャをスキップします。"/>
-                    </StackPanel>
-                </Expander>
-
-                <!-- デスクトップウォッチ設定 -->
-                <Expander Header="視覚（デスクトップウォッチ）"
+                <!-- デスクトップウォッチ -->
+                <Expander Header="デスクトップウォッチ"
                           Margin="0,0,20,20"
                           IsExpanded="False"
                           Style="{StaticResource GroupBoxLikeExpanderStyle}">
@@ -276,45 +249,30 @@
                                        HorizontalAlignment="Left"/>
                         </Grid>
 
-                        <!-- desktop担当（client_id） -->
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0"
-                                       Text="担当client_id:"
-                                       VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="1"
-                                     x:Name="DesktopWatchTargetClientIdTextBox"
-                                     Foreground="#FF0078D7"
-                                     Padding="2"
-                                     VerticalAlignment="Center"
-                                     ToolTip="desktop_watch_target_client_id（空可）"/>
-                        </Grid>
+                        <!-- 区切り線 -->
+                        <Rectangle Fill="#E0E0E0"
+                                   Height="1"
+                                   Margin="0,10,0,10"/>
 
-                        <Button x:Name="SetDesktopWatchTargetToSelfButton"
-                                Content="このPCをデスクトップ担当にする"
-                                Padding="6,4"
-                                Margin="0,0,0,10"
-                                HorizontalAlignment="Left"
-                                Click="SetDesktopWatchTargetToSelfButton_Click"/>
+                        <!-- スクショ除外（ウィンドウタイトル正規表現） -->
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="#666666"
+                                   Margin="0,0,0,10">
+                            アクティブウィンドウのタイトルに対して正規表現でマッチ判定し、
+                            マッチした場合は画面キャプチャをスキップします。
+                            <LineBreak/>
+                            （1行に1つ。トリムして保存されます。大文字小文字は区別しません）
+                        </TextBlock>
 
-                        <Grid Margin="0,0,0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0"
-                                       Text="このPCのID:"
-                                       VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="1"
-                                     x:Name="ClientIdTextBox"
-                                     IsReadOnly="True"
-                                     Foreground="#FF0078D7"
-                                     Padding="2"
-                                     VerticalAlignment="Center"/>
-                        </Grid>
+                        <TextBox x:Name="ExcludeWindowTitlePatternsTextBox"
+                                 Foreground="#FF0078D7"
+                                 Padding="2"
+                                 TextWrapping="Wrap"
+                                 AcceptsReturn="True"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Height="120"
+                                 Margin="0,0,0,5"
+                                 ToolTip="1行に1つ。正規表現。ウィンドウタイトルにマッチしたらキャプチャをスキップします。"/>
                     </StackPanel>
                 </Expander>
 

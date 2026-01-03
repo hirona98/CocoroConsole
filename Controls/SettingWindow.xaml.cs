@@ -464,14 +464,15 @@ namespace CocoroConsole.Controls
 
             try
             {
+                // /api/settings は全量PUTのため、無効時にdesktop_watch_target_client_idを消さないよう現値を保持する
+                var latestSettings = await _apiClient.GetSettingsAsync();
+
                 bool memoryEnabled = EmbeddingSettingsControl.IsMemoryEnabled;
                 bool desktopWatchEnabled = SystemSettingsControl.GetDesktopWatchEnabled();
                 int desktopWatchIntervalSeconds = SystemSettingsControl.GetDesktopWatchIntervalSeconds();
-                var desktopWatchTargetClientId = SystemSettingsControl.GetDesktopWatchTargetClientId();
-                if (desktopWatchEnabled && string.IsNullOrWhiteSpace(desktopWatchTargetClientId))
-                {
-                    desktopWatchTargetClientId = AppSettings.Instance.ClientId;
-                }
+                var desktopWatchTargetClientId = desktopWatchEnabled
+                    ? AppSettings.Instance.ClientId
+                    : latestSettings.DesktopWatchTargetClientId;
                 bool remindersEnabled = SystemSettingsControl.GetIsEnableReminder();
                 List<CocoroGhostReminder> reminders = SystemSettingsControl.GetReminders();
                 List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();

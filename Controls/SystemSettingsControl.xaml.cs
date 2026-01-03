@@ -67,9 +67,6 @@ namespace CocoroConsole.Controls
             {
                 var appSettings = AppSettings.Instance;
 
-                // Client ID（このPC）
-                ClientIdTextBox.Text = appSettings.ClientId;
-
                 // /api/settings から設定を読み込み（API利用可能な場合）
                 await LoadSettingsFromApiAsync(appSettings);
 
@@ -121,7 +118,6 @@ namespace CocoroConsole.Controls
             DesktopWatchEnabledCheckBox.Checked += OnSettingsChanged;
             DesktopWatchEnabledCheckBox.Unchecked += OnSettingsChanged;
             DesktopWatchIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
-            DesktopWatchTargetClientIdTextBox.TextChanged += OnSettingsChanged;
 
             // マイク設定
             MicThresholdSlider.ValueChanged += OnSettingsChanged;
@@ -146,12 +142,6 @@ namespace CocoroConsole.Controls
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void SetDesktopWatchTargetToSelfButton_Click(object sender, RoutedEventArgs e)
-        {
-            DesktopWatchTargetClientIdTextBox.Text = AppSettings.Instance.ClientId;
-            MarkSettingsChanged();
         }
 
         /// <summary>
@@ -183,12 +173,6 @@ namespace CocoroConsole.Controls
             }
 
             return 300;
-        }
-
-        public string? GetDesktopWatchTargetClientId()
-        {
-            var text = DesktopWatchTargetClientIdTextBox.Text?.Trim() ?? string.Empty;
-            return string.IsNullOrWhiteSpace(text) ? null : text;
         }
 
         /// <summary>
@@ -231,7 +215,6 @@ namespace CocoroConsole.Controls
 
                         DesktopWatchEnabledCheckBox.IsChecked = settings.DesktopWatchEnabled;
                         DesktopWatchIntervalSecondsTextBox.Text = (settings.DesktopWatchIntervalSeconds > 0 ? settings.DesktopWatchIntervalSeconds : 300).ToString();
-                        DesktopWatchTargetClientIdTextBox.Text = settings.DesktopWatchTargetClientId ?? string.Empty;
 
                         UpdateReminderListUI();
                         return;
@@ -247,7 +230,6 @@ namespace CocoroConsole.Controls
             EnableReminderCheckBox.IsChecked = false;
             DesktopWatchEnabledCheckBox.IsChecked = false;
             DesktopWatchIntervalSecondsTextBox.Text = "300";
-            DesktopWatchTargetClientIdTextBox.Text = appSettings.ClientId;
             _apiReminders = new List<CocoroGhostReminder>();
             UpdateReminderListUI();
         }
