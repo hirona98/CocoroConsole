@@ -336,10 +336,6 @@ namespace CocoroConsole.Services
         /// </summary>
         private void ApplyCocoroGhostSettingsToAppSettings(Models.CocoroGhostApi.CocoroGhostSettings settings)
         {
-            // ExcludeKeywordsをScreenshotSettings.excludePatternsに反映
-            // （LLM/Embedding設定はcocoro_ghost側で管理されているため、AppSettingsには保存しない）
-            AppSettings.Instance.ApplyCocoroGhostSettings(settings);
-
             // 設定キャッシュを更新
             RefreshSettingsCache();
 
@@ -1144,6 +1140,7 @@ namespace CocoroConsole.Services
         private async Task<(string DataUri, string? WindowTitle)> CaptureDesktopStillAsync(CancellationToken cancellationToken)
         {
             using var service = new ScreenshotService(intervalMinutes: 1);
+            service.SetExcludePatterns(_appSettings.ScreenshotSettings.excludePatterns);
             var screenshot = await service.CaptureActiveWindowAsync().WaitAsync(cancellationToken);
             var dataUri = $"data:image/png;base64,{screenshot.ImageBase64}";
             return (dataUri, screenshot.WindowTitle);
@@ -1227,7 +1224,6 @@ namespace CocoroConsole.Services
 
             return new CocoroGhostSettingsUpdateRequest
             {
-                ExcludeKeywords = latestSettings.ExcludeKeywords ?? new List<string>(),
                 MemoryEnabled = latestSettings.MemoryEnabled,
                 DesktopWatchEnabled = latestSettings.DesktopWatchEnabled,
                 DesktopWatchIntervalSeconds = latestSettings.DesktopWatchIntervalSeconds,

@@ -182,12 +182,6 @@ namespace CocoroConsole.Services
         void LoadSettings();
 
         /// <summary>
-        /// cocoro_ghost APIから取得した設定をローカル設定に反映
-        /// </summary>
-        /// <param name="apiSettings">/settings のレスポンス</param>
-        void ApplyCocoroGhostSettings(CocoroGhostSettings apiSettings);
-
-        /// <summary>
         /// アプリケーション設定ファイルを読み込む
         /// </summary>
         void LoadAppSettings();

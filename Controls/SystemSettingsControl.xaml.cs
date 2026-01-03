@@ -36,11 +36,6 @@ namespace CocoroConsole.Controls
         private CocoroGhostApiClient? _apiClient;
 
         /// <summary>
-        /// APIから取得したexclude_keywords
-        /// </summary>
-        private List<string> _apiExcludeKeywords = new();
-
-        /// <summary>
         /// APIから取得したreminders
         /// </summary>
         private List<CocoroGhostReminder> _apiReminders = new();
@@ -78,6 +73,12 @@ namespace CocoroConsole.Controls
                 // /api/settings から設定を読み込み（API利用可能な場合）
                 await LoadSettingsFromApiAsync(appSettings);
 
+                // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
+                ExcludeWindowTitlePatternsTextBox.Text = string.Join(
+                    Environment.NewLine,
+                    appSettings.ScreenshotSettings.excludePatterns ?? new List<string>()
+                );
+
                 // マイク設定
                 MicThresholdSlider.Value = appSettings.MicrophoneSettings.inputThreshold;
 
@@ -113,8 +114,8 @@ namespace CocoroConsole.Controls
             EnableReminderCheckBox.Checked += OnSettingsChanged;
             EnableReminderCheckBox.Unchecked += OnSettingsChanged;
 
-            // 入力フィルタ（exclude_keywords）
-            ExcludeKeywordsTextBox.TextChanged += OnSettingsChanged;
+            // スクショ除外（ウィンドウタイトル正規表現）
+            ExcludeWindowTitlePatternsTextBox.TextChanged += OnSettingsChanged;
 
             // デスクトップウォッチ（cocoro_ghost側）
             DesktopWatchEnabledCheckBox.Checked += OnSettingsChanged;
@@ -214,7 +215,7 @@ namespace CocoroConsole.Controls
         #region /api/settings API連携
 
         /// <summary>
-        /// APIから設定を読み込み（exclude_keywords / reminders_enabled / reminders）
+        /// APIから設定を読み込み（reminders_enabled / reminders / desktop_watch）
         /// </summary>
         private async Task LoadSettingsFromApiAsync(IAppSettings appSettings)
         {
@@ -225,10 +226,8 @@ namespace CocoroConsole.Controls
                     var settings = await _apiClient.GetSettingsAsync();
                     if (settings != null)
                     {
-                        _apiExcludeKeywords = settings.ExcludeKeywords ?? new List<string>();
                         _apiReminders = settings.Reminders ?? new List<CocoroGhostReminder>();
                         EnableReminderCheckBox.IsChecked = settings.RemindersEnabled;
-                        ExcludeKeywordsTextBox.Text = string.Join(Environment.NewLine, _apiExcludeKeywords);
 
                         DesktopWatchEnabledCheckBox.IsChecked = settings.DesktopWatchEnabled;
                         DesktopWatchIntervalSecondsTextBox.Text = (settings.DesktopWatchIntervalSeconds > 0 ? settings.DesktopWatchIntervalSeconds : 300).ToString();
@@ -245,7 +244,6 @@ namespace CocoroConsole.Controls
             }
 
             // APIが利用できない場合はローカル設定を使用
-            ExcludeKeywordsTextBox.Text = string.Empty;
             EnableReminderCheckBox.IsChecked = false;
             DesktopWatchEnabledCheckBox.IsChecked = false;
             DesktopWatchIntervalSecondsTextBox.Text = "300";
@@ -255,77 +253,11 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// exclude_keywordsをAPIに保存（/api/settings は全量PUTのため他項目も保全して送信）
+        /// スクショ除外（ウィンドウタイトル正規表現）のUI値を取得
         /// </summary>
-        public async Task<bool> SaveExcludeKeywordsToApiAsync()
+        public List<string> GetWindowTitleExcludePatterns()
         {
-            if (_apiClient == null) return false;
-
-            try
-            {
-                var patterns = ExcludeKeywordsTextBox.Text
-                    .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(p => p.Trim())
-                    .Where(p => !string.IsNullOrEmpty(p))
-                    .ToList();
-
-                // 最新設定を取得し、他項目を保全したまま更新する
-                var latestSettings = await _apiClient.GetSettingsAsync();
-                latestSettings ??= new CocoroGhostSettings();
-
-                var activeLlmId = latestSettings.ActiveLlmPresetId ?? latestSettings.LlmPreset.FirstOrDefault()?.LlmPresetId;
-                var activeEmbeddingId = latestSettings.ActiveEmbeddingPresetId ?? latestSettings.EmbeddingPreset.FirstOrDefault()?.EmbeddingPresetId;
-                var activePersonaId = latestSettings.ActivePersonaPresetId ?? latestSettings.PersonaPreset.FirstOrDefault()?.PersonaPresetId;
-                var activeAddonId = latestSettings.ActiveAddonPresetId ?? latestSettings.AddonPreset.FirstOrDefault()?.AddonPresetId;
-
-                if (string.IsNullOrWhiteSpace(activeLlmId) ||
-                    string.IsNullOrWhiteSpace(activeEmbeddingId) ||
-                    string.IsNullOrWhiteSpace(activePersonaId) ||
-                    string.IsNullOrWhiteSpace(activeAddonId))
-                {
-                    MessageBox.Show("API設定のアクティブプリセットIDが取得できません。cocoro_ghost側のsettings.dbを確認してください。", "警告",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return false;
-                }
-
-                var request = new CocoroGhostSettingsUpdateRequest
-                {
-                    ExcludeKeywords = patterns,
-                    MemoryEnabled = latestSettings.MemoryEnabled,
-                    DesktopWatchEnabled = latestSettings.DesktopWatchEnabled,
-                    DesktopWatchIntervalSeconds = latestSettings.DesktopWatchIntervalSeconds,
-                    DesktopWatchTargetClientId = latestSettings.DesktopWatchTargetClientId,
-                    RemindersEnabled = latestSettings.RemindersEnabled,
-                    Reminders = latestSettings.Reminders ?? new List<CocoroGhostReminder>(),
-                    ActiveLlmPresetId = activeLlmId!,
-                    ActiveEmbeddingPresetId = activeEmbeddingId!,
-                    ActivePersonaPresetId = activePersonaId!,
-                    ActiveAddonPresetId = activeAddonId!,
-                    LlmPreset = latestSettings.LlmPreset ?? new List<LlmPreset>(),
-                    EmbeddingPreset = latestSettings.EmbeddingPreset ?? new List<EmbeddingPreset>(),
-                    PersonaPreset = latestSettings.PersonaPreset ?? new List<PersonaPreset>(),
-                    AddonPreset = latestSettings.AddonPreset ?? new List<AddonPreset>()
-                };
-
-                await _apiClient.UpdateSettingsAsync(request);
-                _apiExcludeKeywords = patterns;
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"APIへのexclude_keywords保存に失敗: {ex.Message}");
-                MessageBox.Show($"exclude_keywords のAPI保存に失敗しました: {ex.Message}", "警告",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// exclude_keywordsのUI値を取得
-        /// </summary>
-        public List<string> GetExcludeKeywords()
-        {
-            return ExcludeKeywordsTextBox.Text
+            return ExcludeWindowTitlePatternsTextBox.Text
                 .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(p => p.Trim())
                 .Where(p => !string.IsNullOrEmpty(p))

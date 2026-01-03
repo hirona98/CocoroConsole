@@ -214,20 +214,6 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// cocoro_ghost APIから取得した設定をローカル設定に反映
-        /// </summary>
-        /// <param name="apiSettings">/settings のレスポンス</param>
-        public void ApplyCocoroGhostSettings(CocoroGhostSettings apiSettings)
-        {
-            if (apiSettings == null)
-            {
-                return;
-            }
-
-            ScreenshotSettings.excludePatterns = apiSettings.ExcludeKeywords ?? new List<string>();
-        }
-
-        /// <summary>
         /// 現在の設定からConfigSettingsオブジェクトを作成
         /// </summary>
         /// <returns>ConfigSettings オブジェクト</returns>

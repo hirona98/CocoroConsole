@@ -259,6 +259,9 @@ namespace CocoroConsole.Controls
             // Bearer Token
             dict["BearerToken"] = SystemSettingsControl.GetBearerToken();
 
+            // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
+            dict["WindowTitleExcludePatterns"] = SystemSettingsControl.GetWindowTitleExcludePatterns();
+
             return dict;
         }
 
@@ -461,7 +464,6 @@ namespace CocoroConsole.Controls
 
             try
             {
-                List<string> excludeKeywords = SystemSettingsControl.GetExcludeKeywords();
                 bool memoryEnabled = EmbeddingSettingsControl.IsMemoryEnabled;
                 bool desktopWatchEnabled = SystemSettingsControl.GetDesktopWatchEnabled();
                 int desktopWatchIntervalSeconds = SystemSettingsControl.GetDesktopWatchIntervalSeconds();
@@ -500,7 +502,6 @@ namespace CocoroConsole.Controls
 
                 CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
                 {
-                    ExcludeKeywords = excludeKeywords,
                     MemoryEnabled = memoryEnabled,
                     DesktopWatchEnabled = desktopWatchEnabled,
                     DesktopWatchIntervalSeconds = desktopWatchIntervalSeconds,
@@ -724,6 +725,9 @@ namespace CocoroConsole.Controls
 
             // Bearer Token
             appSettings.CocoroGhostBearerToken = (string)snapshot["BearerToken"];
+
+            // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
+            appSettings.ScreenshotSettings.excludePatterns = (List<string>)snapshot["WindowTitleExcludePatterns"];
         }
 
         /// <summary>

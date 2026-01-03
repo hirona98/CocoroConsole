@@ -5,9 +5,6 @@ namespace CocoroConsole.Models.CocoroGhostApi
 {
     public class CocoroGhostSettings
     {
-        [JsonPropertyName("exclude_keywords")]
-        public List<string> ExcludeKeywords { get; set; } = new List<string>();
-
         [JsonPropertyName("memory_enabled")]
         public bool MemoryEnabled { get; set; }
 
@@ -63,9 +60,6 @@ namespace CocoroConsole.Models.CocoroGhostApi
 
     public class CocoroGhostSettingsUpdateRequest
     {
-        [JsonPropertyName("exclude_keywords")]
-        public List<string> ExcludeKeywords { get; set; } = new List<string>();
-
         [JsonPropertyName("memory_enabled")]
         public bool MemoryEnabled { get; set; }
 
