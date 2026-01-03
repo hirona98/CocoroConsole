@@ -1,5 +1,6 @@
 ﻿using CocoroConsole.Communication;
 using CocoroAI.Services;
+using CocoroConsole.Models.CocoroGhostApi;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -32,7 +33,7 @@ namespace CocoroConsole.Services
         event EventHandler<ChatRequest>? ChatMessageReceived;
 
         /// <summary>
-        /// 通知メッセージ受信イベント（Notification APIから）
+        /// 通知メッセージ受信イベント（cocoro_ghost events/stream 由来）
         /// </summary>
         event Action<ChatMessagePayload, List<System.Windows.Media.Imaging.BitmapSource>?>? NotificationMessageReceived;
 
@@ -60,6 +61,11 @@ namespace CocoroConsole.Services
         /// CocoroGhostステータス変更イベント
         /// </summary>
         event EventHandler<CocoroGhostStatus>? StatusChanged;
+
+        /// <summary>
+        /// cocoro_ghost の /api/settings 取得・更新後に発火
+        /// </summary>
+        event EventHandler<CocoroConsole.Models.CocoroGhostApi.CocoroGhostSettings>? CocoroGhostSettingsUpdated;
 
         /// <summary>
         /// ログストリームメッセージ受信イベント
@@ -118,14 +124,8 @@ namespace CocoroConsole.Services
         Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, List<string>? imageDataUrls = null);
 
         /// <summary>
-        /// デスクトップウォッチ画像をCocoroGhostに送信
-        /// </summary>
-        /// <param name="screenshotData">スクリーンショットデータ</param>
-        Task SendDesktopWatchToCoreAsync(ScreenshotData screenshotData);
-
-        /// <summary>
-        /// 新しい会話セッションを開始
-        /// </summary>
+         /// 新しい会話セッションを開始
+         /// </summary>
         void StartNewConversation();
 
         /// <summary>
@@ -133,16 +133,6 @@ namespace CocoroConsole.Services
         /// </summary>
         /// <param name="animationName">アニメーション名</param>
         Task SendAnimationToShellAsync(string animationName);
-
-        /// <summary>
-        /// 通知メッセージを処理（Notification API用）
-        /// </summary>
-        /// <param name="notification">通知メッセージ</param>
-        /// <param name="imageDataUrls">画像データURL配列（オプション）</param>
-        Task ProcessNotificationAsync(ChatMessagePayload notification, string[]? imageDataUrls = null);
-
-        Task ProcessDirectRequestAsync(ChatMessagePayload request, string[]? imageDataUrls = null);
-
 
         /// <summary>
         /// CocoroShellにTTS状態を送信
@@ -162,15 +152,15 @@ namespace CocoroConsole.Services
 
 
 
-        /// <summary>
-        /// ログビューアーウィンドウを開く
-        /// </summary>
-        void OpenLogViewer();
+	        /// <summary>
+	        /// ログビューアーウィンドウを開く
+	        /// </summary>
+	        void OpenLogViewer();
 
-        /// <summary>
-        /// CocoroShellから現在のキャラクター位置を取得
-        /// </summary>
-        Task<PositionResponse> GetShellPositionAsync();
+	        /// <summary>
+	        /// CocoroShellから現在のキャラクター位置を取得
+	        /// </summary>
+	        Task<PositionResponse> GetShellPositionAsync();
 
         /// <summary>
         /// CocoroShellに設定の部分更新を送信
@@ -182,5 +172,15 @@ namespace CocoroConsole.Services
         /// 設定キャッシュを更新
         /// </summary>
         void RefreshSettingsCache();
+
+        /// <summary>
+        /// cocoro_ghost の /api/settings を再取得して反映する
+        /// </summary>
+        Task RefreshCocoroGhostSettingsAsync();
+
+        /// <summary>
+        /// デスクトップウォッチ（cocoro_ghost側）の有効/無効を更新する
+        /// </summary>
+        Task SetDesktopWatchEnabledAsync(bool enabled);
     }
 }

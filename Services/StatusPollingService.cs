@@ -31,6 +31,7 @@ namespace CocoroConsole.Services
         private readonly HttpClient _httpClient;
         private readonly string _healthEndpoint;
         private readonly Timer _pollingTimer;
+        private int _pollingInProgress = 0;
         private CocoroGhostStatus _currentStatus = CocoroGhostStatus.WaitingForStartup;
         private volatile bool _disposed = false;
 
@@ -57,22 +58,39 @@ namespace CocoroConsole.Services
             _healthEndpoint = $"{baseUrl.TrimEnd('/')}/api/health";
 
             // 1秒間隔でポーリング開始（起動待ち用）
-            _pollingTimer = new Timer(_ => PollHealthStatus(), null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+            _pollingTimer = new Timer(_ =>
+            {
+                _ = PollHealthStatusAsync().ContinueWith(
+                    task =>
+                    {
+                        if (task.Exception != null)
+                        {
+                            Debug.WriteLine($"[StatusPolling] PollHealthStatus failed: {task.Exception.GetBaseException().Message}");
+                        }
+                    },
+                    CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted,
+                    TaskScheduler.Default);
+            }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
         }
 
         /// <summary>
         /// ヘルスチェックを実行してステータスを更新（同期・ブロッキング）
         /// </summary>
-        private void PollHealthStatus()
+        private async Task PollHealthStatusAsync()
         {
             if (_disposed) return;
+            if (Interlocked.Exchange(ref _pollingInProgress, 1) == 1)
+            {
+                return;
+            }
 
             try
             {
-                var response = _httpClient.GetAsync(_healthEndpoint).Result;
+                using var response = await _httpClient.GetAsync(_healthEndpoint).ConfigureAwait(false);
                 if (response.IsSuccessStatusCode)
                 {
-                    var content = response.Content.ReadAsStringAsync().Result;
+                    var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     var healthCheck = JsonSerializer.Deserialize<Communication.HealthCheckResponse>(content);
 
                     if (healthCheck != null && healthCheck.status == "healthy")
@@ -110,6 +128,10 @@ namespace CocoroConsole.Services
                     UpdateStatus(CocoroGhostStatus.WaitingForStartup);
                     _pollingTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
                 }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _pollingInProgress, 0);
             }
         }
 

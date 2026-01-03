@@ -19,13 +19,11 @@ namespace CocoroConsole.Windows
         private ObservableCollection<LogMessage> _allLogs = new ObservableCollection<LogMessage>();
         private ICollectionView? _filteredLogs;
         private string _levelFilter = "";
-        private string _componentFilter = "";
         private const int MaxDisplayedLogs = 1000;
         public bool IsClosed { get; private set; } = false;
 
         // スクロール位置保持用
         private ScrollViewer? _scrollViewer;
-        private double _lastVerticalOffset = 0;
 
         public LogViewerWindow()
         {
@@ -137,7 +135,6 @@ namespace CocoroConsole.Windows
                 if (shouldPreservePosition && _scrollViewer != null)
                 {
                     savedOffset = _scrollViewer.VerticalOffset;
-                    _lastVerticalOffset = savedOffset;
                 }
 
                 foreach (var logMessage in logMessages)
@@ -228,16 +225,29 @@ namespace CocoroConsole.Windows
         {
             if (item is not LogMessage log) return false;
 
-            // レベルフィルター
-            if (!string.IsNullOrEmpty(_levelFilter) && log.level != _levelFilter)
-                return false;
-
-            // コンポーネントフィルター
-            if (!string.IsNullOrEmpty(_componentFilter) && log.component != _componentFilter)
-                return false;
+            // レベルフィルター（指定レベル以上を表示）
+            if (!string.IsNullOrEmpty(_levelFilter))
+            {
+                var logLevel = GetLogLevelPriority(log.level);
+                var filterLevel = GetLogLevelPriority(_levelFilter);
+                if (logLevel < filterLevel)
+                    return false;
+            }
 
             return true;
         }
+
+        /// <summary>
+        /// ログレベルの優先度を取得（DEBUG=0, INFO=1, WARNING=2, ERROR=3）
+        /// </summary>
+        private static int GetLogLevelPriority(string level) => level switch
+        {
+            "DEBUG" => 0,
+            "INFO" => 1,
+            "WARNING" => 2,
+            "ERROR" => 3,
+            _ => -1
+        };
 
         /// <summary>
         /// ログ件数を更新
@@ -297,36 +307,6 @@ namespace CocoroConsole.Windows
                 }
 
                 _levelFilter = selectedItem.Tag?.ToString() ?? "";
-                _filteredLogs?.Refresh();
-                UpdateLogCount();
-
-                // スクロール位置の復元
-                if (_scrollViewer != null && AutoScrollCheckBox.IsChecked != true)
-                {
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        _scrollViewer.ScrollToVerticalOffset(savedOffset);
-                    }, System.Windows.Threading.DispatcherPriority.Loaded);
-                }
-            }
-        }
-
-        /// <summary>
-        /// コンポーネントフィルター変更イベント
-        /// </summary>
-        private void ComponentFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            // UIが完全に初期化されていない場合は何もしない
-            if (ComponentFilterComboBox?.SelectedItem is ComboBoxItem selectedItem)
-            {
-                // フィルター変更時のスクロール位置保持
-                double savedOffset = 0;
-                if (_scrollViewer != null && AutoScrollCheckBox.IsChecked != true)
-                {
-                    savedOffset = _scrollViewer.VerticalOffset;
-                }
-
-                _componentFilter = selectedItem.Tag?.ToString() ?? "";
                 _filteredLogs?.Refresh();
                 UpdateLogCount();
 

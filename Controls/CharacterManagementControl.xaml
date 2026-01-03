@@ -62,14 +62,14 @@
                           Padding="10"
                           ToolTip="Basic setting">
                     <StackPanel>
-                        <Grid>
+                        <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0"
-                                       Text="名前:"
+                                       Text="プリセット名:"
                                        VerticalAlignment="Center"
                                        ToolTip="Name"/>
                             <TextBox Grid.Column="1"
@@ -106,10 +106,12 @@
                         <TextBlock Foreground="#666666"
                                    TextWrapping="Wrap"
                                    Margin="130,0,0,0">
-                            何も指定しない場合はVRM表示機能が無効になります。
+                            未指定の場合はVRM表示が無効になります。
                         </TextBlock>
                     </StackPanel>
                 </GroupBox>
+
+                <!-- LLMパラメータ -->
 
                 <!-- マテリアル・影設定 -->
                 <GroupBox Header="マテリアル・影設定"
@@ -123,7 +125,7 @@
 
                         <!-- 影オフメッシュ設定 -->
                         <CheckBox x:Name="EnableShadowOffCheckBox"
-                                  Content="指定したメッシュに影を落とさない"
+                                  Content="指定したメッシュに影を落とさない（顔などを想定）"
                                   Foreground="#FF4873CF"
                                   Checked="EnableShadowOffCheckBox_Checked"
                                   Unchecked="EnableShadowOffCheckBox_Unchecked"
@@ -145,31 +147,9 @@
                                      Padding="2"
                                      ToolTip="カンマ区切りでメッシュ名を入力 (例: Face, U_Char_1)"/>
                         </Grid>
-                        <!-- 影設定説明テキスト -->
-                        <TextBlock Foreground="#666666"
-                                   TextWrapping="Wrap"
-                                   Margin="130,0,0,10">
-                            顔など特定のメッシュに影を落としたくない場合に指定してください。
-                        </TextBlock>
                     </StackPanel>
                 </GroupBox>
 
-                <!-- LLMパラメータ -->
-                <GroupBox Header="言語生成AI"
-                          Margin="0,0,20,20"
-                          Padding="10">
-                    <StackPanel>
-                        <CheckBox x:Name="IsUseLLMCheckBox"
-                                  Content="LLMを使用する"
-                                  Foreground="#FF4873CF"
-                                  ToolTip="Use LLM"/>
-                        <TextBlock Foreground="#666666"
-                                   TextWrapping="Wrap"
-                                   Margin="0,10,0,0">
-                        LLMの詳細設定とプリセット管理は「LLM」と「Embedding」タブで行ってください。
-                        </TextBlock>
-                    </StackPanel>
-                </GroupBox>
                 <!-- TTSパラメータ -->
                 <GroupBox Header="音声合成"
                           Margin="0,0,20,0"
@@ -682,8 +662,13 @@
                                              Foreground="#FF0078D7"
                                              Padding="2"
                                              ToolTip="Aivis Cloud APIキー"
-                                             Width="200"
+                                             Width="100"
                                              HorizontalAlignment="Left"/>
+                                    <Button Content="コピー"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="AivisCloudApiKeyCopyButton_Click"
+                                            ToolTip="クリップボードにコピー"/>
                                     <Button Content="上書き貼付け"
                                             Margin="10,0,0,0"
                                             Padding="10,0,10,0"
@@ -833,6 +818,9 @@
                           Padding="10"
                           Margin="0,20,20,0">
                     <StackPanel>
+                        <TextBlock Text="システムタブも設定してください"
+                                   Foreground="#666666"
+                                   Margin="0,-5,0,10"/>
                         <Grid>
                             <CheckBox x:Name="IsUseSTTCheckBox"
                                       Content="STTを使用する"
@@ -900,8 +888,13 @@
                                 <TextBox x:Name="STTApiKeyPasswordBox"
                                          Foreground="#FF0078D7"
                                          Padding="2"
-                                         Width="200"
+                                         Width="100"
                                          HorizontalAlignment="Left"/>
+                                <Button Content="コピー"
+                                        Margin="10,0,0,0"
+                                        Padding="10,0,10,0"
+                                        Click="STTApiKeyCopyButton_Click"
+                                        ToolTip="クリップボードにコピー"/>
                                 <Button Content="上書き貼付け"
                                         Margin="10,0,0,0"
                                         Padding="10,0,10,0"

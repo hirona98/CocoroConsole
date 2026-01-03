@@ -27,8 +27,6 @@ namespace CocoroConsole.Services
         // 定数
         private const int EMBEDDING_DIM = 256; // WeSpeaker ResNet34
         private const int SAMPLE_RATE = 16000;
-        private const int TARGET_SAMPLES = SAMPLE_RATE * 3; // 3秒
-
         /// <summary>
         /// コンストラクタ
         /// </summary>
@@ -202,30 +200,6 @@ namespace CocoroConsole.Services
             }
 
             return samples;
-        }
-
-        /// <summary>
-        /// 音声長を調整（パディングまたはクロップ）
-        /// </summary>
-        private float[] AdjustAudioLength(float[] samples, int targetLength)
-        {
-            if (samples.Length == targetLength)
-                return samples;
-
-            if (samples.Length < targetLength)
-            {
-                // パディング（ゼロ埋め）
-                var padded = new float[targetLength];
-                Array.Copy(samples, padded, samples.Length);
-                return padded;
-            }
-            else
-            {
-                // クロップ（前方から切り出し）
-                var cropped = new float[targetLength];
-                Array.Copy(samples, cropped, targetLength);
-                return cropped;
-            }
         }
 
         /// <summary>

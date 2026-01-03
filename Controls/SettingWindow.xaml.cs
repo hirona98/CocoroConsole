@@ -22,9 +22,6 @@ namespace CocoroConsole.Controls
         private Dictionary<string, object> _originalDisplaySettings = new Dictionary<string, object>();
         private List<CharacterSettings> _originalCharacterList = new List<CharacterSettings>();
 
-        // 現在選択されているキャラクターのインデックス
-        private int _currentCharacterIndex = 0;
-
         // 通信サービス
         private ICommunicationService? _communicationService;
 
@@ -46,6 +43,9 @@ namespace CocoroConsole.Controls
 
             _communicationService = communicationService;
 
+            // LLM使用設定（全体設定）を初期表示に反映
+            LlmSettingsControl.IsUseLlm = AppSettings.Instance.IsUseLLM;
+
             // cocoro_ghost APIクライアントを初期化
             InitializeApiClient();
 
@@ -58,7 +58,7 @@ namespace CocoroConsole.Controls
 
             // システム設定コントロールを初期化（APIクライアント設定後に初期化）
             SystemSettingsControl.SetApiClient(_apiClient);
-            _ = SystemSettingsControl.InitializeAsync();
+            _ = InitializeSystemSettingsAsync();
 
             // システム設定変更イベントを登録
             SystemSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
@@ -69,11 +69,8 @@ namespace CocoroConsole.Controls
             // おまけ設定変更イベントを登録
             ExtrasControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
 
-            // 外部サービス設定コントロールを初期化
-            _ = ExternalServicesSettingsControl.InitializeAsync();
-
-            // 外部サービス設定変更イベントを登録
-            ExternalServicesSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
+            // API説明コントロールを初期化
+            _ = ApiDocumentationControl.InitializeAsync();
 
             // プリセット管理コントロールを初期化
             _ = InitializePresetControlsAsync();
@@ -83,6 +80,11 @@ namespace CocoroConsole.Controls
 
             // CocoroGhost再起動チェック用に現在の設定のディープコピーを保存
             _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
+        }
+
+        private async Task InitializeSystemSettingsAsync()
+        {
+            await SystemSettingsControl.InitializeAsync();
         }
 
         /// <summary>
@@ -147,50 +149,28 @@ namespace CocoroConsole.Controls
 
                 // LLM設定をリスト全体でロード
                 List<LlmPreset> llmPresets = settings.LlmPreset ?? new List<LlmPreset>();
-                if (llmPresets.Count == 0)
-                {
-                    llmPresets.Add(new LlmPreset
-                    {
-                        LlmPresetId = 0,
-                        LlmPresetName = "デフォルト",
-                        SystemPrompt = string.Empty,
-                        LlmApiKey = null,
-                        LlmModel = string.Empty,
-                        ReasoningEffort = null,
-                        LlmBaseUrl = null,
-                        MaxTurnsWindow = 10,
-                        MaxTokens = 4096,
-                        ImageModelApiKey = null,
-                        ImageModel = string.Empty,
-                        ImageLlmBaseUrl = null,
-                        MaxTokensVision = 4096,
-                        ImageTimeoutSeconds = 60
-                    });
-                }
                 LlmSettingsControl.SetApiClient(_apiClient, SaveLlmPresetsToApiAsync);
-                LlmSettingsControl.LoadSettingsList(llmPresets);
+                LlmSettingsControl.LoadSettingsList(llmPresets, settings.ActiveLlmPresetId);
 
                 // Embedding設定をリスト全体でロード
                 List<EmbeddingPreset> embeddingPresets = settings.EmbeddingPreset ?? new List<EmbeddingPreset>();
-                if (embeddingPresets.Count == 0)
-                {
-                    embeddingPresets.Add(new EmbeddingPreset
-                    {
-                        EmbeddingPresetId = 0,
-                        EmbeddingPresetName = "デフォルト",
-                        EmbeddingModelApiKey = null,
-                        EmbeddingModel = string.Empty,
-                        EmbeddingBaseUrl = null,
-                        EmbeddingDimension = 1536,
-                        SimilarEpisodesLimit = 5
-                    });
-                }
                 EmbeddingSettingsControl.SetApiClient(_apiClient, SaveEmbeddingPresetsToApiAsync);
-                EmbeddingSettingsControl.LoadSettingsList(embeddingPresets);
+                EmbeddingSettingsControl.IsMemoryEnabled = settings.MemoryEnabled;
+                EmbeddingSettingsControl.LoadSettingsList(embeddingPresets, settings.ActiveEmbeddingPresetId);
+
+                // Promptプリセットをロード
+                PromptSettingsControl.SetApiClient(_apiClient, SaveAllSettingsToApiAsync);
+                PromptSettingsControl.LoadSettings(
+                    settings.PersonaPreset ?? new List<PersonaPreset>(),
+                    settings.ActivePersonaPresetId,
+                    settings.AddonPreset ?? new List<AddonPreset>(),
+                    settings.ActiveAddonPresetId
+                );
 
                 // 設定変更イベントを登録
                 LlmSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 EmbeddingSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
+                PromptSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
             }
             catch (Exception ex)
             {
@@ -210,15 +190,9 @@ namespace CocoroConsole.Controls
             // キャラクター変更イベントを登録
             CharacterManagementControl.CharacterChanged += (sender, args) =>
             {
-                // 現在のキャラクターインデックスを更新
-                _currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
-
                 // アニメーション設定を更新
                 AnimationSettingsControl.Initialize();
             };
-
-            // 現在のキャラクターインデックスを取得
-            _currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
 
             // アニメーション設定コントロールを初期化
             if (_communicationService != null)
@@ -267,15 +241,6 @@ namespace CocoroConsole.Controls
         private Dictionary<string, object> CollectSystemSettings()
         {
             var dict = new Dictionary<string, object>();
-            dict["IsEnableReminder"] = SystemSettingsControl.GetIsEnableReminder();
-            dict["IsEnableNotificationApi"] = ExternalServicesSettingsControl.GetIsEnableNotificationApi();
-
-            var screenshotSettings = SystemSettingsControl.GetScreenshotSettings();
-            dict["ScreenshotEnabled"] = screenshotSettings.enabled;
-            dict["ScreenshotInterval"] = screenshotSettings.intervalMinutes;
-            dict["IdleTimeout"] = screenshotSettings.idleTimeoutMinutes;
-            dict["CaptureActiveWindowOnly"] = screenshotSettings.captureActiveWindowOnly;
-            dict["ExcludePatterns"] = screenshotSettings.excludePatterns;
 
             var microphoneSettings = SystemSettingsControl.GetMicrophoneSettings();
             dict["MicInputThreshold"] = microphoneSettings.inputThreshold;
@@ -289,6 +254,9 @@ namespace CocoroConsole.Controls
 
             // Bearer Token
             dict["BearerToken"] = SystemSettingsControl.GetBearerToken();
+
+            // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
+            dict["WindowTitleExcludePatterns"] = SystemSettingsControl.GetWindowTitleExcludePatterns();
 
             return dict;
         }
@@ -342,15 +310,6 @@ namespace CocoroConsole.Controls
                     UIHelper.ShowError("通信エラー", "通信サービスが利用できません。");
                 }
             }
-        }
-
-        /// <summary>
-        /// キャラクター情報をUIに反映（CharacterManagementControlに移行済み）
-        /// </summary>
-        private void UpdateCharacterUI(int index)
-        {
-            // CharacterManagementControlに移行済み - このメソッドは使用されません
-            return;
         }
 
         #region 共通ボタンイベントハンドラ
@@ -432,7 +391,8 @@ namespace CocoroConsole.Controls
 
             // 保存後の設定を取得してCocoroGhost再起動が必要かチェック
             var currentSettings = GetCurrentUISettings();
-            bool needsCocoroGhostRestart = HasCocoroGhostRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings);
+            bool needsCocoroGhostRestart =
+                HasCocoroGhostRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings);
 
             // CocoroShellを再起動
             RestartCocoroShell();
@@ -471,11 +431,13 @@ namespace CocoroConsole.Controls
                 // 設定をファイルに保存
                 AppSettings.Instance.SaveAppSettings();
 
-                // デスクトップウォッチの設定変更を反映
-                UpdateDesktopWatchSettings();
-
                 // 全設定をAPIに保存（1回のリクエストで送信）
                 await SaveAllSettingsToApiAsync();
+
+                if (_communicationService != null)
+                {
+                    await _communicationService.RefreshCocoroGhostSettingsAsync();
+                }
             }
             catch (System.Exception ex)
             {
@@ -493,71 +455,138 @@ namespace CocoroConsole.Controls
 
             try
             {
-                List<string> excludeKeywords = SystemSettingsControl.GetExcludeKeywords();
+                // /api/settings は全量PUTのため、無効時にdesktop_watch_target_client_idを消さないよう現値を保持する
+                var latestSettings = await _apiClient.GetSettingsAsync();
+
+                bool memoryEnabled = EmbeddingSettingsControl.IsMemoryEnabled;
+                bool desktopWatchEnabled = SystemSettingsControl.GetDesktopWatchEnabled();
+                int desktopWatchIntervalSeconds = SystemSettingsControl.GetDesktopWatchIntervalSeconds();
+                var desktopWatchTargetClientId = desktopWatchEnabled
+                    ? AppSettings.Instance.ClientId
+                    : latestSettings.DesktopWatchTargetClientId;
                 List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
                 List<EmbeddingPreset> embeddingPresets = EmbeddingSettingsControl.GetAllPresets();
+                List<PersonaPreset> personaPresets = PromptSettingsControl.GetAllPersonaPresets();
+                List<AddonPreset> addonPresets = PromptSettingsControl.GetAllAddonPresets();
+
+                EnsurePresetIds(llmPresets, p => p.LlmPresetId, (p, id) => p.LlmPresetId = id);
+                EnsurePresetIds(embeddingPresets, p => p.EmbeddingPresetId, (p, id) => p.EmbeddingPresetId = id);
+                EnsurePresetIds(personaPresets, p => p.PersonaPresetId, (p, id) => p.PersonaPresetId = id);
+                EnsurePresetIds(addonPresets, p => p.AddonPresetId, (p, id) => p.AddonPresetId = id);
+
+                var activeLlmId = ResolveActivePresetId(llmPresets, LlmSettingsControl.GetActivePresetId(), p => p.LlmPresetId);
+                var activeEmbeddingId = ResolveActivePresetId(embeddingPresets, EmbeddingSettingsControl.GetActivePresetId(), p => p.EmbeddingPresetId);
+                var activePersonaId = ResolveActivePresetId(personaPresets, PromptSettingsControl.GetActivePersonaPresetId(), p => p.PersonaPresetId);
+                var activeAddonId = ResolveActivePresetId(addonPresets, PromptSettingsControl.GetActiveAddonPresetId(), p => p.AddonPresetId);
+
+                if (string.IsNullOrWhiteSpace(activeLlmId) ||
+                    string.IsNullOrWhiteSpace(activeEmbeddingId) ||
+                    string.IsNullOrWhiteSpace(activePersonaId) ||
+                    string.IsNullOrWhiteSpace(activeAddonId))
+                {
+                    Debug.WriteLine("[SettingWindow] 設定の保存に失敗しました: active preset id missing");
+                    MessageBox.Show("アクティブなプリセットが選択されていません。cocoro_ghost側のsettings.dbを確認してください。", "エラー",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
                 CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
                 {
-                    ExcludeKeywords = excludeKeywords,
+                    MemoryEnabled = memoryEnabled,
+                    DesktopWatchEnabled = desktopWatchEnabled,
+                    DesktopWatchIntervalSeconds = desktopWatchIntervalSeconds,
+                    DesktopWatchTargetClientId = desktopWatchTargetClientId,
+                    ActiveLlmPresetId = activeLlmId!,
+                    ActiveEmbeddingPresetId = activeEmbeddingId!,
+                    ActivePersonaPresetId = activePersonaId!,
+                    ActiveAddonPresetId = activeAddonId!,
                     LlmPreset = llmPresets,
-                    EmbeddingPreset = embeddingPresets
+                    EmbeddingPreset = embeddingPresets,
+                    PersonaPreset = personaPresets,
+                    AddonPreset = addonPresets
                 };
 
-                await _apiClient.UpdateSettingsAsync(request);
+                CocoroGhostSettings updated = await _apiClient.UpdateSettingsAsync(request);
                 Debug.WriteLine("[SettingWindow] 設定をAPIに保存しました");
+
+                // リマインダー設定/CRUDを保存（別API）
+                await SystemSettingsControl.SaveRemindersToApiAsync(AppSettings.Instance.ClientId);
+
+                List<LlmPreset> updatedLlmPresets = updated.LlmPreset ?? new List<LlmPreset>();
+                LlmSettingsControl.LoadSettingsList(updatedLlmPresets, updated.ActiveLlmPresetId);
+
+                List<EmbeddingPreset> updatedEmbeddingPresets = updated.EmbeddingPreset ?? new List<EmbeddingPreset>();
+                EmbeddingSettingsControl.IsMemoryEnabled = updated.MemoryEnabled;
+                EmbeddingSettingsControl.LoadSettingsList(updatedEmbeddingPresets, updated.ActiveEmbeddingPresetId);
+
+                PromptSettingsControl.LoadSettings(
+                    updated.PersonaPreset ?? new List<PersonaPreset>(),
+                    updated.ActivePersonaPresetId,
+                    updated.AddonPreset ?? new List<AddonPreset>(),
+                    updated.ActiveAddonPresetId
+                );
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[SettingWindow] 設定の保存に失敗しました: {ex.Message}");
+                MessageBox.Show($"設定のAPI保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private async Task SaveLlmPresetsToApiAsync()
+        private static void EnsurePresetIds<T>(
+            IEnumerable<T> presets,
+            Func<T, string?> idGetter,
+            Action<T, string> idSetter
+        )
         {
-            if (_apiClient == null) return;
+            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            try
+            foreach (var preset in presets)
             {
-                List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
+                var id = idGetter(preset);
+                var normalized = id?.Trim();
 
-                CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
+                if (string.IsNullOrWhiteSpace(normalized) || used.Contains(normalized))
                 {
-                    LlmPreset = llmPresets
-                };
+                    normalized = Guid.NewGuid().ToString();
+                    idSetter(preset, normalized);
+                }
+                else if (!string.Equals(id, normalized, StringComparison.Ordinal))
+                {
+                    idSetter(preset, normalized);
+                }
 
-                await _apiClient.UpdateSettingsAsync(request);
-                Debug.WriteLine("[SettingWindow] LLMプリセットをAPIに保存しました");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[SettingWindow] LLMプリセットの保存に失敗しました: {ex.Message}");
-                throw;
+                used.Add(normalized);
             }
         }
 
-        private async Task SaveEmbeddingPresetsToApiAsync()
+        private static string? ResolveActivePresetId<T>(
+            IReadOnlyList<T> presets,
+            string? activePresetId,
+            Func<T, string?> idGetter
+        ) where T : class
         {
-            if (_apiClient == null) return;
-
-            try
+            if (presets.Count == 0)
             {
-                List<EmbeddingPreset> embeddingPresets = EmbeddingSettingsControl.GetAllPresets();
-
-                CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
-                {
-                    EmbeddingPreset = embeddingPresets
-                };
-
-                await _apiClient.UpdateSettingsAsync(request);
-                Debug.WriteLine("[SettingWindow] EmbeddingプリセットをAPIに保存しました");
+                return null;
             }
-            catch (Exception ex)
+
+            var normalizedActiveId = activePresetId?.Trim();
+            T? resolved = string.IsNullOrWhiteSpace(normalizedActiveId)
+                ? null
+                : presets.FirstOrDefault(p => string.Equals(idGetter(p), normalizedActiveId, StringComparison.OrdinalIgnoreCase));
+
+            if (resolved == null || string.IsNullOrWhiteSpace(idGetter(resolved)))
             {
-                Debug.WriteLine($"[SettingWindow] Embeddingプリセットの保存に失敗しました: {ex.Message}");
-                throw;
+                resolved = presets.FirstOrDefault(p => !string.IsNullOrWhiteSpace(idGetter(p))) ?? presets[0];
             }
+
+            return idGetter(resolved)?.Trim();
         }
+
+        private Task SaveLlmPresetsToApiAsync() => SaveAllSettingsToApiAsync();
+
+        private Task SaveEmbeddingPresetsToApiAsync() => SaveAllSettingsToApiAsync();
 
         /// <summary>
         /// 元の設定に戻す（一設定などがあるためDisplayのみ復元が必要）
@@ -596,7 +625,6 @@ namespace CocoroConsole.Controls
             {
                 modelName = source.modelName,
                 vrmFilePath = source.vrmFilePath,
-                isUseLLM = source.isUseLLM,
                 isUseTTS = source.isUseTTS,
                 ttsType = source.ttsType,
                 voicevoxConfig = new VoicevoxConfig
@@ -652,7 +680,6 @@ namespace CocoroConsole.Controls
                     outputSamplingRate = source.aivisCloudConfig.outputSamplingRate,
                     outputAudioChannels = source.aivisCloudConfig.outputAudioChannels
                 },
-                isEnableMemory = source.isEnableMemory,
                 isUseSTT = source.isUseSTT,
                 sttEngine = source.sttEngine,
                 sttWakeWord = source.sttWakeWord,
@@ -672,31 +699,12 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// ボタンの有効/無効状態を設定する
-        /// </summary>
-        /// <param name="enabled">有効にするかどうか</param>
-        private void SetButtonsEnabled(bool enabled)
-        {
-            OkButton.IsEnabled = enabled;
-            ApplyButton.IsEnabled = enabled;
-            CancelButton.IsEnabled = enabled;
-        }
-
-        /// <summary>
         /// 表示設定を保存する
         /// </summary>
         // Display タブ以外の設定を AppSettings に適用
         private void ApplySystemSnapshotToAppSettings(Dictionary<string, object> snapshot)
         {
             var appSettings = AppSettings.Instance;
-            appSettings.IsEnableReminder = (bool)snapshot["IsEnableReminder"];
-            appSettings.IsEnableNotificationApi = (bool)snapshot["IsEnableNotificationApi"];
-
-            appSettings.ScreenshotSettings.enabled = (bool)snapshot["ScreenshotEnabled"];
-            appSettings.ScreenshotSettings.intervalMinutes = (int)snapshot["ScreenshotInterval"];
-            appSettings.ScreenshotSettings.idleTimeoutMinutes = (int)snapshot["IdleTimeout"];
-            appSettings.ScreenshotSettings.captureActiveWindowOnly = (bool)snapshot["CaptureActiveWindowOnly"];
-            appSettings.ScreenshotSettings.excludePatterns = (List<string>)snapshot["ExcludePatterns"];
 
             appSettings.MicrophoneSettings.inputThreshold = (int)snapshot["MicInputThreshold"];
             appSettings.MicrophoneSettings.speakerRecognitionThreshold = (float)snapshot["SpeakerRecognitionThreshold"];
@@ -708,6 +716,9 @@ namespace CocoroConsole.Controls
 
             // Bearer Token
             appSettings.CocoroGhostBearerToken = (string)snapshot["BearerToken"];
+
+            // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
+            appSettings.ScreenshotSettings.excludePatterns = (List<string>)snapshot["WindowTitleExcludePatterns"];
         }
 
         /// <summary>
@@ -717,6 +728,7 @@ namespace CocoroConsole.Controls
         {
             var appSettings = AppSettings.Instance;
             appSettings.CurrentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
+            appSettings.IsUseLLM = LlmSettingsControl.IsUseLlm;
 
             var currentCharacterSetting = CharacterManagementControl.GetCurrentCharacterSettingFromUI();
             if (currentCharacterSetting != null)
@@ -809,34 +821,6 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// デスクトップウォッチ設定の変更を適用
-        /// </summary>
-        private void UpdateDesktopWatchSettings()
-        {
-            try
-            {
-                // MainWindowのインスタンスを取得
-                var mainWindow = Application.Current.MainWindow as MainWindow;
-                if (mainWindow != null)
-                {
-                    // MainWindowのUpdateScreenshotServiceメソッドを呼び出す
-                    var updateMethod = mainWindow.GetType().GetMethod("UpdateScreenshotService",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-                    if (updateMethod != null)
-                    {
-                        updateMethod.Invoke(mainWindow, null);
-                        Debug.WriteLine("デスクトップウォッチ設定を更新しました");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"デスクトップウォッチ設定の更新中にエラーが発生しました: {ex.Message}");
-            }
-        }
-
-        /// <summary>
         /// メインウィンドウのボタン状態とサービスを更新
         /// </summary>
         private void UpdateMainWindowStates()
@@ -904,27 +888,13 @@ namespace CocoroConsole.Controls
                 var mainWindow = Application.Current.MainWindow as MainWindow;
                 if (mainWindow != null)
                 {
-                    // MainWindowのLaunchCocoroGhostAsyncメソッドを呼び出してCocoroGhostを再起動
-                    var launchMethod = mainWindow.GetType().GetMethod("LaunchCocoroGhostAsync",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    // ProcessOperation.RestartIfRunning を指定してCocoroGhostを再起動（非同期）
+                    await mainWindow.LaunchCocoroGhostAsync(ProcessOperation.RestartIfRunning);
+                    Debug.WriteLine("CocoroGhostを再起動要求をしました");
 
-                    if (launchMethod != null)
-                    {
-                        // ProcessOperation.RestartIfRunning を指定してCocoroGhostを再起動（非同期）
-                        var taskResult =
-                            launchMethod.Invoke(mainWindow, new object[] { ProcessOperation.RestartIfRunning });
-                        Debug.WriteLine("CocoroGhostを再起動要求をしました");
-
-                        // 非同期で再起動処理を待機
-                        if (taskResult is Task task)
-                        {
-                            await task;
-                        }
-
-                        // 再起動完了を待機
-                        await WaitForCocoroGhostRestartAsync();
-                        Debug.WriteLine("CocoroGhostの再起動が完了しました");
-                    }
+                    // 再起動完了を待機
+                    await WaitForCocoroGhostRestartAsync();
+                    Debug.WriteLine("CocoroGhostの再起動が完了しました");
                 }
             }
             catch (Exception ex)
@@ -994,9 +964,8 @@ namespace CocoroConsole.Controls
             // 現在の設定のディープコピーを作成
             var config = AppSettings.Instance.GetConfigSettings().DeepCopy();
 
-            // System設定の取得
-            config.isEnableNotificationApi = ExternalServicesSettingsControl.GetIsEnableNotificationApi();
-            config.isEnableReminder = SystemSettingsControl.GetIsEnableReminder();
+            // LLM使用設定
+            config.isUseLLM = LlmSettingsControl.IsUseLlm;
 
             // Character設定の取得（ディープコピーを使用）
             config.currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
@@ -1021,9 +990,12 @@ namespace CocoroConsole.Controls
         private bool HasCocoroGhostRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
         {
             // 基本設定項目の比較
-            if (currentSettings.isEnableNotificationApi != previousSettings.isEnableNotificationApi ||
-                currentSettings.isEnableReminder != previousSettings.isEnableReminder ||
-                currentSettings.currentCharacterIndex != previousSettings.currentCharacterIndex)
+            if (currentSettings.currentCharacterIndex != previousSettings.currentCharacterIndex)
+            {
+                return true;
+            }
+
+            if (currentSettings.isUseLLM != previousSettings.isUseLLM)
             {
                 return true;
             }
@@ -1032,20 +1004,6 @@ namespace CocoroConsole.Controls
             if (currentSettings.characterList.Count != previousSettings.characterList.Count)
             {
                 return true;
-            }
-
-            // キャラクターの比較
-            for (int i = 0; i < currentSettings.characterList.Count; i++)
-            {
-                var current = currentSettings.characterList[i];
-                var previous = previousSettings.characterList[i];
-
-                // LLM/埋め込み設定はAPI経由で管理されるため、ここではisUseLLMとisEnableMemoryのみ比較
-                if (current.isUseLLM != previous.isUseLLM ||
-                    current.isEnableMemory != previous.isEnableMemory)
-                {
-                    return true;
-                }
             }
 
             return false;

@@ -1,0 +1,227 @@
+<UserControl x:Class="CocoroConsole.Controls.PromptSettingsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="800"
+             d:DesignWidth="800">
+
+        <UserControl.Resources>
+                <!-- Expanderスタイル -->
+                <Style x:Key="PromptExpanderStyle"
+                       TargetType="Expander">
+                        <Setter Property="Background"
+                                Value="White"/>
+                        <Setter Property="BorderBrush"
+                                Value="#CCCCCC"/>
+                        <Setter Property="BorderThickness"
+                                Value="1"/>
+                        <Setter Property="Margin"
+                                Value="0,0,20,15"/>
+                        <Setter Property="Padding"
+                                Value="10"/>
+                        <Setter Property="FontSize"
+                                Value="14"/>
+                        <Setter Property="Foreground"
+                                Value="#4873CF"/>
+                        <Setter Property="SnapsToDevicePixels"
+                                Value="True"/>
+                </Style>
+                <Style x:Key="SettingLabelStyle"
+                       TargetType="TextBlock">
+                        <Setter Property="VerticalAlignment"
+                                Value="Center"/>
+                        <Setter Property="Margin"
+                                Value="0,0,10,0"/>
+                        <Setter Property="Width"
+                                Value="140"/>
+                        <Setter Property="Foreground"
+                                Value="#4873CF"/>
+                </Style>
+                <Style x:Key="SettingTextBoxStyle"
+                       TargetType="TextBox">
+                        <Setter Property="Foreground"
+                                Value="#FF0078D7"/>
+                        <Setter Property="Padding"
+                                Value="2"/>
+                        <Setter Property="BorderBrush"
+                                Value="#CCCCCC"/>
+                        <Setter Property="BorderThickness"
+                                Value="1"/>
+                </Style>
+                <Style x:Key="PresetButtonStyle"
+                       TargetType="Button">
+                        <Setter Property="Background"
+                                Value="#4873CF"/>
+                        <Setter Property="Foreground"
+                                Value="WhiteSmoke"/>
+                        <Setter Property="BorderThickness"
+                                Value="0"/>
+                        <Setter Property="Padding"
+                                Value="10,5"/>
+                </Style>
+                <Style x:Key="DeleteButtonStyle"
+                       TargetType="Button"
+                       BasedOn="{StaticResource PresetButtonStyle}">
+                        <Setter Property="Background"
+                                Value="#D50000"/>
+                </Style>
+                <Style x:Key="ContentTextBlockStyle"
+                       TargetType="TextBlock">
+                        <Setter Property="FontSize"
+                                Value="12"/>
+                        <Setter Property="Foreground"
+                                Value="#4873CF"/>
+                </Style>
+        </UserControl.Resources>
+
+        <Grid SnapsToDevicePixels="True"
+              UseLayoutRounding="True">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="0,0,0,20">
+                                <!-- Persona -->
+                                <Expander Header="人格プロンプト"
+                                          Style="{StaticResource PromptExpanderStyle}"
+                                          IsExpanded="True">
+                                        <StackPanel>
+                                                <!-- プリセット選択 -->
+                                                <Grid Margin="0,0,0,15">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="80"/>
+                                                                <ColumnDefinition Width="80"/>
+                                                                <ColumnDefinition Width="85"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <ComboBox x:Name="PersonaPresetSelectComboBox"
+                                                                  Grid.Column="0"
+                                                                  Margin="0,5,10,5"
+                                                                  SelectionChanged="PersonaPresetSelectComboBox_SelectionChanged"/>
+
+                                                        <Button Grid.Column="1"
+                                                                Content="追加"
+                                                                Margin="0,5,0,5"
+                                                                Padding="10,5"
+                                                                Style="{StaticResource PresetButtonStyle}"
+                                                                Click="AddPersonaPresetButton_Click"/>
+
+                                                        <Button Grid.Column="2"
+                                                                Content="複製"
+                                                                Margin="5,5,0,5"
+                                                                Padding="10,5"
+                                                                Style="{StaticResource PresetButtonStyle}"
+                                                                Click="DuplicatePersonaPresetButton_Click"/>
+
+                                                        <Button Grid.Column="3"
+                                                                Content="削除"
+                                                                Margin="5,5,0,5"
+                                                                Padding="10,5"
+                                                                Style="{StaticResource DeleteButtonStyle}"
+                                                                Click="DeletePersonaPresetButton_Click"/>
+                                                </Grid>
+
+                                                <!-- 設定 -->
+                                                <Grid Margin="0,5">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="100"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="プリセット名:"
+                                                                   Style="{StaticResource SettingLabelStyle}"/>
+                                                        <TextBox x:Name="PersonaPresetNameTextBox"
+                                                                 Grid.Column="1"
+                                                                 Style="{StaticResource SettingTextBoxStyle}"
+                                                                 TextChanged="OnPersonaSettingChanged"/>
+                                                </Grid>
+
+                                                <Border BorderBrush="#CCCCCC"
+                                                        BorderThickness="1"
+                                                        Margin="0,10,0,0"
+                                                        Padding="5">
+                                                        <TextBox x:Name="PersonaTextBox"
+                                                                 AcceptsReturn="True"
+                                                                 TextWrapping="Wrap"
+                                                                 VerticalScrollBarVisibility="Auto"
+                                                                 Height="600"
+                                                                 BorderThickness="0"
+                                                                 Foreground="#FF0078D7"
+                                                                 TextChanged="OnPersonaSettingChanged"/>
+                                                </Border>
+                                        </StackPanel>
+                                </Expander>
+
+                                <!-- Addon -->
+                                <Expander Header="追加プロンプト（任意）"
+                                          Style="{StaticResource PromptExpanderStyle}"
+                                          IsExpanded="True">
+                                        <StackPanel>
+                                                <!-- プリセット選択 -->
+                                                <Grid Margin="0,0,0,15">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="80"/>
+                                                                <ColumnDefinition Width="80"/>
+                                                                <ColumnDefinition Width="85"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <ComboBox x:Name="AddonPresetSelectComboBox"
+                                                                  Grid.Column="0"
+                                                                  Margin="0,5,10,5"
+                                                                  SelectionChanged="AddonPresetSelectComboBox_SelectionChanged"/>
+
+                                                        <Button Grid.Column="1"
+                                                                Content="追加"
+                                                                Margin="0,5,0,5"
+                                                                Padding="10,5"
+                                                                Style="{StaticResource PresetButtonStyle}"
+                                                                Click="AddAddonPresetButton_Click"/>
+
+                                                        <Button Grid.Column="2"
+                                                                Content="複製"
+                                                                Margin="5,5,0,5"
+                                                                Padding="10,5"
+                                                                Style="{StaticResource PresetButtonStyle}"
+                                                                Click="DuplicateAddonPresetButton_Click"/>
+
+                                                        <Button Grid.Column="3"
+                                                                Content="削除"
+                                                                Margin="5,5,0,5"
+                                                                Padding="10,5"
+                                                                Style="{StaticResource DeleteButtonStyle}"
+                                                                Click="DeleteAddonPresetButton_Click"/>
+                                                </Grid>
+
+                                                <!-- 設定 -->
+                                                <Grid Margin="0,5">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="100"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="プリセット名:"
+                                                                   Style="{StaticResource SettingLabelStyle}"/>
+                                                        <TextBox x:Name="AddonPresetNameTextBox"
+                                                                 Grid.Column="1"
+                                                                 Style="{StaticResource SettingTextBoxStyle}"
+                                                                 TextChanged="OnAddonSettingChanged"/>
+                                                </Grid>
+
+                                                <Border BorderBrush="#CCCCCC"
+                                                        BorderThickness="1"
+                                                        Margin="0,10,0,0"
+                                                        Padding="5">
+                                                        <TextBox x:Name="AddonTextBox"
+                                                                 AcceptsReturn="True"
+                                                                 TextWrapping="Wrap"
+                                                                 VerticalScrollBarVisibility="Auto"
+                                                                 Height="200"
+                                                                 BorderThickness="0"
+                                                                 Foreground="#FF0078D7"
+                                                                 TextChanged="OnAddonSettingChanged"/>
+                                                </Border>
+                                        </StackPanel>
+                                </Expander>
+                        </StackPanel>
+                </ScrollViewer>
+        </Grid>
+</UserControl>

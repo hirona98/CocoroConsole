@@ -11,7 +11,7 @@ using System.Windows.Controls;
 namespace CocoroConsole.Controls
 {
     /// <summary>
-    /// 逃げ先座標設定用のViewModelクラス
+    /// 移動先座標設定用のViewModelクラス
     /// </summary>
     public class EscapePositionViewModel : INotifyPropertyChanged
     {
@@ -73,7 +73,7 @@ namespace CocoroConsole.Controls
     public partial class EscapePositionControl : UserControl
     {
         /// <summary>
-        /// 逃げ先座標設定用コレクション
+        /// 移動先座標設定用コレクション
         /// </summary>
         public ObservableCollection<EscapePositionViewModel> EscapePositionsCollection { get; set; } = new ObservableCollection<EscapePositionViewModel>();
 
@@ -106,19 +106,19 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// 逃げ先座標設定の初期化
+        /// 移動先座標設定の初期化
         /// </summary>
         private void InitializeEscapePositions()
         {
             // ItemsControlのItemsSourceを設定
             EscapePositionsItemsControl.ItemsSource = EscapePositionsCollection;
 
-            // 設定から逃げ先座標を読み込み
+            // 設定から移動先座標を読み込み
             LoadEscapePositionsFromSettings();
         }
 
         /// <summary>
-        /// 設定から逃げ先座標を読み込み
+        /// 設定から移動先座標を読み込み
         /// </summary>
         public void LoadEscapePositionsFromSettings()
         {
@@ -132,7 +132,7 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// 現在の逃げ先座標を取得
+        /// 現在の移動先座標を取得
         /// </summary>
         public List<EscapePosition> GetEscapePositions()
         {
@@ -148,7 +148,7 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// 逃げ先座標を設定
+        /// 移動先座標を設定
         /// </summary>
         public void SetEscapePositions(List<EscapePosition> positions)
         {
@@ -201,7 +201,7 @@ namespace CocoroConsole.Controls
                 }
                 else
                 {
-                    MessageBox.Show("逃げ先座標は最大10箇所まで設定できます。", "上限到達",
+                    MessageBox.Show("移動先座標は最大10箇所まで設定できます。", "上限到達",
                         MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }

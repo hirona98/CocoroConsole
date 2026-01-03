@@ -163,8 +163,19 @@ namespace CocoroConsole.Services
                 if (isSpeechEnd && _isRecordingVoice)
                 {
                     _isRecordingVoice = false;
-                    // 非同期で音声認識実行
-                    _ = ProcessAudioBuffer();
+                    // 非同期で音声認識実行（例外は観測してログに残す）
+                    _ = ProcessAudioBuffer().ContinueWith(
+                        task =>
+                        {
+                            var exception = task.Exception;
+                            if (exception != null)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"[VoiceService] ProcessAudioBuffer failed: {exception.GetBaseException().Message}");
+                            }
+                        },
+                        CancellationToken.None,
+                        TaskContinuationOptions.OnlyOnFaulted,
+                        TaskScheduler.Default);
                 }
             }
             catch (Exception ex)
@@ -229,9 +240,8 @@ namespace CocoroConsole.Services
                     throw new InvalidOperationException("音声認識に失敗しました。");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"[VoiceService] Error processing audio: {ex.Message}");
                 // エラー時は SLEEPING 状態に戻る
                 if (_stateMachine.CurrentState == VoiceRecognitionState.PROCESSING)
                 {

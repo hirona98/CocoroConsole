@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using CocoroConsole.Models.CocoroGhostApi;
 using CocoroConsole.Services;
+using CocoroConsole.Utilities;
 
 namespace CocoroConsole.Controls
 {
@@ -22,6 +23,23 @@ namespace CocoroConsole.Controls
         public EmbeddingSettingsControl()
         {
             InitializeComponent();
+        }
+
+        public bool IsMemoryEnabled
+        {
+            get => MemoryEnabledCheckBox.IsChecked ?? false;
+            set
+            {
+                _isInitializing = true;
+                try
+                {
+                    MemoryEnabledCheckBox.IsChecked = value;
+                }
+                finally
+                {
+                    _isInitializing = false;
+                }
+            }
         }
 
         public void SetApiClient(CocoroGhostApiClient apiClient, Func<Task> onPresetListChanged)
@@ -46,10 +64,10 @@ namespace CocoroConsole.Controls
 
             EmbeddingPreset preset = _presets[_currentPresetIndex];
             preset.EmbeddingPresetName = MemoryIdTextBox.Text;
-            preset.EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Password) ? null : EmbeddingApiKeyPasswordBox.Password;
-            preset.EmbeddingModel = EmbeddingModelTextBox.Text;
+            preset.EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Text) ? null : EmbeddingApiKeyPasswordBox.Text;
+            preset.EmbeddingModel = EmbeddingModelTextBox.Text ?? string.Empty;
             preset.EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text;
-            preset.EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 1536;
+            preset.EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 3072;
             preset.SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : 5;
         }
 
@@ -83,7 +101,7 @@ namespace CocoroConsole.Controls
             }
         }
 
-        public void LoadSettingsList(List<EmbeddingPreset>? presets)
+        public void LoadSettingsList(List<EmbeddingPreset>? presets, string? activePresetId = null)
         {
             _isInitializing = true;
 
@@ -104,10 +122,20 @@ namespace CocoroConsole.Controls
                 {
                     PresetSelectComboBox.Items.Add(preset.EmbeddingPresetName);
                 }
-                PresetSelectComboBox.SelectedIndex = 0;
-                _currentPresetIndex = 0;
+                var activeIndex = 0;
+                if (!string.IsNullOrWhiteSpace(activePresetId))
+                {
+                    activeIndex = _presets.FindIndex(p => string.Equals(p.EmbeddingPresetId, activePresetId, StringComparison.OrdinalIgnoreCase));
+                    if (activeIndex < 0)
+                    {
+                        activeIndex = 0;
+                    }
+                }
 
-                LoadPresetToUI(presets[0]);
+                PresetSelectComboBox.SelectedIndex = activeIndex;
+                _currentPresetIndex = activeIndex;
+
+                LoadPresetToUI(_presets[activeIndex]);
             }
             finally
             {
@@ -118,11 +146,11 @@ namespace CocoroConsole.Controls
         private void LoadPresetToUI(EmbeddingPreset preset)
         {
             MemoryIdTextBox.Text = preset.EmbeddingPresetName ?? string.Empty;
-            EmbeddingApiKeyPasswordBox.Password = preset.EmbeddingModelApiKey ?? string.Empty;
+            EmbeddingApiKeyPasswordBox.Text = preset.EmbeddingModelApiKey ?? string.Empty;
             EmbeddingModelTextBox.Text = preset.EmbeddingModel ?? string.Empty;
             EmbeddingBaseUrlTextBox.Text = preset.EmbeddingBaseUrl ?? string.Empty;
-            EmbeddingDimensionTextBox.Text = preset.EmbeddingDimension?.ToString() ?? "1536";
-            SimilarEpisodesLimitTextBox.Text = preset.SimilarEpisodesLimit?.ToString() ?? "5";
+            EmbeddingDimensionTextBox.Text = preset.EmbeddingDimension.ToString();
+            SimilarEpisodesLimitTextBox.Text = preset.SimilarEpisodesLimit.ToString();
         }
 
         public EmbeddingPreset? GetSettings()
@@ -138,10 +166,10 @@ namespace CocoroConsole.Controls
             {
                 EmbeddingPresetId = currentPreset.EmbeddingPresetId,
                 EmbeddingPresetName = MemoryIdTextBox.Text,
-                EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Password) ? null : EmbeddingApiKeyPasswordBox.Password,
-                EmbeddingModel = EmbeddingModelTextBox.Text,
+                EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Text) ? null : EmbeddingApiKeyPasswordBox.Text,
+                EmbeddingModel = EmbeddingModelTextBox.Text ?? string.Empty,
                 EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text,
-                EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 1536,
+                EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 3072,
                 SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : 5
             };
 
@@ -151,10 +179,10 @@ namespace CocoroConsole.Controls
         private void ClearSettings()
         {
             MemoryIdTextBox.Text = string.Empty;
-            EmbeddingApiKeyPasswordBox.Password = string.Empty;
+            EmbeddingApiKeyPasswordBox.Text = string.Empty;
             EmbeddingModelTextBox.Text = string.Empty;
             EmbeddingBaseUrlTextBox.Text = string.Empty;
-            EmbeddingDimensionTextBox.Text = "1536";
+            EmbeddingDimensionTextBox.Text = "3072";
             SimilarEpisodesLimitTextBox.Text = "5";
         }
 
@@ -179,22 +207,28 @@ namespace CocoroConsole.Controls
                     _isInitializing = false;
                 }
             }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private async void AddPresetButton_Click(object sender, RoutedEventArgs e)
+        private void MemoryEnabledCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            // 現在のUI値を保存
+            if (_isInitializing) return;
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void AddPresetButton_Click(object sender, RoutedEventArgs e)
+        {
             SaveCurrentUIToPreset();
 
-            // 新規プリセットを作成
             EmbeddingPreset newPreset = new EmbeddingPreset
             {
-                EmbeddingPresetId = 0,
+                EmbeddingPresetId = Guid.NewGuid().ToString(),
                 EmbeddingPresetName = GenerateNewPresetName(),
                 EmbeddingModelApiKey = null,
                 EmbeddingModel = string.Empty,
                 EmbeddingBaseUrl = null,
-                EmbeddingDimension = 1536,
+                EmbeddingDimension = 3072,
                 SimilarEpisodesLimit = 5
             };
 
@@ -202,11 +236,49 @@ namespace CocoroConsole.Controls
             PresetSelectComboBox.Items.Add(newPreset.EmbeddingPresetName);
             PresetSelectComboBox.SelectedIndex = _presets.Count - 1;
 
-            await SavePresetsToApiAsync();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private async void DeletePresetButton_Click(object sender, RoutedEventArgs e)
+        private void DuplicatePresetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            {
+                MessageBox.Show("複製するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            SaveCurrentUIToPreset();
+
+            EmbeddingPreset source = _presets[_currentPresetIndex];
+            EmbeddingPreset duplicate = new EmbeddingPreset
+            {
+                EmbeddingPresetId = Guid.NewGuid().ToString(),
+                EmbeddingPresetName = GenerateDuplicatePresetName(source.EmbeddingPresetName),
+                EmbeddingModelApiKey = source.EmbeddingModelApiKey,
+                EmbeddingModel = source.EmbeddingModel,
+                EmbeddingBaseUrl = source.EmbeddingBaseUrl,
+                EmbeddingDimension = source.EmbeddingDimension,
+                SimilarEpisodesLimit = source.SimilarEpisodesLimit
+            };
+
+            _presets.Add(duplicate);
+            PresetSelectComboBox.Items.Add(duplicate.EmbeddingPresetName);
+            PresetSelectComboBox.SelectedIndex = _presets.Count - 1;
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void EmbeddingApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.PasteOverwrite(EmbeddingApiKeyPasswordBox);
+        }
+
+        private void EmbeddingApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(EmbeddingApiKeyPasswordBox);
+        }
+
+        private void DeletePresetButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
             {
@@ -219,16 +291,6 @@ namespace CocoroConsole.Controls
                 MessageBox.Show("最後のプリセットは削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-
-            string presetName = _presets[_currentPresetIndex].EmbeddingPresetName ?? "不明";
-            MessageBoxResult result = MessageBox.Show(
-                $"プリセット「{presetName}」を削除しますか？",
-                "削除確認",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result != MessageBoxResult.Yes) return;
-
             _isInitializing = true;
             try
             {
@@ -248,7 +310,6 @@ namespace CocoroConsole.Controls
                 _isInitializing = false;
             }
 
-            await SavePresetsToApiAsync();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
@@ -267,18 +328,19 @@ namespace CocoroConsole.Controls
             return name;
         }
 
-        private async Task SavePresetsToApiAsync()
+        private string GenerateDuplicatePresetName(string sourceName)
         {
-            if (_apiClient == null || _onPresetListChanged == null) return;
+            int counter = 1;
+            string baseName = $"{sourceName} (コピー)";
+            string name = baseName;
 
-            try
+            while (_presets.Any(p => p.EmbeddingPresetName == name))
             {
-                await _onPresetListChanged();
+                counter++;
+                name = $"{baseName} {counter}";
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"プリセットの保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+
+            return name;
         }
 
         private void OnSettingChanged(object sender, RoutedEventArgs e)
@@ -293,6 +355,23 @@ namespace CocoroConsole.Controls
         {
             if (!_isInitializing)
             {
+                // 名前変更時はプリセットリストとComboBoxの表示を更新
+                if (sender == MemoryIdTextBox && _currentPresetIndex >= 0 && _currentPresetIndex < _presets.Count)
+                {
+                    // プリセットの名前を更新
+                    _presets[_currentPresetIndex].EmbeddingPresetName = MemoryIdTextBox.Text;
+
+                    // ComboBoxを更新
+                    var currentIndex = _currentPresetIndex;
+                    PresetSelectComboBox.SelectionChanged -= PresetSelectComboBox_SelectionChanged;
+                    PresetSelectComboBox.Items.Clear();
+                    foreach (var preset in _presets)
+                    {
+                        PresetSelectComboBox.Items.Add(preset.EmbeddingPresetName);
+                    }
+                    PresetSelectComboBox.SelectedIndex = currentIndex;
+                    PresetSelectComboBox.SelectionChanged += PresetSelectComboBox_SelectionChanged;
+                }
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
         }
@@ -300,6 +379,16 @@ namespace CocoroConsole.Controls
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
             Utilities.UIHelper.HandleHyperlinkNavigation(e);
+        }
+
+        public string? GetActivePresetId()
+        {
+            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            {
+                return null;
+            }
+
+            return _presets[_currentPresetIndex].EmbeddingPresetId;
         }
     }
 }

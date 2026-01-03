@@ -7,8 +7,8 @@
         xmlns:converters="clr-namespace:CocoroConsole.Converters"
         mc:Ignorable="d"
         Title="設定"
-        Height="800"
-        Width="800"
+        Height="1000"
+        Width="900"
         WindowStartupLocation="CenterOwner">
 
     <Window.Resources>
@@ -104,13 +104,13 @@
                     Background="White"
                     Grid.Row="0">
 
-            <TabItem Header="Display"
+            <TabItem Header="表示"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="Display Setting">
                 <local:DisplaySettingsControl x:Name="DisplaySettingsControl"/>
             </TabItem>
 
-            <TabItem Header="Character"
+            <TabItem Header="キャラクター"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="Character setting">
                 <Grid Margin="20,20,0,20">
@@ -118,7 +118,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="LLM"
+            <TabItem Header="会話"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="LLM setting">
                 <Grid Margin="20,20,0,20">
@@ -126,7 +126,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Embedding"
+            <TabItem Header="記憶"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="Embedding setting">
                 <Grid Margin="20,20,0,20">
@@ -134,7 +134,15 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Animation"
+            <TabItem Header="人格"
+                     Style="{StaticResource AdminTabItemStyle}"
+                     ToolTip="Prompt preset setting">
+                <Grid Margin="20,20,0,20">
+                    <local:PromptSettingsControl x:Name="PromptSettingsControl"/>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="モーション"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="Animation setting">
                 <Grid Margin="20,20,0,20">
@@ -142,7 +150,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="System"
+            <TabItem Header="システム"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="System setting">
                 <Grid Margin="20,20,0,20">
@@ -150,11 +158,11 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Web/API"
+            <TabItem Header="API説明"
                      Style="{StaticResource AdminTabItemStyle}"
-                     ToolTip="Web and API settings">
+                     ToolTip="API usage examples">
                 <Grid Margin="20,20,0,20">
-                    <local:ExternalServicesSettingsControl x:Name="ExternalServicesSettingsControl"/>
+                    <local:ApiDocumentationControl x:Name="ApiDocumentationControl"/>
                 </Grid>
             </TabItem>
 

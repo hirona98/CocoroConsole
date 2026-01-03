@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,20 +11,6 @@ using System.Windows.Threading;
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
 using NotifyIcon = System.Windows.Forms.NotifyIcon;
-
-// Win32 API呼び出し用クラス
-internal static class NativeMethods
-{
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool SetForegroundWindow(IntPtr hWnd);
-
-    [DllImport("user32.dll")]
-    internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-    // ShowWindowコマンド
-    internal const int SW_RESTORE = 9;
-}
 
 namespace CocoroConsole
 {

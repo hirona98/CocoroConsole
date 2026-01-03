@@ -180,13 +180,15 @@ namespace CocoroConsole.Controls
 
             foreach (var group in groupedAnimations)
             {
-                // グループボックスを作成
-                var groupBox = new GroupBox
+                // 折りたたみ可能なExpander（枠線付き）を作成
+                var expander = new Expander
                 {
                     Header = GetAnimationTypeDisplayName(group.Key),
                     Margin = new Thickness(0, 0, 0, 10),
-                    Padding = new Thickness(10)
+                    IsExpanded = group.Key != 0 && group.Key != 1
                 };
+
+                expander.Style = (Style)FindResource("GroupBoxLikeExpanderStyle");
 
                 // グループボックス内のスタックパネル
                 var stackPanel = new StackPanel();
@@ -230,8 +232,8 @@ namespace CocoroConsole.Controls
                     stackPanel.Children.Add(grid);
                 }
 
-                groupBox.Content = stackPanel;
-                AnimationListPanel.Children.Add(groupBox);
+                expander.Content = stackPanel;
+                AnimationListPanel.Children.Add(expander);
             }
         }
 
@@ -243,11 +245,11 @@ namespace CocoroConsole.Controls
             switch (animationType)
             {
                 case 0:
-                    return "Standing Animation ON/OFF";
+                    return "立ち姿勢モーション ON/OFF";
                 case 1:
-                    return "Sitting Floor Animation ON/OFF";
+                    return "座り姿勢モーション ON/OFF";
                 case 2:
-                    return "Lying Down Animation ON/OFF";
+                    return "寝そべりモーション ON/OFF";
                 default:
                     return "Unknown";
             }

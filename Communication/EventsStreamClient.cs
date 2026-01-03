@@ -5,16 +5,16 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using CocoroConsole.Communication;
 
 namespace CocoroConsole.Communication
 {
     /// <summary>
-    /// cocoro_ghost の /api/logs/stream に接続してログを受信するクライアント
+    /// cocoro_ghost の /api/events/stream に接続してイベント(notification/meta-request/desktop_watch + vision command)を受信するクライアント
     /// </summary>
-    public class LogStreamClient : IDisposable
+    public sealed class EventsStreamClient : IDisposable
     {
         private static readonly TimeSpan[] ReconnectDelays =
         {
@@ -28,6 +28,8 @@ namespace CocoroConsole.Communication
 
         private readonly Uri _webSocketUri;
         private readonly string _bearerToken;
+        private readonly string? _clientId;
+        private readonly IReadOnlyList<string>? _caps;
         private ClientWebSocket? _webSocket;
         private CancellationTokenSource? _connectionTokenSource;
         private CancellationTokenSource? _supervisorTokenSource;
@@ -37,19 +39,18 @@ namespace CocoroConsole.Communication
         private bool _reconnectDisabled;
         private bool _disposed;
 
-        public event EventHandler<IReadOnlyList<LogMessage>>? LogsReceived;
+        public event EventHandler<CocoroGhostEvent>? EventReceived;
         public event EventHandler<bool>? ConnectionStateChanged;
         public event EventHandler<string>? ErrorOccurred;
 
-        public LogStreamClient(Uri webSocketUri, string bearerToken)
+        public EventsStreamClient(Uri webSocketUri, string bearerToken, string? clientId = null, IReadOnlyList<string>? caps = null)
         {
             _webSocketUri = webSocketUri ?? throw new ArgumentNullException(nameof(webSocketUri));
             _bearerToken = bearerToken ?? throw new ArgumentNullException(nameof(bearerToken));
+            _clientId = string.IsNullOrWhiteSpace(clientId) ? null : clientId.Trim();
+            _caps = caps;
         }
 
-        /// <summary>
-        /// 接続を開始
-        /// </summary>
         public async Task StartAsync()
         {
             ThrowIfDisposed();
@@ -65,9 +66,6 @@ namespace CocoroConsole.Communication
             await Task.CompletedTask;
         }
 
-        /// <summary>
-        /// 接続を停止
-        /// </summary>
         public async Task StopAsync()
         {
             if (_supervisorTask == null && _connectionTokenSource == null && _webSocket == null)
@@ -85,7 +83,7 @@ namespace CocoroConsole.Communication
                     {
                         await Task.WhenAny(_supervisorTask, Task.Delay(TimeSpan.FromSeconds(3)));
                     }
-                    catch (Exception)
+                    catch
                     {
                         // キャンセル時の例外は無視
                     }
@@ -121,7 +119,7 @@ namespace CocoroConsole.Communication
                         if (closeStatus == WebSocketCloseStatus.PolicyViolation)
                         {
                             _reconnectDisabled = true;
-                            ErrorOccurred?.Invoke(this, "ログストリーム認証エラーのため再接続を停止しました。");
+                            ErrorOccurred?.Invoke(this, "イベントストリーム認証エラーのため再接続を停止しました。");
                         }
                     }
                     catch (OperationCanceledException) when (supervisorToken.IsCancellationRequested)
@@ -130,7 +128,7 @@ namespace CocoroConsole.Communication
                     }
                     catch (Exception ex)
                     {
-                        var label = connected ? "ログストリーム受信エラー" : "ログストリーム接続失敗";
+                        var label = connected ? "イベントストリーム受信エラー" : "イベントストリーム接続失敗";
                         ErrorOccurred?.Invoke(this, $"{label}: {ex.Message}");
                     }
                     finally
@@ -166,6 +164,40 @@ namespace CocoroConsole.Communication
             _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {_bearerToken}");
             _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
             await _webSocket.ConnectAsync(_webSocketUri, _connectionTokenSource.Token);
+
+            await SendHelloIfNeededAsync(_connectionTokenSource.Token);
+        }
+
+        private async Task SendHelloIfNeededAsync(CancellationToken cancellationToken)
+        {
+            var ws = _webSocket;
+            if (ws == null || ws.State != WebSocketState.Open)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_clientId))
+            {
+                return;
+            }
+
+            try
+            {
+                var payload = new HelloMessage
+                {
+                    Type = "hello",
+                    ClientId = _clientId!,
+                    Caps = _caps?.ToArray() ?? new[] { "vision.desktop", "vision.camera" }
+                };
+
+                var json = JsonSerializer.Serialize(payload);
+                var bytes = Encoding.UTF8.GetBytes(json);
+                await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[EventsStream] hello send error: {ex.Message}");
+            }
         }
 
         private async Task<WebSocketCloseStatus?> ReceiveLoopAsync(CancellationToken supervisorToken)
@@ -221,7 +253,7 @@ namespace CocoroConsole.Communication
                 {
                     await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "停止", CancellationToken.None);
                 }
-                catch (Exception)
+                catch
                 {
                     // Close失敗は無視
                 }
@@ -258,63 +290,92 @@ namespace CocoroConsole.Communication
             {
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
-                var logs = new List<LogMessage>();
 
                 if (root.ValueKind == JsonValueKind.Array)
                 {
                     foreach (var element in root.EnumerateArray())
                     {
-                        if (TryParseLog(element, out var log))
+                        if (TryParseEvent(element, out var ev))
                         {
-                            logs.Add(log);
+                            EventReceived?.Invoke(this, ev);
                         }
                     }
-                }
-                else if (root.ValueKind == JsonValueKind.Object && TryParseLog(root, out var logMessage))
-                {
-                    logs.Add(logMessage);
+                    return;
                 }
 
-                if (logs.Count > 0)
+                if (TryParseEvent(root, out var singleEvent))
                 {
-                    LogsReceived?.Invoke(this, logs);
+                    EventReceived?.Invoke(this, singleEvent);
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[LogStream] JSON parse error: {ex.Message}");
-                ErrorOccurred?.Invoke(this, $"ログパースエラー: {ex.Message}");
+                Debug.WriteLine($"[EventsStream] JSON parse error: {ex.Message}");
+                ErrorOccurred?.Invoke(this, $"イベントパースエラー: {ex.Message}");
             }
         }
 
-        private bool TryParseLog(JsonElement element, out LogMessage logMessage)
+        private static bool TryParseEvent(JsonElement element, out CocoroGhostEvent ev)
         {
-            logMessage = new LogMessage();
+            ev = new CocoroGhostEvent();
+
+            if (element.ValueKind != JsonValueKind.Object)
+            {
+                return false;
+            }
+
             try
             {
-                DateTime timestamp = DateTime.Now;
+                var type = element.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
+                if (string.IsNullOrWhiteSpace(type))
+                {
+                    return false;
+                }
+
+                DateTime timestamp = DateTime.UtcNow;
                 if (element.TryGetProperty("ts", out var tsElement))
                 {
                     var tsString = tsElement.GetString();
                     if (!string.IsNullOrEmpty(tsString) &&
                         DateTime.TryParse(tsString, null, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal, out var parsed))
                     {
-                        timestamp = parsed.ToLocalTime();
+                        timestamp = parsed;
                     }
                 }
 
-                var level = element.TryGetProperty("level", out var levelElement) ? levelElement.GetString() : "INFO";
-                var logger = element.TryGetProperty("logger", out var loggerElement) ? loggerElement.GetString() : string.Empty;
-                var message = element.TryGetProperty("msg", out var msgElement) ? msgElement.GetString() : string.Empty;
-                message = CompactJsonWhitespaceInLog(message ?? string.Empty);
-
-                logMessage = new LogMessage
+                var data = new CocoroGhostEventData();
+                if (element.TryGetProperty("data", out var dataElement) && dataElement.ValueKind == JsonValueKind.Object)
                 {
-                    timestamp = timestamp,
-                    level = level ?? "INFO",
-                    component = logger ?? string.Empty,
-                    message = message ?? string.Empty
+                    // New (2025-12) events payload: {data:{system_text,message}}
+                    data.SystemText = dataElement.TryGetProperty("system_text", out var systemText) ? systemText.GetString() : null;
+                    data.Message = dataElement.TryGetProperty("message", out var message) ? message.GetString() : null;
+
+                    // Legacy fields (keep backward compatibility)
+                    data.SourceSystem = dataElement.TryGetProperty("source_system", out var sourceSystem) ? sourceSystem.GetString() : null;
+                    data.Title = dataElement.TryGetProperty("title", out var title) ? title.GetString() : null;
+                    data.Body = dataElement.TryGetProperty("body", out var body) ? body.GetString() : null;
+                    data.ResultText = dataElement.TryGetProperty("result_text", out var resultText) ? resultText.GetString() : null;
+
+                    // Vision command
+                    data.RequestId = dataElement.TryGetProperty("request_id", out var requestId) ? requestId.GetString() : null;
+                    data.Source = dataElement.TryGetProperty("source", out var source) ? source.GetString() : null;
+                    data.Mode = dataElement.TryGetProperty("mode", out var mode) ? mode.GetString() : null;
+                    data.Purpose = dataElement.TryGetProperty("purpose", out var purpose) ? purpose.GetString() : null;
+                    data.TimeoutMs = dataElement.TryGetProperty("timeout_ms", out var timeoutMs) && timeoutMs.TryGetInt32(out var timeoutValue)
+                        ? timeoutValue
+                        : null;
+                }
+
+                ev = new CocoroGhostEvent
+                {
+                    EventId = element.TryGetProperty("event_id", out var eventId) ? eventId.GetString() : null,
+                    Timestamp = timestamp.ToLocalTime(),
+                    Type = type,
+                    MemoryId = element.TryGetProperty("memory_id", out var memoryId) ? memoryId.GetString() : null,
+                    UnitId = element.TryGetProperty("unit_id", out var unitId) && unitId.TryGetInt32(out var unitIdValue) ? unitIdValue : null,
+                    Data = data
                 };
+
                 return true;
             }
             catch
@@ -323,118 +384,11 @@ namespace CocoroConsole.Communication
             }
         }
 
-        private static string CompactJsonWhitespaceInLog(string message)
-        {
-            if (string.IsNullOrEmpty(message))
-            {
-                return message;
-            }
-
-            var markerIndex = FindFirstMarkerIndex(message);
-            if (markerIndex < 0)
-            {
-                return message;
-            }
-
-            var jsonStart = message.IndexOfAny(new[] { '{', '[' }, markerIndex);
-            if (jsonStart < 0)
-            {
-                return message;
-            }
-
-            var prefix = message.Substring(0, jsonStart);
-            var jsonPart = message.Substring(jsonStart);
-            var compacted = CollapseWhitespaceOutsideStrings(jsonPart);
-            return prefix + compacted;
-        }
-
-        private static int FindFirstMarkerIndex(string message)
-        {
-            string[] markers =
-            {
-                "LLM response (json)",
-                "LLM request (json)",
-                "LLM response (chat)",
-                "LLM request (chat)",
-                "LLM response (vision)",
-                "LLM request (vision)",
-            };
-
-            var bestIndex = -1;
-            foreach (var marker in markers)
-            {
-                var index = message.IndexOf(marker, StringComparison.Ordinal);
-                if (index < 0)
-                {
-                    continue;
-                }
-
-                if (bestIndex < 0 || index < bestIndex)
-                {
-                    bestIndex = index;
-                }
-            }
-
-            return bestIndex;
-        }
-
-        private static string CollapseWhitespaceOutsideStrings(string text)
-        {
-            var sb = new StringBuilder(text.Length);
-            bool inString = false;
-            bool escaped = false;
-            bool inWhitespace = false;
-
-            foreach (var ch in text)
-            {
-                if (inString)
-                {
-                    sb.Append(ch);
-                    if (escaped)
-                    {
-                        escaped = false;
-                    }
-                    else if (ch == '\\')
-                    {
-                        escaped = true;
-                    }
-                    else if (ch == '"')
-                    {
-                        inString = false;
-                    }
-                    continue;
-                }
-
-                if (ch == '"')
-                {
-                    inString = true;
-                    inWhitespace = false;
-                    sb.Append(ch);
-                    continue;
-                }
-
-                if (char.IsWhiteSpace(ch))
-                {
-                    if (!inWhitespace)
-                    {
-                        sb.Append(' ');
-                        inWhitespace = true;
-                    }
-                    continue;
-                }
-
-                inWhitespace = false;
-                sb.Append(ch);
-            }
-
-            return sb.ToString();
-        }
-
         private void ThrowIfDisposed()
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(nameof(LogStreamClient));
+                throw new ObjectDisposedException(nameof(EventsStreamClient));
             }
         }
 
@@ -446,10 +400,49 @@ namespace CocoroConsole.Communication
             {
                 StopAsync().GetAwaiter().GetResult();
             }
-            catch (Exception)
+            catch
             {
                 // Disposeでは握りつぶす
             }
         }
+    }
+
+    public sealed class CocoroGhostEvent
+    {
+        public string? EventId { get; set; }
+        public DateTime Timestamp { get; set; }
+        public string Type { get; set; } = string.Empty;
+        public string? MemoryId { get; set; }
+        public int? UnitId { get; set; }
+        public CocoroGhostEventData Data { get; set; } = new CocoroGhostEventData();
+    }
+
+    public sealed class CocoroGhostEventData
+    {
+        public string? SystemText { get; set; }
+        public string? Message { get; set; }
+        public string? SourceSystem { get; set; }
+        public string? Title { get; set; }
+        public string? Body { get; set; }
+        public string? ResultText { get; set; }
+
+        // Vision command
+        public string? RequestId { get; set; }
+        public string? Source { get; set; }
+        public string? Mode { get; set; }
+        public string? Purpose { get; set; }
+        public int? TimeoutMs { get; set; }
+    }
+
+    internal sealed class HelloMessage
+    {
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "hello";
+
+        [JsonPropertyName("client_id")]
+        public string ClientId { get; set; } = string.Empty;
+
+        [JsonPropertyName("caps")]
+        public string[] Caps { get; set; } = Array.Empty<string>();
     }
 }

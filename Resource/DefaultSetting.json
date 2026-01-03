@@ -1,11 +1,9 @@
-﻿{
-  "CocoroConsolePort": 55600,
+{
+  "cocoroConsolePort": 55600,
   "cocoroCorePort": 55601,
   "cocoroShellPort": 55605,
-  "notificationApiPort": 55604,
   "cocoroGhostBearerToken": "cocoro_token",
-  "isEnableNotificationApi": false,
-  "isEnableReminder": true,
+  "isUseLLM": false,
   "isRestoreWindowPosition": false,
   "isTopmost": true,
   "isEscapeCursor": false,
@@ -40,8 +38,8 @@
     ]
   },
   "microphoneSettings": {
-    "inputThreshold": -30,
-    "speakerRecognitionThreshold": 0.6
+    "inputThreshold": -20,
+    "speakerRecognitionThreshold": 0.4
   },
   "messageWindowSettings": {
     "maxMessageCount": 3,
@@ -62,17 +60,16 @@
     {
       "isReadOnly": true,
       "modelName": "初音ミクSD",
-      "vrmFilePath": "",
-      "isUseLLM": false,
+      "vrmFilePath": "default",
       "isUseTTS": false,
       "ttsType": "voicevox",
       "voicevoxConfig": {
         "endpointUrl": "http://127.0.0.1:50021",
         "speakerId": 0,
-        "speedScale": 1.0,
-        "pitchScale": 0.0,
-        "intonationScale": 1.0,
-        "volumeScale": 1.0,
+        "speedScale": 1,
+        "pitchScale": 0,
+        "intonationScale": 1,
+        "volumeScale": 1,
         "prePhonemeLength": 0.1,
         "postPhonemeLength": 0.1,
         "outputSamplingRate": 24000,
@@ -116,7 +113,6 @@
         "outputSamplingRate": 16000,
         "outputAudioChannels": "mono"
       },
-      "isEnableMemory": true,
       "isUseSTT": false,
       "sttEngine": "amivoice",
       "sttWakeWord": "",

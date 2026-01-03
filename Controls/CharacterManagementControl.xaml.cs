@@ -1,5 +1,6 @@
 ﻿using CocoroConsole.Communication;
 using CocoroConsole.Services;
+using CocoroConsole.Utilities;
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
@@ -61,31 +62,22 @@ namespace CocoroConsole.Controls
 
         private void AivisCloudApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
         {
-            PasteFromClipboardIntoTextBox(AivisCloudApiKeyPasswordBox);
+            ClipboardPasteOverride.PasteOverwrite(AivisCloudApiKeyPasswordBox);
+        }
+
+        private void AivisCloudApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(AivisCloudApiKeyPasswordBox);
         }
 
         private void STTApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
         {
-            PasteFromClipboardIntoTextBox(STTApiKeyPasswordBox);
+            ClipboardPasteOverride.PasteOverwrite(STTApiKeyPasswordBox);
         }
 
-        private void PasteFromClipboardIntoTextBox(TextBox target)
+        private void STTApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                if (Clipboard.ContainsText())
-                {
-                    var text = Clipboard.GetText();
-                    if (!string.IsNullOrWhiteSpace(text))
-                    {
-                        target.Text = text.Trim();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Clipboard paste failed: {ex}");
-            }
+            ClipboardPasteOverride.CopyToClipboard(STTApiKeyPasswordBox);
         }
 
         /// <summary>
@@ -141,7 +133,6 @@ namespace CocoroConsole.Controls
             character.isConvertMToon = ConvertMToonCheckBox.IsChecked ?? false;
             character.isEnableShadowOff = EnableShadowOffCheckBox.IsChecked ?? false;
             character.shadowOffMesh = ShadowOffMeshTextBox.Text;
-            character.isUseLLM = IsUseLLMCheckBox.IsChecked ?? false;
             character.isUseSTT = IsUseSTTCheckBox.IsChecked ?? false;
             character.sttEngine = STTEngineComboBox.SelectedItem is ComboBoxItem selectedSttEngine ? selectedSttEngine.Tag?.ToString() ?? "amivoice" : "amivoice";
             character.sttWakeWord = STTWakeWordTextBox.Text;
@@ -253,9 +244,6 @@ namespace CocoroConsole.Controls
             ShadowOffMeshTextBox.Text = character.shadowOffMesh;
             ShadowOffMeshTextBox.IsEnabled = character.isEnableShadowOff;
 
-            // LLM設定（有効/無効のみ、詳細設定はAPI経由）
-            IsUseLLMCheckBox.IsChecked = character.isUseLLM;
-
             // STT設定
             IsUseSTTCheckBox.IsChecked = character.isUseSTT;
 
@@ -359,27 +347,7 @@ namespace CocoroConsole.Controls
                     characterNumber++;
                 }
 
-                var newCharacter = new CharacterSettings
-                {
-                    modelName = newName,
-                    vrmFilePath = string.Empty,
-                    isUseLLM = false,
-                    isUseTTS = false,
-                    ttsType = "voicevox",
-                    voicevoxConfig = new VoicevoxConfig(),
-                    styleBertVits2Config = new StyleBertVits2Config(),
-                    aivisCloudConfig = new AivisCloudConfig(),
-                    isEnableMemory = true,
-                    isUseSTT = false,
-                    sttEngine = "amivoice",
-                    sttWakeWord = string.Empty,
-                    sttApiKey = string.Empty,
-                    sttLanguage = "ja",
-                    isConvertMToon = false,
-                    isEnableShadowOff = true,
-                    shadowOffMesh = "Face, U_Char_1",
-                    isReadOnly = false
-                };
+                var newCharacter = AppSettings.Instance.CreateCharacterFromDefaults(newName);
 
                 AppSettings.Instance.CharacterList.Add(newCharacter);
 
@@ -464,7 +432,6 @@ namespace CocoroConsole.Controls
                 {
                     modelName = newName,
                     vrmFilePath = sourceCharacter.vrmFilePath,
-                    isUseLLM = sourceCharacter.isUseLLM,
                     isUseTTS = sourceCharacter.isUseTTS,
                     ttsType = sourceCharacter.ttsType,
 
@@ -522,7 +489,6 @@ namespace CocoroConsole.Controls
                         outputSamplingRate = sourceCharacter.aivisCloudConfig.outputSamplingRate,
                         outputAudioChannels = sourceCharacter.aivisCloudConfig.outputAudioChannels,
                     },
-                    isEnableMemory = sourceCharacter.isEnableMemory,
                     isUseSTT = sourceCharacter.isUseSTT,
                     sttEngine = sourceCharacter.sttEngine,
                     sttWakeWord = sourceCharacter.sttWakeWord,

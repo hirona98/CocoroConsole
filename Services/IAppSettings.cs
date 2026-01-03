@@ -25,24 +25,19 @@ namespace CocoroConsole.Services
         int CocoroShellPort { get; set; }
 
         /// <summary>
+        /// /api/events/stream の hello に使うクライアントID（安定ID）
+        /// </summary>
+        string ClientId { get; set; }
+
+        /// <summary>
         /// cocoro_ghost API Bearer トークン
         /// </summary>
         string CocoroGhostBearerToken { get; set; }
 
         /// <summary>
-        /// 通知API有効/無効
+        /// 対話機能（LLM）を使用するか
         /// </summary>
-        bool IsEnableNotificationApi { get; set; }
-
-        /// <summary>
-        /// リマインダー有効/無効
-        /// </summary>
-        bool IsEnableReminder { get; set; }
-
-        /// <summary>
-        /// 通知APIポート
-        /// </summary>
-        int NotificationApiPort { get; set; }
+        bool IsUseLLM { get; set; }
 
         /// <summary>
         /// キャラクター位置復元
@@ -60,7 +55,7 @@ namespace CocoroConsole.Services
         bool IsEscapeCursor { get; set; }
 
         /// <summary>
-        /// 逃げ先座標リスト
+        /// 移動先座標リスト
         /// </summary>
         List<EscapePosition> EscapePositions { get; set; }
 
@@ -185,12 +180,6 @@ namespace CocoroConsole.Services
         /// 設定ファイルから設定を読み込む
         /// </summary>
         void LoadSettings();
-
-        /// <summary>
-        /// cocoro_ghost APIから取得した設定をローカル設定に反映
-        /// </summary>
-        /// <param name="apiSettings">/settings のレスポンス</param>
-        void ApplyCocoroGhostSettings(CocoroGhostSettings apiSettings);
 
         /// <summary>
         /// アプリケーション設定ファイルを読み込む

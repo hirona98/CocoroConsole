@@ -10,6 +10,24 @@
 
     <UserControl.Resources>
         <converters:AnimationTypeConverter x:Key="AnimationTypeConverter"/>
+
+        <Style x:Key="GroupBoxLikeExpanderStyle"
+               TargetType="Expander">
+            <Setter Property="Background"
+                    Value="White"/>
+            <Setter Property="BorderBrush"
+                    Value="#CCCCCC"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+            <Setter Property="Padding"
+                    Value="10"/>
+            <Setter Property="FontSize"
+                    Value="14"/>
+            <Setter Property="Foreground"
+                    Value="#4873CF"/>
+            <Setter Property="SnapsToDevicePixels"
+                    Value="True"/>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -77,7 +95,7 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Grid.Column="0"
-                                       Text="名前:"
+                                       Text="プリセット名:"
                                        VerticalAlignment="Center"
                                        ToolTip="Name"/>
 
@@ -87,8 +105,7 @@
                                      Foreground="#FF0078D7"
                                      Padding="2"
                                      TextChanged="AnimationSetNameTextBox_TextChanged"
-                                     LostFocus="AnimationSetNameTextBox_LostFocus"
-                                     ToolTip="アニメーションセットの名前を入力します"/>
+                                     LostFocus="AnimationSetNameTextBox_LostFocus"/>
                         </Grid>
 
                         <!-- 立ち姿勢ループ回数 -->

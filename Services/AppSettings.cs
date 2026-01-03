@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 
@@ -41,34 +40,33 @@ namespace CocoroConsole.Services
         // デフォルトアニメーション設定ファイルのパス
         private string DefaultAnimationSettingsFilePath => Path.Combine(UserDataDirectory, "DefaultAnimationSettings.json");
 
-        public int CocoroConsolePort { get; set; } = 55600;
-        public int CocoroGhostPort { get; set; } = 55601;
-        public int CocoroShellPort { get; set; } = 55605;
-        public int NotificationApiPort { get; set; } = 55604;
+        public int CocoroConsolePort { get; set; }
+        public int CocoroGhostPort { get; set; }
+        public int CocoroShellPort { get; set; }
+        // /api/events/stream で hello を送るためのクライアントID（安定ID）
+        public string ClientId { get; set; } = string.Empty;
         // cocoro_ghost API Bearer トークン
-        public string CocoroGhostBearerToken { get; set; } = "cocoro_token";
-        // 通知API設定
-        public bool IsEnableNotificationApi { get; set; } = true;
-        // リマインダー設定
-        public bool IsEnableReminder { get; set; } = true;
+        public string CocoroGhostBearerToken { get; set; } = string.Empty;
+        // LLMを使用するか
+        public bool IsUseLLM { get; set; } = false;
         // UI設定
-        public bool IsRestoreWindowPosition { get; set; } = false;
-        public bool IsTopmost { get; set; } = false;
-        public bool IsEscapeCursor { get; set; } = false;
+        public bool IsRestoreWindowPosition { get; set; }
+        public bool IsTopmost { get; set; }
+        public bool IsEscapeCursor { get; set; }
         public List<EscapePosition> EscapePositions { get; set; } = new List<EscapePosition>();
-        public bool IsInputVirtualKey { get; set; } = false;
+        public bool IsInputVirtualKey { get; set; }
         public string VirtualKeyString { get; set; } = string.Empty;
-        public bool IsAutoMove { get; set; } = false;
-        public bool ShowMessageWindow { get; set; } = true;
-        public bool IsEnableAmbientOcclusion { get; set; } = false;
-        public int MsaaLevel { get; set; } = 0;
-        public int CharacterShadow { get; set; } = 0;
-        public int CharacterShadowResolution { get; set; } = 0;
-        public int BackgroundShadow { get; set; } = 0;
-        public int BackgroundShadowResolution { get; set; } = 0;
-        public int WindowSize { get; set; } = 650;
-        public float WindowPositionX { get; set; } = 0.0f;
-        public float WindowPositionY { get; set; } = 0.0f;
+        public bool IsAutoMove { get; set; }
+        public bool ShowMessageWindow { get; set; }
+        public bool IsEnableAmbientOcclusion { get; set; }
+        public int MsaaLevel { get; set; }
+        public int CharacterShadow { get; set; }
+        public int CharacterShadowResolution { get; set; }
+        public int BackgroundShadow { get; set; }
+        public int BackgroundShadowResolution { get; set; }
+        public int WindowSize { get; set; }
+        public float WindowPositionX { get; set; }
+        public float WindowPositionY { get; set; }
 
         // キャラクター設定
         public int CurrentCharacterIndex { get; set; } = 0;
@@ -144,15 +142,19 @@ namespace CocoroConsole.Services
             CocoroConsolePort = config.CocoroConsolePort;
             CocoroGhostPort = config.cocoroCorePort;
             CocoroShellPort = config.cocoroShellPort;
-            NotificationApiPort = config.notificationApiPort;
-            IsEnableNotificationApi = config.isEnableNotificationApi;
-            IsEnableReminder = config.isEnableReminder;
+            ClientId = config.clientId;
+            if (string.IsNullOrWhiteSpace(ClientId))
+            {
+                ClientId = $"console-{Guid.NewGuid()}";
+            }
+            CocoroGhostBearerToken = config.cocoroGhostBearerToken ?? string.Empty;
+            IsUseLLM = config.isUseLLM;
             IsRestoreWindowPosition = config.isRestoreWindowPosition;
             IsTopmost = config.isTopmost;
             IsEscapeCursor = config.isEscapeCursor;
             EscapePositions = config.escapePositions != null ? new List<EscapePosition>(config.escapePositions) : new List<EscapePosition>();
             IsInputVirtualKey = config.isInputVirtualKey;
-            VirtualKeyString = config.virtualKeyString;
+            VirtualKeyString = config.virtualKeyString ?? string.Empty;
             IsAutoMove = config.isAutoMove;
             ShowMessageWindow = config.showMessageWindow;
             IsEnableAmbientOcclusion = config.isEnableAmbientOcclusion;
@@ -161,7 +163,7 @@ namespace CocoroConsole.Services
             CharacterShadowResolution = config.characterShadowResolution;
             BackgroundShadow = config.backgroundShadow;
             BackgroundShadowResolution = config.backgroundShadowResolution;
-            WindowSize = config.windowSize > 0 ? (int)config.windowSize : 650;
+            WindowSize = config.windowSize > 0 ? (int)config.windowSize : WindowSize;
             WindowPositionX = config.windowPositionX;
             WindowPositionY = config.windowPositionY;
             CurrentCharacterIndex = config.currentCharacterIndex;
@@ -208,21 +210,7 @@ namespace CocoroConsole.Services
         /// </summary>
         private void EnsureCharacterSchemaConsistency()
         {
-            // LLM関連の設定はAPI経由で管理されるため、ここでは何もしない
-        }
-
-        /// <summary>
-        /// cocoro_ghost APIから取得した設定をローカル設定に反映
-        /// </summary>
-        /// <param name="apiSettings">/settings のレスポンス</param>
-        public void ApplyCocoroGhostSettings(CocoroGhostSettings apiSettings)
-        {
-            if (apiSettings == null)
-            {
-                return;
-            }
-
-            ScreenshotSettings.excludePatterns = apiSettings.ExcludeKeywords ?? new List<string>();
+            // キャラクター設定の不足補完が必要になった場合はここで行う
         }
 
         /// <summary>
@@ -236,9 +224,9 @@ namespace CocoroConsole.Services
                 CocoroConsolePort = CocoroConsolePort,
                 cocoroCorePort = CocoroGhostPort,
                 cocoroShellPort = CocoroShellPort,
-                notificationApiPort = NotificationApiPort,
-                isEnableNotificationApi = IsEnableNotificationApi,
-                isEnableReminder = IsEnableReminder,
+                clientId = ClientId,
+                cocoroGhostBearerToken = CocoroGhostBearerToken,
+                isUseLLM = IsUseLLM,
                 isRestoreWindowPosition = IsRestoreWindowPosition,
                 isTopmost = IsTopmost,
                 isEscapeCursor = IsEscapeCursor,
@@ -302,17 +290,15 @@ namespace CocoroConsole.Services
                 // ディレクトリの存在確認とない場合は作成
                 EnsureUserDataDirectoryExists();
 
-                // まずデフォルト設定を読み込む
-                ConfigSettings defaultSettings = LoadDefaultSettings();
-
                 // 設定ファイルが存在するか確認
                 if (File.Exists(AppSettingsFilePath))
                 {
-                    LoadExistingSettingsFile(defaultSettings);
+                    LoadExistingSettingsFile();
                 }
                 else
                 {
                     // 設定ファイルがない場合はデフォルト設定を適用して保存
+                    var defaultSettings = LoadDefaultSettings();
                     UpdateSettings(defaultSettings);
                     SaveAppSettings();
                     Debug.WriteLine($"デフォルト設定をファイルに保存しました: {AppSettingsFilePath}");
@@ -340,339 +326,28 @@ namespace CocoroConsole.Services
         /// <summary>
         /// 既存の設定ファイルを読み込む
         /// </summary>
-        private void LoadExistingSettingsFile(ConfigSettings defaultSettings)
+        private void LoadExistingSettingsFile()
         {
-            string configJson = File.ReadAllText(AppSettingsFilePath);
-            ProcessCurrentFormatSettings(configJson, defaultSettings);
+            string userSettingsJson = File.ReadAllText(AppSettingsFilePath);
+            ProcessCurrentFormatSettings(userSettingsJson);
         }
 
         /// <summary>
         /// 現在のフォーマットの設定ファイルを処理する
         /// </summary>
-        private void ProcessCurrentFormatSettings(string configJson, ConfigSettings defaultSettings)
+        private void ProcessCurrentFormatSettings(string configJson)
         {
-            // マイグレーション処理：JSONから旧形式を検出して変換
-            string migratedJson = MigrateJsonIfNeeded(configJson);
-
-            var userSettings = MessageHelper.DeserializeFromJson<ConfigSettings>(migratedJson);
+            var userSettings = MessageHelper.DeserializeFromJson<ConfigSettings>(configJson);
             if (userSettings != null)
             {
-                // デシリアライズされた設定をそのまま使用（デフォルト値は自動適用済み）
+                var shouldPersistClientId = string.IsNullOrWhiteSpace(userSettings.clientId);
                 UpdateSettings(userSettings);
-                SaveAppSettings();
-            }
-        }
-
-        private string MigrateJsonIfNeeded(string configJson)
-        {
-            try
-            {
-                using (JsonDocument doc = JsonDocument.Parse(configJson))
+                if (shouldPersistClientId && !string.IsNullOrWhiteSpace(ClientId))
                 {
-                    var root = doc.RootElement;
-
-                    bool requiresReminderFlag = !root.TryGetProperty("isEnableReminder", out _);
-                    bool requiresVoiceMigration = false;
-                    bool requiresSpeakerRecognitionThreshold = false;
-
-                    if (root.TryGetProperty("characterList", out JsonElement characterListElement))
-                    {
-                        foreach (var character in characterListElement.EnumerateArray())
-                        {
-                            if (character.TryGetProperty("ttsEndpointURL", out _) ||
-                                character.TryGetProperty("ttsSperkerID", out _))
-                            {
-                                requiresVoiceMigration = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    // microphoneSettings.speakerRecognitionThresholdの存在確認
-                    if (root.TryGetProperty("microphoneSettings", out JsonElement micSettings))
-                    {
-                        if (!micSettings.TryGetProperty("speakerRecognitionThreshold", out _))
-                        {
-                            requiresSpeakerRecognitionThreshold = true;
-                        }
-                    }
-                    else
-                    {
-                        // microphoneSettings自体が存在しない場合
-                        requiresSpeakerRecognitionThreshold = true;
-                    }
-
-                    if (requiresVoiceMigration || requiresReminderFlag || requiresSpeakerRecognitionThreshold)
-                    {
-                        return PerformJsonMigration(configJson, requiresVoiceMigration, requiresReminderFlag, requiresSpeakerRecognitionThreshold);
-                    }
+                    SaveAppSettings();
                 }
             }
-            catch (JsonException ex)
-            {
-                Debug.WriteLine($"JSON解析エラー(マイグレーション処理): {ex.Message}");
-                Debug.WriteLine("元の設定を保持します。");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"マイグレーション処理で予期しないエラー: {ex.Message}");
-            }
-
-            return configJson;
         }
-
-
-
-        private string PerformJsonMigration(string configJson, bool migrateVoiceSettings, bool addReminderFlag, bool addSpeakerRecognitionThreshold = false)
-        {
-            try
-            {
-                using (JsonDocument doc = JsonDocument.Parse(configJson))
-                {
-                    var root = doc.RootElement;
-                    var options = new JsonWriterOptions { Indented = true };
-
-                    using (var stream = new MemoryStream())
-                    using (var writer = new Utf8JsonWriter(stream, options))
-                    {
-                        writer.WriteStartObject();
-
-                        foreach (var property in root.EnumerateObject())
-                        {
-                            if (property.Name == "characterList" && migrateVoiceSettings && property.Value.ValueKind == JsonValueKind.Array)
-                            {
-                                writer.WritePropertyName("characterList");
-                                writer.WriteStartArray();
-
-                                foreach (var character in property.Value.EnumerateArray())
-                                {
-                                    MigrateCharacterJson(character, writer);
-                                }
-
-                                writer.WriteEndArray();
-                            }
-                            else if (property.Name == "microphoneSettings" && addSpeakerRecognitionThreshold)
-                            {
-                                writer.WritePropertyName("microphoneSettings");
-                                writer.WriteStartObject();
-
-                                // 既存のmicrophoneSettingsプロパティをコピー
-                                foreach (var micProp in property.Value.EnumerateObject())
-                                {
-                                    micProp.WriteTo(writer);
-                                }
-
-                                // speakerRecognitionThresholdが存在しない場合のみ追加
-                                if (!property.Value.TryGetProperty("speakerRecognitionThreshold", out _))
-                                {
-                                    writer.WriteNumber("speakerRecognitionThreshold", 0.6);
-                                }
-
-                                writer.WriteEndObject();
-                            }
-                            else
-                            {
-                                property.WriteTo(writer);
-                            }
-                        }
-
-                        // microphoneSettings自体が存在しない場合は新規作成
-                        if (addSpeakerRecognitionThreshold && !root.TryGetProperty("microphoneSettings", out _))
-                        {
-                            writer.WritePropertyName("microphoneSettings");
-                            writer.WriteStartObject();
-                            writer.WriteNumber("inputThreshold", -30);
-                            writer.WriteNumber("speakerRecognitionThreshold", 0.6);
-                            writer.WriteEndObject();
-                        }
-
-                        if (addReminderFlag)
-                        {
-                            writer.WriteBoolean("isEnableReminder", false);
-                        }
-
-                        writer.WriteEndObject();
-                        writer.Flush();
-
-                        var migratedJson = Encoding.UTF8.GetString(stream.ToArray());
-
-                        // マイグレーション結果の完全性チェック
-                        if (ValidateMigratedJson(migratedJson, migrateVoiceSettings, addReminderFlag))
-                        {
-                            Debug.WriteLine("設定マイグレーションが正常に完了しました。");
-                            return migratedJson;
-                        }
-                        else
-                        {
-                            Debug.WriteLine("マイグレーション結果の検証に失敗しました。元の設定を保持します。");
-                            return configJson;
-                        }
-                    }
-                }
-            }
-            catch (JsonException ex)
-            {
-                Debug.WriteLine($"JSONマイグレーションエラー: {ex.Message}");
-                return configJson;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"マイグレーション処理で予期しないエラー: {ex.Message}");
-                return configJson;
-            }
-        }
-
-
-
-        /// <summary>
-        /// マイグレーション後のJSONの完全性を検証
-        /// </summary>
-        private bool ValidateMigratedJson(string migratedJson, bool validateVoiceSettings, bool ensureReminderFlag)
-        {
-            try
-            {
-                using (JsonDocument doc = JsonDocument.Parse(migratedJson))
-                {
-                    var root = doc.RootElement;
-
-                    if (ensureReminderFlag && !root.TryGetProperty("isEnableReminder", out _))
-                    {
-                        Debug.WriteLine("isEnableReminder プロパティが見つかりません。");
-                        return false;
-                    }
-
-                    if (validateVoiceSettings)
-                    {
-                        if (!root.TryGetProperty("characterList", out JsonElement characterListElement))
-                        {
-                            Debug.WriteLine("characterList プロパティが見つかりません。");
-                            return false;
-                        }
-
-                        foreach (var character in characterListElement.EnumerateArray())
-                        {
-                            // voicevoxConfigが正しく作成されているかチェック
-                            if (!character.TryGetProperty("voicevoxConfig", out JsonElement voicevoxConfig))
-                            {
-                                Debug.WriteLine("voicevoxConfig プロパティが見つかりません。");
-                                return false;
-                            }
-
-                            // 必須プロパティの存在チェック
-                            string[] requiredProperties = { "endpointUrl", "speakerId", "speedScale", "pitchScale",
-                                                          "intonationScale", "volumeScale", "prePhonemeLength",
-                                                          "postPhonemeLength", "outputSamplingRate", "outputStereo" };
-
-                            foreach (var prop in requiredProperties)
-                            {
-                                if (!voicevoxConfig.TryGetProperty(prop, out _))
-                                {
-                                    Debug.WriteLine($"voicevoxConfig の必須プロパティ '{prop}' が見つかりません。");
-                                    return false;
-                                }
-                            }
-
-                            // 旧プロパティが削除されているかチェック
-                            if (character.TryGetProperty("ttsEndpointURL", out _) ||
-                                character.TryGetProperty("ttsSperkerID", out _))
-                            {
-                                Debug.WriteLine("旧プロパティが残存しています。");
-                                return false;
-                            }
-                        }
-                    }
-
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"検証処理でエラー: {ex.Message}");
-                return false;
-            }
-        }
-
-
-
-        private void MigrateCharacterJson(JsonElement character, Utf8JsonWriter writer)
-        {
-            try
-            {
-                writer.WriteStartObject();
-
-                // 旧設定値を収集
-                string? oldEndpointUrl = null;
-                int oldSpeakerId = -1;
-
-                foreach (var property in character.EnumerateObject())
-                {
-                    if (property.Name == "ttsEndpointURL")
-                    {
-                        oldEndpointUrl = property.Value.GetString();
-                    }
-                    else if (property.Name == "ttsSperkerID")
-                    {
-                        if (property.Value.ValueKind == JsonValueKind.String)
-                        {
-                            int.TryParse(property.Value.GetString(), out oldSpeakerId);
-                        }
-                        else if (property.Value.ValueKind == JsonValueKind.Number)
-                        {
-                            oldSpeakerId = property.Value.GetInt32();
-                        }
-                    }
-                }
-
-                // 旧フィールド以外をコピー、voicevoxConfigは新規作成
-                foreach (var property in character.EnumerateObject())
-                {
-                    if (property.Name == "ttsEndpointURL" || property.Name == "ttsSperkerID")
-                    {
-                        continue; // 旧フィールドはスキップ
-                    }
-                    else
-                    {
-                        property.WriteTo(writer);
-                    }
-                }
-
-                // voicevoxConfigを新規作成
-                writer.WritePropertyName("voicevoxConfig");
-                writer.WriteStartObject();
-                writer.WritePropertyName("endpointUrl");
-                writer.WriteStringValue(string.IsNullOrEmpty(oldEndpointUrl) ? "http://127.0.0.1:50021" : oldEndpointUrl);
-                writer.WritePropertyName("speakerId");
-                writer.WriteNumberValue(oldSpeakerId >= 0 ? oldSpeakerId : 0);
-                writer.WritePropertyName("speedScale");
-                writer.WriteNumberValue(1.0);
-                writer.WritePropertyName("pitchScale");
-                writer.WriteNumberValue(0.0);
-                writer.WritePropertyName("intonationScale");
-                writer.WriteNumberValue(1.0);
-                writer.WritePropertyName("volumeScale");
-                writer.WriteNumberValue(1.0);
-                writer.WritePropertyName("prePhonemeLength");
-                writer.WriteNumberValue(0.1);
-                writer.WritePropertyName("postPhonemeLength");
-                writer.WriteNumberValue(0.1);
-                writer.WritePropertyName("outputSamplingRate");
-                writer.WriteNumberValue(24000);
-                writer.WritePropertyName("outputStereo");
-                writer.WriteBooleanValue(false);
-                writer.WriteEndObject();
-
-                writer.WriteEndObject();
-
-                Debug.WriteLine($"キャラクター設定をマイグレーション: endpointUrl={oldEndpointUrl ?? "デフォルト"}, speakerId={oldSpeakerId}");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"キャラクター設定マイグレーションでエラー: {ex.Message}");
-                throw; // 上位でハンドリング
-            }
-        }
-
-
 
         /// <summary>
         /// デフォルト設定ファイルを読み込む
@@ -684,11 +359,6 @@ namespace CocoroConsole.Services
                 try
                 {
                     string json = File.ReadAllText(DefaultSettingsFilePath);
-                    var options = new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true,
-                        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                    };
                     var defaultSettings = MessageHelper.DeserializeFromJson<ConfigSettings>(json);
 
                     if (defaultSettings != null)
@@ -704,6 +374,23 @@ namespace CocoroConsole.Services
 
             // 読み込みに失敗した場合は空の設定を返す
             return new ConfigSettings();
+        }
+
+        /// <summary>
+        /// DefaultSetting.json からキャラクターの雛形を作成する
+        /// </summary>
+        public CharacterSettings CreateCharacterFromDefaults(string modelName)
+        {
+            var defaults = LoadDefaultSettings();
+            var template = defaults.characterList != null && defaults.characterList.Count > 0
+                ? defaults.characterList[0]
+                : new CharacterSettings();
+
+            var character = template.DeepCopy();
+            character.modelName = modelName;
+            character.vrmFilePath = string.Empty;
+            character.isReadOnly = false;
+            return character;
         }
 
         /// <summary>

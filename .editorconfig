@@ -67,6 +67,13 @@ dotnet_style_readonly_field = true
 # Parameter preferences
 dotnet_code_quality_unused_parameters = all:silent
 
+# Unused code diagnostics (raise to warnings in build)
+dotnet_diagnostic.IDE0051.severity = warning # unused private members
+dotnet_diagnostic.IDE0052.severity = warning # unused private fields
+dotnet_diagnostic.IDE0054.severity = warning # unused private setters
+dotnet_diagnostic.IDE0060.severity = warning # unused parameters
+dotnet_diagnostic.IDE0079.severity = warning # unnecessary suppression
+
 # Suppression preferences
 dotnet_remove_unnecessary_suppression_exclusions = none
 

@@ -5,98 +5,57 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:CocoroConsole.Controls"
              mc:Ignorable="d"
-             d:DesignHeight="800"
+             d:DesignHeight="1200"
              d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <Style x:Key="GroupBoxLikeExpanderStyle"
+               TargetType="Expander">
+            <Setter Property="Background"
+                    Value="White"/>
+            <Setter Property="BorderBrush"
+                    Value="#CCCCCC"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+            <Setter Property="Padding"
+                    Value="10"/>
+            <Setter Property="FontSize"
+                    Value="14"/>
+            <Setter Property="Foreground"
+                    Value="#4873CF"/>
+            <Setter Property="SnapsToDevicePixels"
+                    Value="True"/>
+        </Style>
+    </UserControl.Resources>
 
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!-- リマインダー設定 -->
-                <GroupBox Header="リマインダー（試験運用）"
+                <Expander Header="リマインダー"
                           Margin="0,0,20,20"
-                          Padding="10">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- 説明テキスト -->
-                        <TextBlock Grid.Row="0"
-                                   TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,10">
-                            リマインダー機能を管理します。設定した時刻にキャラクターが知らせてくれます。
-                        </TextBlock>
-
-                        <!-- リマインダー機能チェックボックス -->
-                        <CheckBox Grid.Row="1"
-                                  x:Name="EnableReminderCheckBox"
-                                  Content="リマインダー機能を使用する（要再起動）"
+                          IsExpanded="False"
+                          Style="{StaticResource GroupBoxLikeExpanderStyle}">
+                    <StackPanel>
+                        <!-- リマインダー機能チェックボックス（グローバル） -->
+                        <CheckBox x:Name="EnableReminderCheckBox"
+                                  Content="リマインダー機能を有効にする"
                                   Margin="0,0,0,10"
                                   Foreground="#FF4873CF"/>
 
-                        <!-- リマインダー追加エリア -->
-                        <Grid Grid.Row="2"
-                              x:Name="ReminderInputGrid"
-                              Margin="0,0,0,10"
-                              IsEnabled="{Binding IsChecked, ElementName=EnableReminderCheckBox}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="130"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <TextBlock Grid.Column="0"
-                                       Text="設定日時："
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,5,0"/>
-
-                            <TextBox Grid.Column="1"
-                                     x:Name="ReminderDateTimeTextBox"
-                                     Foreground="#FF0078D7"
-                                     BorderBrush="#CCCCCC"
-                                     BorderThickness="1"
-                                     Padding="2"
-                                     VerticalAlignment="Center"
-                                     Text=""
-                                     ToolTip="YYYY-MM-DD HH:MM形式で入力（例: 2025-01-18 15:00）"/>
-
-                            <TextBlock Grid.Column="2"
-                                       Text="内容："
-                                       VerticalAlignment="Center"
-                                       Margin="10,0,5,0"/>
-
-                            <TextBox Grid.Column="3"
-                                     x:Name="ReminderMessageTextBox"
-                                     Foreground="#FF0078D7"
-                                     BorderBrush="#CCCCCC"
-                                     BorderThickness="1"
-                                     Padding="2"
-                                     VerticalAlignment="Center"
-                                     Text="寝る"
-                                     ToolTip="リマインダーの内容を入力"/>
-
-                            <Button Grid.Column="4"
-                                    x:Name="AddReminderButton"
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,0,0,10">
+                            <Button x:Name="AddReminderButton"
                                     Content="追加"
                                     Padding="10,5"
-                                    Margin="10,0,0,0"
                                     Click="AddReminderButton_Click"/>
-                        </Grid>
+                        </StackPanel>
 
                         <!-- リマインダーリスト -->
-                        <Border Grid.Row="3"
-                                BorderBrush="#DDDDDD"
+                        <Border BorderBrush="#DDDDDD"
                                 BorderThickness="1"
                                 Background="White"
-                                MaxHeight="200"
-                                IsEnabled="{Binding IsChecked, ElementName=EnableReminderCheckBox}">
+                                MaxHeight="240">
                             <ScrollViewer VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled">
                                 <ItemsControl x:Name="RemindersItemsControl">
@@ -108,76 +67,61 @@
                                                     <RowDefinition Height="1"/>
                                                 </Grid.RowDefinitions>
 
-                                                <!-- アイテム内容 -->
                                                 <Grid Grid.Row="0"
                                                       Margin="8">
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="60"/>
+                                                        <ColumnDefinition Width="26"/>
                                                         <ColumnDefinition Width="150"/>
+                                                        <ColumnDefinition Width="250"/>
                                                         <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
 
-                                                    <!-- ID -->
-                                                    <TextBlock Grid.Column="0"
-                                                               Text="{Binding Id}"
-                                                               VerticalAlignment="Center"
-                                                               Foreground="#666666"/>
+                                                    <CheckBox Grid.Column="0"
+                                                              IsChecked="{Binding Enabled}"
+                                                              Tag="{Binding LocalId}"
+                                                              Checked="ReminderEnabledCheckBox_Changed"
+                                                              Unchecked="ReminderEnabledCheckBox_Changed"
+                                                              Width="18"
+                                                              Height="18"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"/>
 
-                                                    <!-- 予定時刻 -->
                                                     <TextBlock Grid.Column="1"
-                                                               Text="{Binding RemindDatetime}"
+                                                               Text="{Binding NextFireAtLocal}"
                                                                VerticalAlignment="Center"
-                                                               Margin="10,0"/>
+                                                               Margin="6,0,0,0"/>
 
-                                                    <!-- メッセージ -->
                                                     <TextBlock Grid.Column="2"
-                                                               Text="{Binding Requirement}"
+                                                               Text="{Binding RuleText}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="6,0,0,0"/>
+
+                                                    <TextBlock Grid.Column="3"
+                                                               Text="{Binding Content}"
                                                                TextWrapping="Wrap"
                                                                VerticalAlignment="Center"
-                                                               Margin="10,0"/>
+                                                               Margin="6,0,0,0"/>
 
-                                                    <!-- 削除ボタン -->
-                                                    <Button Grid.Column="3"
-                                                            Content="×"
-                                                            Width="20"
-                                                            Height="20"
+                                                    <Button Grid.Column="4"
+                                                            Content="編集"
+                                                            Padding="10,3"
+                                                            Margin="10,0,0,0"
+                                                            Click="EditReminderButton_Click"
+                                                            Tag="{Binding LocalId}"/>
+
+                                                    <Button Grid.Column="5"
+                                                            Content="削除"
+                                                            Padding="10,3"
+                                                            Margin="8,0,0,0"
                                                             Background="#DC143C"
                                                             Foreground="White"
                                                             BorderThickness="0"
-                                                            FontSize="12"
-                                                            FontWeight="Bold"
-                                                            VerticalAlignment="Center"
                                                             Click="DeleteReminderButton_Click"
-                                                            Tag="{Binding Id}"
-                                                            ToolTip="このリマインダーを削除">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button">
-                                                                <Setter Property="Template">
-                                                                    <Setter.Value>
-                                                                        <ControlTemplate TargetType="Button">
-                                                                            <Border Background="{TemplateBinding Background}"
-                                                                                    CornerRadius="10">
-                                                                                <ContentPresenter HorizontalAlignment="Center"
-                                                                                                  VerticalAlignment="Top"
-                                                                                                  Margin="0,1,0,0"/>
-                                                                            </Border>
-                                                                            <ControlTemplate.Triggers>
-                                                                                <Trigger Property="IsMouseOver"
-                                                                                         Value="True">
-                                                                                    <Setter Property="Background"
-                                                                                            Value="#B22222"/>
-                                                                                </Trigger>
-                                                                            </ControlTemplate.Triggers>
-                                                                        </ControlTemplate>
-                                                                    </Setter.Value>
-                                                                </Setter>
-                                                            </Style>
-                                                        </Button.Style>
-                                                    </Button>
+                                                            Tag="{Binding LocalId}"/>
                                                 </Grid>
 
-                                                <!-- 区切り線 -->
                                                 <Rectangle Grid.Row="1"
                                                            Fill="#E0E0E0"
                                                            Height="1"/>
@@ -187,54 +131,35 @@
                                 </ItemsControl>
                             </ScrollViewer>
                         </Border>
+                    </StackPanel>
+                </Expander>
 
-                        <!-- ボタンエリア -->
-                        <StackPanel Grid.Row="4"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Left"
-                                    Margin="0,10,0,0"
-                                    IsEnabled="{Binding IsChecked, ElementName=EnableReminderCheckBox}">
-                            <Button x:Name="RefreshRemindersButton"
-                                    Content="リスト更新"
-                                    Padding="10,5"
-                                    Click="RefreshRemindersButton_Click"
-                                    ToolTip="リマインダーリストを最新の状態に更新"/>
-                        </StackPanel>
-                    </Grid>
-                </GroupBox>
-
-                <!-- デスクトップウォッチ設定 -->
-                <GroupBox Header="デスクトップウォッチ"
+                <!-- デスクトップウォッチ -->
+                <Expander Header="デスクトップウォッチ"
                           Margin="0,0,20,20"
-                          Padding="10">
+                          IsExpanded="False"
+                          Style="{StaticResource GroupBoxLikeExpanderStyle}">
                     <StackPanel>
                         <!-- 説明テキスト -->
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666"
-                                   Margin="0,0,0,10">
-                            デスクトップの画面を定期的に取得し、内容に応じたコメントをします。マルチモーダルモデルが必要です。
+                                   Margin="0,-10,0,10">
+                            デスクトップの画面を定期的に取得し内容に応じたコメントをします。
                             <LineBreak/>
-                            意図せずともセンシティブな画像を送るとアカウント停止の可能性がありますので注意してください。
+                            LLMプロバイダのポリシーに反する画像を送るとアカウント停止の可能性があるので注意してください。
                         </TextBlock>
 
-                        <!-- ウォッチ機能の有効/無効設定 -->
-                        <CheckBox x:Name="ScreenshotEnabledCheckBox"
-                                  Content="デスクトップウォッチを有効にする（LLMに画像を送信します）"
-                                  Margin="0,5,0,5"
+                        <!-- ウォッチ機能の有効/無効設定（cocoro_ghost側） -->
+                        <CheckBox x:Name="DesktopWatchEnabledCheckBox"
+                                  Content="デスクトップウォッチを有効にする（cocoro_ghostが能動的に取得要求を出します）"
+                                  Margin="0,5,0,10"
                                   Foreground="#FF4873CF"
-                                  ToolTip="Enable desktop monitoring"/>
+                                  ToolTip="Enable desktop watch (server-driven)"/>
 
-                        <!-- アクティブウィンドウのみ設定 -->
-                        <CheckBox x:Name="CaptureActiveWindowOnlyCheckBox"
-                                  Content="アクティブウィンドウだけを対象にする"
-                                  Margin="0,10,0,5"
-                                  Foreground="#FF4873CF"
-                                  ToolTip="Capture active window only"/>
-
-                        <!-- ウォッチ間隔設定 -->
-                        <Grid Margin="0,5,0,5">
+                        <!-- ウォッチ間隔（秒） -->
+                        <Grid Margin="0,0,0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="28"/>
                             </Grid.ColumnDefinitions>
@@ -243,7 +168,7 @@
                                        VerticalAlignment="Center"
                                        Height="19"/>
                             <TextBox Grid.Column="1"
-                                     x:Name="ScreenshotIntervalTextBox"
+                                     x:Name="DesktopWatchIntervalSecondsTextBox"
                                      Foreground="#FF0078D7"
                                      Padding="2"
                                      VerticalAlignment="Center"
@@ -251,80 +176,50 @@
                                      HorizontalAlignment="Left"
                                      Margin="10,0,10,0"/>
                             <TextBlock Grid.Column="2"
-                                       Text="分"
+                                       Text="秒"
                                        VerticalAlignment="Center"
                                        HorizontalAlignment="Left"/>
                         </Grid>
 
-                        <!-- アイドルタイムアウト設定 -->
-                        <Grid Margin="0,0,0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="28"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0"
-                                       Text="アイドルタイムアウト:"
-                                       VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="1"
-                                     x:Name="IdleTimeoutTextBox"
-                                     Foreground="#FF0078D7"
-                                     Padding="2"
-                                     VerticalAlignment="Center"
-                                     Width="50"
-                                     HorizontalAlignment="Left"
-                                     Margin="10,0,10,0"/>
-                            <TextBlock Grid.Column="2"
-                                       Text="分"
-                                       VerticalAlignment="Center"
-                                       HorizontalAlignment="Left"/>
-                        </Grid>
+                        <!-- 区切り線 -->
+                        <Rectangle Fill="#E0E0E0"
+                                   Height="1"
+                                   Margin="0,10,0,10"/>
 
-                        <!-- アイドルタイムアウト説明テキスト -->
+                        <!-- スクショ除外（ウィンドウタイトル正規表現） -->
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666"
                                    Margin="0,0,0,10">
-                            ※マウスやキーボードの操作がない時間が設定値を超えると、デスクトップウォッチを一時停止します。
+                            アクティブウィンドウのタイトルに対して正規表現でマッチ判定し、
+                            マッチした場合は画面キャプチャをスキップします。
+                            <LineBreak/>
+                            （1行に1つ。トリムして保存されます。大文字小文字は区別しません）
                         </TextBlock>
 
-                        <!-- 除外パターン設定 -->
-                        <TextBlock Text="除外パターン（正規表現）:"
-                                   Margin="0,5,0,5"
-                                   VerticalAlignment="Center"/>
-                        <TextBox x:Name="ExcludePatternsTextBox"
+                        <TextBox x:Name="ExcludeWindowTitlePatternsTextBox"
                                  Foreground="#FF0078D7"
                                  Padding="2"
                                  TextWrapping="Wrap"
                                  AcceptsReturn="True"
                                  VerticalScrollBarVisibility="Auto"
-                                 Height="80"
+                                 Height="120"
                                  Margin="0,0,0,5"
-                                 ToolTip="ウィンドウタイトルにマッチする正規表現パターン（1行に1つ）"/>
-
-                        <!-- 除外パターン説明テキスト -->
-                        <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,5">
-                            ※ウィンドウタイトルが指定パターンにマッチした場合、スクリーンショットを取得しません。
-                            <LineBreak/>
-                            　例: .*パスワード.* （パスワードを含むタイトルを除外）
-                        </TextBlock>
+                                 ToolTip="1行に1つ。正規表現。ウィンドウタイトルにマッチしたらキャプチャをスキップします。"/>
                     </StackPanel>
-                </GroupBox>
+                </Expander>
 
-                <!-- マイク設定 -->
-                <GroupBox Header="マイク設定"
+                <!-- 音声認識設定 -->
+                <Expander Header="音声認識設定"
                           Margin="0,0,20,20"
-                          Padding="10">
+                          IsExpanded="False"
+                          Style="{StaticResource GroupBoxLikeExpanderStyle}">
                     <StackPanel>
                         <!-- 説明テキスト -->
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666"
-                                   Margin="0,0,0,10">
-                            音声認識時のマイク入力感度を調整します。音声認識が有効なキャラクターに適用されます。
+                                   Margin="0,-10,0,10">
+                            マイクと話者識別の設定を行います。話者登録すると特定の人物の声だけを認識します。
                         </TextBlock>
-
-                        <!-- しきい値設定 -->
                         <Grid Margin="0,5,0,5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="100"/>
@@ -347,31 +242,28 @@
                                        VerticalAlignment="Center"
                                        HorizontalAlignment="Center"/>
                         </Grid>
-
-                        <!-- しきい値説明テキスト -->
                         <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666">
+                                   Foreground="#666666"
+                                   Margin="0,0,0,10">
                             ※値が低いほど（-50dBに近いほど）音声を拾いやすくなりますが、環境音も拾いやすくなります。
                         </TextBlock>
-                    </StackPanel>
-                </GroupBox>
 
-                <!-- 話者識別設定 -->
-                <local:SpeakerManagementControl x:Name="SpeakerManagementControl"
-                        Margin="0,0,20,20"/>
+                        <local:SpeakerManagementControl x:Name="SpeakerManagementControl"
+                                                        Margin="0,6,0,0"/>
+                    </StackPanel>
+                </Expander>
 
                 <!-- API認証設定 -->
-                <GroupBox Header="API認証設定"
+                <Expander Header="API認証設定"
                           Margin="0,0,20,0"
-                          Padding="10">
+                          IsExpanded="False"
+                          Style="{StaticResource GroupBoxLikeExpanderStyle}">
                     <StackPanel>
                         <!-- 説明テキスト -->
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666"
-                                   Margin="0,0,0,10">
-                            CocoroGhost APIとの通信に使用するBearer Tokenを設定します。
-                            <LineBreak/>
-                            cocoro_ghostのconfig.tomlで設定したtokenと同じ値を入力してください。
+                                   Margin="0,-10,0,10">
+                            APIで使用するBearer Tokenです。将来的に変更可能になります。
                         </TextBlock>
 
                         <!-- Bearer Token設定 -->
@@ -383,23 +275,17 @@
                             <TextBlock Grid.Column="0"
                                        Text="Bearer Token:"
                                        VerticalAlignment="Center"/>
-                            <PasswordBox Grid.Column="1"
-                                         x:Name="BearerTokenPasswordBox"
-                                         Padding="2"
-                                         VerticalAlignment="Center"
-                                         MaxWidth="300"
-                                         HorizontalAlignment="Left"
-                                         PasswordChanged="BearerTokenPasswordBox_PasswordChanged"/>
+                            <TextBox Grid.Column="1"
+                                     x:Name="BearerTokenPasswordBox"
+                                     Padding="2"
+                                     VerticalAlignment="Center"
+                                     Width="200"
+                                     HorizontalAlignment="Left"
+                                     TextChanged="BearerTokenPasswordBox_PasswordChanged"
+                                     IsEnabled="False"/>
                         </Grid>
-
-                        <!-- 注意テキスト -->
-                        <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,5,0,0">
-                            ※変更後はアプリケーションの再起動が必要です。
-                        </TextBlock>
                     </StackPanel>
-                </GroupBox>
+                </Expander>
             </StackPanel>
         </ScrollViewer>
     </Grid>

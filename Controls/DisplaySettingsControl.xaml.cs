@@ -17,9 +17,6 @@ namespace CocoroConsole.Controls
         // 設定のスナップショット
         private Dictionary<string, object> _displaySettings = new();
 
-        // 通信サービス参照（必要なら親から提供）
-        private ICommunicationService? _communicationService;
-
         // キーボードフック用（Win/Alt検出とキャプチャ）
         private HwndSource? _source;
         private bool _isCapturingKey = false;
@@ -53,16 +50,6 @@ namespace CocoroConsole.Controls
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr GetModuleHandle(string lpModuleName);
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct KBDLLHOOKSTRUCT
-        {
-            public uint vkCode;
-            public uint scanCode;
-            public uint flags;
-            public uint time;
-            public IntPtr dwExtraInfo;
-        }
 
         public DisplaySettingsControl()
         {
@@ -99,7 +86,6 @@ namespace CocoroConsole.Controls
 
         public void SetCommunicationService(ICommunicationService? service)
         {
-            _communicationService = service;
             if (service != null)
             {
                 EscapePositionControl.SetCommunicationService(service);
@@ -186,7 +172,7 @@ namespace CocoroConsole.Controls
             _displaySettings["TopMost"] = TopMostCheckBox.IsChecked ?? false;
             _displaySettings["EscapeCursor"] = EscapeCursorCheckBox.IsChecked ?? false;
 
-            // 逃げ先座標
+            // 移動先座標
             _displaySettings["EscapePositions"] = EscapePositionControl.GetEscapePositions();
 
             _displaySettings["InputVirtualKey"] = InputVirtualKeyCheckBox.IsChecked ?? false;

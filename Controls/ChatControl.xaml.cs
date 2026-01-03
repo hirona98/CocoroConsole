@@ -23,7 +23,6 @@ namespace CocoroConsole.Controls
     public partial class ChatControl : UserControl
     {
         public event EventHandler<string>? MessageSent;
-        private bool _isStreamingMessage;
 
         // 添付画像データ（Base64形式のdata URL、最大5枚）
         private List<string> _attachedImageDataUrls = new List<string>();
@@ -351,28 +350,17 @@ namespace CocoroConsole.Controls
             ChatScrollViewer.ScrollToEnd();
         }
 
-        public void StartStreamingAiMessage(string content)
-        {
-            _isStreamingMessage = true;
-            AddAiMessage(content);
-        }
-
         public void UpdateStreamingAiMessage(string content)
         {
             var messageTextBox = GetLastAiMessageTextBox();
             if (messageTextBox == null)
             {
-                StartStreamingAiMessage(content);
+                AddAiMessage(content);
                 return;
             }
 
             messageTextBox.Text = RemoveFaceTags(content);
             ChatScrollViewer.ScrollToEnd();
-        }
-
-        public void FinishStreamingAiMessage()
-        {
-            _isStreamingMessage = false;
         }
 
         private TextBox? GetLastAiMessageTextBox()
@@ -495,8 +483,8 @@ namespace CocoroConsole.Controls
 
             var messageText = new TextBox
             {
-                Style = (Style)Resources["SystemMessageTextStyle"],
-                Text = $"[{from}] {message}"
+                Style = (Style)Resources["NotificationMessageTextStyle"],
+                Text = $"[{from}]\n{message}"
             };
 
             messageContent.Children.Add(messageText);
@@ -652,27 +640,6 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// テキストボックスのキー入力ハンドラ（Enterキーで送信）
-        /// </summary>
-        private void MessageTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            // Enterキーが押された場合
-            if (e.Key == Key.Enter)
-            {
-                // Shiftキーが押されていない場合は送信処理
-                if ((Keyboard.Modifiers & ModifierKeys.Shift) != ModifierKeys.Shift)
-                {
-                    // Enterキーのデフォルト動作（改行）を防止
-                    e.Handled = true;
-
-                    // 送信処理を実行
-                    SendMessage();
-                }
-                // Shift+Enterの場合はデフォルト動作（改行）をそのまま許可
-            }
-        }
-
-        /// <summary>
         /// テキストボックスのキー入力ハンドラ（Enterキーで送信、Shift+Enterで改行）
         /// </summary>
         private void MessageTextBox_KeyDown(object sender, KeyEventArgs e)
@@ -709,57 +676,16 @@ namespace CocoroConsole.Controls
                     var files = Clipboard.GetFileDropList();
                     if (files.Count > 0)
                     {
-                        string? filePath = files[0];
-                        if (filePath != null)
+                        foreach (var filePath in files)
                         {
-                            AddImageFromFile(filePath);
-                            e.Handled = true;
+                            if (!string.IsNullOrEmpty(filePath))
+                            {
+                                AddImageFromFile(filePath);
+                            }
                         }
+                        e.Handled = true;
                     }
                 }
-            }
-        }
-
-        /// <summary>
-        /// テキストボックスのテキスト変更ハンドラ（内容に応じて高さを自動調整）
-        /// </summary>
-        private void MessageTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            // センダーをTextBoxとして安全に変換
-            if (sender is TextBox textBox)
-            {
-                // 内容に基づいて高さを自動調整
-                AdjustTextBoxHeight(textBox);
-            }
-        }
-
-        /// <summary>
-        /// テキストボックスの高さを内容に合わせて自動調整
-        /// </summary>
-        private void AdjustTextBoxHeight(TextBox textBox)
-        {
-            // 現在の行数を計算
-            int lineCount = textBox.LineCount;
-
-            // 行数に基づいて高さを調整（1行の場合は初期高さを維持）
-            if (lineCount <= 1)
-            {
-                textBox.Height = textBox.MinHeight;
-            }
-            else
-            {
-                // 1行あたりの高さを概算（フォントサイズ + パディング）
-                double lineHeight = textBox.FontSize + 8;
-
-                // 行数に基づいて高さを計算（最大5行まで）
-                int maxLines = 5;
-                int actualLines = Math.Min(lineCount, maxLines);
-
-                // 新しい高さを設定（基本の高さ + 追加行分の高さ）
-                double newHeight = textBox.MinHeight + (actualLines - 1) * lineHeight;
-
-                // 最大高さを超えないように制限
-                textBox.Height = Math.Min(newHeight, textBox.MaxHeight);
             }
         }
 
@@ -813,8 +739,18 @@ namespace CocoroConsole.Controls
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if (files.Length > 0)
                 {
-                    string filePath = files[0];
-                    AddImageFromFile(filePath);
+                    foreach (string filePath in files)
+                    {
+                        AddImageFromFile(filePath);
+                    }
+                }
+            }
+            else if (e.Data.GetDataPresent(DataFormats.Bitmap))
+            {
+                var image = e.Data.GetData(DataFormats.Bitmap) as BitmapSource;
+                if (image != null)
+                {
+                    AddImageFromBitmapSource(image);
                 }
             }
             e.Handled = true;
@@ -855,6 +791,15 @@ namespace CocoroConsole.Controls
                 foreach (string filePath in files)
                 {
                     AddImageFromFile(filePath);
+                }
+                e.Handled = true;
+            }
+            else if (e.Data.GetDataPresent(DataFormats.Bitmap))
+            {
+                var image = e.Data.GetData(DataFormats.Bitmap) as BitmapSource;
+                if (image != null)
+                {
+                    AddImageFromBitmapSource(image);
                 }
                 e.Handled = true;
             }
@@ -1069,20 +1014,6 @@ namespace CocoroConsole.Controls
                 UpdateImagePreview();
             }
         }
-
-        /// <summary>
-        /// 指定したインデックスの画像を削除
-        /// </summary>
-        private void RemoveImageAt(int index)
-        {
-            if (index >= 0 && index < _attachedImageSources.Count)
-            {
-                _attachedImageDataUrls.RemoveAt(index);
-                _attachedImageSources.RemoveAt(index);
-                UpdateImagePreview();
-            }
-        }
-
 
         /// <summary>
         /// 添付画像データ（複数）を取得してクリア
