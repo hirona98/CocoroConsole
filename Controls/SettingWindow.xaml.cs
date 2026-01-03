@@ -22,9 +22,6 @@ namespace CocoroConsole.Controls
         private Dictionary<string, object> _originalDisplaySettings = new Dictionary<string, object>();
         private List<CharacterSettings> _originalCharacterList = new List<CharacterSettings>();
 
-        // リマインダー有効/無効の前回値（ローカル設定には保存しない）
-        private bool _previousRemindersEnabled = false;
-
         // 通信サービス
         private ICommunicationService? _communicationService;
 
@@ -88,7 +85,6 @@ namespace CocoroConsole.Controls
         private async Task InitializeSystemSettingsAsync()
         {
             await SystemSettingsControl.InitializeAsync();
-            _previousRemindersEnabled = SystemSettingsControl.GetIsEnableReminder();
         }
 
         /// <summary>
@@ -361,7 +357,6 @@ namespace CocoroConsole.Controls
                 // 設定のバックアップを更新（適用後の状態を新しいベースラインとする）
                 BackupSettings();
                 _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
-                _previousRemindersEnabled = SystemSettingsControl.GetIsEnableReminder();
 
                 // メインウィンドウのボタン状態とサービスを更新
                 UpdateMainWindowStates();
@@ -396,10 +391,8 @@ namespace CocoroConsole.Controls
 
             // 保存後の設定を取得してCocoroGhost再起動が必要かチェック
             var currentSettings = GetCurrentUISettings();
-            bool currentRemindersEnabled = SystemSettingsControl.GetIsEnableReminder();
             bool needsCocoroGhostRestart =
-                HasCocoroGhostRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings) ||
-                currentRemindersEnabled != _previousRemindersEnabled;
+                HasCocoroGhostRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings);
 
             // CocoroShellを再起動
             RestartCocoroShell();
@@ -410,8 +403,6 @@ namespace CocoroConsole.Controls
                 await RestartCocoroGhostAsync();
                 Debug.WriteLine("CocoroGhost再起動処理を実行しました");
             }
-
-            _previousRemindersEnabled = currentRemindersEnabled;
         }
 
         /// <summary>
@@ -473,8 +464,6 @@ namespace CocoroConsole.Controls
                 var desktopWatchTargetClientId = desktopWatchEnabled
                     ? AppSettings.Instance.ClientId
                     : latestSettings.DesktopWatchTargetClientId;
-                bool remindersEnabled = SystemSettingsControl.GetIsEnableReminder();
-                List<CocoroGhostReminder> reminders = SystemSettingsControl.GetReminders();
                 List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
                 List<EmbeddingPreset> embeddingPresets = EmbeddingSettingsControl.GetAllPresets();
                 List<PersonaPreset> personaPresets = PromptSettingsControl.GetAllPersonaPresets();
@@ -507,8 +496,6 @@ namespace CocoroConsole.Controls
                     DesktopWatchEnabled = desktopWatchEnabled,
                     DesktopWatchIntervalSeconds = desktopWatchIntervalSeconds,
                     DesktopWatchTargetClientId = desktopWatchTargetClientId,
-                    RemindersEnabled = remindersEnabled,
-                    Reminders = reminders,
                     ActiveLlmPresetId = activeLlmId!,
                     ActiveEmbeddingPresetId = activeEmbeddingId!,
                     ActivePersonaPresetId = activePersonaId!,
@@ -521,6 +508,9 @@ namespace CocoroConsole.Controls
 
                 CocoroGhostSettings updated = await _apiClient.UpdateSettingsAsync(request);
                 Debug.WriteLine("[SettingWindow] 設定をAPIに保存しました");
+
+                // リマインダー設定/CRUDを保存（別API）
+                await SystemSettingsControl.SaveRemindersToApiAsync(AppSettings.Instance.ClientId);
 
                 List<LlmPreset> updatedLlmPresets = updated.LlmPreset ?? new List<LlmPreset>();
                 LlmSettingsControl.LoadSettingsList(updatedLlmPresets, updated.ActiveLlmPresetId);

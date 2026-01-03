@@ -32,83 +32,30 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!-- リマインダー設定 -->
-                <Expander Header="リマインダー（試験運用）"
+                <Expander Header="リマインダー"
                           Margin="0,0,20,20"
                           IsExpanded="False"
                           Style="{StaticResource GroupBoxLikeExpanderStyle}">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- リマインダー機能チェックボックス -->
-                        <CheckBox Grid.Row="1"
-                                  x:Name="EnableReminderCheckBox"
-                                  Content="リマインダー機能を使用する"
+                    <StackPanel>
+                        <!-- リマインダー機能チェックボックス（グローバル） -->
+                        <CheckBox x:Name="EnableReminderCheckBox"
+                                  Content="リマインダー機能を有効にする"
                                   Margin="0,0,0,10"
                                   Foreground="#FF4873CF"/>
 
-                        <!-- リマインダー追加エリア -->
-                        <Grid Grid.Row="2"
-                              x:Name="ReminderInputGrid"
-                              Margin="0,0,0,10"
-                              IsEnabled="{Binding IsChecked, ElementName=EnableReminderCheckBox}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="130"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <TextBlock Grid.Column="0"
-                                       Text="設定日時："
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,5,0"/>
-
-                            <TextBox Grid.Column="1"
-                                     x:Name="ReminderDateTimeTextBox"
-                                     Foreground="#FF0078D7"
-                                     BorderBrush="#CCCCCC"
-                                     BorderThickness="1"
-                                     Padding="2"
-                                     VerticalAlignment="Center"
-                                     Text=""
-                                     ToolTip="YYYY-MM-DD HH:MM形式で入力（例: 2025-01-18 15:00）"/>
-
-                            <TextBlock Grid.Column="2"
-                                       Text="内容："
-                                       VerticalAlignment="Center"
-                                       Margin="10,0,5,0"/>
-
-                            <TextBox Grid.Column="3"
-                                     x:Name="ReminderMessageTextBox"
-                                     Foreground="#FF0078D7"
-                                     BorderBrush="#CCCCCC"
-                                     BorderThickness="1"
-                                     Padding="2"
-                                     VerticalAlignment="Center"
-                                     Text="寝る"
-                                     ToolTip="リマインダーの内容を入力"/>
-
-                            <Button Grid.Column="4"
-                                    x:Name="AddReminderButton"
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,0,0,10">
+                            <Button x:Name="AddReminderButton"
                                     Content="追加"
                                     Padding="10,5"
-                                    Margin="10,0,0,0"
                                     Click="AddReminderButton_Click"/>
-                        </Grid>
+                        </StackPanel>
 
                         <!-- リマインダーリスト -->
-                        <Border Grid.Row="3"
-                                BorderBrush="#DDDDDD"
+                        <Border BorderBrush="#DDDDDD"
                                 BorderThickness="1"
                                 Background="White"
-                                MaxHeight="200"
-                                IsEnabled="{Binding IsChecked, ElementName=EnableReminderCheckBox}">
+                                MaxHeight="240">
                             <ScrollViewer VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled">
                                 <ItemsControl x:Name="RemindersItemsControl">
@@ -120,76 +67,61 @@
                                                     <RowDefinition Height="1"/>
                                                 </Grid.RowDefinitions>
 
-                                                <!-- アイテム内容 -->
                                                 <Grid Grid.Row="0"
                                                       Margin="8">
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="60"/>
+                                                        <ColumnDefinition Width="26"/>
                                                         <ColumnDefinition Width="150"/>
+                                                        <ColumnDefinition Width="250"/>
                                                         <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
 
-                                                    <!-- ID -->
-                                                    <TextBlock Grid.Column="0"
-                                                               Text="{Binding Id}"
-                                                               VerticalAlignment="Center"
-                                                               Foreground="#666666"/>
+                                                    <CheckBox Grid.Column="0"
+                                                              IsChecked="{Binding Enabled}"
+                                                              Tag="{Binding LocalId}"
+                                                              Checked="ReminderEnabledCheckBox_Changed"
+                                                              Unchecked="ReminderEnabledCheckBox_Changed"
+                                                              Width="18"
+                                                              Height="18"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"/>
 
-                                                    <!-- 予定時刻 -->
                                                     <TextBlock Grid.Column="1"
-                                                               Text="{Binding RemindDatetime}"
+                                                               Text="{Binding NextFireAtLocal}"
                                                                VerticalAlignment="Center"
-                                                               Margin="10,0"/>
+                                                               Margin="6,0,0,0"/>
 
-                                                    <!-- メッセージ -->
                                                     <TextBlock Grid.Column="2"
-                                                               Text="{Binding Requirement}"
+                                                               Text="{Binding RuleText}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="6,0,0,0"/>
+
+                                                    <TextBlock Grid.Column="3"
+                                                               Text="{Binding Content}"
                                                                TextWrapping="Wrap"
                                                                VerticalAlignment="Center"
-                                                               Margin="10,0"/>
+                                                               Margin="6,0,0,0"/>
 
-                                                    <!-- 削除ボタン -->
-                                                    <Button Grid.Column="3"
-                                                            Content="×"
-                                                            Width="20"
-                                                            Height="20"
+                                                    <Button Grid.Column="4"
+                                                            Content="編集"
+                                                            Padding="10,3"
+                                                            Margin="10,0,0,0"
+                                                            Click="EditReminderButton_Click"
+                                                            Tag="{Binding LocalId}"/>
+
+                                                    <Button Grid.Column="5"
+                                                            Content="削除"
+                                                            Padding="10,3"
+                                                            Margin="8,0,0,0"
                                                             Background="#DC143C"
                                                             Foreground="White"
                                                             BorderThickness="0"
-                                                            FontSize="12"
-                                                            FontWeight="Bold"
-                                                            VerticalAlignment="Center"
                                                             Click="DeleteReminderButton_Click"
-                                                            Tag="{Binding Id}"
-                                                            ToolTip="このリマインダーを削除">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button">
-                                                                <Setter Property="Template">
-                                                                    <Setter.Value>
-                                                                        <ControlTemplate TargetType="Button">
-                                                                            <Border Background="{TemplateBinding Background}"
-                                                                                    CornerRadius="10">
-                                                                                <ContentPresenter HorizontalAlignment="Center"
-                                                                                                  VerticalAlignment="Top"
-                                                                                                  Margin="0,1,0,0"/>
-                                                                            </Border>
-                                                                            <ControlTemplate.Triggers>
-                                                                                <Trigger Property="IsMouseOver"
-                                                                                         Value="True">
-                                                                                    <Setter Property="Background"
-                                                                                            Value="#B22222"/>
-                                                                                </Trigger>
-                                                                            </ControlTemplate.Triggers>
-                                                                        </ControlTemplate>
-                                                                    </Setter.Value>
-                                                                </Setter>
-                                                            </Style>
-                                                        </Button.Style>
-                                                    </Button>
+                                                            Tag="{Binding LocalId}"/>
                                                 </Grid>
 
-                                                <!-- 区切り線 -->
                                                 <Rectangle Grid.Row="1"
                                                            Fill="#E0E0E0"
                                                            Height="1"/>
@@ -199,7 +131,7 @@
                                 </ItemsControl>
                             </ScrollViewer>
                         </Border>
-                    </Grid>
+                    </StackPanel>
                 </Expander>
 
                 <!-- デスクトップウォッチ -->

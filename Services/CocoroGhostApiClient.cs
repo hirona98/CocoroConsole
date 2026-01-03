@@ -13,6 +13,13 @@ using System.Threading.Tasks;
 
 namespace CocoroConsole.Services
 {
+    /// <summary>
+    /// cocoro_ghost の HTTP API クライアント。
+    /// 
+    /// - Bearer 認証ヘッダを付与して JSON API を呼び出す
+    /// - /api/chat は Server-Sent Events (SSE) をストリーミングとして読み取る
+    /// - タイムアウト/HTTP エラーは例外として呼び出し元へ伝播する
+    /// </summary>
     public class CocoroGhostApiClient : IDisposable
     {
         private readonly HttpClient _httpClient;
@@ -45,16 +52,93 @@ namespace CocoroConsole.Services
             };
         }
 
+        /// <summary>
+        /// /api/settings を取得する。
+        /// </summary>
         public Task<CocoroGhostSettings> GetSettingsAsync(CancellationToken cancellationToken = default)
         {
             return SendAsync<CocoroGhostSettings>(HttpMethod.Get, "/api/settings", null, cancellationToken);
         }
 
+        /// <summary>
+        /// /api/settings を更新（PUT）する。
+        /// </summary>
         public Task<CocoroGhostSettings> UpdateSettingsAsync(CocoroGhostSettingsUpdateRequest request, CancellationToken cancellationToken = default)
         {
             return SendAsync<CocoroGhostSettings>(HttpMethod.Put, "/api/settings", request, cancellationToken);
         }
 
+        /// <summary>
+        /// /api/reminders/settings を取得する。
+        /// </summary>
+        public Task<CocoroGhostRemindersSettings> GetRemindersSettingsAsync(CancellationToken cancellationToken = default)
+        {
+            return SendAsync<CocoroGhostRemindersSettings>(HttpMethod.Get, "/api/reminders/settings", null, cancellationToken);
+        }
+
+        /// <summary>
+        /// /api/reminders/settings を更新（PUT）する。
+        /// cocoro_ghost 側が NoContent を返す実装もあるため、更新後に再取得して返す。
+        /// </summary>
+        public async Task<CocoroGhostRemindersSettings> UpdateRemindersSettingsAsync(CocoroGhostRemindersSettingsUpdateRequest request, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            await SendNoContentAsync(HttpMethod.Put, "/api/reminders/settings", request, cancellationToken).ConfigureAwait(false);
+            return await GetRemindersSettingsAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// /api/reminders を取得する。
+        /// </summary>
+        public async Task<IReadOnlyList<CocoroGhostReminderItem>> GetRemindersAsync(CancellationToken cancellationToken = default)
+        {
+            var response = await SendAsync<CocoroGhostRemindersListResponse>(HttpMethod.Get, "/api/reminders", null, cancellationToken);
+            return response.Items ?? new List<CocoroGhostReminderItem>();
+        }
+
+        /// <summary>
+        /// /api/reminders を作成（POST）する。
+        /// </summary>
+        public Task<CocoroGhostReminderCreateResponse> CreateReminderAsync(CocoroGhostReminderCreateRequest request, CancellationToken cancellationToken = default)
+        {
+            return SendAsync<CocoroGhostReminderCreateResponse>(HttpMethod.Post, "/api/reminders", request, cancellationToken);
+        }
+
+        /// <summary>
+        /// /api/reminders/{id} を更新（PATCH）する。
+        /// </summary>
+        public Task PatchReminderAsync(string reminderId, CocoroGhostReminderPatchRequest request, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            if (string.IsNullOrWhiteSpace(reminderId))
+            {
+                throw new ArgumentException("reminderIdを指定してください", nameof(reminderId));
+            }
+
+            return SendNoContentAsync(new HttpMethod("PATCH"), $"/api/reminders/{reminderId}", request, cancellationToken);
+        }
+
+        /// <summary>
+        /// /api/reminders/{id} を削除（DELETE）する。
+        /// </summary>
+        public Task DeleteReminderAsync(string reminderId, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            if (string.IsNullOrWhiteSpace(reminderId))
+            {
+                throw new ArgumentException("reminderIdを指定してください", nameof(reminderId));
+            }
+
+            return SendNoContentAsync(HttpMethod.Delete, $"/api/reminders/{reminderId}", null, cancellationToken);
+        }
+
+        /// <summary>
+        /// /api/chat を SSE（text/event-stream）で呼び出し、トークン/完了/エラーを逐次返す。
+        /// 
+        /// - token: 返信の増分（delta）
+        /// - done: 最終返信（reply_text / episode_unit_id）
+        /// - error: エラー（message/code）
+        /// </summary>
         public async IAsyncEnumerable<ChatStreamEvent> StreamChatAsync(ChatStreamRequest requestPayload, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -147,13 +231,14 @@ namespace CocoroConsole.Services
             return SendNoContentAsync(HttpMethod.Post, "/api/v2/vision/capture-response", request, cancellationToken);
         }
 
-        private async Task SendNoContentAsync(HttpMethod method, string path, object payload, CancellationToken cancellationToken)
+        private async Task SendNoContentAsync(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
         {
             var url = BuildUrl(path);
-            using var request = new HttpRequestMessage(method, url)
+            using var request = new HttpRequestMessage(method, url);
+            if (payload != null)
             {
-                Content = CreateJsonContent(payload)
-            };
+                request.Content = CreateJsonContent(payload);
+            }
 
             try
             {
@@ -179,10 +264,10 @@ namespace CocoroConsole.Services
             }
         }
 
-	        private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
-	        {
-	            var url = BuildUrl(path);
-	            var request = new HttpRequestMessage(method, url);
+        private async Task<T> SendAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
+        {
+            var url = BuildUrl(path);
+            var request = new HttpRequestMessage(method, url);
             if (payload != null)
             {
                 request.Content = CreateJsonContent(payload);
@@ -237,6 +322,7 @@ namespace CocoroConsole.Services
 
         private ChatStreamEvent? TryParseChatSseEvent(string eventName, string json)
         {
+            // SSE event の data 行を JSON として解釈し、クライアント側の統一イベントに変換する
             if (string.IsNullOrWhiteSpace(eventName) || string.IsNullOrWhiteSpace(json))
             {
                 return null;
@@ -314,30 +400,70 @@ namespace CocoroConsole.Services
         }
     }
 
+    /// <summary>
+    /// /api/chat へのリクエスト DTO。
+    /// </summary>
     public class ChatStreamRequest
     {
+        /// <summary>
+        /// 利用する埋め込みプリセット ID。
+        /// </summary>
         [JsonPropertyName("embedding_preset_id")]
         public string EmbeddingPresetId { get; set; } = string.Empty;
 
+        /// <summary>
+        /// クライアント ID（CocoroConsole など）。
+        /// </summary>
         [JsonPropertyName("client_id")]
         public string ClientId { get; set; } = string.Empty;
 
+        /// <summary>
+        /// 入力テキスト。
+        /// </summary>
         [JsonPropertyName("input_text")]
         public string InputText { get; set; } = string.Empty;
 
+        /// <summary>
+        /// 画像（base64）一覧。
+        /// </summary>
         [JsonPropertyName("images")]
         public List<CocoroGhostImage> Images { get; set; } = new List<CocoroGhostImage>();
 
+        /// <summary>
+        /// クライアント側のコンテキスト情報（アクティブアプリ等）。
+        /// </summary>
         [JsonPropertyName("client_context")]
         public VisionClientContext? ClientContext { get; set; }
     }
 
+    /// <summary>
+    /// /api/chat の SSE をクライアント側で扱いやすい形に正規化したイベント。
+    /// </summary>
     public class ChatStreamEvent
     {
+        /// <summary>
+        /// "token" | "done" | "error"。
+        /// </summary>
         public string Type { get; set; } = string.Empty;
+
+        /// <summary>
+        /// token イベント時の増分テキスト。
+        /// </summary>
         public string? Delta { get; set; }
+
+        /// <summary>
+        /// done イベント時の最終返信。
+        /// </summary>
         public string? ReplyText { get; set; }
+
+        /// <summary>
+        /// done イベント時の episode_unit_id。
+        /// </summary>
         public int? EpisodeId { get; set; }
+
+        /// <summary>
+        /// error イベント時のメッセージ。
+        /// </summary>
         public string? ErrorMessage { get; set; }
     }
 
@@ -367,13 +493,22 @@ namespace CocoroConsole.Services
 
     public class CocoroGhostImage
     {
+        /// <summary>
+        /// 画像種別（例: "image"）。
+        /// </summary>
         [JsonPropertyName("type")]
         public string Type { get; set; } = string.Empty;
 
+        /// <summary>
+        /// base64 エンコードされた画像データ（data URL ではなく raw base64 を想定）。
+        /// </summary>
         [JsonPropertyName("base64")]
         public string Base64 { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Vision/Chat で送るクライアント側の状況スナップショット。
+    /// </summary>
     public class VisionClientContext
     {
         [JsonPropertyName("active_app")]
@@ -388,9 +523,15 @@ namespace CocoroConsole.Services
 
     public class VisionCaptureResponseRequest
     {
+        /// <summary>
+        /// 画像キャプチャ要求 ID。
+        /// </summary>
         [JsonPropertyName("request_id")]
         public string RequestId { get; set; } = string.Empty;
 
+        /// <summary>
+        /// 返信するクライアント ID。
+        /// </summary>
         [JsonPropertyName("client_id")]
         public string ClientId { get; set; } = string.Empty;
 

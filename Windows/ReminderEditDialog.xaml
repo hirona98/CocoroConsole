@@ -1,0 +1,223 @@
+<Window x:Class="CocoroConsole.Windows.ReminderEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="リマインダー"
+        Height="450"
+        Width="450"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="ToolWindow"
+        ShowInTaskbar="False"
+        FontSize="14"
+        Foreground="#666666"
+        Background="White">
+
+    <Window.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Foreground"
+                    Value="#FF0078D7"/>
+            <Setter Property="BorderBrush"
+                    Value="#CCCCCC"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+            <Setter Property="Padding"
+                    Value="2"/>
+            <Setter Property="MinHeight"
+                    Value="26"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled"
+                         Value="False">
+                    <Setter Property="Foreground"
+                            Value="#FF0078D7"/>
+                    <Setter Property="Opacity"
+                            Value="1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="DatePicker">
+            <Setter Property="Foreground"
+                    Value="#FF0078D7"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled"
+                         Value="False">
+                    <Setter Property="Foreground"
+                            Value="#FF0078D7"/>
+                    <Setter Property="Opacity"
+                            Value="1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground"
+                    Value="#FF0078D7"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground"
+                    Value="#FF0078D7"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 有効/無効（保存される enabled フラグ） -->
+        <CheckBox Grid.Row="0"
+                  x:Name="EnabledCheckBox"
+                  Content="有効"
+                  IsChecked="True"
+                  Margin="0,0,0,10"/>
+
+        <!-- 通知内容（必須） -->
+        <TextBlock Grid.Row="1"
+                   Text="内容（必須）"
+                   Margin="0,0,0,5"/>
+        <TextBox Grid.Row="2"
+                 x:Name="ContentTextBox"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 Height="50"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Disabled"/>
+
+        <!-- 繰り返し種別（once/daily/weekly）と時刻（HH:mm） -->
+        <Grid Grid.Row="3"
+              Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="70"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="70"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <ComboBox Grid.Column="0"
+                      x:Name="RepeatKindComboBox"
+                      SelectionChanged="RepeatKindComboBox_SelectionChanged">
+                <ComboBoxItem Content="単発"
+                              Tag="once"/>
+                <ComboBoxItem Content="毎日"
+                              Tag="daily"
+                              IsSelected="True"/>
+                <ComboBoxItem Content="毎週"
+                              Tag="weekly"/>
+            </ComboBox>
+
+            <ComboBox Grid.Column="1"
+                      x:Name="HourComboBox"
+                      Margin="16,0,0,0"
+                      VerticalAlignment="Center"/>
+
+            <TextBlock Grid.Column="2"
+                       Text="時"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0"/>
+
+            <ComboBox Grid.Column="3"
+                      x:Name="MinuteComboBox"
+                      Margin="16,0,0,0"
+                      VerticalAlignment="Center"/>
+
+            <TextBlock Grid.Column="4"
+                       Text="分"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0"/>
+        </Grid>
+
+        <!-- 単発(once) の場合のみ有効になる日付入力 -->
+        <Border Grid.Row="4"
+                x:Name="OnceDateBorder"
+                BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                Padding="10"
+                Margin="0,10,0,0">
+            <StackPanel>
+                <TextBlock Text="日付"
+                           Margin="0,0,0,8"/>
+                <DatePicker x:Name="OnceDatePicker"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 毎週(weekly) の場合のみ有効になる曜日選択 -->
+        <Border Grid.Row="5"
+                x:Name="WeekdaysBorder"
+                BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                Padding="10"
+                Margin="0,10,0,0"
+                VerticalAlignment="Top">
+            <StackPanel>
+                <TextBlock Text="曜日"
+                           Margin="0,0,0,8"/>
+                <WrapPanel>
+                    <CheckBox x:Name="SunCheckBox"
+                              Content="日"
+                              Tag="sun"
+                              Margin="0,0,12,6"/>
+                    <CheckBox x:Name="MonCheckBox"
+                              Content="月"
+                              Tag="mon"
+                              Margin="0,0,12,6"/>
+                    <CheckBox x:Name="TueCheckBox"
+                              Content="火"
+                              Tag="tue"
+                              Margin="0,0,12,6"/>
+                    <CheckBox x:Name="WedCheckBox"
+                              Content="水"
+                              Tag="wed"
+                              Margin="0,0,12,6"/>
+                    <CheckBox x:Name="ThuCheckBox"
+                              Content="木"
+                              Tag="thu"
+                              Margin="0,0,12,6"/>
+                    <CheckBox x:Name="FriCheckBox"
+                              Content="金"
+                              Tag="fri"
+                              Margin="0,0,12,6"/>
+                    <CheckBox x:Name="SatCheckBox"
+                              Content="土"
+                              Tag="sat"
+                              Margin="0,0,12,6"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 編集用（モーダル） -->
+        <StackPanel Grid.Row="6"
+                    x:Name="EditButtonsPanel"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button Content="OK"
+                    Width="90"
+                    Margin="0,0,8,0"
+                    Click="OkButton_Click"/>
+            <Button Content="キャンセル"
+                    Width="90"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+
+        <!-- 追加用（モーダルにしない） -->
+        <StackPanel Grid.Row="6"
+                    x:Name="AddButtonsPanel"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0"
+                    Visibility="Collapsed">
+            <Button Content="追加"
+                    Width="90"
+                    Margin="0,0,8,0"
+                    Click="AddButton_Click"/>
+            <Button Content="キャンセル"
+                    Width="90"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

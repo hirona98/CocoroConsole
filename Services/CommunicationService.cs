@@ -15,36 +15,53 @@ using System.Threading.Tasks;
 namespace CocoroConsole.Services
 {
     /// <summary>
-    /// CocoroAIとの通信を管理するサービスクラス
+    /// CocoroAI（CocoroConsole / CocoroGhost / CocoroShell）間の通信を集約するサービス。
+    /// 
+    /// 主な責務:
+    /// - CocoroConsole API サーバーの起動/停止（外部からの chat/control/status 更新を受ける）
+    /// - CocoroShell への送信（発話/表示の連携）
+    /// - CocoroGhost の状態ポーリングと、状態変化イベントの転送
+    /// - cocoro_ghost HTTP API（Bearer 認証）を用いた設定取得やチャット SSE ストリーミング
+    /// - ログ/イベントのストリーミング接続の管理
     /// </summary>
     public class CommunicationService : ICommunicationService
     {
-        // リアルタイムストリーミング設定（即座表示方式）
+        // チャットは SSE の token を逐次 UI に転送して表示する（即時表示方式）
 
+        // CocoroConsole 側の HTTP API サーバー（外部クライアントからの受信）
         private CocoroConsoleApiServer _apiServer;
+
+        // CocoroShell（Unity 側）へ送るクライアント
         private CocoroShellClient _shellClient;
+
         private readonly IAppSettings _appSettings;
+
+        // cocoro_ghost の状態を定期取得して UI に通知する
         private StatusPollingService _statusPollingService;
+
+        // cocoro_ghost HTTP API（Bearer トークン必須）。トークン未設定時は null。
         private CocoroGhostApiClient? _cocoroGhostApiClient;
+
+        // cocoro_ghost のログ/イベントを購読するストリームクライアント（必要時に開始/停止）
         private LogStreamClient? _logStreamClient;
         private EventsStreamClient? _eventsStreamClient;
 
-        // メッセージ順序保証用セマフォ
+        // シェルへの送信順序を保証するためのセマフォ（同時送信を直列化）
         private readonly SemaphoreSlim _forwardMessageSemaphore = new SemaphoreSlim(1, 1);
 
-        // セッション管理用
+        // チャット API に渡すセッション ID（会話のまとまり）。新規会話で null に戻す。
         private string? _currentSessionId;
 
-        // 設定キャッシュ用
+        // 設定キャッシュ（SettingsSaved で更新し、差分に応じてランタイム反映）
         private ConfigSettings? _cachedConfigSettings;
 
-        // memory_idキャッシュ
+        // memory_id キャッシュ（チャット返信を UI へ戻す際に付与）
         private string _cachedMemoryId = "memory";
 
-        // cocoro_ghost /api/settings キャッシュ（EmbeddingPresetId解決に使用）
+        // cocoro_ghost /api/settings キャッシュ（embedding_preset_id 解決などに利用）
         private CocoroConsole.Models.CocoroGhostApi.CocoroGhostSettings? _cachedCocoroGhostSettings;
 
-        // 起動時の設定取得済みフラグ
+        // 起動後、cocoro_ghost が Normal になったタイミングで一度だけ設定取得するためのフラグ
         private bool _initialSettingsFetched = false;
 
         public event EventHandler<ChatRequest>? ChatMessageReceived;
@@ -260,12 +277,14 @@ namespace CocoroConsole.Services
 
         private void UpdateCocoroGhostApiClient(ConfigSettings settings)
         {
+            // 変更（ポート/トークン）に追従するため、既存クライアントは破棄して作り直す
             _cocoroGhostApiClient?.Dispose();
             _cocoroGhostApiClient = null;
 
             var bearerToken = settings.cocoroGhostBearerToken ?? string.Empty;
             if (string.IsNullOrWhiteSpace(bearerToken))
             {
+                // トークン未設定の場合、API 呼び出しは行わない
                 return;
             }
 
@@ -291,10 +310,12 @@ namespace CocoroConsole.Services
 
             if (status == CocoroGhostStatus.Normal)
             {
+                // 正常状態ではイベントストリームを開始
                 _ = StartEventsStreamAsync();
             }
             else if (status == CocoroGhostStatus.WaitingForStartup)
             {
+                // 起動待ちに戻った場合はイベントストリームを停止
                 _ = StopEventsStreamAsync();
             }
         }
@@ -776,19 +797,19 @@ namespace CocoroConsole.Services
         /// <summary>
         /// ログビューアーウィンドウを開く
         /// </summary>
-	        public void OpenLogViewer()
-	        {
-	            // MainWindowのOpenLogViewerメソッドに委譲
-	            if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
-	            {
-	                mainWindow.OpenLogViewer();
-	            }
-	        }
+        public void OpenLogViewer()
+        {
+            // MainWindowのOpenLogViewerメソッドに委譲
+            if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.OpenLogViewer();
+            }
+        }
 
-	        /// <summary>
-	        /// ログストリーム接続を開始
-	        /// </summary>
-	        public async Task StartLogStreamAsync()
+        /// <summary>
+        /// ログストリーム接続を開始
+        /// </summary>
+        public async Task StartLogStreamAsync()
         {
             if (_logStreamClient != null)
             {
@@ -876,7 +897,7 @@ namespace CocoroConsole.Services
                 eventsStreamUri,
                 bearerToken,
                 _appSettings.ClientId,
-                new[] { "vision.desktop", "vision.camera" }
+                new[] { "vision.desktop", "vision.camera", "speaker" }
             );
             _eventsStreamClient.EventReceived += OnEventsStreamEventReceived;
             _eventsStreamClient.ErrorOccurred += OnEventsStreamErrorOccurred;
@@ -916,6 +937,16 @@ namespace CocoroConsole.Services
         {
             try
             {
+                if (string.Equals(ev.Type, "reminder", StringComparison.OrdinalIgnoreCase))
+                {
+                    var message = ev.Data.Message;
+                    if (!string.IsNullOrWhiteSpace(message))
+                    {
+                        HandlePartnerMessageFromEvent(ev, message);
+                    }
+                    return;
+                }
+
                 if (string.Equals(ev.Type, "notification", StringComparison.OrdinalIgnoreCase))
                 {
                     var systemText = BuildNotificationDisplayText(ev.Data.SystemText, ev.Data.Title, ev.Data.Body);
@@ -1241,8 +1272,6 @@ namespace CocoroConsole.Services
                 DesktopWatchEnabled = latestSettings.DesktopWatchEnabled,
                 DesktopWatchIntervalSeconds = latestSettings.DesktopWatchIntervalSeconds,
                 DesktopWatchTargetClientId = latestSettings.DesktopWatchTargetClientId,
-                RemindersEnabled = latestSettings.RemindersEnabled,
-                Reminders = latestSettings.Reminders ?? new List<CocoroGhostReminder>(),
                 ActiveLlmPresetId = activeLlmId!,
                 ActiveEmbeddingPresetId = activeEmbeddingId!,
                 ActivePersonaPresetId = activePersonaId!,

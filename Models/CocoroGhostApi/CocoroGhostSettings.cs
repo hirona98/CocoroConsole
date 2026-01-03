@@ -18,12 +18,6 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         public string? DesktopWatchTargetClientId { get; set; }
 
-        [JsonPropertyName("reminders_enabled")]
-        public bool RemindersEnabled { get; set; }
-
-        [JsonPropertyName("reminders")]
-        public List<CocoroGhostReminder> Reminders { get; set; } = new List<CocoroGhostReminder>();
-
         [JsonPropertyName("active_llm_preset_id")]
         public string? ActiveLlmPresetId { get; set; }
 
@@ -49,15 +43,6 @@ namespace CocoroConsole.Models.CocoroGhostApi
         public List<AddonPreset> AddonPreset { get; set; } = new List<AddonPreset>();
     }
 
-    public class CocoroGhostReminder
-    {
-        [JsonPropertyName("scheduled_at")]
-        public string ScheduledAt { get; set; } = string.Empty;
-
-        [JsonPropertyName("content")]
-        public string Content { get; set; } = string.Empty;
-    }
-
     public class CocoroGhostSettingsUpdateRequest
     {
         [JsonPropertyName("memory_enabled")]
@@ -72,12 +57,6 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonPropertyName("desktop_watch_target_client_id")]
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         public string? DesktopWatchTargetClientId { get; set; }
-
-        [JsonPropertyName("reminders_enabled")]
-        public bool RemindersEnabled { get; set; }
-
-        [JsonPropertyName("reminders")]
-        public List<CocoroGhostReminder> Reminders { get; set; } = new List<CocoroGhostReminder>();
 
         [JsonPropertyName("active_llm_preset_id")]
         public string ActiveLlmPresetId { get; set; } = string.Empty;
