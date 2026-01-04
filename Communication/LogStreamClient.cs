@@ -83,7 +83,10 @@ namespace CocoroConsole.Communication
                 {
                     try
                     {
-                        await Task.WhenAny(_supervisorTask, Task.Delay(TimeSpan.FromSeconds(3)));
+                        // UIスレッドの同期呼び出し（Disposeなど）でもデッドロックしないようにコンテキストを捕捉しない
+                        await Task
+                            .WhenAny(_supervisorTask, Task.Delay(TimeSpan.FromSeconds(3)))
+                            .ConfigureAwait(false);
                     }
                     catch (Exception)
                     {
@@ -93,7 +96,8 @@ namespace CocoroConsole.Communication
             }
             finally
             {
-                await CloseAndCleanupAsync();
+                // UIスレッドの同期呼び出し（Disposeなど）でもデッドロックしないようにコンテキストを捕捉しない
+                await CloseAndCleanupAsync().ConfigureAwait(false);
                 _supervisorTokenSource?.Dispose();
                 _supervisorTokenSource = null;
                 _supervisorTask = null;
@@ -112,12 +116,14 @@ namespace CocoroConsole.Communication
                     var connected = false;
                     try
                     {
-                        await ConnectAsync(supervisorToken);
+                        // ライブラリ側ではUIコンテキストを捕捉しない
+                        await ConnectAsync(supervisorToken).ConfigureAwait(false);
                         connected = true;
                         SetConnectionState(true);
                         _reconnectAttempt = 0;
 
-                        var closeStatus = await ReceiveLoopAsync(supervisorToken);
+                        // ライブラリ側ではUIコンテキストを捕捉しない
+                        var closeStatus = await ReceiveLoopAsync(supervisorToken).ConfigureAwait(false);
                         if (closeStatus == WebSocketCloseStatus.PolicyViolation)
                         {
                             _reconnectDisabled = true;
@@ -135,7 +141,8 @@ namespace CocoroConsole.Communication
                     }
                     finally
                     {
-                        await CloseAndCleanupAsync();
+                        // ライブラリ側ではUIコンテキストを捕捉しない
+                        await CloseAndCleanupAsync().ConfigureAwait(false);
                         if (connected)
                         {
                             SetConnectionState(false);
@@ -148,7 +155,8 @@ namespace CocoroConsole.Communication
                     }
 
                     var delay = GetReconnectDelay(_reconnectAttempt++);
-                    await Task.Delay(delay, supervisorToken);
+                    // ライブラリ側ではUIコンテキストを捕捉しない
+                    await Task.Delay(delay, supervisorToken).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException)
@@ -159,13 +167,15 @@ namespace CocoroConsole.Communication
 
         private async Task ConnectAsync(CancellationToken supervisorToken)
         {
-            await CloseAndCleanupAsync();
+            // ライブラリ側ではUIコンテキストを捕捉しない
+            await CloseAndCleanupAsync().ConfigureAwait(false);
 
             _connectionTokenSource = CancellationTokenSource.CreateLinkedTokenSource(supervisorToken);
             _webSocket = new ClientWebSocket();
             _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {_bearerToken}");
             _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
-            await _webSocket.ConnectAsync(_webSocketUri, _connectionTokenSource.Token);
+            // ライブラリ側ではUIコンテキストを捕捉しない
+            await _webSocket.ConnectAsync(_webSocketUri, _connectionTokenSource.Token).ConfigureAwait(false);
         }
 
         private async Task<WebSocketCloseStatus?> ReceiveLoopAsync(CancellationToken supervisorToken)
@@ -186,7 +196,8 @@ namespace CocoroConsole.Communication
 
                 do
                 {
-                    result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), token);
+                    // ライブラリ側ではUIコンテキストを捕捉しない
+                    result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), token).ConfigureAwait(false);
 
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
@@ -221,9 +232,11 @@ namespace CocoroConsole.Communication
                 {
                     // --- Close ハンドシェイクが無期限に詰まるケース対策 ---
                     // サーバーが落ちた直後などで CloseAsync が戻らないと、終了処理で UI スレッドが固まる。
+                    // ライブラリ側ではUIコンテキストを捕捉しない
                     await _webSocket
                         .CloseAsync(WebSocketCloseStatus.NormalClosure, "停止", CancellationToken.None)
-                        .WaitAsync(TimeSpan.FromSeconds(1));
+                        .WaitAsync(TimeSpan.FromSeconds(1))
+                        .ConfigureAwait(false);
                 }
                 catch (Exception)
                 {

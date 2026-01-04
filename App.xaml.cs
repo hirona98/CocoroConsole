@@ -105,7 +105,11 @@ namespace CocoroConsole
         private void StartPipeServer()
         {
             _pipeServerCancellationTokenSource = new CancellationTokenSource();
-            _pipeServerThread = new Thread(() => PipeServerThread(_pipeServerCancellationTokenSource.Token))
+            _pipeServerThread = new Thread(() =>
+                PipeServerLoopAsync(_pipeServerCancellationTokenSource.Token)
+                    .GetAwaiter()
+                    .GetResult()
+            )
             {
                 IsBackground = true,
                 Name = "PipeServerThread"
@@ -113,16 +117,24 @@ namespace CocoroConsole
             _pipeServerThread.Start();
         }
 
-        // パイプサーバースレッドの処理
-        private void PipeServerThread(CancellationToken cancellationToken)
+        // パイプサーバーループ（終了時に確実に抜けるため async + cancellation 対応）
+        private async Task PipeServerLoopAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    using (var pipeServer = new NamedPipeServerStream(PipeName, PipeDirection.In))
+                    // WaitForConnection をキャンセル可能にするため Asynchronous を指定
+                    using (var pipeServer = new NamedPipeServerStream(
+                        PipeName,
+                        PipeDirection.In,
+                        1,
+                        PipeTransmissionMode.Byte,
+                        PipeOptions.Asynchronous
+                    ))
                     {
-                        pipeServer.WaitForConnection();
+                        // 終了時の Cancel で待機解除できるようにする
+                        await pipeServer.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
 
                         using (var reader = new StreamReader(pipeServer))
                         {
@@ -135,9 +147,19 @@ namespace CocoroConsole
                         }
                     }
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // 終了要求なのでループを抜ける
+                    break;
+                }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"パイプサーバーエラー: {ex.Message}");
+                    // 終了要求中は待機せず終了
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
                     Thread.Sleep(1000); // エラー時は少し待機
                 }
             }

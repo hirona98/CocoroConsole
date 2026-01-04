@@ -922,7 +922,6 @@ namespace CocoroConsole
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
         private void LaunchCocoroShell(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
-#if !DEBUG
             if (_appSettings.CharacterList.Count > 0 &&
                _appSettings.CurrentCharacterIndex < _appSettings.CharacterList.Count)
             {
@@ -936,7 +935,6 @@ namespace CocoroConsole
 
             // VRM未指定時は停止させる
             ProcessHelper.LaunchExternalApplication("CocoroShell.exe", "CocoroShell", ProcessOperation.Terminate, true);
-#endif
         }
 
         /// <summary>
@@ -947,10 +945,8 @@ namespace CocoroConsole
         {
             if (operation != ProcessOperation.Terminate)
             {
-#if !DEBUG
-                    // プロセス起動
-                    ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", operation, false);
-#endif
+                // プロセス起動
+                ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", operation, false);
                 // 非同期でAPI通信による起動完了を監視（無限ループ）
                 _ = Task.Run(async () =>
                 {
@@ -971,10 +967,8 @@ namespace CocoroConsole
         {
             if (operation != ProcessOperation.Terminate)
             {
-#if !DEBUG
-                    // プロセス起動（非同期）
-                    await ProcessHelper.LaunchExternalApplicationAsync("CocoroGhost.exe", "CocoroGhost", operation, false);
-#endif
+                // プロセス起動（非同期）
+                await ProcessHelper.LaunchExternalApplicationAsync("CocoroGhost.exe", "CocoroGhost", operation, false);
                 // 非同期でAPI通信による起動完了を監視（無限ループ）
                 _ = Task.Run(async () =>
                 {
@@ -1358,46 +1352,46 @@ namespace CocoroConsole
                     Debug.WriteLine("一部のシャットダウン要求がタイムアウトしました。");
                 }
 
-                // CocoreCoreM プロセスの確実な終了を待機
+                // CocoreGhost プロセスの確実な終了を待機
                 if (CocoroGhostProcessId.HasValue)
                 {
-                    Debug.WriteLine("CocoreCoreM プロセスの終了を監視中...");
-                    var maxWaitTime = TimeSpan.FromSeconds(120);
+                    Debug.WriteLine("CocoreGhost プロセスの終了を監視中...");
+                    var maxWaitTime = TimeSpan.FromSeconds(30);
                     var startTime = DateTime.Now;
 
                     while (IsProcessRunning(CocoroGhostProcessId.Value))
                     {
                         if (DateTime.Now - startTime > maxWaitTime)
                         {
-                            Debug.WriteLine("CocoreCoreMの終了待機がタイムアウトしました。");
+                            Debug.WriteLine("CocoreGhostの終了待機がタイムアウトしました。");
                             break;
                         }
 
                         await Task.Delay(500); // 0.5秒間隔でチェック
                     }
 
-                    Debug.WriteLine("CocoreCoreM プロセスの終了を確認しました。");
+                    Debug.WriteLine("CocoreGhost プロセスの終了を確認しました。");
                 }
                 else
                 {
-                    Debug.WriteLine("CocoreCoreM プロセスが見つからなかったため、通常の監視を実行します。");
+                    Debug.WriteLine("CocoreGhost プロセスが見つからなかったため、通常の監視を実行します。");
 
                     // プロセスIDが取得できない場合は疎通確認で監視
-                    var maxWaitTime = TimeSpan.FromSeconds(120);
+                    var maxWaitTime = TimeSpan.FromSeconds(30);
                     var startTime = DateTime.Now;
 
                     while (_communicationService != null && _communicationService.CurrentStatus != CocoroGhostStatus.WaitingForStartup)
                     {
                         if (DateTime.Now - startTime > maxWaitTime)
                         {
-                            Debug.WriteLine("CocoreCoreMの終了待機がタイムアウトしました。");
+                            Debug.WriteLine("CocoreGhostの終了待機がタイムアウトしました。");
                             break;
                         }
 
                         await Task.Delay(100);
                     }
 
-                    Debug.WriteLine("CocoreCoreMの動作停止を確認しました。");
+                    Debug.WriteLine("CocoreGhostの動作停止を確認しました。");
                 }
 
                 // オーバーレイを非表示
