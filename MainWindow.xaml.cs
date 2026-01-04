@@ -1061,7 +1061,7 @@ namespace CocoroConsole
                 const int activeTimeoutMs = 60000;
 
                 // 話者識別サービス初期化（常に有効）
-                var dbPath = System.IO.Path.Combine(AppSettings.Instance.UserDataDirectory, "speaker_recognition.db");
+                var dbPath = System.IO.Path.Combine(AppSettings.Instance.UserDataDirectory, "SpeakerRecognition.db");
                 var speakerService = new SpeakerRecognitionService(
                     dbPath,
                     threshold: AppSettings.Instance.MicrophoneSettings.speakerRecognitionThreshold

@@ -119,7 +119,7 @@ namespace CocoroConsole.Controls
                 MicThresholdSlider.Value = appSettings.MicrophoneSettings.inputThreshold;
 
                 // 話者識別設定
-                var dbPath = System.IO.Path.Combine(appSettings.UserDataDirectory, "speaker_recognition.db");
+                var dbPath = System.IO.Path.Combine(appSettings.UserDataDirectory, "SpeakerRecognition.db");
                 var speakerService = new SpeakerRecognitionService(dbPath, appSettings.MicrophoneSettings.speakerRecognitionThreshold);
                 SpeakerManagementControl.Initialize(speakerService, appSettings.MicrophoneSettings.speakerRecognitionThreshold);
 
