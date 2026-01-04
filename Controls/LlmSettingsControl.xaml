@@ -426,6 +426,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="VisionApiKeyPasswordBox"
                                          Grid.Column="0"
@@ -448,6 +449,12 @@
                                         Padding="10,0,10,0"
                                         Click="VisionApiKeyPasteOverrideButton_Click"
                                         ToolTip="クリップボードのテキストで上書き"/>
+                                <Button Grid.Column="3"
+                                        Content="LLMモデルのAPIキーを貼付け"
+                                        Margin="10,0,0,0"
+                                        Padding="10,0,10,0"
+                                        Click="VisionApiKeyPasteFromLlmApiKeyButton_Click"
+                                        ToolTip="LLM設定のAPIキーで上書き"/>
                             </Grid>
                         </Grid>
 

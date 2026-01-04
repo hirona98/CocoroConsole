@@ -58,6 +58,11 @@ namespace CocoroConsole.Controls
             }
         }
 
+        public string GetCurrentLlmApiKey()
+        {
+            return LlmApiKeyPasswordBox.Text?.Trim() ?? string.Empty;
+        }
+
         private void SaveCurrentUIToPreset()
         {
             if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count) return;
@@ -324,6 +329,11 @@ namespace CocoroConsole.Controls
         private void VisionApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
         {
             ClipboardPasteOverride.PasteOverwrite(VisionApiKeyPasswordBox);
+        }
+
+        private void VisionApiKeyPasteFromLlmApiKeyButton_Click(object sender, RoutedEventArgs e)
+        {
+            VisionApiKeyPasswordBox.Text = GetCurrentLlmApiKey();
         }
 
         private void VisionApiKeyCopyButton_Click(object sender, RoutedEventArgs e)

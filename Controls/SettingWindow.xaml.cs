@@ -45,6 +45,7 @@ namespace CocoroConsole.Controls
 
             // LLM使用設定（全体設定）を初期表示に反映
             LlmSettingsControl.IsUseLlm = AppSettings.Instance.IsUseLLM;
+            EmbeddingSettingsControl.LlmApiKeyProvider = () => LlmSettingsControl.GetCurrentLlmApiKey();
 
             // cocoro_ghost APIクライアントを初期化
             InitializeApiClient();

@@ -218,6 +218,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="EmbeddingApiKeyPasswordBox"
                                          Grid.Column="0"
@@ -241,6 +242,12 @@
                                         Padding="10,0,10,0"
                                         Click="EmbeddingApiKeyPasteOverrideButton_Click"
                                         ToolTip="クリップボードのテキストで上書き"/>
+                                <Button Grid.Column="3"
+                                        Content="LLMモデルのAPIキーを貼付け"
+                                        Margin="10,0,0,0"
+                                        Padding="10,0,10,0"
+                                        Click="EmbeddingApiKeyPasteFromLlmApiKeyButton_Click"
+                                        ToolTip="会話タブのLLM APIキーで上書き"/>
                             </Grid>
                         </Grid>
 

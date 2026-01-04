@@ -20,6 +20,8 @@ namespace CocoroConsole.Controls
 
         public event EventHandler? SettingsChanged;
 
+        public Func<string?>? LlmApiKeyProvider { get; set; }
+
         public EmbeddingSettingsControl()
         {
             InitializeComponent();
@@ -271,6 +273,12 @@ namespace CocoroConsole.Controls
         private void EmbeddingApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
         {
             ClipboardPasteOverride.PasteOverwrite(EmbeddingApiKeyPasswordBox);
+        }
+
+        private void EmbeddingApiKeyPasteFromLlmApiKeyButton_Click(object sender, RoutedEventArgs e)
+        {
+            string llmApiKey = (LlmApiKeyProvider?.Invoke() ?? string.Empty).Trim();
+            EmbeddingApiKeyPasswordBox.Text = llmApiKey;
         }
 
         private void EmbeddingApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
