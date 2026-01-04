@@ -14,6 +14,27 @@ using System.Linq;
 namespace CocoroAI.Services
 {
     /// <summary>
+    /// スクリーンショット取得がスキップされた理由
+    /// </summary>
+    public enum ScreenshotSkipReason
+    {
+        /// <summary>
+        /// スキップしていない（取得成功、または未実行）
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// ユーザーがアイドル状態のためスキップ
+        /// </summary>
+        Idle = 1,
+
+        /// <summary>
+        /// 除外パターンにマッチしたためスキップ
+        /// </summary>
+        ExcludedWindowTitle = 2
+    }
+
+    /// <summary>
     /// スクリーンショット取得サービス
     /// </summary>
     public class ScreenshotService : IDisposable
@@ -57,17 +78,23 @@ namespace CocoroAI.Services
         private readonly Func<ScreenshotData, Task>? _onCaptured;
         private readonly Func<string, Task>? _onSkipped;
         private bool _isDisposed;
-        private int _idleTimeoutMinutes = 5; // デフォルト5分
+        private int _idleTimeoutMinutes = 10; // DefaultSetting.json と合わせて 10 分
         private List<Regex>? _compiledExcludePatterns;
 
 
         public bool IsRunning { get; private set; }
         public bool CaptureActiveWindowOnly { get; set; }
         public int IntervalMinutes => _intervalMilliseconds / 60000;
+
+        /// <summary>
+        /// 直近のキャプチャでスキップした理由（スキップしていない場合は None）
+        /// </summary>
+        public ScreenshotSkipReason LastSkipReason { get; private set; } = ScreenshotSkipReason.None;
+
         public int IdleTimeoutMinutes
         {
             get => _idleTimeoutMinutes;
-            set => _idleTimeoutMinutes = value > 0 ? value : 5;
+            set => _idleTimeoutMinutes = value >= 0 ? value : 10;
         }
 
         public ScreenshotService(int intervalMinutes = 10, Func<ScreenshotData, Task>? onCaptured = null, Func<string, Task>? onSkipped = null)
@@ -184,6 +211,16 @@ namespace CocoroAI.Services
         {
             return await Task.Run<ScreenshotData?>(() =>
             {
+                // 直近の結果を初期化
+                LastSkipReason = ScreenshotSkipReason.None;
+
+                // アイドルチェック（0 は無効）
+                if (IsUserIdle())
+                {
+                    LastSkipReason = ScreenshotSkipReason.Idle;
+                    return null;
+                }
+
                 var hwnd = GetForegroundWindow();
                 if (hwnd == IntPtr.Zero)
                 {
@@ -201,6 +238,7 @@ namespace CocoroAI.Services
                 if (matched != null)
                 {
                     // フィルタ一致は例外ではなく通常フローとして扱う（呼び出し側でスキップ処理）
+                    LastSkipReason = ScreenshotSkipReason.ExcludedWindowTitle;
                     return null;
                 }
 
@@ -289,7 +327,14 @@ namespace CocoroAI.Services
                 // アイドル時間をチェック
                 if (IsUserIdle())
                 {
+                    LastSkipReason = ScreenshotSkipReason.Idle;
                     Debug.WriteLine($"ユーザーがアイドル状態（{_idleTimeoutMinutes}分以上操作なし）のため、スクリーンショットをスキップします");
+
+                    // アイドルスキップも「スキップ」として通知したい場合があるため、コールバックを呼ぶ
+                    if (_onSkipped != null)
+                    {
+                        await _onSkipped($"ユーザーがアイドル状態（{_idleTimeoutMinutes}分以上操作なし）のため、スクリーンショットをスキップしました");
+                    }
                     return;
                 }
 
@@ -336,6 +381,12 @@ namespace CocoroAI.Services
         {
             try
             {
+                // 0 は無効（常にアイドルではない）
+                if (_idleTimeoutMinutes <= 0)
+                {
+                    return false;
+                }
+
                 var lastInputInfo = new LASTINPUTINFO();
                 lastInputInfo.cbSize = (uint)Marshal.SizeOf(lastInputInfo);
 
@@ -364,7 +415,6 @@ namespace CocoroAI.Services
             if (_isDisposed) return;
 
             Stop();
-
 
             _isDisposed = true;
         }

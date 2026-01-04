@@ -259,6 +259,9 @@ namespace CocoroConsole.Controls
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
             dict["WindowTitleExcludePatterns"] = SystemSettingsControl.GetWindowTitleExcludePatterns();
 
+            // デスクトップウォッチ（アイドルタイムアウト / ローカル設定）
+            dict["DesktopWatchIdleTimeoutMinutes"] = SystemSettingsControl.GetDesktopWatchIdleTimeoutMinutes();
+
             return dict;
         }
 
@@ -720,6 +723,9 @@ namespace CocoroConsole.Controls
 
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
             appSettings.ScreenshotSettings.excludePatterns = (List<string>)snapshot["WindowTitleExcludePatterns"];
+
+            // デスクトップウォッチ（アイドルタイムアウト / ローカル設定）
+            appSettings.ScreenshotSettings.idleTimeoutMinutes = (int)snapshot["DesktopWatchIdleTimeoutMinutes"];
         }
 
         /// <summary>

@@ -1135,7 +1135,7 @@ namespace CocoroConsole.Services
                 if (string.Equals(source, "desktop", StringComparison.Ordinal))
                 {
                     _statusPollingService.SetProcessingStatus(CocoroGhostStatus.ProcessingImage);
-                    var (dataUri, windowTitle) = await CaptureDesktopStillAsync(cts.Token);
+                    var (dataUri, windowTitle, captureError) = await CaptureDesktopStillAsync(cts.Token);
 
                     if (clientContext != null && !string.IsNullOrWhiteSpace(windowTitle))
                     {
@@ -1148,8 +1148,8 @@ namespace CocoroConsole.Services
                     }
                     else
                     {
-                        // 除外パターン等でキャプチャがスキップされた場合は画像なしで応答する
-                        response.Error = "capture skipped (excluded window title)";
+                        // スキップ時は理由を返す（画像なしで応答する）
+                        response.Error = captureError ?? "capture skipped";
                     }
                 }
                 else
@@ -1176,18 +1176,29 @@ namespace CocoroConsole.Services
             }
         }
 
-        private async Task<(string? DataUri, string? WindowTitle)> CaptureDesktopStillAsync(CancellationToken cancellationToken)
+        private async Task<(string? DataUri, string? WindowTitle, string? Error)> CaptureDesktopStillAsync(CancellationToken cancellationToken)
         {
             using var service = new ScreenshotService(intervalMinutes: 1);
+
+            // デスクトップウォッチのアイドルタイムアウト（分）を反映（0 は無効）
+            service.IdleTimeoutMinutes = _appSettings.ScreenshotSettings.idleTimeoutMinutes;
+
+            // スクショ除外（ウィンドウタイトル正規表現）を反映
             service.SetExcludePatterns(_appSettings.ScreenshotSettings.excludePatterns);
             var screenshot = await service.CaptureActiveWindowAsync().WaitAsync(cancellationToken);
             if (screenshot == null)
             {
-                return (null, null);
+                // スキップ理由に応じてエラー文字列を返す（呼び出し元で response.Error に入れる）
+                return service.LastSkipReason switch
+                {
+                    ScreenshotSkipReason.Idle => (null, null, "capture skipped (idle)"),
+                    ScreenshotSkipReason.ExcludedWindowTitle => (null, null, "capture skipped (excluded window title)"),
+                    _ => (null, null, "capture skipped")
+                };
             }
 
             var dataUri = $"data:image/png;base64,{screenshot.ImageBase64}";
-            return (dataUri, screenshot.WindowTitle);
+            return (dataUri, screenshot.WindowTitle, null);
         }
 
         private VisionClientContext GetClientContextSnapshot()

@@ -181,6 +181,32 @@
                                        HorizontalAlignment="Left"/>
                         </Grid>
 
+                        <!-- アイドルタイムアウト（分） -->
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="アイドル:"
+                                       VerticalAlignment="Center"
+                                       Height="19"/>
+                            <TextBox Grid.Column="1"
+                                     x:Name="DesktopWatchIdleTimeoutMinutesTextBox"
+                                     Foreground="#FF0078D7"
+                                     Padding="2"
+                                     VerticalAlignment="Center"
+                                     Width="50"
+                                     HorizontalAlignment="Left"
+                                     Margin="10,0,10,0"
+                                     ToolTip="ユーザーがこの分数以上操作していない場合は、キャプチャ要求が来てもスキップします。0で無効。"/>
+                            <TextBlock Grid.Column="2"
+                                       Text="分（0で無効）"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Left"/>
+                        </Grid>
+
                         <!-- 区切り線 -->
                         <Rectangle Fill="#E0E0E0"
                                    Height="1"

@@ -115,6 +115,14 @@ namespace CocoroConsole.Controls
                     appSettings.ScreenshotSettings.excludePatterns ?? new List<string>()
                 );
 
+                // デスクトップウォッチ（アイドルタイムアウト / ローカル設定）
+                var idleTimeoutMinutes = appSettings.ScreenshotSettings.idleTimeoutMinutes;
+                if (idleTimeoutMinutes < 0)
+                {
+                    idleTimeoutMinutes = 10;
+                }
+                DesktopWatchIdleTimeoutMinutesTextBox.Text = idleTimeoutMinutes.ToString(CultureInfo.InvariantCulture);
+
                 // マイク設定
                 MicThresholdSlider.Value = appSettings.MicrophoneSettings.inputThreshold;
 
@@ -155,6 +163,9 @@ namespace CocoroConsole.Controls
             DesktopWatchEnabledCheckBox.Checked += OnSettingsChanged;
             DesktopWatchEnabledCheckBox.Unchecked += OnSettingsChanged;
             DesktopWatchIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
+
+            // デスクトップウォッチ（アイドルタイムアウト / ローカル設定）
+            DesktopWatchIdleTimeoutMinutesTextBox.TextChanged += OnSettingsChanged;
 
             // マイク設定
             MicThresholdSlider.ValueChanged += OnSettingsChanged;
@@ -214,6 +225,25 @@ namespace CocoroConsole.Controls
             }
 
             return 300;
+        }
+
+        /// <summary>
+        /// デスクトップウォッチのアイドルタイムアウト（分）を取得。
+        /// 0 は無効。入力が不正な場合は既定値 10 分を返す。
+        /// </summary>
+        public int GetDesktopWatchIdleTimeoutMinutes()
+        {
+            if (!int.TryParse(DesktopWatchIdleTimeoutMinutesTextBox.Text, out var minutes))
+            {
+                return 10;
+            }
+
+            if (minutes < 0)
+            {
+                return 10;
+            }
+
+            return minutes;
         }
 
         /// <summary>

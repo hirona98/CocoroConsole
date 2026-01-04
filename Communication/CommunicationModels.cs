@@ -192,10 +192,19 @@ namespace CocoroConsole.Communication
     /// </summary>
     public class ScreenshotSettings
     {
-        public bool enabled { get; set; }
-        public int intervalMinutes { get; set; }
-        public bool captureActiveWindowOnly { get; set; }
-        public int idleTimeoutMinutes { get; set; }
+        // スクリーンショット機能の有効/無効
+        public bool enabled { get; set; } = false;
+
+        // 取得間隔（分）
+        public int intervalMinutes { get; set; } = 10;
+
+        // アクティブウィンドウのみキャプチャするか
+        public bool captureActiveWindowOnly { get; set; } = true;
+
+        // アイドルタイムアウト（分）。0 は無効。
+        public int idleTimeoutMinutes { get; set; } = 10;
+
+        // スクショ除外（ウィンドウタイトル正規表現）
         public List<string> excludePatterns { get; set; } = new List<string>();
     }
 
