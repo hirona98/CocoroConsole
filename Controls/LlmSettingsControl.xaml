@@ -181,7 +181,7 @@
 
                         <TextBlock Margin="0,8,0,0"
                                    Foreground="#666666"
-                                   Text="システムプロンプトは「人格」タブで設定します。"
+                                   Text="システムプロンプトは「ペルソナ」タブで設定します。"
                                    TextWrapping="Wrap"/>
                     </StackPanel>
                 </GroupBox>

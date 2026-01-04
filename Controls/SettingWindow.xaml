@@ -134,7 +134,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="人格"
+            <TabItem Header="ペルソナ"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="Prompt preset setting">
                 <Grid Margin="20,20,0,20">
