@@ -251,7 +251,11 @@ namespace CocoroConsole.Communication
             {
                 try
                 {
-                    await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "停止", CancellationToken.None);
+                    // --- Close ハンドシェイクが無期限に詰まるケース対策 ---
+                    // サーバーが落ちた直後などで CloseAsync が戻らないと、終了処理で UI スレッドが固まる。
+                    await _webSocket
+                        .CloseAsync(WebSocketCloseStatus.NormalClosure, "停止", CancellationToken.None)
+                        .WaitAsync(TimeSpan.FromSeconds(1));
                 }
                 catch
                 {

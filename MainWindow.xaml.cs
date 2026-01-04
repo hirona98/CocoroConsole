@@ -35,6 +35,11 @@ namespace CocoroConsole
         private bool _skipNextAssistantMessage;
         private string? _skipNextAssistantMessageContent;
 
+        // --- 明示的な終了処理が進行中か（0/1） ---
+        // WPF の Shutdown 中に Closing をキャンセルすると、Dispatcher が Shutdown 開始状態のまま残って
+        // UI が固まることがあるため、明示的終了時はキャンセルしない判定に使う。
+        private int _isShutdownInProgress;
+
 
         public MainWindow()
         {
@@ -743,8 +748,6 @@ namespace CocoroConsole
                     _communicationService.Dispose();
                     _communicationService = null;
                 }
-                // 関連アプリを終了
-                TerminateExternalApplications();
             }
             catch (Exception)
             {
@@ -752,34 +755,6 @@ namespace CocoroConsole
             }
 
             base.OnClosed(e);
-
-            // Application.Current.ShutdownだけでOK
-            // OnExitが自動的に実行される
-            Application.Current.Shutdown();
-        }
-
-        /// <summary>
-        /// 外部アプリケーション（CocoroCore, CocoroShell）を終了する
-        /// </summary>
-        private void TerminateExternalApplications()
-        {
-            try
-            {
-                // 2つのプロセスを並行して終了させる
-                var tasks = new[]
-                {
-                    Task.Run(() => LaunchCocoroGhost(ProcessOperation.Terminate)),
-                    Task.Run(() => LaunchCocoroShell(ProcessOperation.Terminate))
-                };
-
-                // すべてのプロセスが終了するまで待機
-                Task.WaitAll(tasks);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"外部アプリケーション終了エラー: {ex.Message}");
-                // アプリケーションの終了処理なのでエラーメッセージは表示しない
-            }
         }
 
         /// <summary>
@@ -1215,29 +1190,36 @@ namespace CocoroConsole
         /// </summary>
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            // 本当に終了するか確認（ALT+F4やタイトルバーのXボタン押下時）
-            if (System.Windows.Application.Current.ShutdownMode != ShutdownMode.OnExplicitShutdown)
+            // --- 「ユーザーの閉じる」と「アプリ終了」を区別する ---
+            // WPF の Shutdown 中（Dispatcher 側で Shutdown が開始済み）や、明示的な終了要求中は Close を通す。
+            // それ以外（ALT+F4 / タイトルバーX）はトレイ常駐として Hide にする。
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            var isAppShuttingDown =
+                Interlocked.CompareExchange(ref _isShutdownInProgress, 0, 0) == 1 ||
+                (dispatcher?.HasShutdownStarted ?? false) ||
+                (dispatcher?.HasShutdownFinished ?? false);
+
+            if (!isAppShuttingDown)
             {
-                // 終了ではなく最小化して非表示にする
+                // --- 終了ではなく最小化して非表示にする ---
                 e.Cancel = true;
                 WindowState = WindowState.Minimized;
-                this.Hide();
+                Hide();
+                return;
             }
-            else
+
+            // --- アプリケーション終了時のクリーンアップ ---
+            if (_voiceRecognitionService != null)
             {
-                // アプリケーション終了時のクリーンアップ
-                if (_voiceRecognitionService != null)
-                {
-                    _voiceRecognitionService.Dispose();
-                }
-
-                if (_scheduledCommandService != null)
-                {
-                    _scheduledCommandService.Dispose();
-                }
-
-                base.OnClosing(e);
+                _voiceRecognitionService.Dispose();
             }
+
+            if (_scheduledCommandService != null)
+            {
+                _scheduledCommandService.Dispose();
+            }
+
+            base.OnClosing(e);
         }
 
         /// <summary>
@@ -1309,6 +1291,14 @@ namespace CocoroConsole
         {
             try
             {
+                // --- 二重実行防止 ---
+                // Shell 側からの shutdown とトレイメニュー「終了」が競合しても 1 回だけ実行する。
+                if (Interlocked.Exchange(ref _isShutdownInProgress, 1) == 1)
+                {
+                    Debug.WriteLine("[MainWindow] シャットダウンは既に進行中です。");
+                    return;
+                }
+
                 // ウィンドウを最前面に表示
                 this.Show();
                 if (WindowState == WindowState.Minimized)
@@ -1317,6 +1307,19 @@ namespace CocoroConsole
                 }
                 this.Topmost = true;
                 this.Activate();
+
+                // --- 補助ウィンドウは先に閉じる（Shutdown をキャンセルさせないため） ---
+                // LogViewer/Setting が残っている状態で MainWindow の Closing をキャンセルすると、
+                // 「メインだけ消えて他が固まる」状態になりやすい。
+                try
+                {
+                    _settingWindow?.Close();
+                    _logViewerWindow?.Close();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[MainWindow] 補助ウィンドウのクローズ中にエラー: {ex.Message}");
+                }
 
                 bool isLLMEnabled = _appSettings.IsUseLLM;
 

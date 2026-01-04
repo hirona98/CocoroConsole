@@ -333,33 +333,31 @@ namespace CocoroConsole
         {
             try
             {
-                // UIスレッドで実行
-                await Dispatcher.InvokeAsync(async () =>
+                // --- UIスレッドで MainWindow を取得 ---
+                // Dispatcher.InvokeAsync(async ...) の戻り値（Task）を await し忘れると、
+                // 「Shutdown が途中で返ってしまい、ウィンドウが残る」状態になりやすい。
+                var mainWindow = await Dispatcher.InvokeAsync(() =>
                 {
-                    // メインウィンドウを取得
-                    MainWindow? mainWindow = null;
-
                     foreach (Window window in Application.Current.Windows)
                     {
                         if (window is MainWindow mw)
                         {
-                            mainWindow = mw;
-                            break;
+                            return mw;
                         }
                     }
-
-                    if (mainWindow != null)
-                    {
-                        // MainWindowのグレースフルシャットダウンメソッドを呼び出し
-                        await mainWindow.PerformGracefulShutdownAsync();
-                    }
-                    else
-                    {
-                        // メインウィンドウが見つからない場合は通常のシャットダウン
-                        Debug.WriteLine("MainWindowが見つかりません。通常のシャットダウンを実行します。");
-                        Shutdown();
-                    }
+                    return null;
                 });
+
+                if (mainWindow != null)
+                {
+                    // --- UIスレッドで MainWindow の終了処理を実行し、最後まで await する ---
+                    await (await Dispatcher.InvokeAsync(() => mainWindow.PerformGracefulShutdownAsync()));
+                    return;
+                }
+
+                // --- メインウィンドウが見つからない場合は通常のシャットダウン ---
+                Debug.WriteLine("MainWindowが見つかりません。通常のシャットダウンを実行します。");
+                await Dispatcher.InvokeAsync(() => Shutdown());
             }
             catch (Exception ex)
             {
