@@ -922,6 +922,7 @@ namespace CocoroConsole
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
         private void LaunchCocoroShell(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
+#if !DEBUG
             if (_appSettings.CharacterList.Count > 0 &&
                _appSettings.CurrentCharacterIndex < _appSettings.CharacterList.Count)
             {
@@ -935,6 +936,7 @@ namespace CocoroConsole
 
             // VRM未指定時は停止させる
             ProcessHelper.LaunchExternalApplication("CocoroShell.exe", "CocoroShell", ProcessOperation.Terminate, true);
+#endif
         }
 
         /// <summary>
@@ -945,8 +947,10 @@ namespace CocoroConsole
         {
             if (operation != ProcessOperation.Terminate)
             {
+#if !DEBUG
                 // プロセス起動
                 ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", operation, false);
+#endif
                 // 非同期でAPI通信による起動完了を監視（無限ループ）
                 _ = Task.Run(async () =>
                 {
@@ -967,8 +971,10 @@ namespace CocoroConsole
         {
             if (operation != ProcessOperation.Terminate)
             {
+#if !DEBUG
                 // プロセス起動（非同期）
                 await ProcessHelper.LaunchExternalApplicationAsync("CocoroGhost.exe", "CocoroGhost", operation, false);
+#endif
                 // 非同期でAPI通信による起動完了を監視（無限ループ）
                 _ = Task.Run(async () =>
                 {
