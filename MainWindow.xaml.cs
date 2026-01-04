@@ -970,30 +970,21 @@ namespace CocoroConsole
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
         private void LaunchCocoroGhost(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
-            if (_appSettings.IsUseLLM)
+            if (operation != ProcessOperation.Terminate)
             {
-                // 起動監視を開始
-                if (operation != ProcessOperation.Terminate)
-                {
 #if !DEBUG
                     // プロセス起動
                     ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", operation, false);
 #endif
-                    // 非同期でAPI通信による起動完了を監視（無限ループ）
-                    _ = Task.Run(async () =>
-                    {
-                        await WaitForCocoroGhostStartupAsync();
-                    });
-                }
-                else
+                // 非同期でAPI通信による起動完了を監視（無限ループ）
+                _ = Task.Run(async () =>
                 {
-                    ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", operation, false);
-                }
+                    await WaitForCocoroGhostStartupAsync();
+                });
             }
             else
             {
-                // LLMを使用しない場合はCocoroGhostを終了
-                ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", ProcessOperation.Terminate, false);
+                ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", operation, false);
             }
         }
 
@@ -1003,30 +994,21 @@ namespace CocoroConsole
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
         internal async Task LaunchCocoroGhostAsync(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
-            if (_appSettings.IsUseLLM)
+            if (operation != ProcessOperation.Terminate)
             {
-                // 起動監視を開始
-                if (operation != ProcessOperation.Terminate)
-                {
 #if !DEBUG
                     // プロセス起動（非同期）
                     await ProcessHelper.LaunchExternalApplicationAsync("CocoroGhost.exe", "CocoroGhost", operation, false);
 #endif
-                    // 非同期でAPI通信による起動完了を監視（無限ループ）
-                    _ = Task.Run(async () =>
-                    {
-                        await WaitForCocoroGhostStartupAsync();
-                    });
-                }
-                else
+                // 非同期でAPI通信による起動完了を監視（無限ループ）
+                _ = Task.Run(async () =>
                 {
-                    await ProcessHelper.LaunchExternalApplicationAsync("CocoroGhost.exe", "CocoroGhost", operation, false);
-                }
+                    await WaitForCocoroGhostStartupAsync();
+                });
             }
             else
             {
-                // LLMを使用しない場合はCocoroGhostを終了
-                await ProcessHelper.LaunchExternalApplicationAsync("CocoroGhost.exe", "CocoroGhost", ProcessOperation.Terminate, false);
+                await ProcessHelper.LaunchExternalApplicationAsync("CocoroGhost.exe", "CocoroGhost", operation, false);
             }
         }
 
