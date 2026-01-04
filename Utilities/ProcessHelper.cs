@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,11 +38,16 @@ namespace CocoroConsole.Utilities
         /// <returns>プロセスが存在する場合はtrue、存在しない場合はfalse</returns>
         public static bool ExitProcess(string processName, ProcessOperation operation)
         {
-            // まずはREST APIによる通常終了を試みる
-            // Task.Run を使用してデッドロックを回避
+            // --- CheckOnly は存在確認のみ（終了要求は送らない） ---
+            if (operation == ProcessOperation.CheckOnly)
+            {
+                return Process.GetProcessesByName(processName).Length > 0;
+            }
+
+            // --- まずは REST API による協調的終了を試みる（デッドロック回避のため Task.Run） ---
             bool gracefullyTerminated = Task.Run(async () => await TryGracefulTerminationAsync(processName)).GetAwaiter().GetResult();
 
-            // 終了要求を送信した場合は、プロセスの完全終了を待機
+            // --- 協調的終了を送れた場合は、プロセスの完全終了を待機 ---
             if (gracefullyTerminated)
             {
                 Debug.WriteLine($"{processName} に終了要求を送信しました。終了を待機中...");
@@ -56,6 +62,18 @@ namespace CocoroConsole.Utilities
                 }
                 return terminated;
             }
+
+            // --- 強制終了（Terminate / RestartIfRunning）は OS の Kill を実行 ---
+            if (operation == ProcessOperation.Terminate || operation == ProcessOperation.RestartIfRunning)
+            {
+                bool forced = TryForceTermination(processName);
+                if (forced)
+                {
+                    Debug.WriteLine($"{processName} を強制終了しました。終了を待機中...");
+                    return WaitForProcessTermination(processName);
+                }
+            }
+
             return false;
         }
 
@@ -67,10 +85,16 @@ namespace CocoroConsole.Utilities
         /// <returns>プロセスが存在する場合はtrue、存在しない場合はfalse</returns>
         public static async Task<bool> ExitProcessAsync(string processName, ProcessOperation operation)
         {
-            // まずはREST APIによる通常終了を試みる
+            // --- CheckOnly は存在確認のみ（終了要求は送らない） ---
+            if (operation == ProcessOperation.CheckOnly)
+            {
+                return Process.GetProcessesByName(processName).Length > 0;
+            }
+
+            // --- まずは REST API による協調的終了を試みる ---
             bool gracefullyTerminated = await TryGracefulTerminationAsync(processName);
 
-            // 終了要求を送信した場合は、プロセスの完全終了を待機
+            // --- 協調的終了を送れた場合は、プロセスの完全終了を待機 ---
             if (gracefullyTerminated)
             {
                 Debug.WriteLine($"{processName} に終了要求を送信しました。終了を待機中...");
@@ -85,6 +109,18 @@ namespace CocoroConsole.Utilities
                 }
                 return terminated;
             }
+
+            // --- 強制終了（Terminate / RestartIfRunning）は OS の Kill を実行 ---
+            if (operation == ProcessOperation.Terminate || operation == ProcessOperation.RestartIfRunning)
+            {
+                bool forced = await TryForceTerminationAsync(processName);
+                if (forced)
+                {
+                    Debug.WriteLine($"{processName} を強制終了しました。終了を待機中...");
+                    return await WaitForProcessTerminationAsync(processName);
+                }
+            }
+
             return false;
         }
 
@@ -302,7 +338,28 @@ namespace CocoroConsole.Utilities
                     return false;
                 }
 
-                // shutdownコマンドをJSONで作成（API仕様書準拠）
+                // --- CocoroGhost は Release ビルドのみ REST API で止める（デバッグ時は送信しない） ---
+                string? bearerToken = null;
+
+#if !DEBUG
+                if (processName.Equals("CocoroGhost", StringComparison.OrdinalIgnoreCase))
+                {
+                    bearerToken = (settings.CocoroGhostBearerToken ?? string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(bearerToken))
+                    {
+                        Debug.WriteLine("cocoro_ghost の Bearer トークンが未設定のため、REST API 経由の終了はできません。");
+                        return false;
+                    }
+                }
+#else
+                if (processName.Equals("CocoroGhost", StringComparison.OrdinalIgnoreCase))
+                {
+                    Debug.WriteLine("Debugビルドのため、cocoro_ghost へ /api/control を送信しません。");
+                    return false;
+                }
+#endif
+
+                // --- shutdown コマンドを JSON で作成（CocoroGhost: docs/api.md の /api/control） ---
                 var shutdownRequest = new
                 {
                     action = "shutdown",
@@ -311,9 +368,17 @@ namespace CocoroConsole.Utilities
                 var json = System.Text.Json.JsonSerializer.Serialize(shutdownRequest);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // /api/control エンドポイントにPOSTリクエストを送信
-                // ConfigureAwait(false)を使用してデッドロックを回避
-                var response = await httpClient.PostAsync($"http://127.0.0.1:{port}/api/control", content).ConfigureAwait(false);
+                // --- /api/control エンドポイントに POST で送信（必要なら Authorization を付与） ---
+                // ConfigureAwait(false) を使用してデッドロックを回避
+                using var requestMessage = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{port}/api/control")
+                {
+                    Content = content
+                };
+                if (!string.IsNullOrWhiteSpace(bearerToken))
+                {
+                    requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+                }
+                var response = await httpClient.SendAsync(requestMessage).ConfigureAwait(false);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -341,6 +406,88 @@ namespace CocoroConsole.Utilities
                 Debug.WriteLine($"REST API経由の協調的終了中にエラーが発生しました: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// OS の Kill によりプロセスを強制終了します
+        /// </summary>
+        /// <param name="processName">プロセス名（拡張子なし）</param>
+        /// <returns>Kill を実行した場合は true</returns>
+        private static bool TryForceTermination(string processName)
+        {
+            try
+            {
+                // --- 対象が実行中でなければ何もしない ---
+                var processesByName = Process.GetProcessesByName(processName);
+                if (processesByName.Length == 0)
+                {
+                    return false;
+                }
+
+                try
+                {
+                    // --- 設定からポートが分かる場合は PID を優先して Kill（別名プロセス誤爆の防止） ---
+                    var settings = AppSettings.Instance;
+                    int? port = processName.ToLower() switch
+                    {
+                        "cocoroghost" => settings.CocoroGhostPort,
+                        "cocoroshell" => settings.CocoroShellPort,
+                        _ => null
+                    };
+
+                    int? processId = null;
+                    if (port.HasValue)
+                    {
+                        processId = GetProcessIdByPort(port.Value);
+                    }
+
+                    if (processId.HasValue)
+                    {
+                        using var p = Process.GetProcessById(processId.Value);
+                        p.Kill(entireProcessTree: true);
+                        return true;
+                    }
+
+                    // --- PID が取れない場合は、名前一致の全プロセスを Kill ---
+                    foreach (var p in processesByName)
+                    {
+                        try
+                        {
+                            p.Kill(entireProcessTree: true);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"強制終了中にエラーが発生しました: {ex.Message}");
+                        }
+                    }
+
+                    return true;
+                }
+                finally
+                {
+                    // --- GetProcessesByName で取得したプロセスを破棄 ---
+                    foreach (var p in processesByName)
+                    {
+                        p.Dispose();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"強制終了中にエラーが発生しました: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// OS の Kill によりプロセスを強制終了します（非同期版）
+        /// </summary>
+        /// <param name="processName">プロセス名（拡張子なし）</param>
+        /// <returns>Kill を実行した場合は true</returns>
+        private static async Task<bool> TryForceTerminationAsync(string processName)
+        {
+            // --- Kill は同期 API のため、UI を止めないよう Task.Run に逃がす ---
+            return await Task.Run(() => TryForceTermination(processName)).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -372,6 +519,9 @@ namespace CocoroConsole.Utilities
                 if (operation == ProcessOperation.RestartIfRunning)
                 {
                     Debug.WriteLine($"[ProcessHelper] {processName} の再起動を開始します...");
+
+                    // --- 先に実行中かどうかを確認し、失敗時のログを正しくする ---
+                    bool wasRunning = Process.GetProcessesByName(processName).Length > 0;
                     bool wasTerminated = ExitProcess(processName, operation);
                     if (wasTerminated)
                     {
@@ -379,6 +529,11 @@ namespace CocoroConsole.Utilities
                     }
                     else
                     {
+                        if (wasRunning)
+                        {
+                            UIHelper.ShowError("再起動エラー", $"{processName} の終了に失敗したため再起動できませんでした。");
+                            return;
+                        }
                         Debug.WriteLine($"[ProcessHelper] {processName} は実行されていませんでした。新しいプロセスを起動します。");
                     }
                 }
@@ -458,6 +613,9 @@ namespace CocoroConsole.Utilities
                 if (operation == ProcessOperation.RestartIfRunning)
                 {
                     Debug.WriteLine($"[ProcessHelper] {processName} の再起動を開始します...");
+
+                    // --- 先に実行中かどうかを確認し、失敗時のログを正しくする ---
+                    bool wasRunning = Process.GetProcessesByName(processName).Length > 0;
                     bool wasTerminated = await ExitProcessAsync(processName, operation);
                     if (wasTerminated)
                     {
@@ -465,6 +623,11 @@ namespace CocoroConsole.Utilities
                     }
                     else
                     {
+                        if (wasRunning)
+                        {
+                            UIHelper.ShowError("再起動エラー", $"{processName} の終了に失敗したため再起動できませんでした。");
+                            return;
+                        }
                         Debug.WriteLine($"[ProcessHelper] {processName} は実行されていませんでした。新しいプロセスを起動します。");
                     }
                 }
