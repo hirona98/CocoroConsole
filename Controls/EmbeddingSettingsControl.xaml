@@ -186,9 +186,8 @@
                     <StackPanel>
                         <!-- 警告テキスト -->
                         <TextBlock Foreground="Red"
-                                   Margin="0,0,0,10">
-                            ※一度設定したら変更しないでください（APIキーを除く）
-                        </TextBlock>
+                                   Margin="0,0,0,10"
+                                Text="※赤字項目は一度設定したら変更しないでください"/>
 
                         <!-- プリセット名(memory_id) -->
                         <Grid Margin="0,5">
@@ -258,7 +257,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Embeddingモデル:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
+                                       Style="{StaticResource SettingLabelStyle}"
+                                    Foreground="Red"/>
                             <TextBox x:Name="EmbeddingModelTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
@@ -339,7 +339,8 @@
                                 <ColumnDefinition Width="100"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Embedding次元数:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
+                                       Style="{StaticResource SettingLabelStyle}"
+                                    Foreground="Red"/>
                             <TextBox x:Name="EmbeddingDimensionTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
@@ -358,7 +359,7 @@
                             <TextBox x:Name="SimilarEpisodesLimitTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="記憶検索時に取得する類似エピソードの最大数"
+                                     ToolTip="記憶検索時に取得する類似エピソードの最大数（実際に使用する記憶はさらに絞り込まれます）"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
                     </StackPanel>

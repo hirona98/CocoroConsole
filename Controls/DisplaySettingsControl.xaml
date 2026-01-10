@@ -81,6 +81,35 @@
                           Margin="0,5,0,10"
                           ToolTip="Auto move (unstable)"
                           Foreground="#FF4873CF"/>
+
+                <!-- ウィンドウサイズ設定 -->
+                <GroupBox Header="キャラクターサイズ"
+                          Margin="0,15,0,0"
+                          Padding="10"
+                          ToolTip="Character size">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Slider x:Name="WindowSizeSlider"
+                                Minimum="100"
+                                Maximum="4000"
+                                Value="650"
+                                TickFrequency="100"
+                                TickPlacement="BottomRight"
+                                Margin="0,5"
+                                Grid.Row="0"/>
+
+                        <TextBlock Grid.Row="1"
+                                   Margin="0,5">
+                            <Run Text="サイズ: "/>
+                            <Run Text="{Binding ElementName=WindowSizeSlider, Path=Value, StringFormat='{}{0:0}'}"/>
+                        </TextBlock>
+                    </Grid>
+                </GroupBox>
+
                 <GroupBox Header="画質設定"
                           Margin="0,15,0,0"
                           Padding="10">
@@ -197,34 +226,6 @@
                             </ComboBox>
                         </StackPanel>
                     </StackPanel>
-                </GroupBox>
-
-                <!-- ウィンドウサイズ設定 -->
-                <GroupBox Header="キャラクターサイズ"
-                          Margin="0,15,0,0"
-                          Padding="10"
-                          ToolTip="Character size">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <Slider x:Name="WindowSizeSlider"
-                                Minimum="100"
-                                Maximum="4000"
-                                Value="650"
-                                TickFrequency="100"
-                                TickPlacement="BottomRight"
-                                Margin="0,5"
-                                Grid.Row="0"/>
-
-                        <TextBlock Grid.Row="1"
-                                   Margin="0,5">
-                            <Run Text="サイズ: "/>
-                            <Run Text="{Binding ElementName=WindowSizeSlider, Path=Value, StringFormat='{}{0:0}'}"/>
-                        </TextBlock>
-                    </Grid>
                 </GroupBox>
 
                 <!-- 吹き出し設定 -->

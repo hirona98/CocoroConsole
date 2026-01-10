@@ -143,7 +143,7 @@
                                                                  AcceptsReturn="True"
                                                                  TextWrapping="Wrap"
                                                                  VerticalScrollBarVisibility="Auto"
-                                                                 Height="600"
+                                                                 Height="500"
                                                                  BorderThickness="0"
                                                                  Foreground="#FF0078D7"
                                                                  TextChanged="OnPersonaSettingChanged"/>
