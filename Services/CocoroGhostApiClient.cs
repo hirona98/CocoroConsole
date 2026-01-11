@@ -136,7 +136,7 @@ namespace CocoroConsole.Services
         /// /api/chat を SSE（text/event-stream）で呼び出し、トークン/完了/エラーを逐次返す。
         /// 
         /// - token: 返信の増分（delta）
-        /// - done: 最終返信（reply_text / episode_unit_id）
+        /// - done: 最終返信（reply_text / event_id）
         /// - error: エラー（message/code）
         /// </summary>
         public async IAsyncEnumerable<ChatStreamEvent> StreamChatAsync(ChatStreamRequest requestPayload, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -358,7 +358,7 @@ namespace CocoroConsole.Services
                             {
                                 Type = "done",
                                 ReplyText = payload.ReplyText,
-                                EpisodeId = payload.EpisodeUnitId
+                                EventId = payload.EventId
                             };
                         }
                     case "error":
@@ -457,9 +457,9 @@ namespace CocoroConsole.Services
         public string? ReplyText { get; set; }
 
         /// <summary>
-        /// done イベント時の episode_unit_id。
+        /// done イベント時の event_id（cocoro_ghost の events.event_id）。
         /// </summary>
-        public int? EpisodeId { get; set; }
+        public int? EventId { get; set; }
 
         /// <summary>
         /// error イベント時のメッセージ。
@@ -475,8 +475,8 @@ namespace CocoroConsole.Services
 
     internal class ChatStreamDonePayload
     {
-        [JsonPropertyName("episode_unit_id")]
-        public int? EpisodeUnitId { get; set; }
+        [JsonPropertyName("event_id")]
+        public int? EventId { get; set; }
 
         [JsonPropertyName("reply_text")]
         public string? ReplyText { get; set; }

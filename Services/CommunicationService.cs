@@ -949,11 +949,11 @@ namespace CocoroConsole.Services
 
                 if (string.Equals(ev.Type, "notification", StringComparison.OrdinalIgnoreCase))
                 {
-                    var systemText = BuildNotificationDisplayText(ev.Data.SystemText, ev.Data.Title, ev.Data.Body);
+                    var systemText = BuildNotificationDisplayText(ev.Data.SystemText);
                     if (!string.IsNullOrWhiteSpace(systemText))
                     {
                         var extractedSourceSystem = TryExtractBracketedSourceSystem(systemText);
-                        var from = ev.Data.SourceSystem ?? extractedSourceSystem ?? "notification";
+                        var from = extractedSourceSystem ?? "notification";
                         var displayText = systemText;
                         if (!string.IsNullOrWhiteSpace(extractedSourceSystem))
                         {
@@ -966,7 +966,7 @@ namespace CocoroConsole.Services
                         NotificationMessageReceived?.Invoke(new ChatMessagePayload
                         {
                             from = from,
-                            sessionId = ev.EventId ?? ev.UnitId?.ToString() ?? string.Empty,
+                            sessionId = ev.EventId.ToString(CultureInfo.InvariantCulture),
                             message = displayText
                         }, null);
                     }
@@ -982,19 +982,19 @@ namespace CocoroConsole.Services
 
                 if (string.Equals(ev.Type, "meta-request", StringComparison.OrdinalIgnoreCase))
                 {
-                    // New behavior: result is delivered via events stream as data.message
-                    var resultText = ev.Data.Message ?? ev.Data.ResultText;
-                    if (string.IsNullOrWhiteSpace(resultText))
+                    // /api/v2/meta-request の結果は events stream の data.message で届く
+                    var message = ev.Data.Message;
+                    if (string.IsNullOrWhiteSpace(message))
                     {
                         return;
                     }
-                    HandlePartnerMessageFromEvent(ev, resultText);
+                    HandlePartnerMessageFromEvent(ev, message);
                     return;
                 }
 
                 if (string.Equals(ev.Type, "desktop_watch", StringComparison.OrdinalIgnoreCase))
                 {
-                    var systemText = BuildNotificationDisplayText(ev.Data.SystemText, ev.Data.Title, ev.Data.Body);
+                    var systemText = BuildNotificationDisplayText(ev.Data.SystemText);
                     if (!string.IsNullOrWhiteSpace(systemText))
                     {
                         var extractedSourceSystem = TryExtractBracketedSourceSystem(systemText);
@@ -1012,7 +1012,7 @@ namespace CocoroConsole.Services
                         NotificationMessageReceived?.Invoke(new ChatMessagePayload
                         {
                             from = from,
-                            sessionId = ev.EventId ?? ev.UnitId?.ToString() ?? string.Empty,
+                            sessionId = ev.EventId.ToString(CultureInfo.InvariantCulture),
                             message = displayText
                         }, null);
                     }
@@ -1044,7 +1044,7 @@ namespace CocoroConsole.Services
             }
         }
 
-        private static string BuildNotificationDisplayText(string? systemText, string? title, string? body)
+        private static string BuildNotificationDisplayText(string? systemText)
         {
             var systemTextTrimmed = systemText?.Trim();
             if (!string.IsNullOrEmpty(systemTextTrimmed))
@@ -1052,23 +1052,15 @@ namespace CocoroConsole.Services
                 return systemTextTrimmed;
             }
 
-            var titleText = title?.Trim();
-            var bodyText = body?.Trim();
-
-            if (!string.IsNullOrEmpty(titleText) && !string.IsNullOrEmpty(bodyText))
-            {
-                return $"{titleText}\n{bodyText}";
-            }
-
-            return bodyText ?? titleText ?? string.Empty;
+            return string.Empty;
         }
 
         private void HandlePartnerMessageFromEvent(CocoroGhostEvent ev, string partnerMessage)
         {
             var chatReply = new ChatRequest
             {
-                memoryId = ev.MemoryId ?? string.Empty,
-                sessionId = ev.EventId ?? ev.UnitId?.ToString() ?? string.Empty,
+                memoryId = string.Empty,
+                sessionId = ev.EventId.ToString(CultureInfo.InvariantCulture),
                 message = partnerMessage,
                 role = "assistant",
                 content = partnerMessage

@@ -353,31 +353,28 @@ namespace CocoroConsole.Communication
                     return false;
                 }
 
-                DateTime timestamp = DateTime.UtcNow;
-                if (element.TryGetProperty("ts", out var tsElement))
+                // --- event_id（cocoro_ghost の events.event_id、命令は 0） ---
+                if (!element.TryGetProperty("event_id", out var eventIdElement))
                 {
-                    var tsString = tsElement.GetString();
-                    if (!string.IsNullOrEmpty(tsString) &&
-                        DateTime.TryParse(tsString, null, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal, out var parsed))
-                    {
-                        timestamp = parsed;
-                    }
+                    return false;
+                }
+                if (!eventIdElement.TryGetInt32(out var eventId))
+                {
+                    return false;
                 }
 
                 var data = new CocoroGhostEventData();
                 if (element.TryGetProperty("data", out var dataElement) && dataElement.ValueKind == JsonValueKind.Object)
                 {
-                    // New (2025-12) events payload: {data:{system_text,message}}
+                    // --- 通常イベント（notification/meta-request/desktop_watch/reminder） ---
                     data.SystemText = dataElement.TryGetProperty("system_text", out var systemText) ? systemText.GetString() : null;
                     data.Message = dataElement.TryGetProperty("message", out var message) ? message.GetString() : null;
 
-                    // Legacy fields (keep backward compatibility)
-                    data.SourceSystem = dataElement.TryGetProperty("source_system", out var sourceSystem) ? sourceSystem.GetString() : null;
-                    data.Title = dataElement.TryGetProperty("title", out var title) ? title.GetString() : null;
-                    data.Body = dataElement.TryGetProperty("body", out var body) ? body.GetString() : null;
-                    data.ResultText = dataElement.TryGetProperty("result_text", out var resultText) ? resultText.GetString() : null;
+                    // --- reminder ---
+                    data.ReminderId = dataElement.TryGetProperty("reminder_id", out var reminderId) ? reminderId.GetString() : null;
+                    data.Hhmm = dataElement.TryGetProperty("hhmm", out var hhmm) ? hhmm.GetString() : null;
 
-                    // Vision command
+                    // --- vision.capture_request ---
                     data.RequestId = dataElement.TryGetProperty("request_id", out var requestId) ? requestId.GetString() : null;
                     data.Source = dataElement.TryGetProperty("source", out var source) ? source.GetString() : null;
                     data.Mode = dataElement.TryGetProperty("mode", out var mode) ? mode.GetString() : null;
@@ -389,11 +386,8 @@ namespace CocoroConsole.Communication
 
                 ev = new CocoroGhostEvent
                 {
-                    EventId = element.TryGetProperty("event_id", out var eventId) ? eventId.GetString() : null,
-                    Timestamp = timestamp.ToLocalTime(),
+                    EventId = eventId,
                     Type = type,
-                    MemoryId = element.TryGetProperty("memory_id", out var memoryId) ? memoryId.GetString() : null,
-                    UnitId = element.TryGetProperty("unit_id", out var unitId) && unitId.TryGetInt32(out var unitIdValue) ? unitIdValue : null,
                     Data = data
                 };
 
@@ -430,11 +424,8 @@ namespace CocoroConsole.Communication
 
     public sealed class CocoroGhostEvent
     {
-        public string? EventId { get; set; }
-        public DateTime Timestamp { get; set; }
+        public int EventId { get; set; }
         public string Type { get; set; } = string.Empty;
-        public string? MemoryId { get; set; }
-        public int? UnitId { get; set; }
         public CocoroGhostEventData Data { get; set; } = new CocoroGhostEventData();
     }
 
@@ -442,10 +433,8 @@ namespace CocoroConsole.Communication
     {
         public string? SystemText { get; set; }
         public string? Message { get; set; }
-        public string? SourceSystem { get; set; }
-        public string? Title { get; set; }
-        public string? Body { get; set; }
-        public string? ResultText { get; set; }
+        public string? ReminderId { get; set; }
+        public string? Hhmm { get; set; }
 
         // Vision command
         public string? RequestId { get; set; }
