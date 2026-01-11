@@ -424,10 +424,13 @@ namespace CocoroConsole.Services
         public string InputText { get; set; } = string.Empty;
 
         /// <summary>
-        /// 画像（base64）一覧。
+        /// 画像（Data URI）一覧。
+        /// 
+        /// - 例: "data:image/png;base64,...."
+        /// - cocoro_ghost 側で MIME/サイズ上限を検証する
         /// </summary>
         [JsonPropertyName("images")]
-        public List<CocoroGhostImage> Images { get; set; } = new List<CocoroGhostImage>();
+        public List<string>? Images { get; set; }
 
         /// <summary>
         /// クライアント側のコンテキスト情報（アクティブアプリ等）。
@@ -489,21 +492,6 @@ namespace CocoroConsole.Services
 
         [JsonPropertyName("code")]
         public string? Code { get; set; }
-    }
-
-    public class CocoroGhostImage
-    {
-        /// <summary>
-        /// 画像種別（例: "image"）。
-        /// </summary>
-        [JsonPropertyName("type")]
-        public string Type { get; set; } = string.Empty;
-
-        /// <summary>
-        /// base64 エンコードされた画像データ（data URL ではなく raw base64 を想定）。
-        /// </summary>
-        [JsonPropertyName("base64")]
-        public string Base64 { get; set; } = string.Empty;
     }
 
     /// <summary>

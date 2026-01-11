@@ -431,21 +431,20 @@ namespace CocoroConsole.Services
                 }
 
                 // 画像データを変換（複数対応）
-                var images = new List<CocoroGhostImage>();
+                // cocoro_ghost の /api/chat は images を Data URI 配列で受け取る。
+                var images = new List<string>();
                 if (imageDataUrls != null && imageDataUrls.Count > 0)
                 {
                     foreach (var dataUrl in imageDataUrls)
                     {
-                        var base64 = ExtractBase64(dataUrl);
-                        if (string.IsNullOrWhiteSpace(base64))
+                        var cleaned = (dataUrl ?? string.Empty).Trim();
+                        if (string.IsNullOrWhiteSpace(cleaned))
                         {
                             continue;
                         }
-                        images.Add(new CocoroGhostImage
-                        {
-                            Type = "image",
-                            Base64 = base64
-                        });
+
+                        // --- Data URI をそのまま送る（例: data:image/png;base64,....） ---
+                        images.Add(cleaned);
                     }
                 }
 
@@ -470,7 +469,7 @@ namespace CocoroConsole.Services
                     EmbeddingPresetId = embeddingPresetId,
                     ClientId = _appSettings.ClientId,
                     InputText = message,
-                    Images = images,
+                    Images = images.Count > 0 ? images : null,
                     ClientContext = GetClientContextSnapshot()
                 };
 
@@ -699,23 +698,6 @@ namespace CocoroConsole.Services
                 return config.characterList[config.currentCharacterIndex];
             }
             return null;
-        }
-
-        private string? ExtractBase64(string? dataUrl)
-        {
-            if (string.IsNullOrWhiteSpace(dataUrl))
-            {
-                return null;
-            }
-
-            const string marker = "base64,";
-            var index = dataUrl.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-            if (index >= 0 && index + marker.Length < dataUrl.Length)
-            {
-                return dataUrl.Substring(index + marker.Length);
-            }
-
-            return dataUrl;
         }
 
         /// <summary>
