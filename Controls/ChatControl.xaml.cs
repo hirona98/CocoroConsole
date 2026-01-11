@@ -496,7 +496,8 @@ namespace CocoroConsole.Controls
                 var imagePanel = new WrapPanel
                 {
                     Orientation = Orientation.Horizontal,
-                    Margin = new Thickness(0, 10, 0, 0)
+                    Margin = new Thickness(0, 10, 0, 0),
+                    HorizontalAlignment = HorizontalAlignment.Center
                 };
 
                 foreach (var imageSource in imageSources)
@@ -506,7 +507,7 @@ namespace CocoroConsole.Controls
                         BorderBrush = new SolidColorBrush(Colors.LightGray),
                         BorderThickness = new Thickness(1),
                         CornerRadius = new CornerRadius(3),
-                        Margin = new Thickness(0, 0, 5, 0),
+                        Margin = new Thickness(3, 0, 3, 0),
                         Cursor = Cursors.Hand
                     };
 

@@ -5,12 +5,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
 
 namespace CocoroConsole.Services
 {
@@ -63,6 +65,12 @@ namespace CocoroConsole.Services
 
         // 起動後、cocoro_ghost が Normal になったタイミングで一度だけ設定取得するためのフラグ
         private bool _initialSettingsFetched = false;
+
+        // desktop_watch 用: 直近のデスクトップキャプチャ（vision.capture_request）を一時キャッシュして
+        // desktop_watch イベントの通知表示に画像を添付する。
+        private readonly object _desktopWatchCaptureLock = new object();
+        private (DateTime TimestampUtc, List<BitmapSource> Images, string? WindowTitle)? _lastDesktopWatchCapture;
+        private static readonly TimeSpan DesktopWatchCaptureMaxAge = TimeSpan.FromSeconds(30);
 
         public event EventHandler<ChatRequest>? ChatMessageReceived;
         public event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
@@ -991,12 +999,20 @@ namespace CocoroConsole.Services
                             }
                         }
 
+                        // desktop_watch の通知は system_text が "[desktop_watch]" のみになることがあるため、
+                        // 直前の vision.capture_request(目的: desktop_watch) の画像があれば添付して表示する。
+                        var (images, windowTitle) = TryConsumeDesktopWatchCapture();
+                        if (string.IsNullOrWhiteSpace(displayText) && !string.IsNullOrWhiteSpace(windowTitle))
+                        {
+                            displayText = windowTitle;
+                        }
+
                         NotificationMessageReceived?.Invoke(new ChatMessagePayload
                         {
                             from = from,
                             sessionId = ev.EventId.ToString(CultureInfo.InvariantCulture),
                             message = displayText
-                        }, null);
+                        }, images);
                     }
 
                     var partnerMessage = ev.Data.Message;
@@ -1106,6 +1122,8 @@ namespace CocoroConsole.Services
             try
             {
                 var source = ev.Data.Source?.Trim().ToLowerInvariant();
+                var purpose = ev.Data.Purpose?.Trim();
+                var isDesktopWatchPurpose = string.Equals(purpose, "desktop_watch", StringComparison.OrdinalIgnoreCase);
                 if (string.Equals(source, "desktop", StringComparison.Ordinal))
                 {
                     _statusPollingService.SetProcessingStatus(CocoroGhostStatus.ProcessingImage);
@@ -1119,11 +1137,21 @@ namespace CocoroConsole.Services
                     if (!string.IsNullOrWhiteSpace(dataUri))
                     {
                         response.Images.Add(dataUri);
+
+                        if (isDesktopWatchPurpose)
+                        {
+                            CacheDesktopWatchCapture(dataUri, windowTitle);
+                        }
                     }
                     else
                     {
                         // スキップ時は理由を返す（画像なしで応答する）
                         response.Error = captureError ?? "capture skipped";
+
+                        if (isDesktopWatchPurpose)
+                        {
+                            ClearDesktopWatchCapture();
+                        }
                     }
                 }
                 else
@@ -1173,6 +1201,88 @@ namespace CocoroConsole.Services
 
             var dataUri = $"data:image/png;base64,{screenshot.ImageBase64}";
             return (dataUri, screenshot.WindowTitle, null);
+        }
+
+        private void CacheDesktopWatchCapture(string dataUri, string? windowTitle)
+        {
+            var bitmap = TryDecodeBitmapSourceFromDataUri(dataUri);
+            if (bitmap == null)
+            {
+                return;
+            }
+
+            lock (_desktopWatchCaptureLock)
+            {
+                _lastDesktopWatchCapture = (DateTime.UtcNow, new List<BitmapSource> { bitmap }, windowTitle);
+            }
+        }
+
+        private void ClearDesktopWatchCapture()
+        {
+            lock (_desktopWatchCaptureLock)
+            {
+                _lastDesktopWatchCapture = null;
+            }
+        }
+
+        private (List<BitmapSource>? Images, string? WindowTitle) TryConsumeDesktopWatchCapture()
+        {
+            lock (_desktopWatchCaptureLock)
+            {
+                if (_lastDesktopWatchCapture == null)
+                {
+                    return (null, null);
+                }
+
+                var (timestampUtc, images, windowTitle) = _lastDesktopWatchCapture.Value;
+                if (DateTime.UtcNow - timestampUtc > DesktopWatchCaptureMaxAge)
+                {
+                    _lastDesktopWatchCapture = null;
+                    return (null, null);
+                }
+
+                _lastDesktopWatchCapture = null;
+                return (images, windowTitle);
+            }
+        }
+
+        private static BitmapSource? TryDecodeBitmapSourceFromDataUri(string dataUri)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dataUri))
+                {
+                    return null;
+                }
+
+                const string marker = "base64,";
+                var markerIndex = dataUri.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                if (markerIndex < 0)
+                {
+                    return null;
+                }
+
+                var base64 = dataUri.Substring(markerIndex + marker.Length);
+                if (string.IsNullOrWhiteSpace(base64))
+                {
+                    return null;
+                }
+
+                var bytes = Convert.FromBase64String(base64);
+                using var ms = new MemoryStream(bytes);
+
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.StreamSource = ms;
+                image.EndInit();
+                image.Freeze();
+                return image;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private VisionClientContext GetClientContextSnapshot()
