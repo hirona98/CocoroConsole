@@ -118,6 +118,14 @@
                 </Grid>
             </TabItem>
 
+            <TabItem Header="ペルソナ"
+                     Style="{StaticResource AdminTabItemStyle}"
+                     ToolTip="Prompt preset setting">
+                <Grid Margin="20,20,0,20">
+                    <local:PromptSettingsControl x:Name="PromptSettingsControl"/>
+                </Grid>
+            </TabItem>
+
             <TabItem Header="会話"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="LLM setting">
@@ -131,14 +139,6 @@
                      ToolTip="Embedding setting">
                 <Grid Margin="20,20,0,20">
                     <local:EmbeddingSettingsControl x:Name="EmbeddingSettingsControl"/>
-                </Grid>
-            </TabItem>
-
-            <TabItem Header="ペルソナ"
-                     Style="{StaticResource AdminTabItemStyle}"
-                     ToolTip="Prompt preset setting">
-                <Grid Margin="20,20,0,20">
-                    <local:PromptSettingsControl x:Name="PromptSettingsControl"/>
                 </Grid>
             </TabItem>
 
