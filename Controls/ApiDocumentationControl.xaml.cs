@@ -35,6 +35,7 @@ namespace CocoroConsole.Controls
             var sb = new StringBuilder();
             sb.AppendLine("用途:");
             sb.AppendLine("- 外部プログラムから通知依頼を送る");
+            sb.AppendLine("- 通知は /api/events/stream で接続中クライアントへ配信される（ブロードキャスト）");
             sb.AppendLine();
 
             sb.AppendLine("エンドポイント:");
@@ -62,13 +63,13 @@ namespace CocoroConsole.Controls
 
             sb.AppendLine("使用例 (cURL):");
             sb.AppendLine("# 1枚の画像を送る場合");
-            sb.AppendLine($"curl -X POST http://127.0.0.1:{port}/api/v2/notification \\");
+            sb.AppendLine($"curl.exe -X POST http://127.0.0.1:{port}/api/v2/notification \\");
             sb.AppendLine("  -H \"Authorization: Bearer cocoro_token\" \\");
             sb.AppendLine("  -H \"Content-Type: application/json\" \\");
             sb.AppendLine("  -d '{\"source_system\":\"MyApp\",\"text\":\"処理完了\",\"images\":[\"data:image/jpeg;base64,...\"]}'");
             sb.AppendLine();
             sb.AppendLine("# 複数枚の画像を送る場合");
-            sb.AppendLine($"curl -X POST http://127.0.0.1:{port}/api/v2/notification \\");
+            sb.AppendLine($"curl.exe -X POST http://127.0.0.1:{port}/api/v2/notification \\");
             sb.AppendLine("  -H \"Authorization: Bearer cocoro_token\" \\");
             sb.AppendLine("  -H \"Content-Type: application/json\" \\");
             sb.AppendLine("  -d '{\"source_system\":\"MyApp\",\"text\":\"結果\",\"images\":[\"data:image/jpeg;base64,...\",\"data:image/png;base64,...\"]}'");
@@ -116,7 +117,7 @@ namespace CocoroConsole.Controls
             sb.AppendLine();
 
             sb.AppendLine("使用例 (cURL):");
-            sb.AppendLine($"curl -X POST http://127.0.0.1:{port}/api/v2/meta-request \\");
+            sb.AppendLine($"curl.exe -X POST http://127.0.0.1:{port}/api/v2/meta-request \\");
             sb.AppendLine("  -H \"Authorization: Bearer cocoro_token\" \\");
             sb.AppendLine("  -H \"Content-Type: application/json\" \\");
             sb.AppendLine("  -d '{\"instruction\":\"これは直近1時間のニュースです。内容をユーザに説明し、感想も述べてください。\",\"payload_text\":\"～ニュース内容～\"}'");
@@ -132,4 +133,3 @@ namespace CocoroConsole.Controls
         }
     }
 }
-

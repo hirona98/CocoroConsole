@@ -370,6 +370,32 @@ namespace CocoroConsole.Communication
                     data.SystemText = dataElement.TryGetProperty("system_text", out var systemText) ? systemText.GetString() : null;
                     data.Message = dataElement.TryGetProperty("message", out var message) ? message.GetString() : null;
 
+                    // --- 添付画像（notification等） ---
+                    if (dataElement.TryGetProperty("images", out var imagesElement) && imagesElement.ValueKind == JsonValueKind.Array)
+                    {
+                        var images = new List<string>();
+                        foreach (var imageElement in imagesElement.EnumerateArray())
+                        {
+                            if (imageElement.ValueKind != JsonValueKind.String)
+                            {
+                                continue;
+                            }
+
+                            var dataUri = imageElement.GetString();
+                            if (string.IsNullOrWhiteSpace(dataUri))
+                            {
+                                continue;
+                            }
+
+                            images.Add(dataUri);
+                        }
+
+                        if (images.Count > 0)
+                        {
+                            data.Images = images;
+                        }
+                    }
+
                     // --- reminder ---
                     data.ReminderId = dataElement.TryGetProperty("reminder_id", out var reminderId) ? reminderId.GetString() : null;
                     data.Hhmm = dataElement.TryGetProperty("hhmm", out var hhmm) ? hhmm.GetString() : null;
@@ -433,6 +459,11 @@ namespace CocoroConsole.Communication
     {
         public string? SystemText { get; set; }
         public string? Message { get; set; }
+
+        /// <summary>
+        /// 通知などで添付された画像（Data URI）一覧。
+        /// </summary>
+        public List<string>? Images { get; set; }
         public string? ReminderId { get; set; }
         public string? Hhmm { get; set; }
 

@@ -990,10 +990,10 @@ namespace CocoroConsole.Services
                             from = from,
                             sessionId = ev.EventId.ToString(CultureInfo.InvariantCulture),
                             message = displayText
-                        }, null);
+                        }, TryDecodeBitmapSourcesFromDataUris(ev.Data.Images));
                     }
 
-                    // New behavior: /api/notification generates persona "message" and pushes it via /api/events/stream
+                    // /api/v2/notification は AI 人格のセリフ（data.message）を生成し、/api/events/stream へ配信する
                     var partnerMessage = ev.Data.Message;
                     if (!string.IsNullOrWhiteSpace(partnerMessage))
                     {
@@ -1033,7 +1033,14 @@ namespace CocoroConsole.Services
 
                         // desktop_watch の通知は system_text が "[desktop_watch]" のみになることがあるため、
                         // 直前の vision.capture_request(目的: desktop_watch) の画像があれば添付して表示する。
-                        var (images, windowTitle) = TryConsumeDesktopWatchCapture();
+                        var images = TryDecodeBitmapSourcesFromDataUris(ev.Data.Images);
+                        var windowTitle = (string?)null;
+
+                        // events stream に画像が無い場合は、直近のローカルキャプチャを添付する
+                        if (images == null)
+                        {
+                            (images, windowTitle) = TryConsumeDesktopWatchCapture();
+                        }
                         if (string.IsNullOrWhiteSpace(displayText) && !string.IsNullOrWhiteSpace(windowTitle))
                         {
                             displayText = windowTitle;
@@ -1287,9 +1294,26 @@ namespace CocoroConsole.Services
                     return null;
                 }
 
+                // data:image/*;base64,... の形式を想定
+                if (!dataUri.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+
                 const string marker = "base64,";
                 var markerIndex = dataUri.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
                 if (markerIndex < 0)
+                {
+                    return null;
+                }
+
+                // MIME を抽出（例: data:image/png;base64,... → image/png）
+                var header = dataUri.Substring("data:".Length, markerIndex - "data:".Length);
+                var semicolonIndex = header.IndexOf(';');
+                var mimeType = (semicolonIndex >= 0 ? header.Substring(0, semicolonIndex) : header).Trim();
+
+                // 通知/チャットで許可される MIME のみを表示対象にする
+                if (!IsAllowedImageMimeType(mimeType))
                 {
                     return null;
                 }
@@ -1300,7 +1324,9 @@ namespace CocoroConsole.Services
                     return null;
                 }
 
-                var bytes = Convert.FromBase64String(base64);
+                // base64 部は改行等の空白を含み得るため除去してからデコードする
+                var normalizedBase64 = RemoveWhitespace(base64);
+                var bytes = Convert.FromBase64String(normalizedBase64);
                 using var ms = new MemoryStream(bytes);
 
                 var image = new BitmapImage();
@@ -1315,6 +1341,73 @@ namespace CocoroConsole.Services
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Data URI 文字列リストを BitmapSource リストへ変換する（変換できない画像は無視）。
+        /// </summary>
+        private static List<BitmapSource>? TryDecodeBitmapSourcesFromDataUris(IReadOnlyList<string>? dataUris)
+        {
+            if (dataUris == null || dataUris.Count == 0)
+            {
+                return null;
+            }
+
+            // UI 用に BitmapSource へ変換（Freeze 済みで返る）
+            var images = new List<BitmapSource>(capacity: dataUris.Count);
+            foreach (var dataUri in dataUris)
+            {
+                var bitmap = TryDecodeBitmapSourceFromDataUri(dataUri);
+                if (bitmap == null)
+                {
+                    continue;
+                }
+
+                images.Add(bitmap);
+            }
+
+            return images.Count > 0 ? images : null;
+        }
+
+        /// <summary>
+        /// 通知/チャットで許可する画像 MIME か判定する。
+        /// </summary>
+        private static bool IsAllowedImageMimeType(string mimeType)
+        {
+            if (string.IsNullOrWhiteSpace(mimeType))
+            {
+                return false;
+            }
+
+            // Ghost 側仕様に合わせる（image/png / image/jpeg / image/webp）
+            return string.Equals(mimeType, "image/png", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(mimeType, "image/jpeg", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(mimeType, "image/webp", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 文字列中の空白（改行/タブ含む）を除去する。
+        /// </summary>
+        private static string RemoveWhitespace(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+
+            // base64 の正規化（空白除去）
+            var builder = new StringBuilder(value.Length);
+            foreach (var ch in value)
+            {
+                if (char.IsWhiteSpace(ch))
+                {
+                    continue;
+                }
+
+                builder.Append(ch);
+            }
+
+            return builder.ToString();
         }
 
         private VisionClientContext GetClientContextSnapshot()
