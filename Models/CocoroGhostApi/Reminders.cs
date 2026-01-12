@@ -5,7 +5,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
 {
     /// <summary>
     /// /api/reminders/settings のレスポンス DTO。
-    /// リマインダー機能の有効/無効、および通知先クライアントIDを表す。
+    /// リマインダー機能の有効/無効を表す。
     /// </summary>
     public sealed class CocoroGhostRemindersSettings
     {
@@ -14,12 +14,6 @@ namespace CocoroConsole.Models.CocoroGhostApi
         /// </summary>
         [JsonPropertyName("reminders_enabled")]
         public bool RemindersEnabled { get; set; }
-
-        /// <summary>
-        /// 通知を受け取るクライアントID。
-        /// </summary>
-        [JsonPropertyName("target_client_id")]
-        public string? TargetClientId { get; set; }
     }
 
     /// <summary>
@@ -32,12 +26,6 @@ namespace CocoroConsole.Models.CocoroGhostApi
         /// </summary>
         [JsonPropertyName("reminders_enabled")]
         public bool RemindersEnabled { get; set; }
-
-        /// <summary>
-        /// 通知先のクライアントID（必須）。
-        /// </summary>
-        [JsonPropertyName("target_client_id")]
-        public string TargetClientId { get; set; } = string.Empty;
     }
 
     /// <summary>

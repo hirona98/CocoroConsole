@@ -396,10 +396,6 @@ namespace CocoroConsole.Communication
                         }
                     }
 
-                    // --- reminder ---
-                    data.ReminderId = dataElement.TryGetProperty("reminder_id", out var reminderId) ? reminderId.GetString() : null;
-                    data.Hhmm = dataElement.TryGetProperty("hhmm", out var hhmm) ? hhmm.GetString() : null;
-
                     // --- vision.capture_request ---
                     data.RequestId = dataElement.TryGetProperty("request_id", out var requestId) ? requestId.GetString() : null;
                     data.Source = dataElement.TryGetProperty("source", out var source) ? source.GetString() : null;
@@ -464,8 +460,6 @@ namespace CocoroConsole.Communication
         /// 通知などで添付された画像（Data URI）一覧。
         /// </summary>
         public List<string>? Images { get; set; }
-        public string? ReminderId { get; set; }
-        public string? Hhmm { get; set; }
 
         // Vision command
         public string? RequestId { get; set; }

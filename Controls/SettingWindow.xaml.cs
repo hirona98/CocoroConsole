@@ -514,7 +514,7 @@ namespace CocoroConsole.Controls
                 Debug.WriteLine("[SettingWindow] 設定をAPIに保存しました");
 
                 // リマインダー設定/CRUDを保存（別API）
-                await SystemSettingsControl.SaveRemindersToApiAsync(AppSettings.Instance.ClientId);
+                await SystemSettingsControl.SaveRemindersToApiAsync();
 
                 List<LlmPreset> updatedLlmPresets = updated.LlmPreset ?? new List<LlmPreset>();
                 LlmSettingsControl.LoadSettingsList(updatedLlmPresets, updated.ActiveLlmPresetId);

@@ -376,29 +376,23 @@ namespace CocoroConsole.Controls
         /// 現在の UI 編集内容を /api/reminders に反映する。
         /// 
         /// 実行内容:
-        /// - settings の更新（enabled/targetClientId）
+        /// - settings の更新（enabled）
         /// - 削除対象 ID の削除
         /// - 新規 draft の作成（serverId が無いもの）
         /// - baseline と差分がある既存 draft の Patch
         /// - 最後に API から再読み込みして baseline を更新
         /// </summary>
-        public async Task SaveRemindersToApiAsync(string targetClientId)
+        public async Task SaveRemindersToApiAsync()
         {
             if (_apiClient == null)
             {
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(targetClientId))
-            {
-                throw new ArgumentException("targetClientIdが空です。", nameof(targetClientId));
-            }
-
             var enabled = EnableReminderCheckBox.IsChecked ?? false;
             await _apiClient.UpdateRemindersSettingsAsync(new CocoroGhostRemindersSettingsUpdateRequest
             {
-                RemindersEnabled = enabled,
-                TargetClientId = targetClientId
+                RemindersEnabled = enabled
             });
 
             foreach (var id in _deletedReminderIds.ToList())
