@@ -362,7 +362,7 @@
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="ReasoningEffortTextBox"
                                      Grid.Column="1"
-                                     Padding="2"
+                                     Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
                         <TextBlock Foreground="#666666"
