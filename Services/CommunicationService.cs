@@ -1021,6 +1021,10 @@ namespace CocoroConsole.Services
                     {
                         var extractedSourceSystem = TryExtractBracketedSourceSystem(systemText);
                         var from = extractedSourceSystem ?? "desktop_watch";
+                        if (string.Equals(from, "desktop_watch", StringComparison.OrdinalIgnoreCase))
+                        {
+                            from = "Desktop Watch";
+                        }
                         var displayText = systemText;
                         if (!string.IsNullOrWhiteSpace(extractedSourceSystem))
                         {
