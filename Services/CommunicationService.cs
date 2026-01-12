@@ -72,6 +72,20 @@ namespace CocoroConsole.Services
         private (DateTime TimestampUtc, List<BitmapSource> Images, string? WindowTitle)? _lastDesktopWatchCapture;
         private static readonly TimeSpan DesktopWatchCaptureMaxAge = TimeSpan.FromSeconds(30);
 
+        private static bool IsVrmDisplayEnabled(CharacterSettings? currentCharacter)
+        {
+            // MainWindow.LaunchCocoroShell と同じ判定: パスがあれば有効 / readOnlyキャラは常に有効
+            return currentCharacter != null &&
+                   (!string.IsNullOrWhiteSpace(currentCharacter.vrmFilePath) || currentCharacter.isReadOnly == true);
+        }
+
+        private bool ShouldForwardToShell(CharacterSettings? currentCharacter = null)
+        {
+            // 呼び出し元がキャラクターを渡していない場合はキャッシュから解決
+            currentCharacter ??= GetStoredCharacterSetting();
+            return IsVrmDisplayEnabled(currentCharacter);
+        }
+
         public event EventHandler<ChatRequest>? ChatMessageReceived;
         public event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
         public event Action<ChatMessagePayload, List<System.Windows.Media.Imaging.BitmapSource>?>? NotificationMessageReceived;
@@ -675,6 +689,12 @@ namespace CocoroConsole.Services
         {
             try
             {
+                if (!ShouldForwardToShell())
+                {
+                    Debug.WriteLine($"[Shell Forward] VRM表示OFFのためアニメーション転送をスキップ: {animationName}");
+                    return;
+                }
+
                 var request = new AnimationRequest
                 {
                     animationName = animationName
@@ -723,6 +743,12 @@ namespace CocoroConsole.Services
                     return;
                 }
 
+                if (!ShouldForwardToShell(currentCharacter))
+                {
+                    Debug.WriteLine("[Shell Forward] VRM表示OFFのためチャット転送をスキップ");
+                    return;
+                }
+
                 var shellRequest = new ShellChatRequest
                 {
                     content = content,
@@ -762,6 +788,12 @@ namespace CocoroConsole.Services
         {
             try
             {
+                if (!ShouldForwardToShell())
+                {
+                    Debug.WriteLine($"[Shell Forward] VRM表示OFFのためTTS状態転送をスキップ: enabled={isUseTTS}");
+                    return;
+                }
+
                 var request = new ShellControlRequest
                 {
                     action = "ttsControl",
@@ -1391,6 +1423,17 @@ namespace CocoroConsole.Services
         {
             try
             {
+                if (!ShouldForwardToShell())
+                {
+                    Debug.WriteLine("[Shell Forward] VRM表示OFFのため位置取得をスキップ");
+                    return new PositionResponse
+                    {
+                        status = "disabled",
+                        message = "VRM表示がOFFのためCocoroShellへの位置取得をスキップしました",
+                        timestamp = DateTimeOffset.Now.ToString("o", CultureInfo.InvariantCulture)
+                    };
+                }
+
                 return await _shellClient.GetPositionAsync();
             }
             catch (Exception ex)
@@ -1412,6 +1455,12 @@ namespace CocoroConsole.Services
         {
             try
             {
+                if (!ShouldForwardToShell())
+                {
+                    Debug.WriteLine($"[Shell Forward] VRM表示OFFのため設定部分更新をスキップ: {string.Join(", ", updates.Keys)}");
+                    return;
+                }
+
                 var changedFields = new string[updates.Count];
                 updates.Keys.CopyTo(changedFields, 0);
 
