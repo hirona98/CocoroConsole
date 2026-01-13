@@ -498,15 +498,6 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// CocoroCore API: 制御コマンドリクエスト
-    /// </summary>
-    public class CoreControlRequest
-    {
-        public string action { get; set; } = string.Empty;
-        public Dictionary<string, object>? @params { get; set; }
-    }
-
-    /// <summary>
     /// CocoroConsole API: ステータス更新リクエスト
     /// </summary>
     public class StatusUpdateRequest
@@ -533,38 +524,6 @@ namespace CocoroConsole.Communication
         public string level { get; set; } = string.Empty; // "DEBUG", "INFO", "WARNING", "ERROR"
         public string component { get; set; } = string.Empty; // "CocoroCore"
         public string message { get; set; } = string.Empty;
-    }
-
-
-    // ========================================
-    // CocoroGhost チャットAPI関連モデル
-    // ========================================
-
-    /// <summary>
-    /// CocoroGhost 画像データ
-    /// </summary>
-    public class ImageData
-    {
-        public string data { get; set; } = string.Empty; // Base64 data URL形式の画像データ
-    }
-
-    /// <summary>
-    /// CocoroGhost 通知データ
-    /// </summary>
-    public class NotificationData
-    {
-        public string original_source { get; set; } = string.Empty; // 通知送信元
-        public string original_message { get; set; } = string.Empty; // 元の通知メッセージ
-    }
-
-    /// <summary>
-    /// CocoroGhost 会話履歴メッセージ
-    /// </summary>
-    public class HistoryMessage
-    {
-        public string role { get; set; } = string.Empty; // "user" | "assistant"
-        public string content { get; set; } = string.Empty; // メッセージ内容
-        public string timestamp { get; set; } = string.Empty; // メッセージ時刻（ISO形式）
     }
 
     /// <summary>
