@@ -50,11 +50,6 @@
     "horizontalOffset": -0.2,
     "verticalOffset": 0.05
   },
-  "scheduledCommandSettings": {
-    "enabled": false,
-    "command": "",
-    "intervalMinutes": 60
-  },
   "currentCharacterIndex": 0,
   "characterList": [
     {

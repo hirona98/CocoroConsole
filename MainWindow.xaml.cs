@@ -27,7 +27,6 @@ namespace CocoroConsole
         private readonly IAppSettings _appSettings;
         private bool _isDesktopWatchEnabled = false;
         private RealtimeVoiceRecognitionService? _voiceRecognitionService;
-        private ScheduledCommandService? _scheduledCommandService;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
         private DebugTraceListener? _debugTraceListener;
@@ -133,9 +132,6 @@ namespace CocoroConsole
                 // 通信サービスを初期化
                 // CommunicationServiceが初回Normal時にcocoro_ghost設定を取得・反映する
                 InitializeCommunicationService();
-
-                // スケジュールコマンドサービスを初期化
-                InitializeScheduledCommandService();
 
                 // 音声認識サービスを初期化
                 // 起動時はウェイクワードの有無に応じてVoiceRecognitionStateMachine内で状態が決定される
@@ -249,61 +245,6 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// スケジュールコマンドサービスを初期化
-        /// </summary>
-        private void InitializeScheduledCommandService()
-        {
-            var settings = _appSettings.ScheduledCommandSettings;
-            if (settings != null && settings.Enabled && !string.IsNullOrWhiteSpace(settings.Command))
-            {
-                _scheduledCommandService = new ScheduledCommandService(settings.IntervalMinutes);
-                _scheduledCommandService.SetCommand(settings.Command);
-                _scheduledCommandService.Start();
-                Debug.WriteLine($"スケジュールコマンドサービスを開始しました（間隔: {settings.IntervalMinutes}分）");
-            }
-        }
-
-        /// <summary>
-        /// スケジュールコマンドサービスの設定を更新
-        /// </summary>
-        private void UpdateScheduledCommandService()
-        {
-            var settings = _appSettings.ScheduledCommandSettings;
-
-            // 現在のサービスが存在し、設定が無効になった場合は停止
-            if (_scheduledCommandService != null && (settings == null || !settings.Enabled || string.IsNullOrWhiteSpace(settings.Command)))
-            {
-                _scheduledCommandService.Stop();
-                _scheduledCommandService.Dispose();
-                _scheduledCommandService = null;
-                Debug.WriteLine("スケジュールコマンドサービスを停止しました");
-            }
-            // 設定が有効でサービスが存在しない場合は開始
-            else if (settings != null && settings.Enabled && !string.IsNullOrWhiteSpace(settings.Command) && _scheduledCommandService == null)
-            {
-                InitializeScheduledCommandService();
-            }
-            // サービスが存在し、設定が変更された場合は再起動
-            else if (_scheduledCommandService != null && settings != null && settings.Enabled && !string.IsNullOrWhiteSpace(settings.Command))
-            {
-                // 間隔またはコマンドが変更された場合は再起動
-                if (_scheduledCommandService.IntervalMinutes != settings.IntervalMinutes)
-                {
-                    _scheduledCommandService.Stop();
-                    _scheduledCommandService.Dispose();
-                    InitializeScheduledCommandService();
-                    Debug.WriteLine("スケジュールコマンドサービスを再起動しました");
-                }
-                else
-                {
-                    // コマンドのみ変更された場合は再起動
-                    _scheduledCommandService.Restart(settings.IntervalMinutes, settings.Command);
-                    Debug.WriteLine("スケジュールコマンドサービスのコマンドを更新しました");
-                }
-            }
-        }
-
-        /// <summary>
         /// APIサーバーを起動（非同期タスク）
         /// </summary>
         private async Task StartApiServerAsync()
@@ -360,18 +301,6 @@ namespace CocoroConsole
             // 送信ボタンの有効/無効を制御（LLMが無効の場合は無効にする）
             bool isSendEnabled = isLLMEnabled && status != CocoroGhostStatus.WaitingForStartup;
             ChatControlInstance.UpdateSendButtonEnabled(isSendEnabled);
-        }
-
-        /// <summary>
-        /// 設定を適用
-        /// </summary>
-        private void ApplySettings()
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                // スケジュールコマンドサービスの設定を更新
-                UpdateScheduledCommandService();
-            });
         }
 
         #region チャットコントロールイベントハンドラ
@@ -734,14 +663,6 @@ namespace CocoroConsole
                 // DebugTraceListenerの解除
                 DetachDebugTraceListener();
 
-                // スケジュールコマンドサービスを停止
-                if (_scheduledCommandService != null)
-                {
-                    _scheduledCommandService.Stop();
-                    _scheduledCommandService.Dispose();
-                    _scheduledCommandService = null;
-                }
-
                 // 接続中ならリソース解放
                 if (_communicationService != null)
                 {
@@ -794,9 +715,6 @@ namespace CocoroConsole
         {
             // ボタンの状態を最新の設定に更新
             InitializeButtonStates();
-
-            // 設定変更に応じてサービスを更新
-            ApplySettings();
 
             // SettingWindowの参照をクリア
             _settingWindow = null;
@@ -1212,11 +1130,6 @@ namespace CocoroConsole
             if (_voiceRecognitionService != null)
             {
                 _voiceRecognitionService.Dispose();
-            }
-
-            if (_scheduledCommandService != null)
-            {
-                _scheduledCommandService.Dispose();
             }
 
             base.OnClosing(e);

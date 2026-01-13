@@ -140,11 +140,6 @@ namespace CocoroConsole.Services
         MicrophoneSettings MicrophoneSettings { get; set; }
 
         /// <summary>
-        /// 定期コマンド実行設定
-        /// </summary>
-        Models.ScheduledCommandSettings ScheduledCommandSettings { get; set; }
-
-        /// <summary>
         /// キャラクターリスト
         /// </summary>
         List<CharacterSettings> CharacterList { get; set; }

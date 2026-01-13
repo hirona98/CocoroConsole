@@ -64,12 +64,6 @@ namespace CocoroConsole.Controls
             // システム設定変更イベントを登録
             SystemSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
 
-            // おまけ設定コントロールを初期化
-            _ = ExtrasControl.InitializeAsync();
-
-            // おまけ設定変更イベントを登録
-            ExtrasControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
-
             // API説明コントロールを初期化
             _ = ApiDocumentationControl.InitializeAsync();
 
@@ -246,12 +240,6 @@ namespace CocoroConsole.Controls
             var microphoneSettings = SystemSettingsControl.GetMicrophoneSettings();
             dict["MicInputThreshold"] = microphoneSettings.inputThreshold;
             dict["SpeakerRecognitionThreshold"] = microphoneSettings.speakerRecognitionThreshold;
-
-            // おまけ設定（定期コマンド実行）
-            var scheduledCommandSettings = ExtrasControl.GetScheduledCommandSettings();
-            dict["ScheduledCommandEnabled"] = scheduledCommandSettings.Enabled;
-            dict["ScheduledCommand"] = scheduledCommandSettings.Command;
-            dict["ScheduledCommandInterval"] = scheduledCommandSettings.IntervalMinutes;
 
             // Bearer Token
             dict["BearerToken"] = SystemSettingsControl.GetBearerToken();
@@ -712,11 +700,6 @@ namespace CocoroConsole.Controls
 
             appSettings.MicrophoneSettings.inputThreshold = (int)snapshot["MicInputThreshold"];
             appSettings.MicrophoneSettings.speakerRecognitionThreshold = (float)snapshot["SpeakerRecognitionThreshold"];
-
-            // おまけ設定（定期コマンド実行）
-            appSettings.ScheduledCommandSettings.Enabled = (bool)snapshot["ScheduledCommandEnabled"];
-            appSettings.ScheduledCommandSettings.Command = (string)snapshot["ScheduledCommand"];
-            appSettings.ScheduledCommandSettings.IntervalMinutes = (int)snapshot["ScheduledCommandInterval"];
 
             // Bearer Token
             appSettings.CocoroGhostBearerToken = (string)snapshot["BearerToken"];

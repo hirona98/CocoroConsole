@@ -303,7 +303,6 @@ namespace CocoroConsole.Communication
         public ScreenshotSettings screenshotSettings { get; set; } = new ScreenshotSettings();
         public MicrophoneSettings microphoneSettings { get; set; } = new MicrophoneSettings();
         public MessageWindowSettings messageWindowSettings { get; set; } = new MessageWindowSettings();
-        public ScheduledCommandSettings scheduledCommandSettings { get; set; } = new ScheduledCommandSettings();
 
         public int currentCharacterIndex { get; set; }
         public List<CharacterSettings> characterList { get; set; } = new List<CharacterSettings>();
@@ -348,13 +347,6 @@ namespace CocoroConsole.Communication
                     captureActiveWindowOnly = this.screenshotSettings.captureActiveWindowOnly,
                     idleTimeoutMinutes = this.screenshotSettings.idleTimeoutMinutes,
                     excludePatterns = new List<string>(this.screenshotSettings.excludePatterns)
-                },
-
-                scheduledCommandSettings = new ScheduledCommandSettings
-                {
-                    Enabled = this.scheduledCommandSettings.Enabled,
-                    Command = this.scheduledCommandSettings.Command,
-                    IntervalMinutes = this.scheduledCommandSettings.IntervalMinutes
                 },
 
                 microphoneSettings = new MicrophoneSettings

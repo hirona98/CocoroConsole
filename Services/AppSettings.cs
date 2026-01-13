@@ -85,9 +85,6 @@ namespace CocoroConsole.Services
         // メッセージウィンドウ設定
         public MessageWindowSettings MessageWindowSettings { get; set; } = new MessageWindowSettings();
 
-        // 定期コマンド実行設定
-        public ScheduledCommandSettings ScheduledCommandSettings { get; set; } = new ScheduledCommandSettings();
-
         public bool IsLoaded { get; set; } = false;
 
         // コンストラクタはprivate（シングルトンパターン）
@@ -195,12 +192,6 @@ namespace CocoroConsole.Services
                 MessageWindowSettings = config.messageWindowSettings;
             }
 
-            // 定期コマンド実行設定を更新
-            if (config.scheduledCommandSettings != null)
-            {
-                ScheduledCommandSettings = config.scheduledCommandSettings;
-            }
-
             // 設定読み込み完了フラグを設定
             IsLoaded = true;
         }
@@ -247,12 +238,6 @@ namespace CocoroConsole.Services
                 screenshotSettings = ScreenshotSettings,
                 microphoneSettings = MicrophoneSettings,
                 messageWindowSettings = MessageWindowSettings,
-                scheduledCommandSettings = new ScheduledCommandSettings
-                {
-                    Enabled = ScheduledCommandSettings.Enabled,
-                    Command = ScheduledCommandSettings.Command,
-                    IntervalMinutes = ScheduledCommandSettings.IntervalMinutes
-                },
                 currentCharacterIndex = CurrentCharacterIndex,
                 characterList = new List<CharacterSettings>(CharacterList)
             };
