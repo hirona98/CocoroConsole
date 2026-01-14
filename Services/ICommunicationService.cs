@@ -174,6 +174,11 @@ namespace CocoroConsole.Services
         void RefreshSettingsCache();
 
         /// <summary>
+        /// CocoroGhost再起動開始を通知して起動待ち状態に戻す
+        /// </summary>
+        void NotifyCocoroGhostRestarting();
+
+        /// <summary>
         /// cocoro_ghost の /api/settings を再取得して反映する
         /// </summary>
         Task RefreshCocoroGhostSettingsAsync();

@@ -393,6 +393,17 @@ namespace CocoroConsole
                 });
                 Debug.WriteLine("[MainWindow] 音声認識サービスを停止しました");
             }
+
+            // UI側の設定反映（ボタン状態とLLM表示）
+            UIHelper.RunOnUIThread(() =>
+            {
+                // 設定変更後のボタン状態を反映
+                InitializeButtonStates();
+
+                // LLM有効/無効の表示を即時更新
+                var currentStatus = _communicationService?.CurrentStatus ?? CocoroGhostStatus.WaitingForStartup;
+                UpdateCocoroGhostStatusDisplay(currentStatus);
+            });
         }
 
         #endregion

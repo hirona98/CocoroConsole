@@ -349,9 +349,6 @@ namespace CocoroConsole.Controls
                 // 設定のバックアップを更新（適用後の状態を新しいベースラインとする）
                 BackupSettings();
                 _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
-
-                // メインウィンドウのボタン状態とサービスを更新
-                UpdateMainWindowStates();
             }
             catch (Exception ex)
             {
@@ -811,44 +808,6 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// メインウィンドウのボタン状態とサービスを更新
-        /// </summary>
-        private void UpdateMainWindowStates()
-        {
-            try
-            {
-                // MainWindowのインスタンスを取得
-                var mainWindow = Application.Current.MainWindow as MainWindow;
-                if (mainWindow != null)
-                {
-                    // InitializeButtonStatesメソッドを呼び出してボタン状態を更新
-                    var initButtonMethod = mainWindow.GetType().GetMethod("InitializeButtonStates",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-                    if (initButtonMethod != null)
-                    {
-                        initButtonMethod.Invoke(mainWindow, null);
-                        Debug.WriteLine("[SettingWindow] メインウィンドウのボタン状態を更新しました");
-                    }
-
-                    // ApplySettingsメソッドを呼び出してサービスを更新
-                    var applyMethod = mainWindow.GetType().GetMethod("ApplySettings",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-                    if (applyMethod != null)
-                    {
-                        applyMethod.Invoke(mainWindow, null);
-                        Debug.WriteLine("[SettingWindow] メインウィンドウのサービスを更新しました");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[SettingWindow] メインウィンドウの状態更新中にエラーが発生しました: {ex.Message}");
-            }
-        }
-
-        /// <summary>
         /// ログ表示ボタンのクリックイベント
         /// </summary>
         private void LogViewerButton_Click(object sender, RoutedEventArgs e)
@@ -878,6 +837,9 @@ namespace CocoroConsole.Controls
                 var mainWindow = Application.Current.MainWindow as MainWindow;
                 if (mainWindow != null)
                 {
+                    // 再起動開始を通知して起動待ち状態に戻す
+                    _communicationService?.NotifyCocoroGhostRestarting();
+
                     // ProcessOperation.RestartIfRunning を指定してCocoroGhostを再起動（非同期）
                     await mainWindow.LaunchCocoroGhostAsync(ProcessOperation.RestartIfRunning);
                     Debug.WriteLine("CocoroGhostを再起動要求をしました");
@@ -899,50 +861,72 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task WaitForCocoroGhostRestartAsync()
         {
-            var delay = TimeSpan.FromSeconds(1);
-            var maxWaitTime = TimeSpan.FromSeconds(120);
-            var startTime = DateTime.Now;
+            // 最大待機時間
+            var timeout = TimeSpan.FromSeconds(120);
 
-            bool hasBeenDisconnected = false;
-
-            while (DateTime.Now - startTime < maxWaitTime)
+            // 通信サービスがない場合は待機できない
+            if (_communicationService == null)
             {
-                try
-                {
-                    if (_communicationService != null)
-                    {
-                        var currentStatus = _communicationService.CurrentStatus;
-
-                        // まず停止（起動待ち）状態になることを確認
-                        if (!hasBeenDisconnected)
-                        {
-                            if (currentStatus == CocoroGhostStatus.WaitingForStartup)
-                            {
-                                hasBeenDisconnected = true;
-                                Debug.WriteLine("CocoroGhost停止を確認（起動待ち）");
-                            }
-                        }
-                        // 停止を確認済みの場合、再起動完了を待機
-                        else
-                        {
-                            if (currentStatus == CocoroGhostStatus.Normal ||
-                                currentStatus == CocoroGhostStatus.ProcessingMessage ||
-                                currentStatus == CocoroGhostStatus.ProcessingImage)
-                            {
-                                Debug.WriteLine("CocoroGhost再起動完了");
-                                return;
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                    // API未応答時は継続してチェック
-                }
-                await Task.Delay(delay);
+                return;
             }
 
-            throw new TimeoutException("CocoroGhostの再起動がタイムアウトしました");
+            // 既に起動完了状態なら即終了
+            if (IsCocoroGhostReadyStatus(_communicationService.CurrentStatus))
+            {
+                return;
+            }
+
+            // ステータス変更を待つためのTCS
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            // ステータス変更イベント
+            void OnStatusChanged(object? sender, CocoroGhostStatus status)
+            {
+                // 起動完了状態に戻ったら終了
+                if (IsCocoroGhostReadyStatus(status))
+                {
+                    tcs.TrySetResult(true);
+                }
+            }
+
+            // ステータス変更イベントを購読
+            _communicationService.StatusChanged += OnStatusChanged;
+
+            try
+            {
+                // 購読後に再確認（取りこぼし防止）
+                if (IsCocoroGhostReadyStatus(_communicationService.CurrentStatus))
+                {
+                    return;
+                }
+
+                // タイムアウト付きで待機
+                var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
+                if (completed != tcs.Task)
+                {
+                    throw new TimeoutException("CocoroGhostの再起動がタイムアウトしました");
+                }
+
+                await tcs.Task;
+            }
+            finally
+            {
+                // ステータス変更イベントを解除
+                _communicationService.StatusChanged -= OnStatusChanged;
+            }
+        }
+
+        /// <summary>
+        /// CocoroGhostが起動完了状態かどうかを判定する
+        /// </summary>
+        /// <param name="status">CocoroGhostのステータス</param>
+        /// <returns>起動完了状態の場合true</returns>
+        private static bool IsCocoroGhostReadyStatus(CocoroGhostStatus status)
+        {
+            // Normal / Processing は起動完了扱い
+            return status == CocoroGhostStatus.Normal ||
+                   status == CocoroGhostStatus.ProcessingMessage ||
+                   status == CocoroGhostStatus.ProcessingImage;
         }
 
         /// <summary>

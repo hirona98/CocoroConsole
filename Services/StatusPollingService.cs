@@ -170,6 +170,16 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
+        /// 再起動開始を明示して起動待ち状態に戻す
+        /// </summary>
+        public void SetWaitingForStartup()
+        {
+            // 起動待ち状態を明示し、ポーリング間隔を短くする
+            UpdateStatus(CocoroGhostStatus.WaitingForStartup);
+            _pollingTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
+        }
+
+        /// <summary>
         /// リソースを解放
         /// </summary>
         public void Dispose()

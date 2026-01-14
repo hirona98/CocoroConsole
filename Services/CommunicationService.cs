@@ -190,6 +190,15 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
+        /// CocoroGhost再起動開始を通知して起動待ち状態に戻す
+        /// </summary>
+        public void NotifyCocoroGhostRestarting()
+        {
+            // 再起動の切り替えを即時に反映し、ヘルスチェックを短周期に戻す
+            _statusPollingService.SetWaitingForStartup();
+        }
+
+        /// <summary>
         /// AppSettings保存イベントハンドラー
         /// </summary>
         private void OnSettingsSaved(object? sender, EventArgs e)
