@@ -352,7 +352,7 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// cocoro_ghostから設定を取得してAppSettingsに反映
+        /// cocoro_ghostから設定を取得してキャッシュ/イベントに反映
         /// </summary>
         public async Task FetchAndApplySettingsFromCocoroGhostAsync()
         {
@@ -370,9 +370,7 @@ namespace CocoroConsole.Services
                 // チャット送信時に参照するためキャッシュ
                 _cachedCocoroGhostSettings = settings;
 
-                // AppSettingsに反映
-                ApplyCocoroGhostSettingsToAppSettings(settings);
-
+                // UI側へ通知（MainWindowでボタン状態などに反映）
                 CocoroGhostSettingsUpdated?.Invoke(this, settings);
 
                 Debug.WriteLine("[CommunicationService] cocoro_ghostから設定を取得・反映しました");
@@ -381,17 +379,6 @@ namespace CocoroConsole.Services
             {
                 Debug.WriteLine($"[CommunicationService] cocoro_ghostから設定取得に失敗: {ex.Message}");
             }
-        }
-
-        /// <summary>
-        /// cocoro_ghostから取得した設定をAppSettingsに反映
-        /// </summary>
-        private void ApplyCocoroGhostSettingsToAppSettings(Models.CocoroGhostApi.CocoroGhostSettings settings)
-        {
-            // 設定キャッシュを更新
-            RefreshSettingsCache();
-
-            Debug.WriteLine("[CommunicationService] AppSettingsにcocoro_ghost設定を反映完了");
         }
 
         public Task RefreshCocoroGhostSettingsAsync()
@@ -679,7 +666,6 @@ namespace CocoroConsole.Services
 
                 var updated = await _cocoroGhostApiClient.UpdateSettingsAsync(request);
                 _cachedCocoroGhostSettings = updated;
-                ApplyCocoroGhostSettingsToAppSettings(updated);
                 CocoroGhostSettingsUpdated?.Invoke(this, updated);
             }
             catch (Exception ex)
