@@ -125,7 +125,7 @@
             <StackPanel>
                 <!-- 有効化 -->
                 <CheckBox x:Name="IsUseLLMCheckBox"
-                          Content="会話機能（LLM）を使用する"
+                          Content="会話機能（LLM）を使用する - 記憶タブも設定してください"
                           Foreground="#FF4873CF"
                           Checked="IsUseLLMCheckBox_Changed"
                           Unchecked="IsUseLLMCheckBox_Changed"

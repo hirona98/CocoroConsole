@@ -125,8 +125,10 @@
             <StackPanel>
                 <!-- 有効化 -->
                 <CheckBox x:Name="MemoryEnabledCheckBox"
-                          Content="記憶機能（Embedding）を使用する"
+                          Content="記憶機能（Embedding）を使用する - OFFには出来ません"
                           Foreground="#FF4873CF"
+                          IsChecked="True"
+                          IsEnabled="False"
                           Checked="MemoryEnabledCheckBox_Changed"
                           Unchecked="MemoryEnabledCheckBox_Changed"
                           Margin="0,5,0,20"
@@ -187,7 +189,7 @@
                         <!-- 警告テキスト -->
                         <TextBlock Foreground="Red"
                                    Margin="0,0,0,10"
-                                Text="※赤字項目は一度設定したら変更しないでください"/>
+                                   Text="※赤字項目は一度設定したら変更しないでください"/>
 
                         <!-- プリセット名(memory_id) -->
                         <Grid Margin="0,5">
@@ -258,7 +260,7 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Embeddingモデル:"
                                        Style="{StaticResource SettingLabelStyle}"
-                                    Foreground="Red"/>
+                                       Foreground="Red"/>
                             <TextBox x:Name="EmbeddingModelTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
@@ -340,7 +342,7 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Embedding次元数:"
                                        Style="{StaticResource SettingLabelStyle}"
-                                    Foreground="Red"/>
+                                       Foreground="Red"/>
                             <TextBox x:Name="EmbeddingDimensionTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
