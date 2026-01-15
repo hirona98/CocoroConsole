@@ -189,6 +189,7 @@ namespace CocoroConsole.Controls
             var preset = _personaPresets[_currentPersonaPresetIndex];
             preset.PersonaPresetName = PersonaPresetNameTextBox.Text;
             preset.PersonaText = PersonaTextBox.Text;
+            preset.SecondPersonLabel = SecondPersonLabelTextBox.Text;
         }
 
         private void SaveCurrentAddonUiToPreset()
@@ -211,7 +212,8 @@ namespace CocoroConsole.Controls
             {
                 PersonaPresetId = Guid.NewGuid().ToString(),
                 PersonaPresetName = GenerateUniqueName(_personaPresets.Select(p => p.PersonaPresetName), "新規プリセット"),
-                PersonaText = string.Empty
+                PersonaText = string.Empty,
+                SecondPersonLabel = string.Empty
             };
 
             _isInitializing = true;
@@ -246,7 +248,8 @@ namespace CocoroConsole.Controls
             {
                 PersonaPresetId = Guid.NewGuid().ToString(),
                 PersonaPresetName = GenerateDuplicateName(_personaPresets.Select(p => p.PersonaPresetName), source.PersonaPresetName),
-                PersonaText = source.PersonaText
+                PersonaText = source.PersonaText,
+                SecondPersonLabel = source.SecondPersonLabel
             };
 
             _isInitializing = true;
@@ -397,6 +400,7 @@ namespace CocoroConsole.Controls
         {
             PersonaPresetNameTextBox.Text = preset.PersonaPresetName;
             PersonaTextBox.Text = preset.PersonaText;
+            SecondPersonLabelTextBox.Text = preset.SecondPersonLabel;
         }
 
         private void LoadAddonPresetToUi(AddonPreset preset)
@@ -409,6 +413,7 @@ namespace CocoroConsole.Controls
         {
             PersonaPresetNameTextBox.Text = string.Empty;
             PersonaTextBox.Text = string.Empty;
+            SecondPersonLabelTextBox.Text = string.Empty;
         }
 
         private void ClearAddonUi()
@@ -482,10 +487,21 @@ namespace CocoroConsole.Controls
                 return;
             }
 
-            if (sender == PersonaPresetNameTextBox && _currentPersonaPresetIndex >= 0 && _currentPersonaPresetIndex < _personaPresets.Count)
+            if (_currentPersonaPresetIndex >= 0 && _currentPersonaPresetIndex < _personaPresets.Count)
             {
-                _personaPresets[_currentPersonaPresetIndex].PersonaPresetName = PersonaPresetNameTextBox.Text;
-                RefreshComboBoxItems(PersonaPresetSelectComboBox, _personaPresets.Select(p => p.PersonaPresetName).ToList(), _currentPersonaPresetIndex);
+                if (sender == PersonaPresetNameTextBox)
+                {
+                    _personaPresets[_currentPersonaPresetIndex].PersonaPresetName = PersonaPresetNameTextBox.Text;
+                    RefreshComboBoxItems(PersonaPresetSelectComboBox, _personaPresets.Select(p => p.PersonaPresetName).ToList(), _currentPersonaPresetIndex);
+                }
+                else if (sender == PersonaTextBox)
+                {
+                    _personaPresets[_currentPersonaPresetIndex].PersonaText = PersonaTextBox.Text;
+                }
+                else if (sender == SecondPersonLabelTextBox)
+                {
+                    _personaPresets[_currentPersonaPresetIndex].SecondPersonLabel = SecondPersonLabelTextBox.Text;
+                }
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);

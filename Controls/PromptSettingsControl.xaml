@@ -124,12 +124,26 @@
                                                 <!-- 設定 -->
                                                 <Grid Margin="0,5">
                                                         <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="100"/>
+                                                                <ColumnDefinition Width="130"/>
                                                                 <ColumnDefinition Width="*"/>
                                                         </Grid.ColumnDefinitions>
                                                         <TextBlock Text="プリセット名:"
                                                                    Style="{StaticResource SettingLabelStyle}"/>
                                                         <TextBox x:Name="PersonaPresetNameTextBox"
+                                                                 Grid.Column="1"
+                                                                 Style="{StaticResource SettingTextBoxStyle}"
+                                                                 TextChanged="OnPersonaSettingChanged"/>
+                                                </Grid>
+
+                                                <Grid Margin="0,5">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="130"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="ユーザーの呼び方:"
+                                                                   Style="{StaticResource SettingLabelStyle}"
+                                                                   ToolTip="ユーザーの呼び名（例: マスター）"/>
+                                                        <TextBox x:Name="SecondPersonLabelTextBox"
                                                                  Grid.Column="1"
                                                                  Style="{StaticResource SettingTextBoxStyle}"
                                                                  TextChanged="OnPersonaSettingChanged"/>

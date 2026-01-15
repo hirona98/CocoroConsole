@@ -12,5 +12,8 @@ namespace CocoroConsole.Models.CocoroGhostApi
 
         [JsonPropertyName("persona_text")]
         public string PersonaText { get; set; } = string.Empty;
+
+        [JsonPropertyName("second_person_label")]
+        public string SecondPersonLabel { get; set; } = string.Empty;
     }
 }
