@@ -111,6 +111,7 @@
       "isUseSTT": false,
       "sttEngine": "amivoice",
       "sttWakeWord": "",
+      "sttProfileId": "",
       "sttApiKey": "",
       "sttLanguage": "ja",
       "isConvertMToon": false,

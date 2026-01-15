@@ -136,6 +136,7 @@ namespace CocoroConsole.Controls
             character.isUseSTT = IsUseSTTCheckBox.IsChecked ?? false;
             character.sttEngine = STTEngineComboBox.SelectedItem is ComboBoxItem selectedSttEngine ? selectedSttEngine.Tag?.ToString() ?? "amivoice" : "amivoice";
             character.sttWakeWord = STTWakeWordTextBox.Text;
+            character.sttProfileId = STTProfileIdTextBox.Text;
             character.sttApiKey = STTApiKeyPasswordBox.Text;
             character.isUseTTS = IsUseTTSCheckBox.IsChecked ?? false;
 
@@ -258,6 +259,7 @@ namespace CocoroConsole.Controls
             }
 
             STTWakeWordTextBox.Text = character.sttWakeWord;
+            STTProfileIdTextBox.Text = character.sttProfileId;
             STTApiKeyPasswordBox.Text = character.sttApiKey;
 
             // TTS設定
@@ -492,6 +494,7 @@ namespace CocoroConsole.Controls
                     isUseSTT = sourceCharacter.isUseSTT,
                     sttEngine = sourceCharacter.sttEngine,
                     sttWakeWord = sourceCharacter.sttWakeWord,
+                    sttProfileId = sourceCharacter.sttProfileId,
                     sttApiKey = sourceCharacter.sttApiKey,
                     sttLanguage = sourceCharacter.sttLanguage,
                     isConvertMToon = sourceCharacter.isConvertMToon,

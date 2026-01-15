@@ -37,9 +37,9 @@ namespace CocoroConsole.Services
         public string ServiceName => "AmiVoice";
         public bool IsAvailable => !_disposed && _client != null;
 
-        public AmiVoiceSpeechToTextService(string apiKey)
+        public AmiVoiceSpeechToTextService(string apiKey, string profileId = "")
         {
-            _client = new AmiVoiceSyncClient(apiKey);
+            _client = new AmiVoiceSyncClient(apiKey, profileId);
         }
 
         public async Task<string> RecognizeAsync(byte[] audioData)

@@ -13,6 +13,7 @@ namespace CocoroConsole.Services
         private const float SINGLE_TOKEN_CONFIDENCE = 0.6f;
         private const int MIN_TOKENS = 2;
         private readonly string _apiKey;
+        private readonly string _profileId;
         private static readonly HttpClient _httpClient;
 
         static AmiVoiceSyncClient()
@@ -33,9 +34,10 @@ namespace CocoroConsole.Services
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "CocoroAI/5.0.0");
         }
 
-        public AmiVoiceSyncClient(string apiKey)
+        public AmiVoiceSyncClient(string apiKey, string profileId = "")
         {
             _apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
+            _profileId = profileId ?? string.Empty;
         }
 
         public async Task<string> RecognizeAsync(byte[] audioData)
@@ -47,7 +49,14 @@ namespace CocoroConsole.Services
             {
                 using var content = new MultipartFormDataContent();
                 content.Add(new StringContent(_apiKey), "u");
-                content.Add(new StringContent("grammarFileNames=-a2-ja-general"), "d");
+
+                var dParam = "grammarFileNames=-a2-ja-general";
+                if (!string.IsNullOrWhiteSpace(_profileId))
+                {
+                    dParam += $" profileId={_profileId}";
+                }
+
+                content.Add(new StringContent(dParam), "d");
 
                 using var audioContent = new ByteArrayContent(audioData);
                 audioContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/wav");

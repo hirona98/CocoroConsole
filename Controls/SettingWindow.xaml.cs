@@ -672,6 +672,7 @@ namespace CocoroConsole.Controls
                 isUseSTT = source.isUseSTT,
                 sttEngine = source.sttEngine,
                 sttWakeWord = source.sttWakeWord,
+                sttProfileId = source.sttProfileId,
                 sttApiKey = source.sttApiKey,
                 sttLanguage = source.sttLanguage,
                 isConvertMToon = source.isConvertMToon,

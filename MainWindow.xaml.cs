@@ -1033,7 +1033,7 @@ namespace CocoroConsole
                 );
 
                 _voiceRecognitionService = new RealtimeVoiceRecognitionService(
-                    new AmiVoiceSpeechToTextService(currentCharacter.sttApiKey),
+                    new AmiVoiceSpeechToTextService(currentCharacter.sttApiKey, currentCharacter.sttProfileId),
                     currentCharacter.sttWakeWord,
                     speakerService, // 話者識別サービスを追加
                     voiceThreshold,
