@@ -39,14 +39,14 @@
                                                    FontSize="24"
                                                    Foreground="WhiteSmoke"
                                                    FontWeight="SemiBold">
-	                                                <TextBlock.ContextMenu>
-	                                                        <ContextMenu>
-	                                                                <MenuItem Header="ログ表示"
-	                                                                          Click="LogViewerMenuItem_Click"/>
-	                                                        </ContextMenu>
-	                                                </TextBlock.ContextMenu>
-	                                        </TextBlock>
-	                                </StackPanel>
+                                                <TextBlock.ContextMenu>
+                                                        <ContextMenu>
+                                                                <MenuItem Header="ログ表示"
+                                                                          Click="LogViewerMenuItem_Click"/>
+                                                        </ContextMenu>
+                                                </TextBlock.ContextMenu>
+                                        </TextBlock>
+                                </StackPanel>
 
                                 <StackPanel Grid.Column="1"
                                             Orientation="Horizontal"

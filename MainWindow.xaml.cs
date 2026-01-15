@@ -33,6 +33,15 @@ namespace CocoroConsole
         private bool _isStreamingChatActive;
         private bool _skipNextAssistantMessage;
         private string? _skipNextAssistantMessageContent;
+        private bool _isLogStreamHandlersAttached;
+
+        private static readonly HashSet<string> VoiceRelatedComponents = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "SileroVAD",
+            "VoiceRecognition",
+            "SpeakerRecognition",
+            "VoiceService"
+        };
 
         // --- 明示的な終了処理が進行中か（0/1） ---
         // WPF の Shutdown 中に Closing をキャンセルすると、Dispatcher が Shutdown 開始状態のまま残って
@@ -139,6 +148,9 @@ namespace CocoroConsole
 
                 // UIコントロールのイベントハンドラを登録
                 RegisterEventHandlers();
+
+                // CocoroConsole側ログを捕捉（ステータス表示用）
+                AttachDebugTraceListener();
 
                 // ボタンの初期状態を設定
                 InitializeButtonStates();
@@ -593,20 +605,22 @@ namespace CocoroConsole
 
         private void AttachLogStreamHandlers()
         {
-            if (_communicationService == null) return;
+            if (_communicationService == null || _isLogStreamHandlersAttached) return;
 
             _communicationService.LogMessagesReceived += OnLogStreamMessagesReceived;
             _communicationService.LogStreamConnectionChanged += OnLogStreamConnectionChanged;
             _communicationService.LogStreamError += OnLogStreamError;
+            _isLogStreamHandlersAttached = true;
         }
 
         private void DetachLogStreamHandlers()
         {
-            if (_communicationService == null) return;
+            if (_communicationService == null || !_isLogStreamHandlersAttached) return;
 
             _communicationService.LogMessagesReceived -= OnLogStreamMessagesReceived;
             _communicationService.LogStreamConnectionChanged -= OnLogStreamConnectionChanged;
             _communicationService.LogStreamError -= OnLogStreamError;
+            _isLogStreamHandlersAttached = false;
         }
 
         private void AttachDebugTraceListener()
@@ -628,6 +642,11 @@ namespace CocoroConsole
 
         private void OnDebugLogMessageReceived(object? sender, LogMessage logMessage)
         {
+            if (IsVoiceRelatedLog(logMessage))
+            {
+                UpdateStatusFromLog(logMessage);
+            }
+
             if (_logViewerWindow == null || _logViewerWindow.IsClosed) return;
 
             UIHelper.RunOnUIThread(() =>
@@ -659,6 +678,48 @@ namespace CocoroConsole
             if (_logViewerWindow == null || _logViewerWindow.IsClosed) return;
 
             UIHelper.RunOnUIThread(() => _logViewerWindow?.UpdateStatusMessage($"ログストリームエラー: {error}"));
+        }
+
+        private static bool IsVoiceRelatedLog(LogMessage logMessage)
+        {
+            var component = logMessage.component ?? string.Empty;
+            var message = logMessage.message ?? string.Empty;
+
+            if (VoiceRelatedComponents.Contains(component)) return true;
+
+            if (component.Contains("voice", StringComparison.OrdinalIgnoreCase)
+                || component.Contains("vad", StringComparison.OrdinalIgnoreCase)
+                || component.Contains("speaker", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (message.Contains("音声", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("話者", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("ウェイク", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("認識", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private void UpdateStatusFromLog(LogMessage logMessage)
+        {
+            UIHelper.RunOnUIThread(() =>
+            {
+                var componentText = string.IsNullOrWhiteSpace(logMessage.component) ? string.Empty : $"{logMessage.component} ";
+                var messageText = logMessage.message ?? string.Empty;
+
+                var statusText = $"状態: {componentText}{messageText}".Trim();
+
+                if (ConnectionStatusText != null)
+                {
+                    ConnectionStatusText.Text = statusText;
+                    ConnectionStatusText.ToolTip = statusText;
+                }
+            });
         }
 
         /// <summary>
