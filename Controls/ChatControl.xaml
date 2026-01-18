@@ -148,35 +148,35 @@
                                 Value="IBeam"/>
                 </Style>
 
-	                <!-- システムメッセージテキストスタイル -->
-	                <Style x:Key="SystemMessageTextStyle"
-	                       TargetType="TextBox">
-	                        <Setter Property="TextWrapping"
-	                                Value="Wrap"/>
-	                        <Setter Property="FontSize"
-	                                Value="14"/>
-	                        <Setter Property="Foreground"
-	                                Value="#4873CF"/>
-	                        <Setter Property="HorizontalAlignment"
-	                                Value="Center"/>
-	                        <Setter Property="IsReadOnly"
-	                                Value="True"/>
-	                        <Setter Property="BorderThickness"
-	                                Value="0"/>
-	                        <Setter Property="Background"
-	                                Value="Transparent"/>
-	                        <Setter Property="Cursor"
-	                                Value="IBeam"/>
-	                </Style>
+                <!-- システムメッセージテキストスタイル -->
+                <Style x:Key="SystemMessageTextStyle"
+                       TargetType="TextBox">
+                        <Setter Property="TextWrapping"
+                                Value="Wrap"/>
+                        <Setter Property="FontSize"
+                                Value="14"/>
+                        <Setter Property="Foreground"
+                                Value="#4873CF"/>
+                        <Setter Property="HorizontalAlignment"
+                                Value="Center"/>
+                        <Setter Property="IsReadOnly"
+                                Value="True"/>
+                        <Setter Property="BorderThickness"
+                                Value="0"/>
+                        <Setter Property="Background"
+                                Value="Transparent"/>
+                        <Setter Property="Cursor"
+                                Value="IBeam"/>
+                </Style>
 
-	                <!-- 通知メッセージテキストスタイル（テキストもセンター揃い） -->
-	                <Style x:Key="NotificationMessageTextStyle"
-	                       TargetType="TextBox"
-	                       BasedOn="{StaticResource SystemMessageTextStyle}">
-	                        <Setter Property="TextAlignment"
-	                                Value="Center"/>
-	                </Style>
-	        </UserControl.Resources>
+                <!-- 通知メッセージテキストスタイル（テキストもセンター揃い） -->
+                <Style x:Key="NotificationMessageTextStyle"
+                       TargetType="TextBox"
+                       BasedOn="{StaticResource SystemMessageTextStyle}">
+                        <Setter Property="TextAlignment"
+                                Value="Center"/>
+                </Style>
+        </UserControl.Resources>
 
         <Grid AllowDrop="True"
               Drop="Grid_Drop"
@@ -225,12 +225,12 @@
                                                    Foreground="#999999"
                                                    x:Name="ImagePlaceholderText"/>
                                         <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                                                     VerticalScrollBarVisibility="Disabled"
-                                                     x:Name="ImagePreviewScrollViewer"
-                                                     Margin="5"
-                                                     Visibility="Collapsed">
+                                                      VerticalScrollBarVisibility="Disabled"
+                                                      x:Name="ImagePreviewScrollViewer"
+                                                      Margin="5"
+                                                      Visibility="Collapsed">
                                                 <WrapPanel x:Name="ImagePreviewPanel"
-                                                          Orientation="Horizontal"/>
+                                                           Orientation="Horizontal"/>
                                         </ScrollViewer>
                                 </Grid>
                         </Border>
@@ -249,14 +249,14 @@
                                         CornerRadius="5">
                                         <Grid>
                                                 <TextBox x:Name="MessageTextBox"
-                                                         Height="55"
-                                                         MinHeight="55"
-                                                         MaxHeight="180"
+                                                         MinLines="4"
+                                                         MaxLines="10"
                                                          Padding="5"
                                                          FontSize="14"
                                                          BorderThickness="0"
                                                          Background="Transparent"
                                                          VerticalContentAlignment="Top"
+                                                         VerticalScrollBarVisibility="Auto"
                                                          PreviewKeyDown="MessageTextBox_KeyDown"
                                                          TextWrapping="Wrap"
                                                          MaxLength="10485760"
@@ -292,7 +292,6 @@
                                 <Border x:Name="VoiceLevelBorder"
                                         Grid.Column="1"
                                         Width="10"
-                                        Height="55"
                                         Margin="5,0,5,0"
                                         Background="#E0E0E0"
                                         CornerRadius="5">
@@ -311,7 +310,6 @@
                                         Grid.Column="2"
                                         Content="送信"
                                         Width="60"
-                                        Height="55"
                                         Click="SendButton_Click"
                                         FontSize="14"
                                         Style="{StaticResource DisabledButtonStyle}"/>
