@@ -8,9 +8,9 @@
              d:DesignWidth="800">
 
         <UserControl.Resources>
-                <!-- Expanderスタイル -->
-                <Style x:Key="PromptExpanderStyle"
-                       TargetType="Expander">
+                <!-- セクション枠（GroupBox）スタイル -->
+                <Style x:Key="PromptGroupBoxStyle"
+                       TargetType="GroupBox">
                         <Setter Property="Background"
                                 Value="White"/>
                         <Setter Property="BorderBrush"
@@ -19,8 +19,6 @@
                                 Value="1"/>
                         <Setter Property="Margin"
                                 Value="0,0,20,15"/>
-                        <Setter Property="Padding"
-                                Value="10"/>
                         <Setter Property="FontSize"
                                 Value="14"/>
                         <Setter Property="Foreground"
@@ -81,10 +79,9 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,0,0,20">
                                 <!-- Persona -->
-                                <Expander Header="システムプロンプト"
-                                          Style="{StaticResource PromptExpanderStyle}"
-                                          IsExpanded="True">
-                                        <StackPanel>
+                                <GroupBox Header="システムプロンプト"
+                                          Style="{StaticResource PromptGroupBoxStyle}">
+                                        <StackPanel Margin="10">
                                                 <!-- プリセット選択 -->
                                                 <Grid Margin="0,0,0,15">
                                                         <Grid.ColumnDefinitions>
@@ -163,13 +160,12 @@
                                                                  TextChanged="OnPersonaSettingChanged"/>
                                                 </Border>
                                         </StackPanel>
-                                </Expander>
+                                </GroupBox>
 
                                 <!-- Addon -->
-                                <Expander Header="追加プロンプト（任意）"
-                                          Style="{StaticResource PromptExpanderStyle}"
-                                          IsExpanded="True">
-                                        <StackPanel>
+                                <GroupBox Header="追加プロンプト（任意）"
+                                          Style="{StaticResource PromptGroupBoxStyle}">
+                                        <StackPanel Margin="10">
                                                 <!-- プリセット選択 -->
                                                 <Grid Margin="0,0,0,15">
                                                         <Grid.ColumnDefinitions>
@@ -234,7 +230,7 @@
                                                                  TextChanged="OnAddonSettingChanged"/>
                                                 </Border>
                                         </StackPanel>
-                                </Expander>
+                                </GroupBox>
                         </StackPanel>
                 </ScrollViewer>
         </Grid>
