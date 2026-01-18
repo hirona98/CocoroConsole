@@ -79,7 +79,7 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,0,0,20">
                                 <!-- Persona -->
-                                <GroupBox Header="システムプロンプト"
+                                <GroupBox Header="ペルソナプロンプト"
                                           Style="{StaticResource PromptGroupBoxStyle}">
                                         <StackPanel Margin="10">
                                                 <!-- プリセット選択 -->
@@ -166,6 +166,14 @@
                                 <GroupBox Header="追加プロンプト（任意）"
                                           Style="{StaticResource PromptGroupBoxStyle}">
                                         <StackPanel Margin="10">
+                                                <!-- 説明テキスト -->
+                                                <TextBlock TextWrapping="Wrap"
+                                                           Foreground="#666666"
+                                                           Margin="0,0,0,10">
+                                                        VRMの表情指定や会話の文字数制限などを入れてください。
+                                                        記憶更新処理の人格には使用されません。
+                                                </TextBlock>
+
                                                 <!-- プリセット選択 -->
                                                 <Grid Margin="0,0,0,15">
                                                         <Grid.ColumnDefinitions>
