@@ -39,7 +39,7 @@ namespace CocoroConsole.Controls
             sb.AppendLine();
 
             sb.AppendLine("エンドポイント:");
-            sb.AppendLine($"- POST http://127.0.0.1:{port}/api/v2/notification");
+            sb.AppendLine($"- POST https://127.0.0.1:{port}/api/v2/notification");
             sb.AppendLine();
 
             sb.AppendLine("認証:");
@@ -63,23 +63,24 @@ namespace CocoroConsole.Controls
 
             sb.AppendLine("使用例 (cURL):");
             sb.AppendLine("# 1枚の画像を送る場合");
-            sb.AppendLine($"curl.exe -X POST http://127.0.0.1:{port}/api/v2/notification \\");
-            sb.AppendLine("  -H \"Authorization: Bearer cocoro_token\" \\");
+            sb.AppendLine($"curl.exe -k -X POST https://127.0.0.1:{port}/api/v2/notification \\");
+            sb.AppendLine("  -H \"Authorization: Bearer <TOKEN>\" \\");
             sb.AppendLine("  -H \"Content-Type: application/json\" \\");
             sb.AppendLine("  -d '{\"source_system\":\"MyApp\",\"text\":\"処理完了\",\"images\":[\"data:image/jpeg;base64,...\"]}'");
             sb.AppendLine();
             sb.AppendLine("# 複数枚の画像を送る場合");
-            sb.AppendLine($"curl.exe -X POST http://127.0.0.1:{port}/api/v2/notification \\");
-            sb.AppendLine("  -H \"Authorization: Bearer cocoro_token\" \\");
+            sb.AppendLine($"curl.exe -k -X POST https://127.0.0.1:{port}/api/v2/notification \\");
+            sb.AppendLine("  -H \"Authorization: Bearer <TOKEN>\" \\");
             sb.AppendLine("  -H \"Content-Type: application/json\" \\");
             sb.AppendLine("  -d '{\"source_system\":\"MyApp\",\"text\":\"結果\",\"images\":[\"data:image/jpeg;base64,...\",\"data:image/png;base64,...\"]}'");
             sb.AppendLine();
 
             sb.AppendLine("使用例 (PowerShell):");
+            sb.AppendLine("# 自己署名HTTPSのため、Windows PowerShell では curl.exe 推奨 / PowerShell 7 なら -SkipCertificateCheck を使用");
             sb.AppendLine("# 複数枚の画像を送る場合");
             sb.AppendLine("Invoke-RestMethod -Method Post `");
-            sb.AppendLine($"  -Uri \"http://127.0.0.1:{port}/api/v2/notification\" `");
-            sb.AppendLine("  -Headers @{ Authorization = \"Bearer cocoro_token\" } `");
+            sb.AppendLine($"  -Uri \"https://127.0.0.1:{port}/api/v2/notification\" `");
+            sb.AppendLine("  -Headers @{ Authorization = \"Bearer <TOKEN>\" } `");
             sb.AppendLine("  -ContentType \"application/json; charset=utf-8\" `");
             sb.AppendLine("  -Body '{\"source_system\":\"MyApp\",\"text\":\"結果\",\"images\":[\"data:image/jpeg;base64,...\",\"data:image/png;base64,...\"]}'");
             return sb.ToString();
@@ -94,7 +95,7 @@ namespace CocoroConsole.Controls
             sb.AppendLine();
 
             sb.AppendLine("エンドポイント:");
-            sb.AppendLine($"- POST http://127.0.0.1:{port}/api/v2/meta-request");
+            sb.AppendLine($"- POST https://127.0.0.1:{port}/api/v2/meta-request");
             sb.AppendLine();
 
             sb.AppendLine("認証:");
@@ -117,16 +118,17 @@ namespace CocoroConsole.Controls
             sb.AppendLine();
 
             sb.AppendLine("使用例 (cURL):");
-            sb.AppendLine($"curl.exe -X POST http://127.0.0.1:{port}/api/v2/meta-request \\");
-            sb.AppendLine("  -H \"Authorization: Bearer cocoro_token\" \\");
+            sb.AppendLine($"curl.exe -k -X POST https://127.0.0.1:{port}/api/v2/meta-request \\");
+            sb.AppendLine("  -H \"Authorization: Bearer <TOKEN>\" \\");
             sb.AppendLine("  -H \"Content-Type: application/json\" \\");
             sb.AppendLine("  -d '{\"instruction\":\"これは直近1時間のニュースです。内容をユーザに説明し、感想も述べてください。\",\"payload_text\":\"～ニュース内容～\"}'");
             sb.AppendLine();
 
             sb.AppendLine("使用例 (PowerShell):");
+            sb.AppendLine("# 自己署名HTTPSのため、Windows PowerShell では curl.exe 推奨 / PowerShell 7 なら -SkipCertificateCheck を使用");
             sb.AppendLine("Invoke-RestMethod -Method Post `");
-            sb.AppendLine($"  -Uri \"http://127.0.0.1:{port}/api/v2/meta-request\" `");
-            sb.AppendLine("  -Headers @{ Authorization = \"Bearer cocoro_token\" } `");
+            sb.AppendLine($"  -Uri \"https://127.0.0.1:{port}/api/v2/meta-request\" `");
+            sb.AppendLine("  -Headers @{ Authorization = \"Bearer <TOKEN>\" } `");
             sb.AppendLine("  -ContentType \"application/json; charset=utf-8\" `");
             sb.AppendLine("  -Body '{\"instruction\":\"これは直近1時間のニュースです。内容をユーザに説明し、感想も述べてください。\",\"payload_text\":\"～ニュース内容～\"}'");
             return sb.ToString();

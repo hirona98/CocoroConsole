@@ -40,7 +40,17 @@ namespace CocoroConsole.Services
             }
 
             _baseUrl = baseUrl.TrimEnd('/');
-            _httpClient = handler != null ? new HttpClient(handler) : new HttpClient();
+            if (handler == null)
+            {
+                // --- CocoroGhost は自己署名HTTPSを前提とする ---
+                // LAN公開（Web UI含む）に寄せるため HTTPS 必須の設計になっている。
+                // CocoroConsole はローカル接続のみの前提で、証明書のホスト検証は行わない。
+                handler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+                };
+            }
+            _httpClient = new HttpClient(handler);
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -406,19 +416,10 @@ namespace CocoroConsole.Services
     public class ChatStreamRequest
     {
         /// <summary>
-        /// 利用する埋め込みプリセット ID。
-        /// </summary>
-        [JsonPropertyName("embedding_preset_id")]
-        public string EmbeddingPresetId { get; set; } = string.Empty;
-
-        /// <summary>
-        /// クライアント ID（CocoroConsole など）。
-        /// </summary>
-        [JsonPropertyName("client_id")]
-        public string ClientId { get; set; } = string.Empty;
-
-        /// <summary>
         /// 入力テキスト。
+        /// 
+        /// - 省略/空文字列を許可する
+        /// - 空で画像がある場合、サーバ側で内部的に補完される
         /// </summary>
         [JsonPropertyName("input_text")]
         public string InputText { get; set; } = string.Empty;

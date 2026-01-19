@@ -116,7 +116,7 @@ namespace CocoroConsole.Controls
             try
             {
                 var appSettings = AppSettings.Instance;
-                var baseUrl = $"http://127.0.0.1:{appSettings.CocoroGhostPort}";
+                var baseUrl = $"https://127.0.0.1:{appSettings.CocoroGhostPort}";
                 var token = appSettings.CocoroGhostBearerToken;
 
                 if (!string.IsNullOrEmpty(token))

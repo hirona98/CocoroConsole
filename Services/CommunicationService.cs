@@ -60,7 +60,7 @@ namespace CocoroConsole.Services
         // memory_id キャッシュ（チャット返信を UI へ戻す際に付与）
         private string _cachedMemoryId = "memory";
 
-        // cocoro_ghost /api/settings キャッシュ（embedding_preset_id 解決などに利用）
+        // cocoro_ghost /api/settings キャッシュ（UI の表示・設定編集に利用）
         private CocoroConsole.Models.CocoroGhostApi.CocoroGhostSettings? _cachedCocoroGhostSettings;
 
         // 起動後、cocoro_ghost が Normal になったタイミングで一度だけ設定取得するためのフラグ
@@ -113,6 +113,9 @@ namespace CocoroConsole.Services
         {
             _appSettings = appSettings;
 
+            // --- ClientId は cocoro_ghost の events stream の hello で必須になるため、起動時に確実に用意する ---
+            EnsureClientIdInitialized();
+
             // APIサーバーの初期化
             _apiServer = CreateApiServer(_appSettings.CocoroConsolePort);
 
@@ -123,7 +126,7 @@ namespace CocoroConsole.Services
             var bearerToken = _appSettings.CocoroGhostBearerToken;
             if (!string.IsNullOrEmpty(bearerToken))
             {
-                var baseUrl = $"http://127.0.0.1:{_appSettings.CocoroGhostPort}";
+                var baseUrl = $"https://127.0.0.1:{_appSettings.CocoroGhostPort}";
                 _cocoroGhostApiClient = new CocoroGhostApiClient(baseUrl, bearerToken);
             }
 
@@ -131,11 +134,28 @@ namespace CocoroConsole.Services
             RefreshSettingsCache();
 
             // ステータスポーリングサービスの初期化
-            _statusPollingService = new StatusPollingService($"http://127.0.0.1:{_appSettings.CocoroGhostPort}");
+            _statusPollingService = new StatusPollingService($"https://127.0.0.1:{_appSettings.CocoroGhostPort}");
             _statusPollingService.StatusChanged += OnStatusPollingServiceStatusChanged;
 
             // AppSettingsの変更イベントを購読
             AppSettings.SettingsSaved += OnSettingsSaved;
+        }
+
+        /// <summary>
+        /// ClientId が未設定の場合に生成して永続化する。
+        /// 
+        /// - /api/events/stream の hello で client_id を送るために必要
+        /// - desktop_watch_target_client_id などの「端末識別」にも使う
+        /// </summary>
+        private void EnsureClientIdInitialized()
+        {
+            if (!string.IsNullOrWhiteSpace(_appSettings.ClientId))
+            {
+                return;
+            }
+
+            _appSettings.ClientId = $"console-{Guid.NewGuid()}";
+            _appSettings.SaveAppSettings();
         }
 
 
@@ -302,7 +322,7 @@ namespace CocoroConsole.Services
             _statusPollingService.StatusChanged -= OnStatusPollingServiceStatusChanged;
             _statusPollingService.Dispose();
 
-            _statusPollingService = new StatusPollingService($"http://127.0.0.1:{cocoroGhostPort}");
+            _statusPollingService = new StatusPollingService($"https://127.0.0.1:{cocoroGhostPort}");
             _statusPollingService.StatusChanged += OnStatusPollingServiceStatusChanged;
         }
 
@@ -319,7 +339,7 @@ namespace CocoroConsole.Services
                 return;
             }
 
-            var baseUrl = $"http://127.0.0.1:{settings.cocoroCorePort}";
+            var baseUrl = $"https://127.0.0.1:{settings.cocoroCorePort}";
             _cocoroGhostApiClient = new CocoroGhostApiClient(baseUrl, bearerToken);
         }
 
@@ -367,7 +387,7 @@ namespace CocoroConsole.Services
                 Debug.WriteLine("[CommunicationService] cocoro_ghostから設定を取得中...");
                 var settings = await _cocoroGhostApiClient.GetSettingsAsync();
 
-                // チャット送信時に参照するためキャッシュ
+                // UI の表示・設定編集のためキャッシュ
                 _cachedCocoroGhostSettings = settings;
 
                 // UI側へ通知（MainWindowでボタン状態などに反映）
@@ -436,11 +456,8 @@ namespace CocoroConsole.Services
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(_appSettings.ClientId))
-                {
-                    _appSettings.ClientId = $"console-{Guid.NewGuid()}";
-                    _appSettings.SaveAppSettings();
-                }
+                // チャット送信時にも ClientId の未設定を避ける（念のため）
+                EnsureClientIdInitialized();
 
                 // セッションIDを生成または既存のものを使用
                 if (string.IsNullOrEmpty(_currentSessionId))
@@ -466,6 +483,21 @@ namespace CocoroConsole.Services
                     }
                 }
 
+                // 入力が空で画像も無い場合はサーバ側が error を返す仕様のため、クライアント側で弾く
+                if (string.IsNullOrWhiteSpace(message) && images.Count == 0)
+                {
+                    var errorMessage = "メッセージまたは画像を入力してください";
+                    StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                    {
+                        Content = "",
+                        IsFinished = true,
+                        IsError = true,
+                        ErrorMessage = errorMessage
+                    });
+                    StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, errorMessage));
+                    return;
+                }
+
                 // 画像がある場合は画像処理中、そうでなければメッセージ処理中に設定
                 var processingStatus = images.Count > 0
                     ? CocoroGhostStatus.ProcessingImage
@@ -474,18 +506,8 @@ namespace CocoroConsole.Services
 
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット送信開始"));
 
-                var embeddingPresetId = await ResolveEmbeddingPresetIdForChatAsync();
-                if (string.IsNullOrWhiteSpace(embeddingPresetId))
-                {
-                    _statusPollingService.SetNormalStatus();
-                    StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, "embedding_preset_idの取得に失敗しました（/api/settings を確認してください）"));
-                    return;
-                }
-
                 var chatRequest = new ChatStreamRequest
                 {
-                    EmbeddingPresetId = embeddingPresetId,
-                    ClientId = _appSettings.ClientId,
                     InputText = message,
                     Images = images.Count > 0 ? images : null,
                     ClientContext = GetClientContextSnapshot()
@@ -597,47 +619,6 @@ namespace CocoroConsole.Services
                 // ステータスバーにエラー表示
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"チャット送信エラー: {ex.Message}"));
             }
-        }
-
-        private async Task<string?> ResolveEmbeddingPresetIdForChatAsync()
-        {
-            var cached = TryResolveEmbeddingPresetId(_cachedCocoroGhostSettings);
-            if (!string.IsNullOrWhiteSpace(cached))
-            {
-                return cached;
-            }
-
-            if (_cocoroGhostApiClient == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                var settings = await _cocoroGhostApiClient.GetSettingsAsync();
-                _cachedCocoroGhostSettings = settings;
-                return TryResolveEmbeddingPresetId(settings);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private static string? TryResolveEmbeddingPresetId(CocoroConsole.Models.CocoroGhostApi.CocoroGhostSettings? settings)
-        {
-            if (settings == null)
-            {
-                return null;
-            }
-
-            var active = settings.ActiveEmbeddingPresetId;
-            if (!string.IsNullOrWhiteSpace(active))
-            {
-                return active;
-            }
-
-            return settings.EmbeddingPreset?.FirstOrDefault()?.EmbeddingPresetId;
         }
 
         public async Task SetDesktopWatchEnabledAsync(bool enabled)
@@ -840,7 +821,7 @@ namespace CocoroConsole.Services
                 return;
             }
 
-            var logStreamUri = new Uri($"ws://127.0.0.1:{_appSettings.CocoroGhostPort}/api/logs/stream");
+            var logStreamUri = new Uri($"wss://127.0.0.1:{_appSettings.CocoroGhostPort}/api/logs/stream");
             _logStreamClient = new LogStreamClient(logStreamUri, bearerToken);
             _logStreamClient.LogsReceived += OnLogStreamLogsReceived;
             _logStreamClient.ConnectionStateChanged += OnLogStreamConnectionStateChanged;
@@ -909,14 +890,18 @@ namespace CocoroConsole.Services
                 return;
             }
 
-            var eventsStreamUri = new Uri($"ws://127.0.0.1:{_appSettings.CocoroGhostPort}/api/events/stream");
+            // events stream の hello を確実に送るため、ClientId を用意しておく
+            EnsureClientIdInitialized();
+
+            var eventsStreamUri = new Uri($"wss://127.0.0.1:{_appSettings.CocoroGhostPort}/api/events/stream");
             _eventsStreamClient = new EventsStreamClient(
                 eventsStreamUri,
                 bearerToken,
                 _appSettings.ClientId,
-                new[] { "vision.desktop", "vision.camera", "speaker" }
+                new[] { "vision.desktop", "vision.camera" }
             );
             _eventsStreamClient.EventReceived += OnEventsStreamEventReceived;
+            _eventsStreamClient.ConnectionStateChanged += OnEventsStreamConnectionStateChanged;
             _eventsStreamClient.ErrorOccurred += OnEventsStreamErrorOccurred;
 
             try
@@ -944,10 +929,19 @@ namespace CocoroConsole.Services
             finally
             {
                 _eventsStreamClient.EventReceived -= OnEventsStreamEventReceived;
+                _eventsStreamClient.ConnectionStateChanged -= OnEventsStreamConnectionStateChanged;
                 _eventsStreamClient.ErrorOccurred -= OnEventsStreamErrorOccurred;
                 _eventsStreamClient.Dispose();
                 _eventsStreamClient = null;
             }
+        }
+
+        private void OnEventsStreamConnectionStateChanged(object? sender, bool isConnected)
+        {
+            var message = isConnected
+                ? "イベントストリームに接続しました"
+                : "イベントストリームが切断されました";
+            StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(isConnected, message));
         }
 
         private void OnEventsStreamEventReceived(object? sender, CocoroGhostEvent ev)
@@ -1505,6 +1499,7 @@ namespace CocoroConsole.Services
         private void OnEventsStreamErrorOccurred(object? sender, string errorMessage)
         {
             Debug.WriteLine($"イベントストリームエラー: {errorMessage}");
+            StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"イベントストリームエラー: {errorMessage}"));
         }
 
 

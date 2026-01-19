@@ -170,6 +170,9 @@ namespace CocoroConsole.Communication
 
             _connectionTokenSource = CancellationTokenSource.CreateLinkedTokenSource(supervisorToken);
             _webSocket = new ClientWebSocket();
+            // --- CocoroGhost は自己署名HTTPS（wss）を前提とする ---
+            // CocoroConsole はローカル接続のみの前提で、証明書のホスト検証は行わない。
+            _webSocket.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
             _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {_bearerToken}");
             _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
             // ライブラリ側ではUIコンテキストを捕捉しない

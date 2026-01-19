@@ -48,10 +48,17 @@ namespace CocoroConsole.Services
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="baseUrl">CocoroGhostのベースURL（デフォルト: http://127.0.0.1:55601）</param>
-        public StatusPollingService(string baseUrl = "http://127.0.0.1:55601")
+        /// <param name="baseUrl">CocoroGhostのベースURL（デフォルト: https://127.0.0.1:55601）</param>
+        public StatusPollingService(string baseUrl = "https://127.0.0.1:55601")
         {
-            _httpClient = new HttpClient
+            // --- CocoroGhost は自己署名HTTPSを前提とする ---
+            // LAN公開（Web UI含む）に寄せるため HTTPS 必須の設計になっている。
+            // CocoroConsole はローカル接続のみの前提で、証明書のホスト検証は行わない。
+            var handler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+            };
+            _httpClient = new HttpClient(handler)
             {
                 Timeout = TimeSpan.FromMilliseconds(800)
             };

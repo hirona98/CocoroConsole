@@ -29,7 +29,17 @@ namespace CocoroConsole.Utilities
     /// </summary>
     public static class ProcessHelper
     {
-        private static readonly HttpClient httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+        // --- CocoroGhost は自己署名HTTPSを前提とする ---
+        // LAN公開（Web UI含む）に寄せるため HTTPS 必須の設計になっている。
+        // CocoroConsole からのローカル制御（/api/control）は証明書のホスト検証を行わない。
+        private static readonly HttpClient httpClient = new HttpClient(
+            new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+            })
+        {
+            Timeout = TimeSpan.FromSeconds(5)
+        };
         /// <summary>
         /// 指定した名前のプロセスに対して操作を行います
         /// </summary>
@@ -370,7 +380,7 @@ namespace CocoroConsole.Utilities
 
                 // --- /api/control エンドポイントに POST で送信（必要なら Authorization を付与） ---
                 // ConfigureAwait(false) を使用してデッドロックを回避
-                using var requestMessage = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{port}/api/control")
+                using var requestMessage = new HttpRequestMessage(HttpMethod.Post, $"https://127.0.0.1:{port}/api/control")
                 {
                     Content = content
                 };
