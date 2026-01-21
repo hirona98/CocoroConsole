@@ -95,8 +95,8 @@ namespace CocoroConsole.Communication
         public bool isUseSTT { get; set; } // STT（音声認識）機能の有効/無効
         public string sttEngine { get; set; } = string.Empty; // STTエンジン ("amivoice" | "openai")
         public string sttWakeWord { get; set; } = string.Empty; // STT起動ワード
-        public string sttProfileId { get; set; } = string.Empty; // AmiVoice profileId
-        public string sttApiKey { get; set; } = string.Empty; // STT用APIキー
+        public string sttProfileId { get; set; } = string.Empty; // AmiVoice profileId（マイページ登録の場合は :{サービスID}）
+        public string sttApiKey { get; set; } = string.Empty; // AmiVoice APPKEY（recognize の u）
         public string sttLanguage { get; set; } = string.Empty; // STT言語設定
         public bool isConvertMToon { get; set; } // UnlitをMToonに変換するかどうか
         public bool isEnableShadowOff { get; set; } // 影オフ機能の有効/無効

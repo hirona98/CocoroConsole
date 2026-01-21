@@ -37,8 +37,14 @@ namespace CocoroConsole.Services
         public string ServiceName => "AmiVoice";
         public bool IsAvailable => !_disposed && _client != null;
 
+        /// <summary>
+        /// コンストラクタ。
+        /// </summary>
+        /// <param name="apiKey">AmiVoice APPKEY（recognize の u）</param>
+        /// <param name="profileId">AmiVoice profileId（推奨: 先頭に ":"。マイページ単語登録の場合は :{サービスID}）</param>
         public AmiVoiceSpeechToTextService(string apiKey, string profileId = "")
         {
+            // クライアントを初期化
             _client = new AmiVoiceSyncClient(apiKey, profileId);
         }
 

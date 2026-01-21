@@ -897,17 +897,17 @@
                                      x:Name="STTProfileIdTextBox"
                                      Foreground="#FF0078D7"
                                      Padding="2"
-                                     ToolTip="AmiVoice profileId"/>
+                                     ToolTip="AmiVoice profileId（マイページ単語登録の場合は {サービスID}）。本アプリは grammarFileNames=-a-general 固定。"/>
                         </Grid>
 
-                        <!-- STT APIキーの設定 -->
+                        <!-- STT APIキー（AmiVoice APPKEY）の設定 -->
                         <Grid Margin="0,10,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0"
-                                       Text="STT API Key:"
+                                       Text="API Key:"
                                        VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1"
                                         Orientation="Horizontal"
