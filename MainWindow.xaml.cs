@@ -12,6 +12,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using Forms = System.Windows.Forms;
 using System.Windows.Interop;
 
@@ -34,6 +35,16 @@ namespace CocoroConsole
         private bool _skipNextAssistantMessage;
         private string? _skipNextAssistantMessageContent;
         private bool _isLogStreamHandlersAttached;
+
+        // --- CocoroGhost の最新ステータス（ステータスバー復帰先） ---
+        // ログ表示で一時的に上書きしても、5秒後に「その時点の最新状態」に戻すために保持する。
+        private CocoroGhostStatus _latestCocoroGhostStatus = CocoroGhostStatus.WaitingForStartup;
+
+        // --- ステータスバーの一時上書き（ログ表示用） ---
+        // 直近ログで上書きし、5秒間上書きが無ければ null に戻して通常表示へ復帰する。
+        private string? _statusBarOverrideText;
+        private DispatcherTimer? _statusBarOverrideTimer;
+        private static readonly TimeSpan StatusBarOverrideTimeout = TimeSpan.FromSeconds(5);
 
         private static readonly HashSet<string> VoiceRelatedComponents = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -158,6 +169,7 @@ namespace CocoroConsole
                 // 初期ステータス表示
                 if (_communicationService != null)
                 {
+                    // 通信サービスが持つ最新状態を初期表示として反映
                     UpdateCocoroGhostStatusDisplay(_communicationService.CurrentStatus);
                 }
 
@@ -297,18 +309,14 @@ namespace CocoroConsole
         /// <param name="status">CocoroGhostのステータス</param>
         private void UpdateCocoroGhostStatusDisplay(CocoroGhostStatus status)
         {
+            // --- 最新状態を保持（ログ表示の復帰先になる） ---
+            _latestCocoroGhostStatus = status;
+
+            // --- 送信ボタンの有効/無効を状態に応じて更新 ---
             bool isLLMEnabled = _appSettings.IsUseLLM;
 
-            string statusText = status switch
-            {
-                CocoroGhostStatus.WaitingForStartup => isLLMEnabled ? "CocoroGhost起動待ち" : "LLM無効",
-                CocoroGhostStatus.Normal => isLLMEnabled ? "正常動作中" : "LLM無効",
-                CocoroGhostStatus.ProcessingMessage => "LLMメッセージ処理中",
-                CocoroGhostStatus.ProcessingImage => "LLM画像処理中",
-                _ => "不明な状態"
-            };
-
-            ConnectionStatusText.Text = $"状態: {statusText}";
+            // --- ステータスバー表示は「通常表示 or ログ上書き」を統一して描画する ---
+            RenderStatusBarText(BuildCocoroGhostStatusBarText(status));
 
             // 送信ボタンの有効/無効を制御（LLMが無効の場合は無効にする）
             bool isSendEnabled = isLLMEnabled && status != CocoroGhostStatus.WaitingForStartup;
@@ -394,7 +402,7 @@ namespace CocoroConsole
             if (shouldBeActive)
             {
                 InitializeVoiceRecognitionService(startActive: true);
-                Debug.WriteLine("[MainWindow] 音声認識サービスを開始しました");
+                Debug.WriteLine("[CocoroConsole] 音声認識サービスを開始しました");
             }
             else
             {
@@ -403,7 +411,7 @@ namespace CocoroConsole
                 {
                     ChatControlInstance.UpdateVoiceLevel(0, false);
                 });
-                Debug.WriteLine("[MainWindow] 音声認識サービスを停止しました");
+                Debug.WriteLine("[CocoroConsole] 音声認識サービスを停止しました");
             }
 
             // UI側の設定反映（ボタン状態とLLM表示）
@@ -714,12 +722,85 @@ namespace CocoroConsole
 
                 var statusText = $"状態: {componentText}{messageText}".Trim();
 
-                if (ConnectionStatusText != null)
-                {
-                    ConnectionStatusText.Text = statusText;
-                    ConnectionStatusText.ToolTip = statusText;
-                }
+                // --- ログでステータスバーを一時上書き（デバウンス） ---
+                // 直近ログで上書きし続け、5秒間ログ上書きが無ければ「その時点の最新ステータス表示」に戻す。
+                SetStatusBarOverride(statusText);
             });
+        }
+
+        /// <summary>
+        /// ステータスバーにログ由来の一時表示を設定し、一定時間後に通常表示へ復帰する（デバウンス）
+        /// </summary>
+        /// <param name="overrideText">ステータスバーに表示するテキスト（例: "状態: VoiceRecognition 〜"）</param>
+        private void SetStatusBarOverride(string overrideText)
+        {
+            // --- 上書きテキストを更新 ---
+            _statusBarOverrideText = overrideText;
+
+            // --- 既存タイマーが無ければ作成（UIスレッド上） ---
+            if (_statusBarOverrideTimer == null)
+            {
+                _statusBarOverrideTimer = new DispatcherTimer
+                {
+                    Interval = StatusBarOverrideTimeout
+                };
+                _statusBarOverrideTimer.Tick += OnStatusBarOverrideTimerTick;
+            }
+
+            // --- 表示を即時反映 ---
+            RenderStatusBarText(_statusBarOverrideText);
+
+            // --- デバウンス：タイマーをリセットして5秒後の復帰を予約 ---
+            _statusBarOverrideTimer.Stop();
+            _statusBarOverrideTimer.Interval = StatusBarOverrideTimeout;
+            _statusBarOverrideTimer.Start();
+        }
+
+        /// <summary>
+        /// ステータスバー上書きのタイムアウト（5秒間上書きが無ければ通常表示へ復帰）
+        /// </summary>
+        private void OnStatusBarOverrideTimerTick(object? sender, EventArgs e)
+        {
+            // --- タイムアウト：上書きを解除して通常表示へ復帰 ---
+            _statusBarOverrideTimer?.Stop();
+            _statusBarOverrideText = null;
+            RenderStatusBarText(BuildCocoroGhostStatusBarText(_latestCocoroGhostStatus));
+        }
+
+        /// <summary>
+        /// 現在の状態（または一時上書き）に基づき、ステータスバーの表示を更新する
+        /// </summary>
+        /// <param name="normalStatusText">通常表示テキスト（例: "状態: 正常動作中"）</param>
+        private void RenderStatusBarText(string normalStatusText)
+        {
+            // --- ログ上書きが有効ならそちらを優先 ---
+            var textToShow = _statusBarOverrideText ?? normalStatusText;
+
+            // --- UI要素が未生成の場合は何もしない（初期化順による） ---
+            if (ConnectionStatusText == null) return;
+
+            ConnectionStatusText.Text = textToShow;
+            ConnectionStatusText.ToolTip = textToShow;
+        }
+
+        /// <summary>
+        /// CocoroGhostの状態から、ステータスバーの通常表示文字列を組み立てる
+        /// </summary>
+        /// <param name="status">CocoroGhostの状態</param>
+        private string BuildCocoroGhostStatusBarText(CocoroGhostStatus status)
+        {
+            // --- 表示文言は UpdateCocoroGhostStatusDisplay と同じルールで統一 ---
+            var isLLMEnabled = _appSettings.IsUseLLM;
+            var statusText = status switch
+            {
+                CocoroGhostStatus.WaitingForStartup => isLLMEnabled ? "CocoroGhost起動待ち" : "LLM無効",
+                CocoroGhostStatus.Normal => isLLMEnabled ? "正常動作中" : "LLM無効",
+                CocoroGhostStatus.ProcessingMessage => "LLMメッセージ処理中",
+                CocoroGhostStatus.ProcessingImage => "LLM画像処理中",
+                _ => "不明な状態"
+            };
+
+            return $"状態: {statusText}";
         }
 
         /// <summary>
@@ -731,6 +812,16 @@ namespace CocoroConsole
             {
                 // イベントハンドラの購読解除
                 AppSettings.SettingsSaved -= OnSettingsSaved;
+
+                // ステータスバー上書きタイマーの停止（閉じた後にTickで触らないようにする）
+                _statusBarOverrideTimer?.Stop();
+                if (_statusBarOverrideTimer != null)
+                {
+                    // --- Tick ハンドラを外して参照を切る（GCしやすくする） ---
+                    _statusBarOverrideTimer.Tick -= OnStatusBarOverrideTimerTick;
+                }
+                _statusBarOverrideTimer = null;
+                _statusBarOverrideText = null;
 
                 // DebugTraceListenerの解除
                 DetachDebugTraceListener();
@@ -990,14 +1081,14 @@ namespace CocoroConsole
                 var currentCharacter = GetStoredCharacterSetting();
                 if (currentCharacter == null)
                 {
-                    Debug.WriteLine("[MainWindow] 現在のキャラクター設定が見つかりません");
+                    Debug.WriteLine("[CocoroConsole] 現在のキャラクター設定が見つかりません");
                     return;
                 }
 
                 // 音声認識が有効でAPIキーが設定されている場合のみ初期化
                 if (!currentCharacter.isUseSTT || string.IsNullOrEmpty(currentCharacter.sttApiKey))
                 {
-                    Debug.WriteLine("[MainWindow] 音声認識機能が無効、またはAPIキーが未設定");
+                    Debug.WriteLine("[CocoroConsole] 音声認識機能が無効、またはAPIキーが未設定");
                     // 音量バーを0にリセット（UIスレッドで確実に実行）
                     UIHelper.RunOnUIThread(() =>
                     {
@@ -1008,7 +1099,7 @@ namespace CocoroConsole
 
                 // if (string.IsNullOrEmpty(currentCharacter.sttWakeWord))
                 // {
-                //     Debug.WriteLine("[MainWindow] ウェイクアップワードが未設定");
+                //     Debug.WriteLine("[CocoroConsole] ウェイクアップワードが未設定");
                 //     // 音量バーを0にリセット（UIスレッドで確実に実行）
                 //     UIHelper.RunOnUIThread(() =>
                 //     {
@@ -1053,7 +1144,7 @@ namespace CocoroConsole
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[MainWindow] 音声認識サービス初期化エラー: {ex.Message}");
+                Debug.WriteLine($"[CocoroConsole] 音声認識サービス初期化エラー: {ex.Message}");
             }
         }
 
@@ -1083,7 +1174,7 @@ namespace CocoroConsole
             UIHelper.RunOnUIThread(() =>
             {
                 // ステータス表示更新（必要に応じて）
-                System.Diagnostics.Debug.WriteLine($"[MainWindow] Speaker identified: {speakerName} ({confidence:P0})");
+                System.Diagnostics.Debug.WriteLine($"[CocoroConsole] Speaker identified: {speakerName} ({confidence:P0})");
             });
         }
 
@@ -1139,7 +1230,7 @@ namespace CocoroConsole
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[MainWindow] CocoroGhost送信エラー: {ex.Message}");
+                Debug.WriteLine($"[CocoroConsole] CocoroGhost送信エラー: {ex.Message}");
             }
         }
 
@@ -1162,7 +1253,7 @@ namespace CocoroConsole
                             _communicationService.CurrentStatus == CocoroGhostStatus.ProcessingImage)
                         {
                             // 起動成功時はログ出力のみ
-                            Debug.WriteLine("[MainWindow] CocoroGhost起動完了");
+                            Debug.WriteLine("[CocoroConsole] CocoroGhost起動完了");
                             return; // 起動完了で監視終了
                         }
                     }
@@ -1280,7 +1371,7 @@ namespace CocoroConsole
                 // Shell 側からの shutdown とトレイメニュー「終了」が競合しても 1 回だけ実行する。
                 if (Interlocked.Exchange(ref _isShutdownInProgress, 1) == 1)
                 {
-                    Debug.WriteLine("[MainWindow] シャットダウンは既に進行中です。");
+                    Debug.WriteLine("[CocoroConsole] シャットダウンは既に進行中です。");
                     return;
                 }
 
@@ -1303,7 +1394,7 @@ namespace CocoroConsole
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[MainWindow] 補助ウィンドウのクローズ中にエラー: {ex.Message}");
+                    Debug.WriteLine($"[CocoroConsole] 補助ウィンドウのクローズ中にエラー: {ex.Message}");
                 }
 
                 bool isLLMEnabled = _appSettings.IsUseLLM;
