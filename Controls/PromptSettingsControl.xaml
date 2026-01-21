@@ -59,12 +59,7 @@
                         <Setter Property="Padding"
                                 Value="10,5"/>
                 </Style>
-                <Style x:Key="DeleteButtonStyle"
-                       TargetType="Button"
-                       BasedOn="{StaticResource PresetButtonStyle}">
-                        <Setter Property="Background"
-                                Value="#D50000"/>
-                </Style>
+                <!-- 削除ボタンは App.xaml の DeleteButtonStyle を使用 -->
                 <Style x:Key="ContentTextBlockStyle"
                        TargetType="TextBlock">
                         <Setter Property="FontSize"

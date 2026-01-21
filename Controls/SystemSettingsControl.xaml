@@ -108,13 +108,12 @@
                                                                 Click="EditReminderButton_Click"
                                                                 Tag="{Binding LocalId}"/>
 
+                                                        <!-- リマインダー削除（モーションタブと同じ削除ボタン配色・ホバー挙動） -->
                                                         <Button Grid.Column="5"
                                                                 Content="削除"
                                                                 Padding="10,3"
                                                                 Margin="8,0,0,0"
-                                                                Background="#DC143C"
-                                                                Foreground="White"
-                                                                BorderThickness="0"
+                                                                Style="{StaticResource DeleteButtonStyle}"
                                                                 Click="DeleteReminderButton_Click"
                                                                 Tag="{Binding LocalId}"/>
                                                     </Grid>

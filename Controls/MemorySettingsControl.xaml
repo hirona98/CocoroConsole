@@ -42,9 +42,7 @@
 
                             <Button x:Name="DeleteMemoryButton"
                                     Content="記憶を削除"
-                                    Background="#FFD50000"
-                                    Foreground="White"
-                                    Padding="10,5"
+                                    Style="{StaticResource DeleteButtonStyle}"
                                     HorizontalAlignment="Left"
                                     Click="DeleteMemoryButton_Click"/>
                         </StackPanel>

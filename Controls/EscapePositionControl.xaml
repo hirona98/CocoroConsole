@@ -95,45 +95,14 @@
                                                  Margin="0,0,8,0"
                                                  VerticalAlignment="Center"/>
 
-                                        <!-- 削除ボタン -->
+                                        <!-- 削除ボタン（色は DeleteButtonStyle と統一） -->
                                         <Button Grid.Column="5"
                                                 Content="×"
-                                                Width="20"
-                                                Height="20"
-                                                Background="#DC143C"
-                                                Foreground="White"
-                                                BorderThickness="0"
-                                                FontSize="12"
-                                                FontWeight="Bold"
+                                                Style="{StaticResource DeleteIconButtonStyle}"
                                                 VerticalAlignment="Center"
-                                                Margin="0,0,0,0"
                                                 Click="RemoveEscapePosition_Click"
                                                 Tag="{Binding}"
-                                                ToolTip="この座標を削除">
-                                            <Button.Style>
-                                                <Style TargetType="Button">
-                                                    <Setter Property="Template">
-                                                        <Setter.Value>
-                                                            <ControlTemplate TargetType="Button">
-                                                                <Border Background="{TemplateBinding Background}"
-                                                                        CornerRadius="10">
-                                                                    <ContentPresenter HorizontalAlignment="Center"
-                                                                                      VerticalAlignment="Top"
-                                                                                      Margin="0,1,0,0"/>
-                                                                </Border>
-                                                                <ControlTemplate.Triggers>
-                                                                    <Trigger Property="IsMouseOver"
-                                                                             Value="True">
-                                                                        <Setter Property="Background"
-                                                                                Value="#B22222"/>
-                                                                    </Trigger>
-                                                                </ControlTemplate.Triggers>
-                                                            </ControlTemplate>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </Style>
-                                            </Button.Style>
-                                        </Button>
+                                                ToolTip="この座標を削除"/>
                                     </Grid>
 
                                     <!-- 区切り線（最後の要素以外に表示） -->
@@ -161,6 +130,7 @@
                 <Button x:Name="ClearEscapePositionsButton"
                         Content="全削除"
                         Padding="10,5"
+                        Style="{StaticResource DeleteButtonStyle}"
                         Click="ClearEscapePositionsButton_Click"
                         ToolTip="すべての移動先座標を削除"/>
             </StackPanel>

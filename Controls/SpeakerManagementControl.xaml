@@ -37,6 +37,7 @@
                                     Content="削除"
                                     Click="DeleteSpeaker_Click"
                                     Tag="{Binding speakerId}"
+                                    Style="{StaticResource DeleteButtonStyle}"
                                     Padding="15,2"
                                     Margin="5,0"
                                     HorizontalAlignment="Right"/>
