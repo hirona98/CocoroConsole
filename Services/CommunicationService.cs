@@ -48,6 +48,11 @@ namespace CocoroConsole.Services
         private LogStreamClient? _logStreamClient;
         private EventsStreamClient? _eventsStreamClient;
 
+        // /api/mood/debug を 1 秒間隔で取得するポーリング（感情デバッグ表示用）
+        private readonly object _moodDebugPollingLock = new object();
+        private CancellationTokenSource? _moodDebugPollingCts;
+        private Task? _moodDebugPollingTask;
+
         // シェルへの送信順序を保証するためのセマフォ（同時送信を直列化）
         private readonly SemaphoreSlim _forwardMessageSemaphore = new SemaphoreSlim(1, 1);
 
@@ -97,6 +102,8 @@ namespace CocoroConsole.Services
         public event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
         public event EventHandler<bool>? LogStreamConnectionChanged;
         public event EventHandler<string>? LogStreamError;
+        public event EventHandler<MoodDebugUpdatedEventArgs>? MoodDebugUpdated;
+        public event EventHandler<string>? MoodDebugError;
 
         public bool IsServerRunning => _apiServer.IsRunning;
 
@@ -877,6 +884,121 @@ namespace CocoroConsole.Services
             LogStreamError?.Invoke(this, errorMessage);
         }
 
+        /// <summary>
+        /// /api/mood/debug のポーリングを開始（1秒間隔）
+        /// </summary>
+        public Task StartMoodDebugPollingAsync()
+        {
+            // --- 多重起動防止: 既に実行中なら何もしない ---
+            lock (_moodDebugPollingLock)
+            {
+                if (_moodDebugPollingTask != null && !_moodDebugPollingTask.IsCompleted)
+                {
+                    return Task.CompletedTask;
+                }
+
+                _moodDebugPollingCts?.Dispose();
+                _moodDebugPollingCts = new CancellationTokenSource();
+                _moodDebugPollingTask = Task.Run(() => MoodDebugPollingLoopAsync(_moodDebugPollingCts.Token));
+            }
+
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// /api/mood/debug のポーリングを停止
+        /// </summary>
+        public async Task StopMoodDebugPollingAsync()
+        {
+            CancellationTokenSource? cts;
+            Task? pollingTask;
+
+            // --- 参照を切ってからキャンセル/待機する（ロック時間を最小化） ---
+            lock (_moodDebugPollingLock)
+            {
+                cts = _moodDebugPollingCts;
+                pollingTask = _moodDebugPollingTask;
+                _moodDebugPollingCts = null;
+                _moodDebugPollingTask = null;
+            }
+
+            if (cts == null)
+            {
+                return;
+            }
+
+            try
+            {
+                cts.Cancel();
+            }
+            finally
+            {
+                cts.Dispose();
+            }
+
+            try
+            {
+                if (pollingTask != null)
+                {
+                    await pollingTask.ConfigureAwait(false);
+                }
+            }
+            catch
+            {
+                // --- 停止処理の例外は握りつぶす（UI/シャットダウンを阻害しない） ---
+            }
+        }
+
+        /// <summary>
+        /// /api/mood/debug を定期取得してイベント転送する（単一ループ・直列実行）
+        /// </summary>
+        private async Task MoodDebugPollingLoopAsync(CancellationToken cancellationToken)
+        {
+            // --- 1秒ごとのポーリング（処理が遅い場合は「終わってから1秒後」になる） ---
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    // --- APIクライアント未初期化（トークン未設定等）の場合はエラー通知して待機 ---
+                    if (_cocoroGhostApiClient == null)
+                    {
+                        MoodDebugError?.Invoke(this, "cocoro_ghost のBearerトークンが未設定のため、感情デバッグを取得できません。");
+                        await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    // --- 1秒ポーリング前提のため、1回の取得は短いタイムアウトにする ---
+                    using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    timeoutCts.CancelAfter(TimeSpan.FromMilliseconds(900));
+
+                    var response = await _cocoroGhostApiClient.GetMoodDebugAsync(timeoutCts.Token).ConfigureAwait(false);
+                    MoodDebugUpdated?.Invoke(this, new MoodDebugUpdatedEventArgs(response, DateTimeOffset.Now));
+                }
+                catch (OperationCanceledException)
+                {
+                    // --- アプリ終了/停止要求時は静かに抜ける。タイムアウトはエラーとして扱う ---
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        MoodDebugError?.Invoke(this, "感情デバッグの取得がタイムアウトしました。");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MoodDebugError?.Invoke(this, $"感情デバッグの取得に失敗しました: {ex.Message}");
+                }
+
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    // --- 停止要求 ---
+                    break;
+                }
+            }
+        }
+
         private async Task StartEventsStreamAsync()
         {
             if (_eventsStreamClient != null)
@@ -1574,6 +1696,25 @@ namespace CocoroConsole.Services
         {
             // イベント購読解除
             AppSettings.SettingsSaved -= OnSettingsSaved;
+
+            // --- 感情デバッグポーリングの停止（Disposeは同期のため、キャンセルのみ行う） ---
+            lock (_moodDebugPollingLock)
+            {
+                try
+                {
+                    _moodDebugPollingCts?.Cancel();
+                }
+                catch
+                {
+                    // --- Dispose中の例外は握りつぶす ---
+                }
+                finally
+                {
+                    _moodDebugPollingCts?.Dispose();
+                    _moodDebugPollingCts = null;
+                    _moodDebugPollingTask = null;
+                }
+            }
 
             // セマフォの解放
             _forwardMessageSemaphore?.Dispose();

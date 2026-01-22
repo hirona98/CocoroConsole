@@ -143,6 +143,17 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
+        /// /api/mood/debug を取得する（管理/デバッグ）。
+        /// </summary>
+        public Task<MoodDebugResponse> GetMoodDebugAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            // --- mood/debug はデバッグ観測用途のため、単純に1回取得して返す ---
+            return SendAsync<MoodDebugResponse>(HttpMethod.Get, "/api/mood/debug", null, cancellationToken);
+        }
+
+        /// <summary>
         /// /api/chat を SSE（text/event-stream）で呼び出し、トークン/完了/エラーを逐次返す。
         /// 
         /// - token: 返信の増分（delta）

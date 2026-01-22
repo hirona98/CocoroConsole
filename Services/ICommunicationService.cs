@@ -23,6 +23,28 @@ namespace CocoroConsole.Services
     }
 
     /// <summary>
+    /// /api/mood/debug 更新用のイベント引数
+    /// </summary>
+    public class MoodDebugUpdatedEventArgs : EventArgs
+    {
+        /// <summary>
+        /// /api/mood/debug の最新レスポンス
+        /// </summary>
+        public MoodDebugResponse Response { get; }
+
+        /// <summary>
+        /// CocoroConsole側で受信した時刻（ローカル）
+        /// </summary>
+        public DateTimeOffset ReceivedAt { get; }
+
+        public MoodDebugUpdatedEventArgs(MoodDebugResponse response, DateTimeOffset receivedAt)
+        {
+            Response = response;
+            ReceivedAt = receivedAt;
+        }
+    }
+
+    /// <summary>
     /// 通信サービスのインターフェース
     /// </summary>
     public interface ICommunicationService : IDisposable
@@ -81,6 +103,16 @@ namespace CocoroConsole.Services
         /// ログストリームエラーイベント
         /// </summary>
         event EventHandler<string>? LogStreamError;
+
+        /// <summary>
+        /// /api/mood/debug の最新値受信イベント（ポーリング）
+        /// </summary>
+        event EventHandler<MoodDebugUpdatedEventArgs>? MoodDebugUpdated;
+
+        /// <summary>
+        /// /api/mood/debug のポーリングエラーイベント
+        /// </summary>
+        event EventHandler<string>? MoodDebugError;
 
         /// <summary>
         /// APIサーバーが起動しているかどうか
@@ -149,6 +181,16 @@ namespace CocoroConsole.Services
         /// ログストリーム接続を停止
         /// </summary>
         Task StopLogStreamAsync();
+
+        /// <summary>
+        /// /api/mood/debug のポーリングを開始（1秒間隔）
+        /// </summary>
+        Task StartMoodDebugPollingAsync();
+
+        /// <summary>
+        /// /api/mood/debug のポーリングを停止
+        /// </summary>
+        Task StopMoodDebugPollingAsync();
 
 
 

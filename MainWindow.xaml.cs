@@ -30,6 +30,7 @@ namespace CocoroConsole
         private RealtimeVoiceRecognitionService? _voiceRecognitionService;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
+        private MoodDebugWindow? _moodDebugWindow;
         private DebugTraceListener? _debugTraceListener;
         private bool _isStreamingChatActive;
         private bool _skipNextAssistantMessage;
@@ -77,6 +78,11 @@ namespace CocoroConsole
         private void LogViewerMenuItem_Click(object sender, RoutedEventArgs e)
         {
             OpenLogViewer();
+        }
+
+        private void MoodDebugMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            OpenMoodDebugWindow();
         }
 
         /// <summary>
@@ -609,6 +615,39 @@ namespace CocoroConsole
             }
 
             _logViewerWindow.Show();
+        }
+
+        /// <summary>
+        /// 感情デバッグウィンドウを開く（/api/mood/debug の表示）
+        /// </summary>
+        public void OpenMoodDebugWindow()
+        {
+            // --- 通信サービスが無い場合は開けない ---
+            if (_communicationService == null)
+            {
+                UIHelper.ShowError("エラー", "通信サービスが初期化されていません。");
+                return;
+            }
+
+            // --- 既に開いている場合はアクティブにする ---
+            if (_moodDebugWindow != null && !_moodDebugWindow.IsClosed)
+            {
+                _moodDebugWindow.Activate();
+                _moodDebugWindow.WindowState = WindowState.Normal;
+                return;
+            }
+
+            // --- 新規作成 ---
+            _moodDebugWindow = new MoodDebugWindow(_communicationService);
+            PositionWindowNearMain(_moodDebugWindow);
+
+            // --- ウィンドウが閉じられた時の処理 ---
+            _moodDebugWindow.Closed += (_, __) =>
+            {
+                _moodDebugWindow = null;
+            };
+
+            _moodDebugWindow.Show();
         }
 
         private void AttachLogStreamHandlers()
