@@ -38,14 +38,14 @@ namespace CocoroConsole
         private bool _isLogStreamHandlersAttached;
 
         // --- CocoroGhost の最新ステータス（ステータスバー復帰先） ---
-        // ログ表示で一時的に上書きしても、5秒後に「その時点の最新状態」に戻すために保持する。
+        // ログ表示で一時的に上書きしても、指定時間後「その時点の最新状態」に戻すために保持する。
         private CocoroGhostStatus _latestCocoroGhostStatus = CocoroGhostStatus.WaitingForStartup;
 
         // --- ステータスバーの一時上書き（ログ表示用） ---
-        // 直近ログで上書きし、5秒間上書きが無ければ null に戻して通常表示へ復帰する。
+        // 直近ログで上書きし、指定間上書きが無ければ null に戻して通常表示へ復帰する。
         private string? _statusBarOverrideText;
         private DispatcherTimer? _statusBarOverrideTimer;
-        private static readonly TimeSpan StatusBarOverrideTimeout = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan StatusBarOverrideTimeout = TimeSpan.FromSeconds(3);
 
         private static readonly HashSet<string> VoiceRelatedComponents = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -320,6 +320,13 @@ namespace CocoroConsole
 
             // --- 送信ボタンの有効/無効を状態に応じて更新 ---
             bool isLLMEnabled = _appSettings.IsUseLLM;
+
+            // --- CocoroGhost起動待ちは最優先表示（ログ上書きより優先） ---
+            if (status == CocoroGhostStatus.WaitingForStartup)
+            {
+                _statusBarOverrideTimer?.Stop();
+                _statusBarOverrideText = null;
+            }
 
             // --- ステータスバー表示は「通常表示 or ログ上書き」を統一して描画する ---
             RenderStatusBarText(BuildCocoroGhostStatusBarText(status));
@@ -762,7 +769,7 @@ namespace CocoroConsole
                 var statusText = $"状態: {componentText}{messageText}".Trim();
 
                 // --- ログでステータスバーを一時上書き（デバウンス） ---
-                // 直近ログで上書きし続け、5秒間ログ上書きが無ければ「その時点の最新ステータス表示」に戻す。
+                // 直近ログで上書きし続け、指定時間ログ上書きが無ければ「その時点の最新ステータス表示」に戻す。
                 SetStatusBarOverride(statusText);
             });
         }
@@ -773,6 +780,12 @@ namespace CocoroConsole
         /// <param name="overrideText">ステータスバーに表示するテキスト（例: "状態: VoiceRecognition 〜"）</param>
         private void SetStatusBarOverride(string overrideText)
         {
+            // --- CocoroGhost起動待ちは最優先表示（上書きしない） ---
+            if (_latestCocoroGhostStatus == CocoroGhostStatus.WaitingForStartup)
+            {
+                return;
+            }
+
             // --- 上書きテキストを更新 ---
             _statusBarOverrideText = overrideText;
 
@@ -789,14 +802,14 @@ namespace CocoroConsole
             // --- 表示を即時反映 ---
             RenderStatusBarText(_statusBarOverrideText);
 
-            // --- デバウンス：タイマーをリセットして5秒後の復帰を予約 ---
+            // --- デバウンス：タイマーをリセットして復帰を予約 ---
             _statusBarOverrideTimer.Stop();
             _statusBarOverrideTimer.Interval = StatusBarOverrideTimeout;
             _statusBarOverrideTimer.Start();
         }
 
         /// <summary>
-        /// ステータスバー上書きのタイムアウト（5秒間上書きが無ければ通常表示へ復帰）
+        /// ステータスバー上書きのタイムアウト（上書きが無ければ通常表示へ復帰）
         /// </summary>
         private void OnStatusBarOverrideTimerTick(object? sender, EventArgs e)
         {
@@ -812,8 +825,11 @@ namespace CocoroConsole
         /// <param name="normalStatusText">通常表示テキスト（例: "状態: 正常動作中"）</param>
         private void RenderStatusBarText(string normalStatusText)
         {
-            // --- ログ上書きが有効ならそちらを優先 ---
-            var textToShow = _statusBarOverrideText ?? normalStatusText;
+            // --- CocoroGhost起動待ちは最優先表示 ---
+            // 起動待ち中にログが流れても、ユーザーが状況を誤認しないよう「起動待ち」を固定で出す。
+            var textToShow = _latestCocoroGhostStatus == CocoroGhostStatus.WaitingForStartup
+                ? BuildCocoroGhostStatusBarText(CocoroGhostStatus.WaitingForStartup)
+                : (_statusBarOverrideText ?? normalStatusText);
 
             // --- UI要素が未生成の場合は何もしない（初期化順による） ---
             if (ConnectionStatusText == null) return;
