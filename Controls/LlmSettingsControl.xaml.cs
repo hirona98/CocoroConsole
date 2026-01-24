@@ -191,7 +191,7 @@ namespace CocoroConsole.Controls
                 LlmApiKey = LlmApiKeyPasswordBox.Text ?? string.Empty,
                 LlmModel = LlmModelTextBox.Text ?? string.Empty,
                 LlmBaseUrl = string.IsNullOrWhiteSpace(LlmBaseUrlTextBox.Text) ? null : LlmBaseUrlTextBox.Text,
-                MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : 50,
+                MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : 10,
                 MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : 4096,
                 ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Text) ? null : VisionApiKeyPasswordBox.Text,
                 ImageModel = VisionModelTextBox.Text ?? string.Empty,
@@ -213,7 +213,7 @@ namespace CocoroConsole.Controls
             LlmModelTextBox.Text = string.Empty;
             LlmBaseUrlTextBox.Text = string.Empty;
             ReasoningEffortTextBox.Text = string.Empty;
-            MaxTurnsWindowTextBox.Text = "50";
+            MaxTurnsWindowTextBox.Text = "10";
             MaxTokensTextBox.Text = "4096";
             VisionApiKeyPasswordBox.Text = string.Empty;
             VisionModelTextBox.Text = string.Empty;
