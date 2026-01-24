@@ -185,7 +185,7 @@ namespace CocoroConsole.Controls
             EmbeddingModelTextBox.Text = string.Empty;
             EmbeddingBaseUrlTextBox.Text = string.Empty;
             EmbeddingDimensionTextBox.Text = "3072";
-            SimilarEpisodesLimitTextBox.Text = "5";
+            SimilarEpisodesLimitTextBox.Text = "40";
         }
 
         private void PresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
