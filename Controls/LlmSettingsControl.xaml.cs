@@ -72,14 +72,14 @@ namespace CocoroConsole.Controls
             preset.LlmApiKey = LlmApiKeyPasswordBox.Text ?? string.Empty;
             preset.LlmModel = LlmModelTextBox.Text ?? string.Empty;
             preset.LlmBaseUrl = string.IsNullOrWhiteSpace(LlmBaseUrlTextBox.Text) ? null : LlmBaseUrlTextBox.Text;
-            preset.MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : 50;
-            preset.MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : 4096;
+            preset.MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : LlmPreset.DefaultMaxTurnsWindow;
+            preset.MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : LlmPreset.DefaultMaxTokens;
             preset.ReasoningEffort = !string.IsNullOrWhiteSpace(ReasoningEffortTextBox.Text) ? ReasoningEffortTextBox.Text : null;
             preset.ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Text) ? null : VisionApiKeyPasswordBox.Text;
             preset.ImageModel = VisionModelTextBox.Text ?? string.Empty;
             preset.ImageLlmBaseUrl = string.IsNullOrWhiteSpace(VisionBaseUrlTextBox.Text) ? null : VisionBaseUrlTextBox.Text;
-            preset.MaxTokensVision = int.TryParse(MaxTokensVisionTextBox.Text, out int maxTokensVision) ? maxTokensVision : 4096;
-            preset.ImageTimeoutSeconds = int.TryParse(ImageTimeoutSecondsTextBox.Text, out int imageTimeout) ? imageTimeout : 60;
+            preset.MaxTokensVision = int.TryParse(MaxTokensVisionTextBox.Text, out int maxTokensVision) ? maxTokensVision : LlmPreset.DefaultMaxTokensVision;
+            preset.ImageTimeoutSeconds = int.TryParse(ImageTimeoutSecondsTextBox.Text, out int imageTimeout) ? imageTimeout : LlmPreset.DefaultImageTimeoutSeconds;
         }
 
         public void LoadSettings(LlmPreset? preset)
@@ -191,13 +191,13 @@ namespace CocoroConsole.Controls
                 LlmApiKey = LlmApiKeyPasswordBox.Text ?? string.Empty,
                 LlmModel = LlmModelTextBox.Text ?? string.Empty,
                 LlmBaseUrl = string.IsNullOrWhiteSpace(LlmBaseUrlTextBox.Text) ? null : LlmBaseUrlTextBox.Text,
-                MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : 10,
-                MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : 4096,
+                MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : LlmPreset.DefaultMaxTurnsWindow,
+                MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : LlmPreset.DefaultMaxTokens,
                 ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Text) ? null : VisionApiKeyPasswordBox.Text,
                 ImageModel = VisionModelTextBox.Text ?? string.Empty,
                 ImageLlmBaseUrl = string.IsNullOrWhiteSpace(VisionBaseUrlTextBox.Text) ? null : VisionBaseUrlTextBox.Text,
-                MaxTokensVision = int.TryParse(MaxTokensVisionTextBox.Text, out int maxTokensVision) ? maxTokensVision : 4096,
-                ImageTimeoutSeconds = int.TryParse(ImageTimeoutSecondsTextBox.Text, out int imageTimeout) ? imageTimeout : 60
+                MaxTokensVision = int.TryParse(MaxTokensVisionTextBox.Text, out int maxTokensVision) ? maxTokensVision : LlmPreset.DefaultMaxTokensVision,
+                ImageTimeoutSeconds = int.TryParse(ImageTimeoutSecondsTextBox.Text, out int imageTimeout) ? imageTimeout : LlmPreset.DefaultImageTimeoutSeconds
             };
 
             // Reasoning Effort
@@ -208,18 +208,8 @@ namespace CocoroConsole.Controls
 
         private void ClearSettings()
         {
-            PresetNameTextBox.Text = string.Empty;
-            LlmApiKeyPasswordBox.Text = string.Empty;
-            LlmModelTextBox.Text = string.Empty;
-            LlmBaseUrlTextBox.Text = string.Empty;
-            ReasoningEffortTextBox.Text = string.Empty;
-            MaxTurnsWindowTextBox.Text = "10";
-            MaxTokensTextBox.Text = "4096";
-            VisionApiKeyPasswordBox.Text = string.Empty;
-            VisionModelTextBox.Text = string.Empty;
-            VisionBaseUrlTextBox.Text = string.Empty;
-            MaxTokensVisionTextBox.Text = "4096";
-            ImageTimeoutSecondsTextBox.Text = "60";
+            // UI初期化は、モデルの既定値（唯一の定義元）を反映して行う
+            LoadPresetToUI(LlmPreset.CreateDefault());
         }
 
         private void PresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -257,22 +247,10 @@ namespace CocoroConsole.Controls
         {
             SaveCurrentUIToPreset();
 
-            LlmPreset newPreset = new LlmPreset
-            {
-                LlmPresetId = Guid.NewGuid().ToString(),
-                LlmPresetName = GenerateNewPresetName(),
-                LlmApiKey = string.Empty,
-                LlmModel = string.Empty,
-                ReasoningEffort = null,
-                LlmBaseUrl = null,
-                MaxTurnsWindow = 50,
-                MaxTokens = 4096,
-                ImageModelApiKey = null,
-                ImageModel = string.Empty,
-                ImageLlmBaseUrl = null,
-                MaxTokensVision = 4096,
-                ImageTimeoutSeconds = 60
-            };
+            // 新規プリセットは、既定値を必ずモデル側の定義から生成する
+            LlmPreset newPreset = LlmPreset.CreateDefault();
+            newPreset.LlmPresetId = Guid.NewGuid().ToString();
+            newPreset.LlmPresetName = GenerateNewPresetName();
 
             _presets.Add(newPreset);
             PresetSelectComboBox.Items.Add(newPreset.LlmPresetName);
