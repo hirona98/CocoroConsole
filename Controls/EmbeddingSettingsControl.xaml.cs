@@ -64,13 +64,14 @@ namespace CocoroConsole.Controls
         {
             if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count) return;
 
+            // 現在のUI入力を現在のプリセットに反映する
             EmbeddingPreset preset = _presets[_currentPresetIndex];
             preset.EmbeddingPresetName = MemoryIdTextBox.Text;
             preset.EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Text) ? null : EmbeddingApiKeyPasswordBox.Text;
             preset.EmbeddingModel = EmbeddingModelTextBox.Text ?? string.Empty;
             preset.EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text;
-            preset.EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 3072;
-            preset.SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : 5;
+            preset.EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : EmbeddingPreset.DefaultEmbeddingDimension;
+            preset.SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : EmbeddingPreset.DefaultSimilarEpisodesLimit;
         }
 
         public void LoadSettings(EmbeddingPreset? preset)
@@ -164,6 +165,7 @@ namespace CocoroConsole.Controls
 
             EmbeddingPreset currentPreset = _presets[_currentPresetIndex];
 
+            // UI入力をAPI送信用のプリセットに変換する
             EmbeddingPreset preset = new EmbeddingPreset
             {
                 EmbeddingPresetId = currentPreset.EmbeddingPresetId,
@@ -171,8 +173,8 @@ namespace CocoroConsole.Controls
                 EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Text) ? null : EmbeddingApiKeyPasswordBox.Text,
                 EmbeddingModel = EmbeddingModelTextBox.Text ?? string.Empty,
                 EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text,
-                EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : 3072,
-                SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : 5
+                EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : EmbeddingPreset.DefaultEmbeddingDimension,
+                SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : EmbeddingPreset.DefaultSimilarEpisodesLimit
             };
 
             return preset;
@@ -180,12 +182,8 @@ namespace CocoroConsole.Controls
 
         private void ClearSettings()
         {
-            MemoryIdTextBox.Text = string.Empty;
-            EmbeddingApiKeyPasswordBox.Text = string.Empty;
-            EmbeddingModelTextBox.Text = string.Empty;
-            EmbeddingBaseUrlTextBox.Text = string.Empty;
-            EmbeddingDimensionTextBox.Text = "3072";
-            SimilarEpisodesLimitTextBox.Text = "40";
+            // UI初期化は、モデルの既定値（唯一の定義元）を反映して行う
+            LoadPresetToUI(EmbeddingPreset.CreateDefault());
         }
 
         private void PresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -223,16 +221,10 @@ namespace CocoroConsole.Controls
         {
             SaveCurrentUIToPreset();
 
-            EmbeddingPreset newPreset = new EmbeddingPreset
-            {
-                EmbeddingPresetId = Guid.NewGuid().ToString(),
-                EmbeddingPresetName = GenerateNewPresetName(),
-                EmbeddingModelApiKey = null,
-                EmbeddingModel = string.Empty,
-                EmbeddingBaseUrl = null,
-                EmbeddingDimension = 3072,
-                SimilarEpisodesLimit = 5
-            };
+            // 新規プリセットは、既定値を必ずモデル側の定義から生成する
+            EmbeddingPreset newPreset = EmbeddingPreset.CreateDefault();
+            newPreset.EmbeddingPresetId = Guid.NewGuid().ToString();
+            newPreset.EmbeddingPresetName = GenerateNewPresetName();
 
             _presets.Add(newPreset);
             PresetSelectComboBox.Items.Add(newPreset.EmbeddingPresetName);
