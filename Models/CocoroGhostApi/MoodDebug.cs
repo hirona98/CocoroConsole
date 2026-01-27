@@ -1,5 +1,4 @@
 using System;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace CocoroConsole.Models.CocoroGhostApi
@@ -14,6 +13,18 @@ namespace CocoroConsole.Models.CocoroGhostApi
         /// </summary>
         [JsonPropertyName("mood")]
         public MoodDebugMoodState? Mood { get; set; }
+
+        /// <summary>
+        /// 直近の瞬間感情（event_affects）。
+        /// </summary>
+        [JsonPropertyName("recent_affects")]
+        public MoodDebugRecentAffect[] RecentAffects { get; set; } = Array.Empty<MoodDebugRecentAffect>();
+
+        /// <summary>
+        /// 返却件数の上限など（limits）。
+        /// </summary>
+        [JsonPropertyName("limits")]
+        public MoodDebugLimits Limits { get; set; } = new MoodDebugLimits();
     }
 
     /// <summary>
@@ -44,12 +55,6 @@ namespace CocoroConsole.Models.CocoroGhostApi
         /// </summary>
         [JsonPropertyName("salience")]
         public double Salience { get; set; }
-
-        /// <summary>
-        /// 気分の付随情報（任意JSON）。
-        /// </summary>
-        [JsonPropertyName("payload")]
-        public JsonElement Payload { get; set; }
 
         /// <summary>
         /// ベースラインVAD。
@@ -111,5 +116,82 @@ namespace CocoroConsole.Models.CocoroGhostApi
         [JsonPropertyName("d")]
         public double D { get; set; }
     }
-}
 
+    /// <summary>
+    /// /api/mood/debug の recent_affects 要素。
+    /// </summary>
+    public class MoodDebugRecentAffect
+    {
+        /// <summary>
+        /// affect のID。
+        /// </summary>
+        [JsonPropertyName("affect_id")]
+        public int AffectId { get; set; }
+
+        /// <summary>
+        /// 参照する event のID。
+        /// </summary>
+        [JsonPropertyName("event_id")]
+        public int EventId { get; set; }
+
+        /// <summary>
+        /// event のsource（例: chat）。
+        /// </summary>
+        [JsonPropertyName("event_source")]
+        public string EventSource { get; set; } = string.Empty;
+
+        /// <summary>
+        /// event の作成時刻。
+        /// </summary>
+        [JsonPropertyName("event_created_at")]
+        public DateTimeOffset EventCreatedAt { get; set; }
+
+        /// <summary>
+        /// affect の作成時刻。
+        /// </summary>
+        [JsonPropertyName("affect_created_at")]
+        public DateTimeOffset AffectCreatedAt { get; set; }
+
+        /// <summary>
+        /// 瞬間感情の本文。
+        /// </summary>
+        [JsonPropertyName("moment_affect_text")]
+        public string MomentAffectText { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 瞬間感情のラベル。
+        /// </summary>
+        [JsonPropertyName("moment_affect_labels")]
+        public string[] MomentAffectLabels { get; set; } = Array.Empty<string>();
+
+        /// <summary>
+        /// 瞬間感情のVAD。
+        /// </summary>
+        [JsonPropertyName("vad")]
+        public MoodDebugVad? Vad { get; set; }
+
+        /// <summary>
+        /// 瞬間感情の確信度。
+        /// </summary>
+        [JsonPropertyName("confidence")]
+        public double Confidence { get; set; }
+
+        /// <summary>
+        /// 内心（あれば）。無ければ null。
+        /// </summary>
+        [JsonPropertyName("inner_thought_text")]
+        public string? InnerThoughtText { get; set; }
+    }
+
+    /// <summary>
+    /// /api/mood/debug の limits。
+    /// </summary>
+    public class MoodDebugLimits
+    {
+        /// <summary>
+        /// recent_affects の最大返却件数。
+        /// </summary>
+        [JsonPropertyName("recent_affects_limit")]
+        public int RecentAffectsLimit { get; set; }
+    }
+}

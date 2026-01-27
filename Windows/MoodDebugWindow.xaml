@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="感情デバッグ"
-        Width="600"
-        Height="500"
+        Width="800"
+        Height="850"
         WindowState="Normal"
         WindowStartupLocation="CenterOwner"
         Icon="/Resource/logo.ico">
@@ -186,6 +186,152 @@
                                                            Grid.Column="3"
                                                            Text="{Binding VadD}"
                                                            Margin="0,6,0,0"/>
+                                        </Grid>
+                                </GroupBox>
+
+                                <!-- 瞬間感情（最新1件） -->
+                                <GroupBox Header="瞬間感情（最新1件）"
+                                          Margin="0,0,0,10">
+                                        <Grid Margin="10">
+                                                <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <!-- 1件の基本情報 -->
+                                                <Grid Grid.Row="0"
+                                                      Margin="0,0,0,10">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="160"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="160"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+
+                                                        <TextBlock Grid.Row="0"
+                                                                   Grid.Column="0"
+                                                                   Text="source:"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="0"
+                                                                   Grid.Column="1"
+                                                                   Text="{Binding LatestAffect.EventSource}"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="0"
+                                                                   Grid.Column="2"
+                                                                   Text="confidence:"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="0"
+                                                                   Grid.Column="3"
+                                                                   Text="{Binding LatestAffect.Confidence}"
+                                                                   Margin="0,6,0,0"/>
+
+                                                        <TextBlock Grid.Row="1"
+                                                                   Grid.Column="0"
+                                                                   Text="event_created_at:"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="1"
+                                                                   Grid.Column="1"
+                                                                   Text="{Binding LatestAffect.EventCreatedAt}"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="1"
+                                                                   Grid.Column="2"
+                                                                   Text="affect_created_at:"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="1"
+                                                                   Grid.Column="3"
+                                                                   Text="{Binding LatestAffect.AffectCreatedAt}"
+                                                                   Margin="0,6,0,0"/>
+
+                                                        <TextBlock Grid.Row="2"
+                                                                   Grid.Column="0"
+                                                                   Text="labels:"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="2"
+                                                                   Grid.Column="1"
+                                                                   Grid.ColumnSpan="3"
+                                                                   Text="{Binding LatestAffect.MomentAffectLabels}"
+                                                                   TextWrapping="Wrap"
+                                                                   Margin="0,6,0,0"/>
+                                                </Grid>
+
+                                                <!-- VAD（1件） -->
+                                                <Grid Grid.Row="1"
+                                                      Margin="0,0,0,10">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="160"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+
+                                                        <TextBlock Grid.Row="0"
+                                                                   Grid.Column="0"
+                                                                   Text="VAD"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="0"
+                                                                   Grid.Column="1"
+                                                                   Text="V"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="0"
+                                                                   Grid.Column="2"
+                                                                   Text="A"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="0"
+                                                                   Grid.Column="3"
+                                                                   Text="D"
+                                                                   Margin="0,6,0,0"/>
+
+                                                        <TextBlock Grid.Row="1"
+                                                                   Grid.Column="0"
+                                                                   Text="最新"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="1"
+                                                                   Grid.Column="1"
+                                                                   Text="{Binding LatestAffect.VadV}"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="1"
+                                                                   Grid.Column="2"
+                                                                   Text="{Binding LatestAffect.VadA}"
+                                                                   Margin="0,6,0,0"/>
+                                                        <TextBlock Grid.Row="1"
+                                                                   Grid.Column="3"
+                                                                   Text="{Binding LatestAffect.VadD}"
+                                                                   Margin="0,6,0,0"/>
+                                                </Grid>
+
+                                                <TextBlock Grid.Row="2"
+                                                           Text="本文:"/>
+                                                <TextBox Grid.Row="3"
+                                                         Text="{Binding LatestAffect.MomentAffectText}"
+                                                         IsReadOnly="True"
+                                                         TextWrapping="Wrap"
+                                                         VerticalScrollBarVisibility="Auto"
+                                                         Height="80"
+                                                         Margin="0,4,0,0"/>
+
+                                                <TextBlock Grid.Row="4"
+                                                           Text="内心:"
+                                                           Margin="0,10,0,0"/>
+                                                <TextBox Grid.Row="5"
+                                                         Text="{Binding LatestAffect.InnerThoughtText}"
+                                                         IsReadOnly="True"
+                                                         TextWrapping="Wrap"
+                                                         VerticalScrollBarVisibility="Auto"
+                                                         Height="80"
+                                                         Margin="0,4,0,0"/>
                                         </Grid>
                                 </GroupBox>
                         </StackPanel>
