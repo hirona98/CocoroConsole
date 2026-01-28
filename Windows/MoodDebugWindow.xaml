@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="感情デバッグ"
         Width="800"
-        Height="850"
+        Height="700"
         WindowState="Normal"
         WindowStartupLocation="CenterOwner"
         Icon="/Resource/logo.ico">
@@ -29,7 +29,6 @@
                                                         <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
                                                 <Grid.RowDefinitions>
-                                                        <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="Auto"/>
@@ -198,8 +197,6 @@
                                                         <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
                                                 </Grid.RowDefinitions>
 
                                                 <!-- 1件の基本情報 -->
@@ -316,17 +313,6 @@
                                                            Text="本文:"/>
                                                 <TextBox Grid.Row="3"
                                                          Text="{Binding LatestAffect.MomentAffectText}"
-                                                         IsReadOnly="True"
-                                                         TextWrapping="Wrap"
-                                                         VerticalScrollBarVisibility="Auto"
-                                                         Height="80"
-                                                         Margin="0,4,0,0"/>
-
-                                                <TextBlock Grid.Row="4"
-                                                           Text="内心:"
-                                                           Margin="0,10,0,0"/>
-                                                <TextBox Grid.Row="5"
-                                                         Text="{Binding LatestAffect.InnerThoughtText}"
                                                          IsReadOnly="True"
                                                          TextWrapping="Wrap"
                                                          VerticalScrollBarVisibility="Auto"

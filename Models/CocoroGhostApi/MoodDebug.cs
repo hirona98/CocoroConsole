@@ -175,12 +175,6 @@ namespace CocoroConsole.Models.CocoroGhostApi
         /// </summary>
         [JsonPropertyName("confidence")]
         public double Confidence { get; set; }
-
-        /// <summary>
-        /// 内心（あれば）。無ければ null。
-        /// </summary>
-        [JsonPropertyName("inner_thought_text")]
-        public string? InnerThoughtText { get; set; }
     }
 
     /// <summary>

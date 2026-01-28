@@ -318,11 +318,6 @@ namespace CocoroConsole.Windows
         public string Confidence { get; set; } = "-";
 
         /// <summary>
-        /// 内心（表示用、無ければ空）。
-        /// </summary>
-        public string InnerThoughtText { get; set; } = string.Empty;
-
-        /// <summary>
         /// 「データが無い」場合の表示用に空行を作る。
         /// </summary>
         public static MoodDebugRecentAffectRowViewModel CreateEmpty()
@@ -339,7 +334,6 @@ namespace CocoroConsole.Windows
                 VadD = "-",
                 Confidence = "-",
                 MomentAffectText = "（なし）",
-                InnerThoughtText = "（なし）",
             };
         }
     }
@@ -466,7 +460,6 @@ namespace CocoroConsole.Windows
                     VadA = FormatVadValue(latest.Vad?.A),
                     VadD = FormatVadValue(latest.Vad?.D),
                     Confidence = FormatNumber(latest.Confidence),
-                    InnerThoughtText = string.IsNullOrWhiteSpace(latest.InnerThoughtText) ? "（なし）" : latest.InnerThoughtText,
                 };
             }
 
