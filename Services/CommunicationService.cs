@@ -56,6 +56,16 @@ namespace CocoroConsole.Services
         // シェルへの送信順序を保証するためのセマフォ（同時送信を直列化）
         private readonly SemaphoreSlim _forwardMessageSemaphore = new SemaphoreSlim(1, 1);
 
+        // チャット送信順序を保証するためのセマフォ（同時送信を直列化）
+        // NOTE:
+        // - /api/chat は SSE で token を逐次 UI に流すため、同時に複数走ると表示が破綻しやすい。
+        // - 入力経路（UI/音声など）を跨いでも「1回の送信=1ストリーム」に揃える。
+        private readonly SemaphoreSlim _chatSendSemaphore = new SemaphoreSlim(1, 1);
+
+        // チャット送信中フラグ（0/1）
+        // UI 側の送信ボタン無効化・二重送信抑止に使う。
+        private int _chatBusy = 0;
+
         // チャット API に渡すセッション ID（会話のまとまり）。新規会話で null に戻す。
         private string? _currentSessionId;
 
@@ -93,6 +103,7 @@ namespace CocoroConsole.Services
 
         public event EventHandler<ChatRequest>? ChatMessageReceived;
         public event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
+        public event EventHandler<bool>? ChatBusyChanged;
         public event Action<ChatMessagePayload, List<System.Windows.Media.Imaging.BitmapSource>?>? NotificationMessageReceived;
         public event EventHandler<ControlRequest>? ControlCommandReceived;
         public event EventHandler<string>? ErrorOccurred;
@@ -111,6 +122,11 @@ namespace CocoroConsole.Services
         /// 現在のCocoroGhostステータス
         /// </summary>
         public CocoroGhostStatus CurrentStatus => _statusPollingService.CurrentStatus;
+
+        /// <summary>
+        /// チャット送信中かどうか
+        /// </summary>
+        public bool IsChatBusy => Volatile.Read(ref _chatBusy) == 1;
 
         /// <summary>
         /// コンストラクタ
@@ -163,6 +179,28 @@ namespace CocoroConsole.Services
 
             _appSettings.ClientId = $"console-{Guid.NewGuid()}";
             _appSettings.SaveAppSettings();
+        }
+
+        private void SetChatBusy(bool isBusy)
+        {
+            // --- 状態の更新は 0/1 で統一し、変化があるときだけイベントを発火する ---
+            int next = isBusy ? 1 : 0;
+            int prev = Interlocked.Exchange(ref _chatBusy, next);
+            if (prev == next)
+            {
+                return;
+            }
+
+            // --- イベントは呼び出しスレッドで発火（UI側で Dispatcher に載せ替える） ---
+            try
+            {
+                ChatBusyChanged?.Invoke(this, isBusy);
+            }
+            catch (Exception ex)
+            {
+                // NOTE: UI 側の例外で通信層が停止しないようにする
+                Debug.WriteLine($"[CommunicationService] ChatBusyChanged handler error: {ex.Message}");
+            }
         }
 
 
@@ -454,8 +492,14 @@ namespace CocoroConsole.Services
 
         private async Task SendChatViaHttpStreamingAsync(string message, List<string>? imageDataUrls)
         {
+            // --- 同時送信を直列化（UI表示の破綻を防ぐ） ---
+            await _chatSendSemaphore.WaitAsync().ConfigureAwait(false);
+
             try
             {
+                // --- 送信中状態をセット（UI制御用） ---
+                SetChatBusy(true);
+
                 // LLMが無効の場合は処理しない
                 if (!_appSettings.IsUseLLM)
                 {
@@ -625,6 +669,19 @@ namespace CocoroConsole.Services
                 _statusPollingService.SetNormalStatus();
                 // ステータスバーにエラー表示
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"チャット送信エラー: {ex.Message}"));
+            }
+            finally
+            {
+                // --- 送信状態を解除して次の送信を許可する ---
+                // NOTE: 状態解除のイベントが例外になっても、セマフォ解放は必ず行う。
+                try
+                {
+                    SetChatBusy(false);
+                }
+                finally
+                {
+                    _chatSendSemaphore.Release();
+                }
             }
         }
 

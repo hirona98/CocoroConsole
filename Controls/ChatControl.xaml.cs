@@ -63,6 +63,12 @@ namespace CocoroConsole.Controls
         /// </summary>
         private void SendMessage()
         {
+            // --- 送信ボタン無効時は送信しない（Enter送信の抜け道を塞ぐ） ---
+            if (SendButton != null && !SendButton.IsEnabled)
+            {
+                return;
+            }
+
             string message = MessageTextBox.Text.Trim();
             if (string.IsNullOrEmpty(message) && _attachedImageSources.Count == 0)
                 return;

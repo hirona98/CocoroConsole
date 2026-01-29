@@ -267,6 +267,7 @@ namespace CocoroConsole
             _communicationService = new CommunicationService(_appSettings);            // 通信サービスのイベントハンドラを設定
             _communicationService.ChatMessageReceived += OnChatMessageReceived;
             _communicationService.StreamingChatReceived += OnStreamingChatReceived;
+            _communicationService.ChatBusyChanged += OnChatBusyChanged;
             _communicationService.NotificationMessageReceived += OnNotificationMessageReceived;
             _communicationService.ControlCommandReceived += OnControlCommandReceived;
             _communicationService.ErrorOccurred += OnErrorOccurred;
@@ -320,6 +321,7 @@ namespace CocoroConsole
 
             // --- 送信ボタンの有効/無効を状態に応じて更新 ---
             bool isLLMEnabled = _appSettings.IsUseLLM;
+            bool isChatBusy = _communicationService?.IsChatBusy ?? false;
 
             // --- CocoroGhost起動待ちは最優先表示（ログ上書きより優先） ---
             if (status == CocoroGhostStatus.WaitingForStartup)
@@ -331,8 +333,11 @@ namespace CocoroConsole
             // --- ステータスバー表示は「通常表示 or ログ上書き」を統一して描画する ---
             RenderStatusBarText(BuildCocoroGhostStatusBarText(status));
 
-            // 送信ボタンの有効/無効を制御（LLMが無効の場合は無効にする）
-            bool isSendEnabled = isLLMEnabled && status != CocoroGhostStatus.WaitingForStartup;
+            // 送信ボタンの有効/無効を制御
+            // NOTE:
+            // - 送信中（SSEストリーム中）は UI 表示が 1 本前提なので、二重送信を抑止する。
+            // - ステータスが Normal のときだけ送信可能にする。
+            bool isSendEnabled = isLLMEnabled && status == CocoroGhostStatus.Normal && !isChatBusy;
             ChatControlInstance.UpdateSendButtonEnabled(isSendEnabled);
         }
 
@@ -350,12 +355,22 @@ namespace CocoroConsole
                 return;
             }
 
+            // --- 送信中は二重送信を抑止（Enter送信などの抜け道もあるため） ---
+            if (_communicationService.IsChatBusy)
+            {
+                ChatControlInstance.AddSystemErrorMessage("前の送信が処理中です。応答を待ってください。");
+                return;
+            }
+
             // UIスレッドで画像データを取得・処理（スレッドセーフな形式に変換）
             var imageSources = ChatControlInstance.GetAttachedImageSources();
             var imageDataUrls = ChatControlInstance.GetAndClearAttachedImages();
 
             // ユーザーメッセージとしてチャットウィンドウに表示（送信前に表示）
             ChatControlInstance.AddUserMessage(message, imageSources);
+
+            // --- 送信開始と同時に送信ボタンを無効化（連打を防ぐ） ---
+            ChatControlInstance.UpdateSendButtonEnabled(false);
 
             // 非同期でCocoroCoreにメッセージを送信（UIをブロックしない）
             _ = Task.Run(async () =>
@@ -506,6 +521,16 @@ namespace CocoroConsole
                     _skipNextAssistantMessage = true; // 直後の最終メッセージ表示を抑止
                     _skipNextAssistantMessageContent = e.Content;
                 }
+            });
+        }
+
+        private void OnChatBusyChanged(object? sender, bool isBusy)
+        {
+            UIHelper.RunOnUIThread(() =>
+            {
+                // --- 送信ボタン状態を即時反映する（ステータスポーリングの待ちを作らない） ---
+                var status = _communicationService?.CurrentStatus ?? CocoroGhostStatus.WaitingForStartup;
+                UpdateCocoroGhostStatusDisplay(status);
             });
         }
 

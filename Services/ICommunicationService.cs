@@ -75,6 +75,11 @@ namespace CocoroConsole.Services
         event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
 
         /// <summary>
+        /// チャット送信中状態の変更イベント
+        /// </summary>
+        event EventHandler<bool>? ChatBusyChanged;
+
+        /// <summary>
         /// ステータス更新要求イベント
         /// </summary>
         event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
@@ -123,6 +128,11 @@ namespace CocoroConsole.Services
         /// 現在のCocoroGhostステータス
         /// </summary>
         CocoroGhostStatus CurrentStatus { get; }
+
+        /// <summary>
+        /// チャット送信中かどうか
+        /// </summary>
+        bool IsChatBusy { get; }
 
         /// <summary>
         /// APIサーバーを開始
