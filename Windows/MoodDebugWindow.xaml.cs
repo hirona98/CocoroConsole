@@ -153,18 +153,17 @@ namespace CocoroConsole.Windows
     /// <summary>
     /// MoodDebugWindow 用のViewModel。
     /// </summary>
-    public class MoodDebugViewModel : INotifyPropertyChanged
-    {
-        public event PropertyChangedEventHandler? PropertyChanged;
+	    public class MoodDebugViewModel : INotifyPropertyChanged
+	    {
+	        public event PropertyChangedEventHandler? PropertyChanged;
 
-        // --- 基本情報 ---
-        private string _stateId = "-";
-        private string _bodyText = "（未取得）";
-        private string _confidence = "-";
-        private string _salience = "-";
-        private string _dtSeconds = "-";
-        private string _lastConfirmedAt = "-";
-        private string _now = "-";
+	        // --- 基本情報 ---
+	        private string _stateId = "-";
+	        private string _bodyText = "（未取得）";
+	        private string _confidence = "-";
+	        private string _salience = "-";
+	        private string _dtSeconds = "-";
+	        private string _lastConfirmedAt = "-";
 
         // --- VAD ---
         private string _baselineV = "-";
@@ -186,11 +185,10 @@ namespace CocoroConsole.Windows
 
         public string StateId { get => _stateId; set => SetProperty(ref _stateId, value); }
         public string BodyText { get => _bodyText; set => SetProperty(ref _bodyText, value); }
-        public string Confidence { get => _confidence; set => SetProperty(ref _confidence, value); }
-        public string Salience { get => _salience; set => SetProperty(ref _salience, value); }
-        public string DtSeconds { get => _dtSeconds; set => SetProperty(ref _dtSeconds, value); }
-        public string LastConfirmedAt { get => _lastConfirmedAt; set => SetProperty(ref _lastConfirmedAt, value); }
-        public string Now { get => _now; set => SetProperty(ref _now, value); }
+	        public string Confidence { get => _confidence; set => SetProperty(ref _confidence, value); }
+	        public string Salience { get => _salience; set => SetProperty(ref _salience, value); }
+	        public string DtSeconds { get => _dtSeconds; set => SetProperty(ref _dtSeconds, value); }
+	        public string LastConfirmedAt { get => _lastConfirmedAt; set => SetProperty(ref _lastConfirmedAt, value); }
 
         public string BaselineV { get => _baselineV; set => SetProperty(ref _baselineV, value); }
         public string BaselineA { get => _baselineA; set => SetProperty(ref _baselineA, value); }
@@ -210,19 +208,18 @@ namespace CocoroConsole.Windows
         /// <summary>
         /// 表示用に整形済みのデータをUIへ反映する。
         /// </summary>
-        public void Apply(MoodDebugDisplayData data, DateTimeOffset receivedAt)
-        {
-            // --- 直近の瞬間感情（最新1件） ---
-            LatestAffect = data.LatestAffect ?? MoodDebugRecentAffectRowViewModel.CreateEmpty();
+	        public void Apply(MoodDebugDisplayData data, DateTimeOffset receivedAt)
+	        {
+	            // --- 直近の瞬間感情（最新1件） ---
+	            LatestAffect = data.LatestAffect ?? MoodDebugRecentAffectRowViewModel.CreateEmpty();
 
-            // --- 基本情報 ---
-            StateId = data.StateId;
-            BodyText = data.BodyText;
-            Confidence = data.Confidence;
-            Salience = data.Salience;
-            DtSeconds = data.DtSeconds;
-            LastConfirmedAt = data.LastConfirmedAt;
-            Now = data.Now;
+	            // --- 基本情報 ---
+	            StateId = data.StateId;
+	            BodyText = data.BodyText;
+	            Confidence = data.Confidence;
+	            Salience = data.Salience;
+	            DtSeconds = data.DtSeconds;
+	            LastConfirmedAt = data.LastConfirmedAt;
 
             // --- VAD ---
             BaselineV = data.BaselineV;
@@ -341,8 +338,8 @@ namespace CocoroConsole.Windows
     /// <summary>
     /// /api/mood/debug の表示用に整形したデータ（UIスレッドで重い変換をしないための中間表現）。
     /// </summary>
-    public class MoodDebugDisplayData
-    {
+	    public class MoodDebugDisplayData
+	    {
         /// <summary>
         /// 状態ID。
         /// </summary>
@@ -373,10 +370,6 @@ namespace CocoroConsole.Windows
         /// </summary>
         public string LastConfirmedAt { get; set; } = "-";
 
-        /// <summary>
-        /// 現在時刻。
-        /// </summary>
-        public string Now { get; set; } = "-";
 
         /// <summary>
         /// ベースラインVAD（V）。
@@ -431,8 +424,8 @@ namespace CocoroConsole.Windows
         /// <summary>
         /// /api/mood/debug のレスポンスから表示用データを生成する。
         /// </summary>
-        public static MoodDebugDisplayData Create(MoodDebugResponse response)
-        {
+	        public static MoodDebugDisplayData Create(MoodDebugResponse response)
+	        {
             // --- 返却オブジェクト ---
             var data = new MoodDebugDisplayData();
 
@@ -476,15 +469,14 @@ namespace CocoroConsole.Windows
             data.StateId = mood.StateId.ToString(CultureInfo.InvariantCulture);
             data.BodyText = mood.BodyText ?? string.Empty;
             data.Confidence = FormatNumber(mood.Confidence);
-            data.Salience = FormatNumber(mood.Salience);
-            data.DtSeconds = mood.DtSeconds.ToString(CultureInfo.InvariantCulture);
-            data.LastConfirmedAt = FormatDateTimeOffset(mood.LastConfirmedAt);
-            data.Now = FormatDateTimeOffset(mood.Now);
+	            data.Salience = FormatNumber(mood.Salience);
+	            data.DtSeconds = mood.DtSeconds.ToString(CultureInfo.InvariantCulture);
+	            data.LastConfirmedAt = FormatDateTimeOffset(mood.LastConfirmedAt);
 
-            // --- VAD ---
-            data.BaselineV = FormatVadValue(mood.BaselineVad?.V);
-            data.BaselineA = FormatVadValue(mood.BaselineVad?.A);
-            data.BaselineD = FormatVadValue(mood.BaselineVad?.D);
+	            // --- VAD ---
+	            data.BaselineV = FormatVadValue(mood.BaselineVad?.V);
+	            data.BaselineA = FormatVadValue(mood.BaselineVad?.A);
+	            data.BaselineD = FormatVadValue(mood.BaselineVad?.D);
             data.ShockV = FormatVadValue(mood.ShockVad?.V);
             data.ShockA = FormatVadValue(mood.ShockVad?.A);
             data.ShockD = FormatVadValue(mood.ShockVad?.D);

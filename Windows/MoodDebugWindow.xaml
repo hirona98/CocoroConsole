@@ -23,19 +23,19 @@
                                 <!-- 基本情報 -->
                                 <GroupBox Header="基本情報"
                                           Margin="0,0,0,10">
-                                        <Grid Margin="10">
-                                                <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="140"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <Grid.RowDefinitions>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
+	                                        <Grid Margin="10">
+	                                                <Grid.ColumnDefinitions>
+	                                                        <ColumnDefinition Width="140"/>
+	                                                        <ColumnDefinition Width="*"/>
+	                                                </Grid.ColumnDefinitions>
+	                                                <Grid.RowDefinitions>
+	                                                        <RowDefinition Height="Auto"/>
+	                                                        <RowDefinition Height="Auto"/>
+	                                                        <RowDefinition Height="Auto"/>
+	                                                        <RowDefinition Height="Auto"/>
+	                                                        <RowDefinition Height="Auto"/>
+	                                                        <RowDefinition Height="Auto"/>
+	                                                </Grid.RowDefinitions>
 
                                                 <TextBlock Grid.Row="0"
                                                            Grid.Column="0"
@@ -90,16 +90,8 @@
                                                            Text="{Binding LastConfirmedAt}"
                                                            Margin="0,6,0,0"/>
 
-                                                <TextBlock Grid.Row="6"
-                                                           Grid.Column="0"
-                                                           Text="現在時刻:"
-                                                           Margin="0,6,0,0"/>
-                                                <TextBlock Grid.Row="6"
-                                                           Grid.Column="1"
-                                                           Text="{Binding Now}"
-                                                           Margin="0,6,0,0"/>
-                                        </Grid>
-                                </GroupBox>
+	                                        </Grid>
+	                                </GroupBox>
 
                                 <!-- VAD -->
                                 <GroupBox Header="VAD"
