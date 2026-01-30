@@ -161,7 +161,6 @@ namespace CocoroConsole.Windows
 	        private string _stateId = "-";
 	        private string _bodyText = "（未取得）";
 	        private string _confidence = "-";
-	        private string _salience = "-";
 	        private string _dtSeconds = "-";
 	        private string _lastConfirmedAt = "-";
 
@@ -186,7 +185,6 @@ namespace CocoroConsole.Windows
         public string StateId { get => _stateId; set => SetProperty(ref _stateId, value); }
         public string BodyText { get => _bodyText; set => SetProperty(ref _bodyText, value); }
 	        public string Confidence { get => _confidence; set => SetProperty(ref _confidence, value); }
-	        public string Salience { get => _salience; set => SetProperty(ref _salience, value); }
 	        public string DtSeconds { get => _dtSeconds; set => SetProperty(ref _dtSeconds, value); }
 	        public string LastConfirmedAt { get => _lastConfirmedAt; set => SetProperty(ref _lastConfirmedAt, value); }
 
@@ -217,7 +215,6 @@ namespace CocoroConsole.Windows
 	            StateId = data.StateId;
 	            BodyText = data.BodyText;
 	            Confidence = data.Confidence;
-	            Salience = data.Salience;
 	            DtSeconds = data.DtSeconds;
 	            LastConfirmedAt = data.LastConfirmedAt;
 
@@ -356,11 +353,6 @@ namespace CocoroConsole.Windows
         public string Confidence { get; set; } = "-";
 
         /// <summary>
-        /// 重要度。
-        /// </summary>
-        public string Salience { get; set; } = "-";
-
-        /// <summary>
         /// 経過秒数。
         /// </summary>
         public string DtSeconds { get; set; } = "-";
@@ -469,7 +461,6 @@ namespace CocoroConsole.Windows
             data.StateId = mood.StateId.ToString(CultureInfo.InvariantCulture);
             data.BodyText = mood.BodyText ?? string.Empty;
             data.Confidence = FormatNumber(mood.Confidence);
-	            data.Salience = FormatNumber(mood.Salience);
 	            data.DtSeconds = mood.DtSeconds.ToString(CultureInfo.InvariantCulture);
 	            data.LastConfirmedAt = FormatDateTimeOffset(mood.LastConfirmedAt);
 

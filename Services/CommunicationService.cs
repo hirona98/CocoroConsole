@@ -608,7 +608,7 @@ namespace CocoroConsole.Services
                             StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット完了"));
                             return;
                         case "error":
-                            var errorMessage = ev.ErrorMessage ?? "チャットAPIエラーが発生しました";
+                            var errorMessage = FormatChatStreamErrorMessage(ev.ErrorMessage, ev.ErrorCode);
                             StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
                             {
                                 Content = "",
@@ -683,6 +683,34 @@ namespace CocoroConsole.Services
                     _chatSendSemaphore.Release();
                 }
             }
+        }
+
+        /// <summary>
+        /// /api/chat の error イベントを表示向けに整形する。
+        /// </summary>
+        private static string FormatChatStreamErrorMessage(string? message, string? code)
+        {
+            // --- 正規化（空白のみは null 扱い） ---
+            var cleanMessage = string.IsNullOrWhiteSpace(message) ? null : message.Trim();
+            var cleanCode = string.IsNullOrWhiteSpace(code) ? null : code.Trim();
+
+            // --- 排他（同時実行） ---
+            if (cleanCode == "chat_busy")
+            {
+                var fallback = "他のチャット処理中です。応答が完了してから再送してください。";
+                return $"{(cleanMessage ?? fallback)} (code={cleanCode})";
+            }
+
+            // --- メッセージが無い場合はコードベースで返す ---
+            if (cleanMessage == null)
+            {
+                return cleanCode == null
+                    ? "チャットAPIエラーが発生しました"
+                    : $"チャットAPIエラーが発生しました (code={cleanCode})";
+            }
+
+            // --- メッセージがある場合はコードがあれば添える（デバッグ用途） ---
+            return cleanCode == null ? cleanMessage : $"{cleanMessage} (code={cleanCode})";
         }
 
         public async Task SetDesktopWatchEnabledAsync(bool enabled)

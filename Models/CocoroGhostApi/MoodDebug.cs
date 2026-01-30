@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace CocoroConsole.Models.CocoroGhostApi
@@ -51,10 +52,10 @@ namespace CocoroConsole.Models.CocoroGhostApi
         public double Confidence { get; set; }
 
         /// <summary>
-        /// 気分の重要度。
+        /// 気分の追加ペイロード（構造は可変）。
         /// </summary>
-        [JsonPropertyName("salience")]
-        public double Salience { get; set; }
+        [JsonPropertyName("payload")]
+        public JsonElement? Payload { get; set; }
 
         /// <summary>
         /// ベースラインVAD。

@@ -34,7 +34,6 @@
 	                                                        <RowDefinition Height="Auto"/>
 	                                                        <RowDefinition Height="Auto"/>
 	                                                        <RowDefinition Height="Auto"/>
-	                                                        <RowDefinition Height="Auto"/>
 	                                                </Grid.RowDefinitions>
 
                                                 <TextBlock Grid.Row="0"
@@ -65,27 +64,18 @@
 
                                                 <TextBlock Grid.Row="3"
                                                            Grid.Column="0"
-                                                           Text="重要度:"
-                                                           Margin="0,6,0,0"/>
-                                                <TextBlock Grid.Row="3"
-                                                           Grid.Column="1"
-                                                           Text="{Binding Salience}"
-                                                           Margin="0,6,0,0"/>
-
-                                                <TextBlock Grid.Row="4"
-                                                           Grid.Column="0"
                                                            Text="経過秒数:"
                                                            Margin="0,6,0,0"/>
-                                                <TextBlock Grid.Row="4"
+                                                <TextBlock Grid.Row="3"
                                                            Grid.Column="1"
                                                            Text="{Binding DtSeconds}"
                                                            Margin="0,6,0,0"/>
 
-                                                <TextBlock Grid.Row="5"
+                                                <TextBlock Grid.Row="4"
                                                            Grid.Column="0"
                                                            Text="最終確認:"
                                                            Margin="0,6,0,0"/>
-                                                <TextBlock Grid.Row="5"
+                                                <TextBlock Grid.Row="4"
                                                            Grid.Column="1"
                                                            Text="{Binding LastConfirmedAt}"
                                                            Margin="0,6,0,0"/>

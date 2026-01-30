@@ -388,7 +388,8 @@ namespace CocoroConsole.Services
                             return new ChatStreamEvent
                             {
                                 Type = "error",
-                                ErrorMessage = payload?.Message
+                                ErrorMessage = payload?.Message,
+                                ErrorCode = payload?.Code
                             };
                         }
                     default:
@@ -480,6 +481,11 @@ namespace CocoroConsole.Services
         /// error イベント時のメッセージ。
         /// </summary>
         public string? ErrorMessage { get; set; }
+
+        /// <summary>
+        /// error イベント時のエラーコード（例: chat_busy / invalid_request）。
+        /// </summary>
+        public string? ErrorCode { get; set; }
     }
 
     internal class ChatStreamTokenPayload

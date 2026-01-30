@@ -67,10 +67,6 @@
                                 Value="10,10,0,10"/>
                         <Setter Property="Padding"
                                 Value="10"/>
-                        <Setter Property="Margin"
-                                Value="50,5,10,5"/>
-                        <Setter Property="HorizontalAlignment"
-                                Value="Right"/>
                         <Setter Property="MaxWidth"
                                 Value="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ScrollViewer}}, Path=ActualWidth, Converter={StaticResource PercentageConverter}, ConverterParameter=0.9}"/>
                 </Style>
@@ -83,10 +79,6 @@
                                 Value="10,10,10,0"/>
                         <Setter Property="Padding"
                                 Value="10"/>
-                        <Setter Property="Margin"
-                                Value="10,5,50,5"/>
-                        <Setter Property="HorizontalAlignment"
-                                Value="Left"/>
                         <Setter Property="MaxWidth"
                                 Value="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ScrollViewer}}, Path=ActualWidth, Converter={StaticResource PercentageConverter}, ConverterParameter=0.9}"/>
                 </Style>
@@ -175,6 +167,38 @@
                        BasedOn="{StaticResource SystemMessageTextStyle}">
                         <Setter Property="TextAlignment"
                                 Value="Center"/>
+                </Style>
+
+                <!-- 時刻表示（LINE風：バブルの隣に小さく表示） -->
+                <Style x:Key="UserTimestampTextStyle"
+                       TargetType="TextBlock">
+                        <Setter Property="FontSize"
+                                Value="10"/>
+                        <Setter Property="Foreground"
+                                Value="WhiteSmoke"/>
+                        <Setter Property="Opacity"
+                                Value="0.75"/>
+                        <Setter Property="VerticalAlignment"
+                                Value="Bottom"/>
+                        <Setter Property="HorizontalAlignment"
+                                Value="Right"/>
+                        <Setter Property="Margin"
+                                Value="0,0,6,2"/>
+                </Style>
+                <Style x:Key="AiTimestampTextStyle"
+                       TargetType="TextBlock">
+                        <Setter Property="FontSize"
+                                Value="10"/>
+                        <Setter Property="Foreground"
+                                Value="#FF404040"/>
+                        <Setter Property="Opacity"
+                                Value="0.80"/>
+                        <Setter Property="VerticalAlignment"
+                                Value="Bottom"/>
+                        <Setter Property="HorizontalAlignment"
+                                Value="Left"/>
+                        <Setter Property="Margin"
+                                Value="6,0,0,2"/>
                 </Style>
         </UserControl.Resources>
 
