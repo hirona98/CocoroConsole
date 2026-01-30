@@ -28,6 +28,10 @@ namespace CocoroConsole.Controls
         private List<string> _attachedImageDataUrls = new List<string>();
         private List<BitmapSource> _attachedImageSources = new List<BitmapSource>();
         private const int MaxImageCount = 5;
+
+        // バブル内の時刻表示識別子（右クリックコピー等の既存ロジックと干渉しないためTagで判別）
+        private const string TimestampTag = "CocoroConsole.ChatBubble.Timestamp";
+
         // メッセージタイプの列挙型
         private enum MessageType
         {
@@ -87,7 +91,8 @@ namespace CocoroConsole.Controls
         /// <param name="imageSources">画像リスト（オプション）</param>
         public void AddUserMessage(string message, List<BitmapSource>? imageSources = null)
         {
-            var messageContainer = new StackPanel();
+            // --- 時刻（バブル表示用） ---
+            var timestamp = DateTime.Now;
 
             var bubble = new Border
             {
@@ -154,10 +159,13 @@ namespace CocoroConsole.Controls
                 messageContent.Children.Add(messageText);
             }
 
+            // --- 本文をバブルに設定 ---
             bubble.Child = messageContent;
-            messageContainer.Children.Add(bubble);
 
-            ChatMessagesPanel.Children.Add(messageContainer);
+            // --- 時刻をLINE風にバブルの隣へ配置 ---
+            var timestampText = CreateTimestampTextBlock(timestamp, "UserTimestampTextStyle");
+            var messageRow = CreateMessageRowWithTimestamp(bubble, timestampText, isUser: true);
+            ChatMessagesPanel.Children.Add(messageRow);
 
             // 自動スクロール
             ChatScrollViewer.ScrollToEnd();
@@ -172,6 +180,9 @@ namespace CocoroConsole.Controls
         /// <param name="message">レスポンスメッセージ</param>
         public void AddAiMessage(string message)
         {
+            // --- 時刻（バブル表示用） ---
+            var timestamp = DateTime.Now;
+
             // 連続AIメッセージ判定
             bool isContinuous = ShouldContinueLastMessage(MessageType.AI, hasImage: false);
 
@@ -183,8 +194,6 @@ namespace CocoroConsole.Controls
             else
             {
                 // 新しいバブルを作成
-                var messageContainer = new StackPanel();
-
                 var bubble = new Border
                 {
                     Style = (Style)Resources["AiBubbleStyle"]
@@ -205,10 +214,14 @@ namespace CocoroConsole.Controls
                 };
 
                 messageContent.Children.Add(messageText);
-                bubble.Child = messageContent;
-                messageContainer.Children.Add(bubble);
 
-                ChatMessagesPanel.Children.Add(messageContainer);
+                // --- 本文をバブルに設定 ---
+                bubble.Child = messageContent;
+
+                // --- 時刻をLINE風にバブルの隣へ配置 ---
+                var timestampText = CreateTimestampTextBlock(timestamp, "AiTimestampTextStyle");
+                var messageRow = CreateMessageRowWithTimestamp(bubble, timestampText, isUser: false);
+                ChatMessagesPanel.Children.Add(messageRow);
 
                 // 自動スクロール
                 ChatScrollViewer.ScrollToEnd();
@@ -225,7 +238,8 @@ namespace CocoroConsole.Controls
         /// <param name="imageBase64">Base64エンコードされた画像データ（オプション）</param>
         public void AddAiMessage(string message, string? imageBase64 = null)
         {
-            var messageContainer = new StackPanel();
+            // --- 時刻（バブル表示用） ---
+            var timestamp = DateTime.Now;
 
             var bubble = new Border
             {
@@ -311,10 +325,13 @@ namespace CocoroConsole.Controls
                 messageContent.Children.Add(messageText);
             }
 
+            // --- 本文をバブルに設定 ---
             bubble.Child = messageContent;
-            messageContainer.Children.Add(bubble);
 
-            ChatMessagesPanel.Children.Add(messageContainer);
+            // --- 時刻をLINE風にバブルの隣へ配置 ---
+            var timestampText = CreateTimestampTextBlock(timestamp, "AiTimestampTextStyle");
+            var messageRow = CreateMessageRowWithTimestamp(bubble, timestampText, isUser: false);
+            ChatMessagesPanel.Children.Add(messageRow);
 
             // 自動スクロール
             ChatScrollViewer.ScrollToEnd();
@@ -332,15 +349,16 @@ namespace CocoroConsole.Controls
             if (ChatMessagesPanel.Children.Count == 0)
                 return;
 
-            // 最後のメッセージコンテナを取得
-            var lastContainer = ChatMessagesPanel.Children[ChatMessagesPanel.Children.Count - 1] as StackPanel;
+            // --- 最後のメッセージコンテナを取得 ---
+            var lastContainer = ChatMessagesPanel.Children[ChatMessagesPanel.Children.Count - 1] as DependencyObject;
             if (lastContainer == null) return;
 
-            // バブルを取得
-            var bubble = lastContainer.Children.OfType<Border>().FirstOrDefault(b => b.Style == (Style)Resources["AiBubbleStyle"]);
+            // --- AIバブルを取得 ---
+            var bubble = FindVisualChildren<Border>(lastContainer)
+                .FirstOrDefault(b => b.Style == (Style)Resources["AiBubbleStyle"]);
             if (bubble == null) return;
 
-            // メッセージコンテンツを取得
+            // メッセージコンテンツを取得（本文領域のみ）
             var messageContent = bubble.Child as StackPanel;
             if (messageContent == null) return;
 
@@ -351,6 +369,9 @@ namespace CocoroConsole.Controls
             // 表情タグを削除してからテキストを追記
             var cleanAdditionalText = RemoveFaceTags(additionalText);
             messageTextBox.Text += cleanAdditionalText;
+
+            // --- 追記が発生した場合は、表示時刻も更新（連続AIメッセージの最終受信時刻） ---
+            UpdateMessageTimestamp(lastContainer, DateTime.Now);
 
             // 自動スクロール
             ChatScrollViewer.ScrollToEnd();
@@ -374,12 +395,16 @@ namespace CocoroConsole.Controls
             if (ChatMessagesPanel.Children.Count == 0)
                 return null;
 
-            var lastContainer = ChatMessagesPanel.Children[ChatMessagesPanel.Children.Count - 1] as StackPanel;
+            // --- 最後のメッセージコンテナを取得 ---
+            var lastContainer = ChatMessagesPanel.Children[ChatMessagesPanel.Children.Count - 1] as DependencyObject;
             if (lastContainer == null) return null;
 
-            var bubble = lastContainer.Children.OfType<Border>().FirstOrDefault(b => b.Style == (Style)Resources["AiBubbleStyle"]);
+            // --- AIバブルを取得 ---
+            var bubble = FindVisualChildren<Border>(lastContainer)
+                .FirstOrDefault(b => b.Style == (Style)Resources["AiBubbleStyle"]);
             if (bubble == null) return null;
 
+            // --- 本文領域を取得 ---
             var messageContent = bubble.Child as StackPanel;
             if (messageContent == null) return null;
 
@@ -455,6 +480,8 @@ namespace CocoroConsole.Controls
             };
 
             messageContent.Children.Add(messageText);
+
+            // --- 本文をバブルに設定 ---
             bubble.Child = messageContent;
             messageContainer.Children.Add(bubble);
 
@@ -540,6 +567,7 @@ namespace CocoroConsole.Controls
                 messageContent.Children.Add(imagePanel);
             }
 
+            // --- 本文をバブルに設定 ---
             bubble.Child = messageContent;
             messageContainer.Children.Add(bubble);
 
@@ -612,6 +640,7 @@ namespace CocoroConsole.Controls
                     messageContent.Children.Add(image);
                 }
 
+                // --- 本文をバブルに設定 ---
                 bubble.Child = messageContent;
                 messageContainer.Children.Add(bubble);
 
@@ -1108,7 +1137,8 @@ namespace CocoroConsole.Controls
         /// <param name="text">認識されたテキスト</param>
         public void AddVoiceMessage(string text)
         {
-            var messageContainer = new StackPanel();
+            // --- 時刻（バブル表示用） ---
+            var timestamp = DateTime.Now;
 
             var bubble = new Border
             {
@@ -1127,16 +1157,113 @@ namespace CocoroConsole.Controls
             };
 
             messageContent.Children.Add(messageText);
-            bubble.Child = messageContent;
-            messageContainer.Children.Add(bubble);
 
-            ChatMessagesPanel.Children.Add(messageContainer);
+            // --- 本文をバブルに設定 ---
+            bubble.Child = messageContent;
+
+            // --- 時刻をLINE風にバブルの隣へ配置 ---
+            var timestampText = CreateTimestampTextBlock(timestamp, "UserTimestampTextStyle");
+            var messageRow = CreateMessageRowWithTimestamp(bubble, timestampText, isUser: true);
+            ChatMessagesPanel.Children.Add(messageRow);
 
             // 自動スクロール
             ChatScrollViewer.ScrollToEnd();
 
             // 最後のメッセージ情報を更新
             UpdateLastMessageInfo(MessageType.User);
+        }
+
+        /// <summary>
+        /// メッセージ行（バブル＋時刻）を作成
+        /// </summary>
+        /// <param name="bubble">バブル</param>
+        /// <param name="timestampText">時刻表示</param>
+        /// <param name="isUser">ユーザーメッセージかどうか</param>
+        /// <returns>メッセージ行のGrid</returns>
+        private Grid CreateMessageRowWithTimestamp(Border bubble, TextBlock timestampText, bool isUser)
+        {
+            // --- LINE風：時刻はバブルの外側（隣） ---
+            var grid = new Grid();
+
+            // --- チャット全体の左右余白＋上下余白 ---
+            grid.Margin = new Thickness(10, 5, 10, 5);
+
+            // --- ユーザーは右寄せ（* / 時刻 / バブル） ---
+            if (isUser)
+            {
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                bubble.VerticalAlignment = VerticalAlignment.Bottom;
+                Grid.SetColumn(timestampText, 1);
+                Grid.SetColumn(bubble, 2);
+            }
+            // --- AIは左寄せ（バブル / 時刻 / *） ---
+            else
+            {
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+                bubble.VerticalAlignment = VerticalAlignment.Bottom;
+                Grid.SetColumn(bubble, 0);
+                Grid.SetColumn(timestampText, 1);
+            }
+
+            grid.Children.Add(bubble);
+            grid.Children.Add(timestampText);
+
+            return grid;
+        }
+
+        /// <summary>
+        /// 時刻表示用TextBlockを作成
+        /// </summary>
+        /// <param name="timestamp">表示する時刻</param>
+        /// <param name="styleKey">適用するスタイルキー</param>
+        private TextBlock CreateTimestampTextBlock(DateTime timestamp, string styleKey)
+        {
+            // --- 表示フォーマットはLINE風にHH:mm ---
+            var textBlock = new TextBlock
+            {
+                Text = timestamp.ToString("HH:mm"),
+                Tag = TimestampTag
+            };
+
+            // --- StyleはXAMLのResourcesから取得 ---
+            textBlock.Style = (Style)Resources[styleKey];
+
+            return textBlock;
+        }
+
+        /// <summary>
+        /// メッセージ行内の時刻表示を更新
+        /// </summary>
+        /// <param name="container">メッセージ行</param>
+        /// <param name="timestamp">新しい時刻</param>
+        private void UpdateMessageTimestamp(DependencyObject container, DateTime timestamp)
+        {
+            var timestampText = GetMessageTimestampTextBlock(container);
+            if (timestampText == null) return;
+
+            timestampText.Text = timestamp.ToString("HH:mm");
+        }
+
+        /// <summary>
+        /// メッセージ行内の時刻TextBlockを取得
+        /// </summary>
+        private TextBlock? GetMessageTimestampTextBlock(DependencyObject container)
+        {
+            foreach (var textBlock in FindVisualChildren<TextBlock>(container))
+            {
+                if (Equals(textBlock.Tag, TimestampTag))
+                {
+                    return textBlock;
+                }
+            }
+
+            return null;
         }
     }
 }
