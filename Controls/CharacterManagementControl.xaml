@@ -673,7 +673,7 @@
                                              Foreground="#FF0078D7"
                                              Padding="2"
                                              ToolTip="Aivis Cloud APIキー"
-                                             Width="100"
+                                             Width="50"
                                              HorizontalAlignment="Left"/>
                                     <Button Content="コピー"
                                             Margin="10,0,0,0"
@@ -921,7 +921,7 @@
                                 <TextBox x:Name="STTApiKeyPasswordBox"
                                          Foreground="#FF0078D7"
                                          Padding="2"
-                                         Width="100"
+                                         Width="50"
                                          HorizontalAlignment="Left"/>
                                 <Button Content="コピー"
                                         Margin="10,0,0,0"
