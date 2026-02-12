@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
+using CocoroConsole.Utilities;
 
 namespace CocoroConsole.Windows
 {
@@ -11,6 +12,7 @@ namespace CocoroConsole.Windows
     /// </summary>
     public partial class ImagePreviewWindow : Window
     {
+        private const string ImagePreviewWindowPlacementKey = "ImagePreviewWindow";
         private double _currentZoom = 1.0;
         private const double ZOOM_STEP = 0.1;
         private const double MIN_ZOOM = 0.1;
@@ -20,6 +22,10 @@ namespace CocoroConsole.Windows
         public ImagePreviewWindow(BitmapSource imageSource)
         {
             InitializeComponent();
+
+            // 画像プレビューウィンドウ位置を復元し、以降の移動を記録する
+            WindowPlacementManager.AttachAndRestore(this, ImagePreviewWindowPlacementKey);
+
             PreviewImage.Source = imageSource;
             PreviewImageZoom.Source = imageSource;
             

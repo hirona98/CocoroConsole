@@ -36,6 +36,10 @@ namespace CocoroConsole
         private bool _skipNextAssistantMessage;
         private string? _skipNextAssistantMessageContent;
         private bool _isLogStreamHandlersAttached;
+        private const string MainWindowPlacementKey = "MainWindow";
+        private const string SettingWindowPlacementKey = "SettingWindow";
+        private const string LogViewerWindowPlacementKey = "LogViewerWindow";
+        private const string MoodDebugWindowPlacementKey = "MoodDebugWindow";
 
         // --- CocoroGhost の最新ステータス（ステータスバー復帰先） ---
         // ログ表示で一時的に上書きしても、指定時間後「その時点の最新状態」に戻すために保持する。
@@ -70,6 +74,9 @@ namespace CocoroConsole
 
             // 設定サービスの取得
             _appSettings = AppSettings.Instance;
+
+            // メインウィンドウ位置を復元し、以降の移動を記録する
+            WindowPlacementManager.AttachAndRestore(this, MainWindowPlacementKey, _appSettings);
 
             // 初期化と接続
             InitializeApp();
@@ -623,7 +630,14 @@ namespace CocoroConsole
 
             // ログビューアーを新規作成
             _logViewerWindow = new LogViewerWindow();
-            PositionWindowNearMain(_logViewerWindow);
+            var isLogViewerPositionRestored = WindowPlacementManager.AttachAndRestore(
+                _logViewerWindow,
+                LogViewerWindowPlacementKey,
+                _appSettings);
+            if (!isLogViewerPositionRestored)
+            {
+                PositionWindowNearMain(_logViewerWindow);
+            }
             AttachLogStreamHandlers();
             AttachDebugTraceListener();
 
@@ -671,7 +685,14 @@ namespace CocoroConsole
 
             // --- 新規作成 ---
             _moodDebugWindow = new MoodDebugWindow(_communicationService);
-            PositionWindowNearMain(_moodDebugWindow);
+            var isMoodDebugPositionRestored = WindowPlacementManager.AttachAndRestore(
+                _moodDebugWindow,
+                MoodDebugWindowPlacementKey,
+                _appSettings);
+            if (!isMoodDebugPositionRestored)
+            {
+                PositionWindowNearMain(_moodDebugWindow);
+            }
 
             // --- ウィンドウが閉じられた時の処理 ---
             _moodDebugWindow.Closed += (_, __) =>
@@ -938,7 +959,14 @@ namespace CocoroConsole
 
                 // 設定画面を新規作成
                 _settingWindow = new SettingWindow(_communicationService);
-                PositionWindowNearMain(_settingWindow);
+                var isSettingPositionRestored = WindowPlacementManager.AttachAndRestore(
+                    _settingWindow,
+                    SettingWindowPlacementKey,
+                    _appSettings);
+                if (!isSettingPositionRestored)
+                {
+                    PositionWindowNearMain(_settingWindow);
+                }
 
                 // ウィンドウが閉じられた時にボタンの状態を更新
                 _settingWindow.Closed += SettingWindow_Closed;

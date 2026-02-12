@@ -125,6 +125,11 @@ namespace CocoroConsole.Services
         float WindowPositionY { get; set; }
 
         /// <summary>
+        /// ウィンドウ位置一覧
+        /// </summary>
+        Dictionary<string, WindowPlacement> WindowPlacements { get; set; }
+
+        /// <summary>
         /// 現在のキャラクターインデックス
         /// </summary>
         int CurrentCharacterIndex { get; set; }
@@ -210,5 +215,20 @@ namespace CocoroConsole.Services
         /// </summary>
         /// <returns>現在のキャラクター設定、存在しない場合はnull</returns>
         CharacterSettings? GetCurrentCharacter();
+
+        /// <summary>
+        /// ウィンドウ位置を取得
+        /// </summary>
+        /// <param name="windowKey">ウィンドウ識別子</param>
+        /// <returns>ウィンドウ位置。見つからない場合はnull</returns>
+        WindowPlacement? GetWindowPlacement(string windowKey);
+
+        /// <summary>
+        /// ウィンドウ位置を更新
+        /// </summary>
+        /// <param name="windowKey">ウィンドウ識別子</param>
+        /// <param name="left">X座標</param>
+        /// <param name="top">Y座標</param>
+        void SetWindowPlacement(string windowKey, double left, double top);
     }
 }

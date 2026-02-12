@@ -67,6 +67,7 @@ namespace CocoroConsole.Services
         public int WindowSize { get; set; }
         public float WindowPositionX { get; set; }
         public float WindowPositionY { get; set; }
+        public Dictionary<string, WindowPlacement> WindowPlacements { get; set; } = new Dictionary<string, WindowPlacement>();
 
         // キャラクター設定
         public int CurrentCharacterIndex { get; set; } = 0;
@@ -192,6 +193,11 @@ namespace CocoroConsole.Services
                 MessageWindowSettings = config.messageWindowSettings;
             }
 
+            // ウィンドウ位置一覧を更新
+            WindowPlacements = config.windowPlacements != null
+                ? new Dictionary<string, WindowPlacement>(config.windowPlacements)
+                : new Dictionary<string, WindowPlacement>();
+
             // 設定読み込み完了フラグを設定
             IsLoaded = true;
         }
@@ -238,6 +244,7 @@ namespace CocoroConsole.Services
                 screenshotSettings = ScreenshotSettings,
                 microphoneSettings = MicrophoneSettings,
                 messageWindowSettings = MessageWindowSettings,
+                windowPlacements = new Dictionary<string, WindowPlacement>(WindowPlacements),
                 currentCharacterIndex = CurrentCharacterIndex,
                 characterList = new List<CharacterSettings>(CharacterList)
             };
@@ -546,6 +553,46 @@ namespace CocoroConsole.Services
                 return null;
 
             return CharacterList[CurrentCharacterIndex];
+        }
+
+        /// <summary>
+        /// ウィンドウ位置を取得
+        /// </summary>
+        /// <param name="windowKey">ウィンドウ識別子</param>
+        /// <returns>ウィンドウ位置。見つからない場合はnull</returns>
+        public WindowPlacement? GetWindowPlacement(string windowKey)
+        {
+            if (string.IsNullOrWhiteSpace(windowKey))
+            {
+                return null;
+            }
+
+            if (WindowPlacements.TryGetValue(windowKey, out var placement))
+            {
+                return placement;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// ウィンドウ位置を更新
+        /// </summary>
+        /// <param name="windowKey">ウィンドウ識別子</param>
+        /// <param name="left">X座標</param>
+        /// <param name="top">Y座標</param>
+        public void SetWindowPlacement(string windowKey, double left, double top)
+        {
+            if (string.IsNullOrWhiteSpace(windowKey))
+            {
+                return;
+            }
+
+            WindowPlacements[windowKey] = new WindowPlacement
+            {
+                left = left,
+                top = top
+            };
         }
     }
 

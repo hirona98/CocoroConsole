@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using CocoroConsole.Utilities;
 
 namespace CocoroConsole.Windows
 {
@@ -72,6 +73,8 @@ namespace CocoroConsole.Windows
     /// </summary>
     public partial class ReminderEditDialog : Window
     {
+        private const string ReminderAddDialogPlacementKey = "ReminderEditDialog.Add";
+        private const string ReminderEditDialogPlacementKey = "ReminderEditDialog.Edit";
         private readonly ReminderDialogMode _mode;
         private readonly Action<ReminderEditResult>? _onAdd;
         private readonly Action<ReminderEditResult>? _onOk;
@@ -92,6 +95,12 @@ namespace CocoroConsole.Windows
             _mode = mode;
             _onAdd = onAdd;
             _onOk = onOk;
+
+            // ダイアログモードごとの位置を復元し、以降の移動を記録する。
+            var placementKey = _mode == ReminderDialogMode.Add
+                ? ReminderAddDialogPlacementKey
+                : ReminderEditDialogPlacementKey;
+            WindowPlacementManager.AttachAndRestore(this, placementKey);
 
             ApplyMode();
             InitializeTimePickers();

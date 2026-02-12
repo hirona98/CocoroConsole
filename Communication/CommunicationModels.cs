@@ -274,6 +274,15 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
+    /// ウィンドウ位置データ
+    /// </summary>
+    public class WindowPlacement
+    {
+        public double left { get; set; }
+        public double top { get; set; }
+    }
+
+    /// <summary>
     /// アプリケーション設定クラス
     /// </summary>
     public class ConfigSettings
@@ -305,6 +314,7 @@ namespace CocoroConsole.Communication
         public ScreenshotSettings screenshotSettings { get; set; } = new ScreenshotSettings();
         public MicrophoneSettings microphoneSettings { get; set; } = new MicrophoneSettings();
         public MessageWindowSettings messageWindowSettings { get; set; } = new MessageWindowSettings();
+        public Dictionary<string, WindowPlacement> windowPlacements { get; set; } = new Dictionary<string, WindowPlacement>();
 
         public int currentCharacterIndex { get; set; }
         public List<CharacterSettings> characterList { get; set; } = new List<CharacterSettings>();
@@ -367,6 +377,15 @@ namespace CocoroConsole.Communication
                     horizontalOffset = this.messageWindowSettings.horizontalOffset,
                     verticalOffset = this.messageWindowSettings.verticalOffset
                 },
+
+                // ウィンドウ位置情報のディープコピー
+                windowPlacements = this.windowPlacements.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => new WindowPlacement
+                    {
+                        left = kvp.Value.left,
+                        top = kvp.Value.top
+                    }),
 
                 // EscapePositionリストのディープコピー
                 escapePositions = this.escapePositions.Select(ep => new EscapePosition
