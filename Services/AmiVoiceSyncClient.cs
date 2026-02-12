@@ -35,7 +35,7 @@ namespace CocoroConsole.Services
 
             // Keep-Alive設定
             _httpClient.DefaultRequestHeaders.Connection.Add("keep-alive");
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "CocoroAI/5.0.0");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "CocoroAI/5.0.1");
         }
 
         /// <summary>
