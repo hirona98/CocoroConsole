@@ -39,6 +39,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
                 LlmApiKey = string.Empty,
                 LlmModel = string.Empty,
                 ReasoningEffort = null,
+                ReplyWebSearchEnabled = true,
                 LlmBaseUrl = null,
                 MaxTurnsWindow = DefaultMaxTurnsWindow,
                 MaxTokens = DefaultMaxTokens,
@@ -66,6 +67,9 @@ namespace CocoroConsole.Models.CocoroGhostApi
 
         [JsonPropertyName("reasoning_effort")]
         public string? ReasoningEffort { get; set; }
+
+        [JsonPropertyName("reply_web_search_enabled")]
+        public bool ReplyWebSearchEnabled { get; set; } = true;
 
         [JsonPropertyName("llm_base_url")]
         public string? LlmBaseUrl { get; set; }

@@ -75,6 +75,7 @@ namespace CocoroConsole.Controls
             preset.MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : LlmPreset.DefaultMaxTurnsWindow;
             preset.MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : LlmPreset.DefaultMaxTokens;
             preset.ReasoningEffort = !string.IsNullOrWhiteSpace(ReasoningEffortTextBox.Text) ? ReasoningEffortTextBox.Text : null;
+            preset.ReplyWebSearchEnabled = ReplyWebSearchEnabledCheckBox.IsChecked ?? true;
             preset.ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Text) ? null : VisionApiKeyPasswordBox.Text;
             preset.ImageModel = VisionModelTextBox.Text ?? string.Empty;
             preset.ImageLlmBaseUrl = string.IsNullOrWhiteSpace(VisionBaseUrlTextBox.Text) ? null : VisionBaseUrlTextBox.Text;
@@ -166,6 +167,7 @@ namespace CocoroConsole.Controls
 
             // Reasoning Effort
             ReasoningEffortTextBox.Text = preset.ReasoningEffort ?? string.Empty;
+            ReplyWebSearchEnabledCheckBox.IsChecked = preset.ReplyWebSearchEnabled;
 
             // 画像認識LLM設定
             VisionApiKeyPasswordBox.Text = preset.ImageModelApiKey ?? string.Empty;
@@ -193,6 +195,7 @@ namespace CocoroConsole.Controls
                 LlmBaseUrl = string.IsNullOrWhiteSpace(LlmBaseUrlTextBox.Text) ? null : LlmBaseUrlTextBox.Text,
                 MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : LlmPreset.DefaultMaxTurnsWindow,
                 MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : LlmPreset.DefaultMaxTokens,
+                ReplyWebSearchEnabled = ReplyWebSearchEnabledCheckBox.IsChecked ?? true,
                 ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Text) ? null : VisionApiKeyPasswordBox.Text,
                 ImageModel = VisionModelTextBox.Text ?? string.Empty,
                 ImageLlmBaseUrl = string.IsNullOrWhiteSpace(VisionBaseUrlTextBox.Text) ? null : VisionBaseUrlTextBox.Text,
@@ -278,6 +281,7 @@ namespace CocoroConsole.Controls
                 LlmModel = source.LlmModel,
                 LlmBaseUrl = source.LlmBaseUrl,
                 ReasoningEffort = source.ReasoningEffort,
+                ReplyWebSearchEnabled = source.ReplyWebSearchEnabled,
                 MaxTurnsWindow = source.MaxTurnsWindow,
                 MaxTokens = source.MaxTokens,
                 ImageModelApiKey = source.ImageModelApiKey,

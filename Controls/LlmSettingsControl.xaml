@@ -365,7 +365,14 @@
                             <LineBreak/>
                             エラーに気づきにくいため、変更後はしばらくログを確認してください。
                         </TextBlock>
-
+                        <!-- Web検索 -->
+                        <Grid Margin="0,5">
+                            <CheckBox x:Name="ReplyWebSearchEnabledCheckBox"
+                                      Content="Web検索を有効化する"
+                                      Foreground="#FF0078D7"
+                                      Checked="OnSettingChanged"
+                                      Unchecked="OnSettingChanged"/>
+                        </Grid>
                     </StackPanel>
                 </GroupBox>
 
