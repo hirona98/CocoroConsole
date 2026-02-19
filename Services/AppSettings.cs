@@ -42,6 +42,7 @@ namespace CocoroConsole.Services
 
         public int CocoroConsolePort { get; set; }
         public int CocoroGhostPort { get; set; }
+        public string CocoroGhostHost { get; set; } = "127.0.0.1";
         public int CocoroShellPort { get; set; }
         // /api/events/stream で hello を送るためのクライアントID（安定ID）
         public string ClientId { get; set; } = string.Empty;
@@ -139,6 +140,8 @@ namespace CocoroConsole.Services
         {
             CocoroConsolePort = config.CocoroConsolePort;
             CocoroGhostPort = config.cocoroCorePort;
+            var cocoroGhostHost = (config.cocoroGhostHost ?? string.Empty).Trim();
+            CocoroGhostHost = string.IsNullOrWhiteSpace(cocoroGhostHost) ? "127.0.0.1" : cocoroGhostHost;
             CocoroShellPort = config.cocoroShellPort;
             ClientId = config.clientId;
             if (string.IsNullOrWhiteSpace(ClientId))
@@ -220,6 +223,7 @@ namespace CocoroConsole.Services
             {
                 CocoroConsolePort = CocoroConsolePort,
                 cocoroCorePort = CocoroGhostPort,
+                cocoroGhostHost = CocoroGhostHost,
                 cocoroShellPort = CocoroShellPort,
                 clientId = ClientId,
                 cocoroGhostBearerToken = CocoroGhostBearerToken,
@@ -248,6 +252,49 @@ namespace CocoroConsole.Services
                 currentCharacterIndex = CurrentCharacterIndex,
                 characterList = new List<CharacterSettings>(CharacterList)
             };
+        }
+
+        /// <summary>
+        /// CocoroGhost の HTTPS ベースURLを返す。
+        /// </summary>
+        public string GetCocoroGhostBaseUrl()
+        {
+            // --- 設定値を正規化して URL を組み立てる ---
+            var host = NormalizeCocoroGhostHost(CocoroGhostHost);
+            return $"https://{host}:{CocoroGhostPort}";
+        }
+
+        /// <summary>
+        /// CocoroGhost の WSS ベースURLを返す。
+        /// </summary>
+        public string GetCocoroGhostWebSocketBaseUrl()
+        {
+            // --- 設定値を正規化して URL を組み立てる ---
+            var host = NormalizeCocoroGhostHost(CocoroGhostHost);
+            return $"wss://{host}:{CocoroGhostPort}";
+        }
+
+        /// <summary>
+        /// CocoroGhost の接続先がローカルかどうかを返す。
+        /// </summary>
+        public bool IsCocoroGhostLocal()
+        {
+            // --- localhost / loopback のみローカル扱い ---
+            var host = NormalizeCocoroGhostHost(CocoroGhostHost);
+            return string.Equals(host, "127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(host, "::1", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(host, "[::1]", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// CocoroGhost ホスト文字列を正規化する。
+        /// </summary>
+        private static string NormalizeCocoroGhostHost(string? host)
+        {
+            // --- 空値はローカル既定に寄せる ---
+            var normalized = (host ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(normalized) ? "127.0.0.1" : normalized;
         }
 
 

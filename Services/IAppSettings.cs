@@ -20,6 +20,11 @@ namespace CocoroConsole.Services
         int CocoroGhostPort { get; set; }
 
         /// <summary>
+        /// CocoroGhost接続先ホスト
+        /// </summary>
+        string CocoroGhostHost { get; set; }
+
+        /// <summary>
         /// CocoroShellポート
         /// </summary>
         int CocoroShellPort { get; set; }
@@ -210,6 +215,21 @@ namespace CocoroConsole.Services
         /// ユーザーデータディレクトリを取得
         /// </summary>
         string UserDataDirectory { get; }
+        /// <summary>
+        /// CocoroGhost の HTTPS ベースURLを取得
+        /// </summary>
+        string GetCocoroGhostBaseUrl();
+
+        /// <summary>
+        /// CocoroGhost の WSS ベースURLを取得
+        /// </summary>
+        string GetCocoroGhostWebSocketBaseUrl();
+
+        /// <summary>
+        /// CocoroGhost 接続先がローカルかどうか
+        /// </summary>
+        bool IsCocoroGhostLocal();
+
         /// <summary>
         /// 現在選択されているキャラクター設定を取得
         /// </summary>

@@ -1,6 +1,7 @@
 {
   "cocoroConsolePort": 55600,
   "cocoroCorePort": 55601,
+  "cocoroGhostHost": "127.0.0.1",
   "cocoroShellPort": 55605,
   "cocoroGhostBearerToken": "cocoro_token",
   "isUseLLM": false,

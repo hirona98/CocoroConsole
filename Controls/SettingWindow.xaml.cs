@@ -115,8 +115,12 @@ namespace CocoroConsole.Controls
         {
             try
             {
+                // --- 既存クライアントを破棄して現在の設定で作り直す ---
+                _apiClient?.Dispose();
+                _apiClient = null;
+
                 var appSettings = AppSettings.Instance;
-                var baseUrl = $"https://127.0.0.1:{appSettings.CocoroGhostPort}";
+                var baseUrl = appSettings.GetCocoroGhostBaseUrl();
                 var token = appSettings.CocoroGhostBearerToken;
 
                 if (!string.IsNullOrEmpty(token))
@@ -240,6 +244,9 @@ namespace CocoroConsole.Controls
             var microphoneSettings = SystemSettingsControl.GetMicrophoneSettings();
             dict["MicInputThreshold"] = microphoneSettings.inputThreshold;
             dict["SpeakerRecognitionThreshold"] = microphoneSettings.speakerRecognitionThreshold;
+
+            // CocoroGhost 接続先ホスト
+            dict["CocoroGhostHost"] = SystemSettingsControl.GetCocoroGhostHost();
 
             // Bearer Token
             dict["BearerToken"] = SystemSettingsControl.GetBearerToken();
@@ -440,7 +447,13 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task SaveAllSettingsToApiAsync()
         {
+            // --- 保存時点の接続設定（host/port/token）で API クライアントを再構築する ---
+            InitializeApiClient();
+            SystemSettingsControl.SetApiClient(_apiClient);
             if (_apiClient == null) return;
+            LlmSettingsControl.SetApiClient(_apiClient, SaveLlmPresetsToApiAsync);
+            EmbeddingSettingsControl.SetApiClient(_apiClient, SaveEmbeddingPresetsToApiAsync);
+            PromptSettingsControl.SetApiClient(_apiClient, SaveAllSettingsToApiAsync);
 
             try
             {
@@ -699,6 +712,9 @@ namespace CocoroConsole.Controls
             appSettings.MicrophoneSettings.inputThreshold = (int)snapshot["MicInputThreshold"];
             appSettings.MicrophoneSettings.speakerRecognitionThreshold = (float)snapshot["SpeakerRecognitionThreshold"];
 
+            // CocoroGhost 接続先ホスト
+            appSettings.CocoroGhostHost = ((string)snapshot["CocoroGhostHost"]).Trim();
+
             // Bearer Token
             appSettings.CocoroGhostBearerToken = (string)snapshot["BearerToken"];
 
@@ -834,6 +850,13 @@ namespace CocoroConsole.Controls
         {
             try
             {
+                // --- リモート接続時はローカルプロセス再起動を行わない ---
+                if (!AppSettings.Instance.IsCocoroGhostLocal())
+                {
+                    Debug.WriteLine("CocoroGhost はリモート接続設定のため、ローカル再起動をスキップします。");
+                    return;
+                }
+
                 // MainWindowのインスタンスを取得
                 var mainWindow = Application.Current.MainWindow as MainWindow;
                 if (mainWindow != null)

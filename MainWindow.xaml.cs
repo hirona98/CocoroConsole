@@ -261,8 +261,16 @@ namespace CocoroConsole
         {
             // CocoroShell.exeを起動（既に起動していれば終了してから再起動）
             LaunchCocoroShell();
-            // CocoroGhost.exeを起動（既に起動していれば終了してから再起動）
-            LaunchCocoroGhost();
+
+            // CocoroGhost.exeはローカル接続時のみ起動（リモート接続時は別PC運用）
+            if (_appSettings.IsCocoroGhostLocal())
+            {
+                LaunchCocoroGhost();
+            }
+            else
+            {
+                Debug.WriteLine("[CocoroConsole] CocoroGhost はリモート接続設定のため、ローカル起動をスキップします。");
+            }
         }
 
         /// <summary>
@@ -1134,6 +1142,13 @@ namespace CocoroConsole
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
         private void LaunchCocoroGhost(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
+            // --- リモート接続時はローカルプロセスを起動/終了しない ---
+            if (!_appSettings.IsCocoroGhostLocal())
+            {
+                Debug.WriteLine("[CocoroConsole] CocoroGhost はリモート接続設定のため、ローカルプロセス操作をスキップします。");
+                return;
+            }
+
             if (operation != ProcessOperation.Terminate)
             {
 #if !DEBUG
@@ -1158,6 +1173,13 @@ namespace CocoroConsole
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
         internal async Task LaunchCocoroGhostAsync(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
+            // --- リモート接続時はローカルプロセスを起動/終了しない ---
+            if (!_appSettings.IsCocoroGhostLocal())
+            {
+                Debug.WriteLine("[CocoroConsole] CocoroGhost はリモート接続設定のため、ローカルプロセス操作をスキップします。");
+                return;
+            }
+
             if (operation != ProcessOperation.Terminate)
             {
 #if !DEBUG
@@ -1519,18 +1541,34 @@ namespace CocoroConsole
                 // シャットダウンオーバーレイを表示
                 ShutdownOverlay.Visibility = Visibility.Visible;
 
-                // CocoroGhostのプロセスIDを事前に取得
-                int? CocoroGhostProcessId = GetProcessIdByPort(_appSettings.CocoroGhostPort);
-                Debug.WriteLine($"CocoroGhost プロセスID: {CocoroGhostProcessId?.ToString() ?? "見つかりません"}");
-                // CocoroShellとCocoroGhostに並行してシャットダウン要求を送信
-                Debug.WriteLine("CocoroShellとCocoroGhostに終了要求を送信中...");
+                // --- CocoroGhost のローカル/リモート設定に応じて終了対象を決める ---
+                var isLocalGhost = _appSettings.IsCocoroGhostLocal();
 
-                // CocoroShellとCocoroGhostに並行してシャットダウン要求を送信
-                var shutdownTasks = new[]
+                // --- CocoroGhostがローカル設定の場合のみ、ローカルプロセスIDを事前取得 ---
+                int? cocoroGhostProcessId = null;
+                if (isLocalGhost)
                 {
-                    Task.Run(() => ProcessHelper.ExitProcess("CocoroShell", ProcessOperation.Terminate)),
-                    Task.Run(() => ProcessHelper.ExitProcess("CocoroGhost", ProcessOperation.Terminate))
+                    cocoroGhostProcessId = GetProcessIdByPort(_appSettings.CocoroGhostPort);
+                    Debug.WriteLine($"CocoroGhost プロセスID: {cocoroGhostProcessId?.ToString() ?? "見つかりません"}");
+                    Debug.WriteLine("CocoroShellとCocoroGhostに終了要求を送信中...");
+                }
+                else
+                {
+                    Debug.WriteLine("CocoroGhost はリモート接続設定のため、ローカル終了要求を送信しません。");
+                    Debug.WriteLine("CocoroShell に終了要求を送信中...");
+                }
+
+                // --- 終了要求タスクを組み立てる（CocoroShellは常に対象） ---
+                var shutdownTasks = new List<Task>
+                {
+                    Task.Run(() => ProcessHelper.ExitProcess("CocoroShell", ProcessOperation.Terminate))
                 };
+
+                // --- CocoroGhostはローカル設定時のみ終了要求を送る ---
+                if (isLocalGhost)
+                {
+                    shutdownTasks.Add(Task.Run(() => ProcessHelper.ExitProcess("CocoroGhost", ProcessOperation.Terminate)));
+                }
 
                 // すべてのシャットダウン要求の完了を待つ（最大5秒）
                 try
@@ -1542,14 +1580,14 @@ namespace CocoroConsole
                     Debug.WriteLine("一部のシャットダウン要求がタイムアウトしました。");
                 }
 
-                // CocoreGhost プロセスの確実な終了を待機
-                if (CocoroGhostProcessId.HasValue)
+                // --- CocoroGhostがローカル設定の場合のみ、停止完了を監視する ---
+                if (isLocalGhost && cocoroGhostProcessId.HasValue)
                 {
                     Debug.WriteLine("CocoreGhost プロセスの終了を監視中...");
                     var maxWaitTime = TimeSpan.FromSeconds(30);
                     var startTime = DateTime.Now;
 
-                    while (IsProcessRunning(CocoroGhostProcessId.Value))
+                    while (IsProcessRunning(cocoroGhostProcessId.Value))
                     {
                         if (DateTime.Now - startTime > maxWaitTime)
                         {
@@ -1562,7 +1600,7 @@ namespace CocoroConsole
 
                     Debug.WriteLine("CocoreGhost プロセスの終了を確認しました。");
                 }
-                else
+                else if (isLocalGhost)
                 {
                     Debug.WriteLine("CocoreGhost プロセスが見つからなかったため、通常の監視を実行します。");
 
@@ -1582,6 +1620,10 @@ namespace CocoroConsole
                     }
 
                     Debug.WriteLine("CocoreGhostの動作停止を確認しました。");
+                }
+                else
+                {
+                    Debug.WriteLine("CocoroGhost はリモート接続設定のため、ローカル停止監視をスキップします。");
                 }
 
                 // オーバーレイを非表示

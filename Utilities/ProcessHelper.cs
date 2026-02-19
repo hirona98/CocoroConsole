@@ -348,6 +348,14 @@ namespace CocoroConsole.Utilities
                     return false;
                 }
 
+                // --- CocoroGhost がリモート設定の場合、ローカル制御は行わない ---
+                if (processName.Equals("CocoroGhost", StringComparison.OrdinalIgnoreCase) &&
+                    !settings.IsCocoroGhostLocal())
+                {
+                    Debug.WriteLine("CocoroGhost がリモート設定のため、ローカルの終了要求は送信しません。");
+                    return false;
+                }
+
                 // --- CocoroGhost は Release ビルドのみ REST API で止める（デバッグ時は送信しない） ---
                 string? bearerToken = null;
 
@@ -378,9 +386,14 @@ namespace CocoroConsole.Utilities
                 var json = System.Text.Json.JsonSerializer.Serialize(shutdownRequest);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
+                // --- API URL を組み立てる（CocoroGhostは設定された接続先、CocoroShellはローカル固定） ---
+                var apiUrl = processName.Equals("CocoroGhost", StringComparison.OrdinalIgnoreCase)
+                    ? $"{settings.GetCocoroGhostBaseUrl()}/api/control"
+                    : $"http://127.0.0.1:{port}/api/control";
+
                 // --- /api/control エンドポイントに POST で送信（必要なら Authorization を付与） ---
                 // ConfigureAwait(false) を使用してデッドロックを回避
-                using var requestMessage = new HttpRequestMessage(HttpMethod.Post, $"https://127.0.0.1:{port}/api/control")
+                using var requestMessage = new HttpRequestMessage(HttpMethod.Post, apiUrl)
                 {
                     Content = content
                 };

@@ -131,6 +131,9 @@ namespace CocoroConsole.Controls
                 var speakerService = new SpeakerRecognitionService(dbPath, appSettings.MicrophoneSettings.speakerRecognitionThreshold);
                 SpeakerManagementControl.Initialize(speakerService, appSettings.MicrophoneSettings.speakerRecognitionThreshold);
 
+                // CocoroGhost接続先ホスト設定
+                CocoroGhostHostTextBox.Text = appSettings.CocoroGhostHost;
+
                 // Bearer Token設定
                 BearerTokenPasswordBox.Text = appSettings.CocoroGhostBearerToken ?? string.Empty;
 
@@ -163,6 +166,9 @@ namespace CocoroConsole.Controls
             DesktopWatchEnabledCheckBox.Checked += OnSettingsChanged;
             DesktopWatchEnabledCheckBox.Unchecked += OnSettingsChanged;
             DesktopWatchIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
+
+            // CocoroGhost接続先ホスト
+            CocoroGhostHostTextBox.TextChanged += OnSettingsChanged;
 
             // デスクトップウォッチ（アイドルタイムアウト / ローカル設定）
             DesktopWatchIdleTimeoutMinutesTextBox.TextChanged += OnSettingsChanged;
@@ -906,6 +912,22 @@ namespace CocoroConsole.Controls
         #endregion
 
         #region Bearer Token関連
+
+        /// <summary>
+        /// CocoroGhost接続先ホストを取得
+        /// </summary>
+        public string GetCocoroGhostHost()
+        {
+            return (CocoroGhostHostTextBox.Text ?? string.Empty).Trim();
+        }
+
+        /// <summary>
+        /// CocoroGhost接続先ホストを設定
+        /// </summary>
+        public void SetCocoroGhostHost(string host)
+        {
+            CocoroGhostHostTextBox.Text = (host ?? string.Empty).Trim();
+        }
 
         /// <summary>
         /// Bearer Token変更イベントハンドラー

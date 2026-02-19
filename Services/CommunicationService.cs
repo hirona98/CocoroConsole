@@ -149,7 +149,7 @@ namespace CocoroConsole.Services
             var bearerToken = _appSettings.CocoroGhostBearerToken;
             if (!string.IsNullOrEmpty(bearerToken))
             {
-                var baseUrl = $"https://127.0.0.1:{_appSettings.CocoroGhostPort}";
+                var baseUrl = _appSettings.GetCocoroGhostBaseUrl();
                 _cocoroGhostApiClient = new CocoroGhostApiClient(baseUrl, bearerToken);
             }
 
@@ -157,7 +157,7 @@ namespace CocoroConsole.Services
             RefreshSettingsCache();
 
             // ステータスポーリングサービスの初期化
-            _statusPollingService = new StatusPollingService($"https://127.0.0.1:{_appSettings.CocoroGhostPort}");
+            _statusPollingService = new StatusPollingService(_appSettings.GetCocoroGhostBaseUrl());
             _statusPollingService.StatusChanged += OnStatusPollingServiceStatusChanged;
 
             // AppSettingsの変更イベントを購読
@@ -296,6 +296,11 @@ namespace CocoroConsole.Services
             bool consolePortChanged = previousSettings.CocoroConsolePort != currentSettings.CocoroConsolePort;
             bool shellPortChanged = previousSettings.cocoroShellPort != currentSettings.cocoroShellPort;
             bool ghostPortChanged = previousSettings.cocoroCorePort != currentSettings.cocoroCorePort;
+            bool ghostHostChanged = !string.Equals(
+                previousSettings.cocoroGhostHost ?? string.Empty,
+                currentSettings.cocoroGhostHost ?? string.Empty,
+                StringComparison.OrdinalIgnoreCase);
+            bool ghostEndpointChanged = ghostPortChanged || ghostHostChanged;
             bool bearerTokenChanged = !string.Equals(previousSettings.cocoroGhostBearerToken ?? string.Empty,
                 currentSettings.cocoroGhostBearerToken ?? string.Empty, StringComparison.Ordinal);
 
@@ -310,12 +315,12 @@ namespace CocoroConsole.Services
                 _shellClient = new CocoroShellClient(currentSettings.cocoroShellPort);
             }
 
-            if (ghostPortChanged)
+            if (ghostEndpointChanged)
             {
-                ResetStatusPollingService(currentSettings.cocoroCorePort);
+                ResetStatusPollingService();
             }
 
-            if (ghostPortChanged || bearerTokenChanged)
+            if (ghostEndpointChanged || bearerTokenChanged)
             {
                 UpdateCocoroGhostApiClient(currentSettings);
                 _cachedCocoroGhostSettings = null;
@@ -362,12 +367,12 @@ namespace CocoroConsole.Services
             }
         }
 
-        private void ResetStatusPollingService(int cocoroGhostPort)
+        private void ResetStatusPollingService()
         {
             _statusPollingService.StatusChanged -= OnStatusPollingServiceStatusChanged;
             _statusPollingService.Dispose();
 
-            _statusPollingService = new StatusPollingService($"https://127.0.0.1:{cocoroGhostPort}");
+            _statusPollingService = new StatusPollingService(_appSettings.GetCocoroGhostBaseUrl());
             _statusPollingService.StatusChanged += OnStatusPollingServiceStatusChanged;
         }
 
@@ -384,7 +389,7 @@ namespace CocoroConsole.Services
                 return;
             }
 
-            var baseUrl = $"https://127.0.0.1:{settings.cocoroCorePort}";
+            var baseUrl = _appSettings.GetCocoroGhostBaseUrl();
             _cocoroGhostApiClient = new CocoroGhostApiClient(baseUrl, bearerToken);
         }
 
@@ -913,7 +918,7 @@ namespace CocoroConsole.Services
                 return;
             }
 
-            var logStreamUri = new Uri($"wss://127.0.0.1:{_appSettings.CocoroGhostPort}/api/logs/stream");
+            var logStreamUri = new Uri($"{_appSettings.GetCocoroGhostWebSocketBaseUrl()}/api/logs/stream");
             _logStreamClient = new LogStreamClient(logStreamUri, bearerToken);
             _logStreamClient.LogsReceived += OnLogStreamLogsReceived;
             _logStreamClient.ConnectionStateChanged += OnLogStreamConnectionStateChanged;
@@ -1100,7 +1105,7 @@ namespace CocoroConsole.Services
             // events stream の hello を確実に送るため、ClientId を用意しておく
             EnsureClientIdInitialized();
 
-            var eventsStreamUri = new Uri($"wss://127.0.0.1:{_appSettings.CocoroGhostPort}/api/events/stream");
+            var eventsStreamUri = new Uri($"{_appSettings.GetCocoroGhostWebSocketBaseUrl()}/api/events/stream");
             _eventsStreamClient = new EventsStreamClient(
                 eventsStreamUri,
                 bearerToken,
