@@ -133,6 +133,8 @@ namespace CocoroConsole.Controls
 
                 // CocoroGhost接続先ホスト設定
                 CocoroGhostHostTextBox.Text = appSettings.CocoroGhostHost;
+                UseExternalCocoroGhostCheckBox.IsChecked = appSettings.UseExternalCocoroGhost;
+                UpdateCocoroGhostConnectionUi();
 
                 // Bearer Token設定
                 BearerTokenPasswordBox.Text = appSettings.CocoroGhostBearerToken ?? string.Empty;
@@ -169,6 +171,8 @@ namespace CocoroConsole.Controls
 
             // CocoroGhost接続先ホスト
             CocoroGhostHostTextBox.TextChanged += OnSettingsChanged;
+            UseExternalCocoroGhostCheckBox.Checked += OnUseExternalCocoroGhostCheckBoxChanged;
+            UseExternalCocoroGhostCheckBox.Unchecked += OnUseExternalCocoroGhostCheckBoxChanged;
 
             // デスクトップウォッチ（アイドルタイムアウト / ローカル設定）
             DesktopWatchIdleTimeoutMinutesTextBox.TextChanged += OnSettingsChanged;
@@ -922,11 +926,48 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
+        /// 外部の CocoroGhost を使用するかを取得
+        /// </summary>
+        public bool GetUseExternalCocoroGhost()
+        {
+            return UseExternalCocoroGhostCheckBox.IsChecked ?? false;
+        }
+
+        /// <summary>
         /// CocoroGhost接続先ホストを設定
         /// </summary>
         public void SetCocoroGhostHost(string host)
         {
             CocoroGhostHostTextBox.Text = (host ?? string.Empty).Trim();
+        }
+
+        /// <summary>
+        /// 外部の CocoroGhost を使用するかを設定
+        /// </summary>
+        public void SetUseExternalCocoroGhost(bool useExternal)
+        {
+            UseExternalCocoroGhostCheckBox.IsChecked = useExternal;
+            UpdateCocoroGhostConnectionUi();
+        }
+
+        /// <summary>
+        /// 外部利用チェック変更イベント
+        /// </summary>
+        private void OnUseExternalCocoroGhostCheckBoxChanged(object sender, RoutedEventArgs e)
+        {
+            UpdateCocoroGhostConnectionUi();
+            OnSettingsChanged(sender, e);
+        }
+
+        /// <summary>
+        /// 外部利用設定に応じて接続先UIの有効状態を更新
+        /// </summary>
+        private void UpdateCocoroGhostConnectionUi()
+        {
+            var useExternal = UseExternalCocoroGhostCheckBox.IsChecked ?? false;
+
+            // --- 内部接続時はホスト入力を固定表示にする ---
+            CocoroGhostHostTextBox.IsEnabled = useExternal;
         }
 
         /// <summary>

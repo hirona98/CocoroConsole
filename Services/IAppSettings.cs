@@ -25,6 +25,11 @@ namespace CocoroConsole.Services
         string CocoroGhostHost { get; set; }
 
         /// <summary>
+        /// 外部の CocoroGhost を使用するか
+        /// </summary>
+        bool UseExternalCocoroGhost { get; set; }
+
+        /// <summary>
         /// CocoroShellポート
         /// </summary>
         int CocoroShellPort { get; set; }

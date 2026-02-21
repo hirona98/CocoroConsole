@@ -300,7 +300,10 @@ namespace CocoroConsole.Services
                 previousSettings.cocoroGhostHost ?? string.Empty,
                 currentSettings.cocoroGhostHost ?? string.Empty,
                 StringComparison.OrdinalIgnoreCase);
-            bool ghostEndpointChanged = ghostPortChanged || ghostHostChanged;
+            bool useExternalGhostChanged =
+                (previousSettings.useExternalCocoroGhost ?? false) !=
+                (currentSettings.useExternalCocoroGhost ?? false);
+            bool ghostEndpointChanged = ghostPortChanged || ghostHostChanged || useExternalGhostChanged;
             bool bearerTokenChanged = !string.Equals(previousSettings.cocoroGhostBearerToken ?? string.Empty,
                 currentSettings.cocoroGhostBearerToken ?? string.Empty, StringComparison.Ordinal);
 

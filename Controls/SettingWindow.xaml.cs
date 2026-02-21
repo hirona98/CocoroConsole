@@ -247,6 +247,7 @@ namespace CocoroConsole.Controls
 
             // CocoroGhost 接続先ホスト
             dict["CocoroGhostHost"] = SystemSettingsControl.GetCocoroGhostHost();
+            dict["UseExternalCocoroGhost"] = SystemSettingsControl.GetUseExternalCocoroGhost();
 
             // Bearer Token
             dict["BearerToken"] = SystemSettingsControl.GetBearerToken();
@@ -714,6 +715,7 @@ namespace CocoroConsole.Controls
 
             // CocoroGhost 接続先ホスト
             appSettings.CocoroGhostHost = ((string)snapshot["CocoroGhostHost"]).Trim();
+            appSettings.UseExternalCocoroGhost = (bool)snapshot["UseExternalCocoroGhost"];
 
             // Bearer Token
             appSettings.CocoroGhostBearerToken = (string)snapshot["BearerToken"];

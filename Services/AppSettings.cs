@@ -43,6 +43,8 @@ namespace CocoroConsole.Services
         public int CocoroConsolePort { get; set; }
         public int CocoroGhostPort { get; set; }
         public string CocoroGhostHost { get; set; } = "127.0.0.1";
+        // 外部の CocoroGhost を利用するか（true: 外部 / false: ローカル）
+        public bool UseExternalCocoroGhost { get; set; } = false;
         public int CocoroShellPort { get; set; }
         // /api/events/stream で hello を送るためのクライアントID（安定ID）
         public string ClientId { get; set; } = string.Empty;
@@ -140,8 +142,12 @@ namespace CocoroConsole.Services
         {
             CocoroConsolePort = config.CocoroConsolePort;
             CocoroGhostPort = config.cocoroCorePort;
-            var cocoroGhostHost = (config.cocoroGhostHost ?? string.Empty).Trim();
-            CocoroGhostHost = string.IsNullOrWhiteSpace(cocoroGhostHost) ? "127.0.0.1" : cocoroGhostHost;
+            var cocoroGhostHost = NormalizeCocoroGhostHost(config.cocoroGhostHost);
+            CocoroGhostHost = cocoroGhostHost;
+
+            // --- 旧設定（フラグ未定義）との互換のため、未定義時は host から外部利用を推定 ---
+            UseExternalCocoroGhost = config.useExternalCocoroGhost ?? !IsLoopbackHost(cocoroGhostHost);
+
             CocoroShellPort = config.cocoroShellPort;
             ClientId = config.clientId;
             if (string.IsNullOrWhiteSpace(ClientId))
@@ -224,6 +230,7 @@ namespace CocoroConsole.Services
                 CocoroConsolePort = CocoroConsolePort,
                 cocoroCorePort = CocoroGhostPort,
                 cocoroGhostHost = CocoroGhostHost,
+                useExternalCocoroGhost = UseExternalCocoroGhost,
                 cocoroShellPort = CocoroShellPort,
                 clientId = ClientId,
                 cocoroGhostBearerToken = CocoroGhostBearerToken,
@@ -259,8 +266,8 @@ namespace CocoroConsole.Services
         /// </summary>
         public string GetCocoroGhostBaseUrl()
         {
-            // --- 設定値を正規化して URL を組み立てる ---
-            var host = NormalizeCocoroGhostHost(CocoroGhostHost);
+            // --- 接続モードに応じた実効ホストで URL を組み立てる ---
+            var host = GetEffectiveCocoroGhostHost();
             return $"https://{host}:{CocoroGhostPort}";
         }
 
@@ -269,8 +276,8 @@ namespace CocoroConsole.Services
         /// </summary>
         public string GetCocoroGhostWebSocketBaseUrl()
         {
-            // --- 設定値を正規化して URL を組み立てる ---
-            var host = NormalizeCocoroGhostHost(CocoroGhostHost);
+            // --- 接続モードに応じた実効ホストで URL を組み立てる ---
+            var host = GetEffectiveCocoroGhostHost();
             return $"wss://{host}:{CocoroGhostPort}";
         }
 
@@ -279,8 +286,31 @@ namespace CocoroConsole.Services
         /// </summary>
         public bool IsCocoroGhostLocal()
         {
-            // --- localhost / loopback のみローカル扱い ---
-            var host = NormalizeCocoroGhostHost(CocoroGhostHost);
+            // --- 外部利用フラグがOFFのときのみローカル起動対象 ---
+            return !UseExternalCocoroGhost;
+        }
+
+        /// <summary>
+        /// 接続モードに応じた実効ホストを返す。
+        /// </summary>
+        private string GetEffectiveCocoroGhostHost()
+        {
+            // --- 内部利用時は常にローカルへ接続 ---
+            if (!UseExternalCocoroGhost)
+            {
+                return "127.0.0.1";
+            }
+
+            // --- 外部利用時は設定ホストを採用 ---
+            return NormalizeCocoroGhostHost(CocoroGhostHost);
+        }
+
+        /// <summary>
+        /// ホストがループバックかどうかを判定する。
+        /// </summary>
+        private static bool IsLoopbackHost(string host)
+        {
+            // --- localhost / loopback をローカル扱い ---
             return string.Equals(host, "127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(host, "::1", StringComparison.OrdinalIgnoreCase) ||

@@ -291,6 +291,8 @@ namespace CocoroConsole.Communication
         public int cocoroCorePort { get; set; }
         // CocoroGhost 接続先ホスト（例: 127.0.0.1 / localhost / 192.168.1.50）
         public string cocoroGhostHost { get; set; } = "127.0.0.1";
+        // true: 外部の CocoroGhost に接続する / false: ローカル起動を前提に接続する
+        public bool? useExternalCocoroGhost { get; set; }
         public int cocoroShellPort { get; set; }
         // /api/events/stream で hello を送るためのクライアントID（安定ID）
         public string clientId { get; set; } = string.Empty;
@@ -332,6 +334,7 @@ namespace CocoroConsole.Communication
                 CocoroConsolePort = this.CocoroConsolePort,
                 cocoroCorePort = this.cocoroCorePort,
                 cocoroGhostHost = this.cocoroGhostHost,
+                useExternalCocoroGhost = this.useExternalCocoroGhost,
                 cocoroShellPort = this.cocoroShellPort,
                 clientId = this.clientId,
                 cocoroGhostBearerToken = this.cocoroGhostBearerToken,

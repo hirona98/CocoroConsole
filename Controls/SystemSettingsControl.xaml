@@ -291,10 +291,16 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                            CocoroGhost の接続先ホストを設定します。
+                            CocoroGhost の接続先を設定します。変更時は再起動が必要です。
                             <LineBreak/>
-                            同一PCなら 127.0.0.1、別PCならそのPCのIPアドレスを指定してください。
+                            外部利用をオンにすると指定ホストへ接続し、ローカルのCocoroGhostは起動しません。
                             </TextBlock>
+
+                            <!-- 外部利用チェック -->
+                            <CheckBox x:Name="UseExternalCocoroGhostCheckBox"
+                                      Content="外部のCocoroGhostを使用する"
+                                      Foreground="#FF4873CF"
+                                      Margin="0,0,0,8"/>
 
                             <!-- 接続先ホスト -->
                             <Grid Margin="0,5,0,5">
