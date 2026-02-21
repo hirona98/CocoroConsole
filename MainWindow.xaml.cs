@@ -31,6 +31,7 @@ namespace CocoroConsole
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
         private MoodDebugWindow? _moodDebugWindow;
+        private CocoroGhostSettingsWindow? _cocoroGhostSettingsWindow;
         private DebugTraceListener? _debugTraceListener;
         private bool _isStreamingChatActive;
         private bool _skipNextAssistantMessage;
@@ -40,6 +41,7 @@ namespace CocoroConsole
         private const string SettingWindowPlacementKey = "SettingWindow";
         private const string LogViewerWindowPlacementKey = "LogViewerWindow";
         private const string MoodDebugWindowPlacementKey = "MoodDebugWindow";
+        private const string CocoroGhostSettingsWindowPlacementKey = "CocoroGhostSettingsWindow";
 
         // --- CocoroGhost の最新ステータス（ステータスバー復帰先） ---
         // ログ表示で一時的に上書きしても、指定時間後「その時点の最新状態」に戻すために保持する。
@@ -90,6 +92,11 @@ namespace CocoroConsole
         private void MoodDebugMenuItem_Click(object sender, RoutedEventArgs e)
         {
             OpenMoodDebugWindow();
+        }
+
+        private void CocoroGhostMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            OpenCocoroGhostSettingsWindow();
         }
 
         /// <summary>
@@ -711,6 +718,50 @@ namespace CocoroConsole
             _moodDebugWindow.Show();
         }
 
+        /// <summary>
+        /// CocoroGhost設定ウィンドウを開く
+        /// </summary>
+        public void OpenCocoroGhostSettingsWindow()
+        {
+            // --- 設定ウィンドウが開いている場合は表示しない ---
+            if (_settingWindow != null && !_settingWindow.IsClosed)
+            {
+                MessageBox.Show(
+                    "先に設定ウインドウを閉じてください",
+                    "CocoroGhost",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            // --- 既に開いている場合は前面化する ---
+            if (_cocoroGhostSettingsWindow != null && !_cocoroGhostSettingsWindow.IsClosed)
+            {
+                _cocoroGhostSettingsWindow.Activate();
+                _cocoroGhostSettingsWindow.WindowState = WindowState.Normal;
+                return;
+            }
+
+            // --- 新規作成して位置を復元する ---
+            _cocoroGhostSettingsWindow = new CocoroGhostSettingsWindow(_communicationService);
+            var isPositionRestored = WindowPlacementManager.AttachAndRestore(
+                _cocoroGhostSettingsWindow,
+                CocoroGhostSettingsWindowPlacementKey,
+                _appSettings);
+            if (!isPositionRestored)
+            {
+                PositionWindowNearMain(_cocoroGhostSettingsWindow);
+            }
+
+            // --- 閉じたら参照を解放する ---
+            _cocoroGhostSettingsWindow.Closed += (_, __) =>
+            {
+                _cocoroGhostSettingsWindow = null;
+            };
+
+            _cocoroGhostSettingsWindow.Show();
+        }
+
         private void AttachLogStreamHandlers()
         {
             if (_communicationService == null || _isLogStreamHandlersAttached) return;
@@ -957,6 +1008,17 @@ namespace CocoroConsole
         {
             try
             {
+                // --- CocoroGhost設定ウィンドウが開いている場合は設定画面を開かない ---
+                if (_cocoroGhostSettingsWindow != null && !_cocoroGhostSettingsWindow.IsClosed)
+                {
+                    MessageBox.Show(
+                        "先にCocoroGhost設定ウインドウを閉じてください",
+                        "設定",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+
                 // 既に設定画面が開いている場合はアクティブにする
                 if (_settingWindow != null && !_settingWindow.IsClosed)
                 {
@@ -1521,6 +1583,7 @@ namespace CocoroConsole
                 {
                     _settingWindow?.Close();
                     _logViewerWindow?.Close();
+                    _cocoroGhostSettingsWindow?.Close();
                 }
                 catch (Exception ex)
                 {

@@ -245,13 +245,6 @@ namespace CocoroConsole.Controls
             dict["MicInputThreshold"] = microphoneSettings.inputThreshold;
             dict["SpeakerRecognitionThreshold"] = microphoneSettings.speakerRecognitionThreshold;
 
-            // CocoroGhost 接続先ホスト
-            dict["CocoroGhostHost"] = SystemSettingsControl.GetCocoroGhostHost();
-            dict["UseExternalCocoroGhost"] = SystemSettingsControl.GetUseExternalCocoroGhost();
-
-            // Bearer Token
-            dict["BearerToken"] = SystemSettingsControl.GetBearerToken();
-
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
             dict["WindowTitleExcludePatterns"] = SystemSettingsControl.GetWindowTitleExcludePatterns();
 
@@ -369,7 +362,8 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task ApplySettingsChangesAsync()
         {
-            var bearerToken = SystemSettingsControl.GetBearerToken();
+            // CocoroGhost 接続情報は専用ウィンドウで管理し、ここでは現在の保存値を参照する。
+            var bearerToken = AppSettings.Instance.CocoroGhostBearerToken;
             if (string.IsNullOrWhiteSpace(bearerToken))
             {
                 var result = MessageBox.Show(
@@ -712,13 +706,6 @@ namespace CocoroConsole.Controls
 
             appSettings.MicrophoneSettings.inputThreshold = (int)snapshot["MicInputThreshold"];
             appSettings.MicrophoneSettings.speakerRecognitionThreshold = (float)snapshot["SpeakerRecognitionThreshold"];
-
-            // CocoroGhost 接続先ホスト
-            appSettings.CocoroGhostHost = ((string)snapshot["CocoroGhostHost"]).Trim();
-            appSettings.UseExternalCocoroGhost = (bool)snapshot["UseExternalCocoroGhost"];
-
-            // Bearer Token
-            appSettings.CocoroGhostBearerToken = (string)snapshot["BearerToken"];
 
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
             appSettings.ScreenshotSettings.excludePatterns = (List<string>)snapshot["WindowTitleExcludePatterns"];

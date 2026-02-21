@@ -19,7 +19,7 @@ namespace CocoroConsole.Controls
     /// 主に以下を扱う:
     /// - cocoro_ghost 側の設定読み込み/保存（desktop_watch 等）
     /// - リマインダーの一覧表示/編集（API同期あり）
-    /// - ローカル設定（スクショ除外/マイク閾値/Bearer Token 等）の UI バインド
+    /// - ローカル設定（スクショ除外/マイク閾値等）の UI バインド
     /// </summary>
     public partial class SystemSettingsControl : UserControl
     {
@@ -131,14 +131,6 @@ namespace CocoroConsole.Controls
                 var speakerService = new SpeakerRecognitionService(dbPath, appSettings.MicrophoneSettings.speakerRecognitionThreshold);
                 SpeakerManagementControl.Initialize(speakerService, appSettings.MicrophoneSettings.speakerRecognitionThreshold);
 
-                // CocoroGhost接続先ホスト設定
-                CocoroGhostHostTextBox.Text = appSettings.CocoroGhostHost;
-                UseExternalCocoroGhostCheckBox.IsChecked = appSettings.UseExternalCocoroGhost;
-                UpdateCocoroGhostConnectionUi();
-
-                // Bearer Token設定
-                BearerTokenPasswordBox.Text = appSettings.CocoroGhostBearerToken ?? string.Empty;
-
                 // イベントハンドラーを設定
                 SetupEventHandlers();
 
@@ -168,11 +160,6 @@ namespace CocoroConsole.Controls
             DesktopWatchEnabledCheckBox.Checked += OnSettingsChanged;
             DesktopWatchEnabledCheckBox.Unchecked += OnSettingsChanged;
             DesktopWatchIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
-
-            // CocoroGhost接続先ホスト
-            CocoroGhostHostTextBox.TextChanged += OnSettingsChanged;
-            UseExternalCocoroGhostCheckBox.Checked += OnUseExternalCocoroGhostCheckBoxChanged;
-            UseExternalCocoroGhostCheckBox.Unchecked += OnUseExternalCocoroGhostCheckBoxChanged;
 
             // デスクトップウォッチ（アイドルタイムアウト / ローカル設定）
             DesktopWatchIdleTimeoutMinutesTextBox.TextChanged += OnSettingsChanged;
@@ -915,88 +902,5 @@ namespace CocoroConsole.Controls
 
         #endregion
 
-        #region Bearer Token関連
-
-        /// <summary>
-        /// CocoroGhost接続先ホストを取得
-        /// </summary>
-        public string GetCocoroGhostHost()
-        {
-            return (CocoroGhostHostTextBox.Text ?? string.Empty).Trim();
-        }
-
-        /// <summary>
-        /// 外部の CocoroGhost を使用するかを取得
-        /// </summary>
-        public bool GetUseExternalCocoroGhost()
-        {
-            return UseExternalCocoroGhostCheckBox.IsChecked ?? false;
-        }
-
-        /// <summary>
-        /// CocoroGhost接続先ホストを設定
-        /// </summary>
-        public void SetCocoroGhostHost(string host)
-        {
-            CocoroGhostHostTextBox.Text = (host ?? string.Empty).Trim();
-        }
-
-        /// <summary>
-        /// 外部の CocoroGhost を使用するかを設定
-        /// </summary>
-        public void SetUseExternalCocoroGhost(bool useExternal)
-        {
-            UseExternalCocoroGhostCheckBox.IsChecked = useExternal;
-            UpdateCocoroGhostConnectionUi();
-        }
-
-        /// <summary>
-        /// 外部利用チェック変更イベント
-        /// </summary>
-        private void OnUseExternalCocoroGhostCheckBoxChanged(object sender, RoutedEventArgs e)
-        {
-            UpdateCocoroGhostConnectionUi();
-            OnSettingsChanged(sender, e);
-        }
-
-        /// <summary>
-        /// 外部利用設定に応じて接続先UIの有効状態を更新
-        /// </summary>
-        private void UpdateCocoroGhostConnectionUi()
-        {
-            var useExternal = UseExternalCocoroGhostCheckBox.IsChecked ?? false;
-
-            // --- 内部接続時はホスト入力を固定表示にする ---
-            CocoroGhostHostTextBox.IsEnabled = useExternal;
-        }
-
-        /// <summary>
-        /// Bearer Token変更イベントハンドラー
-        /// </summary>
-        private void BearerTokenPasswordBox_PasswordChanged(object sender, TextChangedEventArgs e)
-        {
-            if (!_isInitialized)
-                return;
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <summary>
-        /// Bearer Tokenを取得
-        /// </summary>
-        public string GetBearerToken()
-        {
-            return BearerTokenPasswordBox.Text;
-        }
-
-        /// <summary>
-        /// Bearer Tokenを設定
-        /// </summary>
-        public void SetBearerToken(string token)
-        {
-            BearerTokenPasswordBox.Text = token ?? string.Empty;
-        }
-
-        #endregion
     }
 }
