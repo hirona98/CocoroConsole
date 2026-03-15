@@ -1,576 +1,1302 @@
 {
-  "currentAnimationSettingIndex": 0,
-  "animationSettings": [
-    {
-      "animeSetName": "デフォルト",
-      "postureChangeLoopCountStanding": 30,
-      "postureChangeLoopCountSittingFloor": 30,
-      "animations": [
-        {
-          "displayName": "DT_01 通常待機（両腕おろし）",
-          "animationType": 0,
-          "animationName": "DT_01_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_02 通常待機（片腕おろし）",
-          "animationType": 0,
-          "animationName": "DT_02_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_03_通常待機（両腕上げ）",
-          "animationType": 0,
-          "animationName": "DT_03_wait_natural_F_00_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_04 かわいく待機（両腕おろし）",
-          "animationType": 0,
-          "animationName": "DT_04_wait_natural_F_00_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_05 かわいく待機（片腕おろし）",
-          "animationType": 0,
-          "animationName": "DT_05_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_06 かわいく待機（両腕上げ）",
-          "animationType": 0,
-          "animationName": "DT_06_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_07 元気に待機（腕組み）",
-          "animationType": 0,
-          "animationName": "DT_07_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_08 元気に待機（腰に手を当て）",
-          "animationType": 0,
-          "animationName": "DT_08_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_09 元気に待機（軽くストレッチ）",
-          "animationType": 0,
-          "animationName": "DT_09_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_10 セクシーに待機（片腕上げ）",
-          "animationType": 0,
-          "animationName": "DT_10_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_11 セクシーに待機（腕組み）",
-          "animationType": 0,
-          "animationName": "DT_11_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_12 セクシーに待機（軽く伸び）",
-          "animationType": 0,
-          "animationName": "DT_12_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_13 おどおど待機（軽く前屈み両腕おろし）",
-          "animationType": 0,
-          "animationName": "DT_13_wait_natural_F_002_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_14 おどおど待機（軽く前屈み両腕上げ）",
-          "animationType": 0,
-          "animationName": "DT_14_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_15 時間を気にしつつ待機（右腕時計見る）",
-          "animationType": 0,
-          "animationName": "DT_15_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_16 時間を気にしつつ待機（左腕時計見る）",
-          "animationType": 0,
-          "animationName": "DT_16_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_17 服装を気にしつつ待機",
-          "animationType": 0,
-          "animationName": "DT_17_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_18 髪型を気にしつつ待機",
-          "animationType": 0,
-          "animationName": "DT_18_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_19 イライラしながら待機",
-          "animationType": 0,
-          "animationName": "DT_19_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DT_20 軽く踊りながら待機",
-          "animationType": 0,
-          "animationName": "DT_20_wait_natural_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_01 えいえいおー",
-          "animationType": 0,
-          "animationName": "BJ_01_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_02 にゃーん",
-          "animationType": 0,
-          "animationName": "BJ_02_Waitmotion_cute_F_002_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_03 猫の毛繕い",
-          "animationType": 0,
-          "animationName": "BJ_03_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_04 伸び",
-          "animationType": 0,
-          "animationName": "BJ_04_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_05 きゃっこわーい",
-          "animationType": 0,
-          "animationName": "BJ_05_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_06 片足をあげてバランスをとる",
-          "animationType": 0,
-          "animationName": "BJ_06_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_07 うーん…やっほーい！",
-          "animationType": 0,
-          "animationName": "BJ_07_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_08 るんるん",
-          "animationType": 0,
-          "animationName": "BJ_08_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_09 遠くをきょろきょろ",
-          "animationType": 0,
-          "animationName": "BJ_09_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_10 伸び２",
-          "animationType": 0,
-          "animationName": "BJ_10_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_11 ちぇっ地面の石を蹴る",
-          "animationType": 0,
-          "animationName": "BJ_11_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_12 しゃがんで見てる",
-          "animationType": 0,
-          "animationName": "BJ_12_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_13 くるっと回ってポーズ",
-          "animationType": 0,
-          "animationName": "BJ_13_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_14 ぴょんぴょん",
-          "animationType": 0,
-          "animationName": "BJ_14_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_15 指でハートを作る",
-          "animationType": 0,
-          "animationName": "BJ_15_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_16 屈伸、やるぜ",
-          "animationType": 0,
-          "animationName": "BJ_16_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_18 捕まえた！でも失敗",
-          "animationType": 0,
-          "animationName": "BJ_18_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_19 え？なになに？なにかついてる？",
-          "animationType": 0,
-          "animationName": "BJ_19_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_20 えっへん",
-          "animationType": 0,
-          "animationName": "BJ_20_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_01 ストレッチ 肩と腕（立ち）",
-          "animationType": 0,
-          "animationName": "DY_01_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_03 ストレッチ 両腕を前後に伸ばす（立ち）",
-          "animationType": 0,
-          "animationName": "DY_03_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_05 ストレッチ 両腕を上に伸ばして左右に倒す（立ち）",
-          "animationType": 0,
-          "animationName": "DY_05_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_07 ストレッチ 両腕、肘を曲げつつ上から左右に倒す（立ち）",
-          "animationType": 0,
-          "animationName": "DY_07_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_09 ストレッチ アキレス腱を伸ばす（浅め）",
-          "animationType": 0,
-          "animationName": "DY_09_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_10 ストレッチ アキレス腱を伸ばす（深め）",
-          "animationType": 0,
-          "animationName": "DY_10_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_11 ストレッチ 横方向に足のストレッチ（浅め）",
-          "animationType": 0,
-          "animationName": "DY_11_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_12 ストレッチ 横方向に足のストレッチ（深め）",
-          "animationType": 0,
-          "animationName": "DY_12_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_13 ストレッチ 大の字になって左右の足首をつかむ",
-          "animationType": 0,
-          "animationName": "DY_13_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_14 ストレッチ 屈伸",
-          "animationType": 0,
-          "animationName": "DY_14_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_15 ストレッチ ラジオ体操の片腕上げて体を左右に曲げる",
-          "animationType": 0,
-          "animationName": "DY_15_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_16 ストレッチ 前屈→胸そらし",
-          "animationType": 0,
-          "animationName": "DY_16_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_20 ストレッチ 手足をブラブラさせる",
-          "animationType": 0,
-          "animationName": "DY_20_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_01 通常待機（両腕おろし）",
-          "animationType": 0,
-          "animationName": "EB_01_wait_natural_M_002_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_02 通常待機（片腕おろし）",
-          "animationType": 0,
-          "animationName": "EB_02_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_03 通常待機（頭の後ろで手を組む）",
-          "animationType": 0,
-          "animationName": "EB_03_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_04 かわいく待機（両腕おろし）",
-          "animationType": 0,
-          "animationName": "EB_04_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_05 かわいく待機（片腕おろし）",
-          "animationType": 0,
-          "animationName": "EB_05_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_06 かわいく待機（両腕上げ）",
-          "animationType": 0,
-          "animationName": "EB_06_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_07 元気に待機（腕組み）",
-          "animationType": 0,
-          "animationName": "EB_07_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_08 元気に待機（腰に手を当て）",
-          "animationType": 0,
-          "animationName": "EB_08_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_09 元気に待機（軽くストレッチ）",
-          "animationType": 0,
-          "animationName": "EB_09_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_10 堂々とカッコつけて待機（片腕上げ）",
-          "animationType": 0,
-          "animationName": "EB_10_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_11 堂々とカッコつけて待機（腕組み）",
-          "animationType": 0,
-          "animationName": "EB_11_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_12 堂々とカッコつけて待機（軽く伸び）",
-          "animationType": 0,
-          "animationName": "EB_12_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_13 おどおど待機（軽く前屈み両腕おろし）",
-          "animationType": 0,
-          "animationName": "EB_13_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_14 おどおど待機（軽く前屈み両腕上げ）",
-          "animationType": 0,
-          "animationName": "EB_14_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_15 時間を気にしつつ待機1",
-          "animationType": 0,
-          "animationName": "EB_15_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_16 時間を気にしつつ待機2",
-          "animationType": 0,
-          "animationName": "EB_16_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_17 服装を気にしつつ待機",
-          "animationType": 0,
-          "animationName": "EB_17_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_18 髪型を気にしつつ待機",
-          "animationType": 0,
-          "animationName": "EB_18_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_19 イライラしながら待機",
-          "animationType": 0,
-          "animationName": "EB_19_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EB_20 軽く踊りながら待機",
-          "animationType": 0,
-          "animationName": "EB_20_wait_natural_M_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EK_01 眠そうにあくび（立ち）",
-          "animationType": 0,
-          "animationName": "EK_01_sleepy_languid_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EK_02 寝そうになりそのままうたた寝（立ち）",
-          "animationType": 0,
-          "animationName": "EK_02_sleepy_languid_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "BJ_17 座って首を振る",
-          "animationType": 1,
-          "animationName": "BJ_17_Waitmotion_cute_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_17 ストレッチ 胡坐みたいな状態で前屈",
-          "animationType": 1,
-          "animationName": "DY_17_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_18 ストレッチ 床に座り片足立てて左右に腰ひねり",
-          "animationType": 1,
-          "animationName": "DY_18_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "DY_19 ストレッチ 床に座り足を伸ばして左右の足首を掴む",
-          "animationType": 1,
-          "animationName": "DY_19_stretching_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EJ_01 床に横座りで普通に待機",
-          "animationType": 1,
-          "animationName": "EJ_01_wait_sitliedown_F_009_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EJ_02 床に横座りでセクシーに待機",
-          "animationType": 1,
-          "animationName": "EJ_02_wait_sitliedown_F_005_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EJ_03 床に女の子座りでかわいく待機",
-          "animationType": 1,
-          "animationName": "EJ_03_wait_sitliedown_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EJ_04 床に女の子座りで伸びしつつ待機",
-          "animationType": 1,
-          "animationName": "EJ_04_wait_sitliedown_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EJ_05 床に三角座りで待機",
-          "animationType": 1,
-          "animationName": "EJ_05_wait_sitliedown_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EJ_06 床に胡坐をかいてストレッチしつつ待機",
-          "animationType": 1,
-          "animationName": "EJ_06_wait_sitliedown_F_007_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EJ_07 床で足を伸ばして座りつつ普通に待機",
-          "animationType": 1,
-          "animationName": "EJ_07_wait_sitliedown_F_002_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EJ_08 床で正座しつつじっと待機",
-          "animationType": 1,
-          "animationName": "EJ_08_wait_sitliedown_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EK_03 眠そうにあくび（横座り）",
-          "animationType": 1,
-          "animationName": "EK_03_sleepy_languid_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EK_04 寝そうになりそのままうたた寝（横座り）",
-          "animationType": 1,
-          "animationName": "EK_04_sleepy_languid_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EK_05 眠そうにあくび（女の子座り）",
-          "animationType": 1,
-          "animationName": "EK_05_sleepy_languid_F_001_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EK_06 寝そうになりそのままうたた寝（女の子座り）",
-          "animationType": 1,
-          "animationName": "EK_06_sleepy_languid_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EK_07 眠そうにあくび（三角座り）",
-          "animationType": 1,
-          "animationName": "EK_07_sleepy_languid_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EK_08 寝そうになりそのままうたた寝（三角座り）",
-          "animationType": 1,
-          "animationName": "EK_08_sleepy_languid_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EK_09 眠そうにあくび（床で足伸ばし座り）",
-          "animationType": 1,
-          "animationName": "EK_09_sleepy_languid_F_FBX",
-          "isEnabled": true
-        },
-        {
-          "displayName": "EK_10 寝そうになりそのままうたた寝（床で足伸ばし座り）",
-          "animationType": 1,
-          "animationName": "EK_10_sleepy_languid_F_FBX",
-          "isEnabled": true
+    "currentAnimationSettingIndex": 0,
+    "animationSettings": [
+        {
+            "animeSetName": "デフォルト",
+            "postureChangeLoopCountStanding": 30,
+            "postureChangeLoopCountSittingFloor": 30,
+            "animations": [
+                {
+                    "displayName": "DT_01 通常待機（両腕おろし）",
+                    "animationType": 0,
+                    "animationName": "DT_01_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_02 通常待機（片腕おろし）",
+                    "animationType": 0,
+                    "animationName": "DT_02_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_03_通常待機（両腕上げ）",
+                    "animationType": 0,
+                    "animationName": "DT_03_wait_natural_F_00_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_04 かわいく待機（両腕おろし）",
+                    "animationType": 0,
+                    "animationName": "DT_04_wait_natural_F_00_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_05 かわいく待機（片腕おろし）",
+                    "animationType": 0,
+                    "animationName": "DT_05_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_06 かわいく待機（両腕上げ）",
+                    "animationType": 0,
+                    "animationName": "DT_06_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_07 元気に待機（腕組み）",
+                    "animationType": 0,
+                    "animationName": "DT_07_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_08 元気に待機（腰に手を当て）",
+                    "animationType": 0,
+                    "animationName": "DT_08_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_09 元気に待機（軽くストレッチ）",
+                    "animationType": 0,
+                    "animationName": "DT_09_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_10 セクシーに待機（片腕上げ）",
+                    "animationType": 0,
+                    "animationName": "DT_10_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_11 セクシーに待機（腕組み）",
+                    "animationType": 0,
+                    "animationName": "DT_11_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_12 セクシーに待機（軽く伸び）",
+                    "animationType": 0,
+                    "animationName": "DT_12_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_13 おどおど待機（軽く前屈み両腕おろし）",
+                    "animationType": 0,
+                    "animationName": "DT_13_wait_natural_F_002_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_14 おどおど待機（軽く前屈み両腕上げ）",
+                    "animationType": 0,
+                    "animationName": "DT_14_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_15 時間を気にしつつ待機（右腕時計見る）",
+                    "animationType": 0,
+                    "animationName": "DT_15_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_16 時間を気にしつつ待機（左腕時計見る）",
+                    "animationType": 0,
+                    "animationName": "DT_16_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_17 服装を気にしつつ待機",
+                    "animationType": 0,
+                    "animationName": "DT_17_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_18 髪型を気にしつつ待機",
+                    "animationType": 0,
+                    "animationName": "DT_18_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_19 イライラしながら待機",
+                    "animationType": 0,
+                    "animationName": "DT_19_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_20 軽く踊りながら待機",
+                    "animationType": 0,
+                    "animationName": "DT_20_wait_natural_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_01 えいえいおー",
+                    "animationType": 0,
+                    "animationName": "BJ_01_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_02 にゃーん",
+                    "animationType": 0,
+                    "animationName": "BJ_02_Waitmotion_cute_F_002_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_03 猫の毛繕い",
+                    "animationType": 0,
+                    "animationName": "BJ_03_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_04 伸び",
+                    "animationType": 0,
+                    "animationName": "BJ_04_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_05 きゃっこわーい",
+                    "animationType": 0,
+                    "animationName": "BJ_05_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_06 片足をあげてバランスをとる",
+                    "animationType": 0,
+                    "animationName": "BJ_06_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_07 うーん…やっほーい！",
+                    "animationType": 0,
+                    "animationName": "BJ_07_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_08 るんるん",
+                    "animationType": 0,
+                    "animationName": "BJ_08_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_09 遠くをきょろきょろ",
+                    "animationType": 0,
+                    "animationName": "BJ_09_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_10 伸び２",
+                    "animationType": 0,
+                    "animationName": "BJ_10_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_11 ちぇっ地面の石を蹴る",
+                    "animationType": 0,
+                    "animationName": "BJ_11_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_12 しゃがんで見てる",
+                    "animationType": 0,
+                    "animationName": "BJ_12_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_13 くるっと回ってポーズ",
+                    "animationType": 0,
+                    "animationName": "BJ_13_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_14 ぴょんぴょん",
+                    "animationType": 0,
+                    "animationName": "BJ_14_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_15 指でハートを作る",
+                    "animationType": 0,
+                    "animationName": "BJ_15_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_16 屈伸、やるぜ",
+                    "animationType": 0,
+                    "animationName": "BJ_16_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_18 捕まえた！でも失敗",
+                    "animationType": 0,
+                    "animationName": "BJ_18_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_19 え？なになに？なにかついてる？",
+                    "animationType": 0,
+                    "animationName": "BJ_19_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_20 えっへん",
+                    "animationType": 0,
+                    "animationName": "BJ_20_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_01 ストレッチ 肩と腕（立ち）",
+                    "animationType": 0,
+                    "animationName": "DY_01_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_03 ストレッチ 両腕を前後に伸ばす（立ち）",
+                    "animationType": 0,
+                    "animationName": "DY_03_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_05 ストレッチ 両腕を上に伸ばして左右に倒す（立ち）",
+                    "animationType": 0,
+                    "animationName": "DY_05_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_07 ストレッチ 両腕、肘を曲げつつ上から左右に倒す（立ち）",
+                    "animationType": 0,
+                    "animationName": "DY_07_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_09 ストレッチ アキレス腱を伸ばす（浅め）",
+                    "animationType": 0,
+                    "animationName": "DY_09_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_10 ストレッチ アキレス腱を伸ばす（深め）",
+                    "animationType": 0,
+                    "animationName": "DY_10_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_11 ストレッチ 横方向に足のストレッチ（浅め）",
+                    "animationType": 0,
+                    "animationName": "DY_11_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_12 ストレッチ 横方向に足のストレッチ（深め）",
+                    "animationType": 0,
+                    "animationName": "DY_12_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_13 ストレッチ 大の字になって左右の足首をつかむ",
+                    "animationType": 0,
+                    "animationName": "DY_13_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_14 ストレッチ 屈伸",
+                    "animationType": 0,
+                    "animationName": "DY_14_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_15 ストレッチ ラジオ体操の片腕上げて体を左右に曲げる",
+                    "animationType": 0,
+                    "animationName": "DY_15_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_16 ストレッチ 前屈→胸そらし",
+                    "animationType": 0,
+                    "animationName": "DY_16_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_20 ストレッチ 手足をブラブラさせる",
+                    "animationType": 0,
+                    "animationName": "DY_20_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_01 通常待機（両腕おろし）",
+                    "animationType": 0,
+                    "animationName": "EB_01_wait_natural_M_002_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_02 通常待機（片腕おろし）",
+                    "animationType": 0,
+                    "animationName": "EB_02_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_03 通常待機（頭の後ろで手を組む）",
+                    "animationType": 0,
+                    "animationName": "EB_03_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_04 かわいく待機（両腕おろし）",
+                    "animationType": 0,
+                    "animationName": "EB_04_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_05 かわいく待機（片腕おろし）",
+                    "animationType": 0,
+                    "animationName": "EB_05_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_06 かわいく待機（両腕上げ）",
+                    "animationType": 0,
+                    "animationName": "EB_06_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_07 元気に待機（腕組み）",
+                    "animationType": 0,
+                    "animationName": "EB_07_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_08 元気に待機（腰に手を当て）",
+                    "animationType": 0,
+                    "animationName": "EB_08_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_09 元気に待機（軽くストレッチ）",
+                    "animationType": 0,
+                    "animationName": "EB_09_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_10 堂々とカッコつけて待機（片腕上げ）",
+                    "animationType": 0,
+                    "animationName": "EB_10_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_11 堂々とカッコつけて待機（腕組み）",
+                    "animationType": 0,
+                    "animationName": "EB_11_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_12 堂々とカッコつけて待機（軽く伸び）",
+                    "animationType": 0,
+                    "animationName": "EB_12_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_13 おどおど待機（軽く前屈み両腕おろし）",
+                    "animationType": 0,
+                    "animationName": "EB_13_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_14 おどおど待機（軽く前屈み両腕上げ）",
+                    "animationType": 0,
+                    "animationName": "EB_14_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_15 時間を気にしつつ待機1",
+                    "animationType": 0,
+                    "animationName": "EB_15_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_16 時間を気にしつつ待機2",
+                    "animationType": 0,
+                    "animationName": "EB_16_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_17 服装を気にしつつ待機",
+                    "animationType": 0,
+                    "animationName": "EB_17_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_18 髪型を気にしつつ待機",
+                    "animationType": 0,
+                    "animationName": "EB_18_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_19 イライラしながら待機",
+                    "animationType": 0,
+                    "animationName": "EB_19_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EB_20 軽く踊りながら待機",
+                    "animationType": 0,
+                    "animationName": "EB_20_wait_natural_M_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EK_01 眠そうにあくび（立ち）",
+                    "animationType": 0,
+                    "animationName": "EK_01_sleepy_languid_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EK_02 寝そうになりそのままうたた寝（立ち）",
+                    "animationType": 0,
+                    "animationName": "EK_02_sleepy_languid_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DT_01_wait_natural_F_001_FBX_Idle",
+                    "animationType": 0,
+                    "animationName": "DT_01_wait_natural_F_001_FBX_Idle",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "08_【改】色々動いてくれるのでアバターの動作チェック等に使えるanimationファイル",
+                    "animationType": 0,
+                    "animationName": "08_【改】色々動いてくれるのでアバターの動作チェック等に使えるanimationファイル",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "09_服やアバターのちょっとした紹介に使えそうなanimationファイル",
+                    "animationType": 0,
+                    "animationName": "09_服やアバターのちょっとした紹介に使えそうなanimationファイル",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "11_ヒジとひねりを意識したアバターの動作チェック等に使えるanimationファイル",
+                    "animationType": 0,
+                    "animationName": "11_ヒジとひねりを意識したアバターの動作チェック等に使えるanimationファイル",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "12_ビンタのanimation(3パターン)元_01",
+                    "animationType": 0,
+                    "animationName": "12_ビンタのanimation(3パターン)元_01",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "12_ビンタのanimation(3パターン)元_02",
+                    "animationType": 0,
+                    "animationName": "12_ビンタのanimation(3パターン)元_02",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "12_ビンタのanimation(3パターン)元_03",
+                    "animationType": 0,
+                    "animationName": "12_ビンタのanimation(3パターン)元_03",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "14_それっぽい攻撃をしてポーズをとってくれるカッコいい系のanimationファイル元",
+                    "animationType": 0,
+                    "animationName": "14_それっぽい攻撃をしてポーズをとってくれるカッコいい系のanimationファイル元",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "16_左右に動くダンスanimation元",
+                    "animationType": 0,
+                    "animationName": "16_左右に動くダンスanimation元",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "18_めっちゃ久しぶりに会った時の反応animation元",
+                    "animationType": 0,
+                    "animationName": "18_めっちゃ久しぶりに会った時の反応animation元",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "19_スタッフぽい待機animation_A",
+                    "animationType": 0,
+                    "animationName": "19_スタッフぽい待機animation_A",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "19_スタッフぽい待機animation_B",
+                    "animationType": 0,
+                    "animationName": "19_スタッフぽい待機animation_B",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "20_袖振りanimation",
+                    "animationType": 0,
+                    "animationName": "20_袖振りanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_A_うさぎダンスサブ",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_A_うさぎダンスサブ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_A_うさぎダンスメイン",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_A_うさぎダンスメイン",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_A_おいでおいでこっちこっち",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_A_おいでおいでこっちこっち",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_A_こぶしあげ",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_A_こぶしあげ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_A_チラ見",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_A_チラ見",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_A_最初おじうさ",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_A_最初おじうさ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_A_最初ちびうさ",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_A_最初ちびうさ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_A_落としちゃった",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_A_落としちゃった",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_B_にんじんガツガツ",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_B_にんじんガツガツ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_B_ニンジン売り",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_B_ニンジン売り",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_B_巨大化",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_B_巨大化",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_B_戦闘ループうさぎA",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_B_戦闘ループうさぎA",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_B_戦闘ループうさぎB",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_B_戦闘ループうさぎB",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_B_料理どうぞ",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_B_料理どうぞ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_B_準備運動",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_B_準備運動",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_C_ばいばい",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_C_ばいばい",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_C_世間話B",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_C_世間話B",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_C_大きく片手振り",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_C_大きく片手振り",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_C_手を振る両手ジャンプ",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_C_手を振る両手ジャンプ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_C_手を振る片手",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_C_手を振る片手",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け01",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け01",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け02",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け02",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け03",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け03",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け04",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け04",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け05",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け05",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け06",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け06",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け07",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け07",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け08",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け08",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け09",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け09",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け10",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け10",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け11",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け11",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け12",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け12",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "23_13種類のアバター展示向けanimationファイル_展示向け13",
+                    "animationType": 0,
+                    "animationName": "23_13種類のアバター展示向けanimationファイル_展示向け13",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "26_エモートにも仕込める二段蹴りしてポーズをとるanimation",
+                    "animationType": 0,
+                    "animationName": "26_エモートにも仕込める二段蹴りしてポーズをとるanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "28_バレンタインに使えそうなチョコを渡してくれるanimation_チョコ渡し01",
+                    "animationType": 0,
+                    "animationName": "28_バレンタインに使えそうなチョコを渡してくれるanimation_チョコ渡し01",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "28_バレンタインに使えそうなチョコを渡してくれるanimation_チョコ渡し02",
+                    "animationType": 0,
+                    "animationName": "28_バレンタインに使えそうなチョコを渡してくれるanimation_チョコ渡し02",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "28_バレンタインに使えそうなチョコを渡してくれるanimation_チョコ渡し03",
+                    "animationType": 0,
+                    "animationName": "28_バレンタインに使えそうなチョコを渡してくれるanimation_チョコ渡し03",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "28_バレンタインに使えそうなチョコを渡してくれるanimation_チョコ渡し04",
+                    "animationType": 0,
+                    "animationName": "28_バレンタインに使えそうなチョコを渡してくれるanimation_チョコ渡し04",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "28_バレンタインに使えそうなチョコを渡してくれるanimation_チョコ渡しもじもじループ",
+                    "animationType": 0,
+                    "animationName": "28_バレンタインに使えそうなチョコを渡してくれるanimation_チョコ渡しもじもじループ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "28_バレンタインに使えそうなチョコを渡してくれるanimation_チョコ渡し静止ポーズ",
+                    "animationType": 0,
+                    "animationName": "28_バレンタインに使えそうなチョコを渡してくれるanimation_チョコ渡し静止ポーズ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "30_もじもじanimation",
+                    "animationType": 0,
+                    "animationName": "30_もじもじanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "33_ホラーのGAMEOVERの時に使えそうなanimation_01",
+                    "animationType": 0,
+                    "animationName": "33_ホラーのGAMEOVERの時に使えそうなanimation_01",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "33_ホラーのGAMEOVERの時に使えそうなanimation_02",
+                    "animationType": 0,
+                    "animationName": "33_ホラーのGAMEOVERの時に使えそうなanimation_02",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "33_ホラーのGAMEOVERの時に使えそうなanimation_03",
+                    "animationType": 0,
+                    "animationName": "33_ホラーのGAMEOVERの時に使えそうなanimation_03",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "33_ホラーのGAMEOVERの時に使えそうなanimation_04",
+                    "animationType": 0,
+                    "animationName": "33_ホラーのGAMEOVERの時に使えそうなanimation_04",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "34_手を振った後スキップするanimation",
+                    "animationType": 0,
+                    "animationName": "34_手を振った後スキップするanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "35_AFK・展示・エモートなどに使える暑すぎる、寒すぎるanimation_Very-cold",
+                    "animationType": 0,
+                    "animationName": "35_AFK・展示・エモートなどに使える暑すぎる、寒すぎるanimation_Very-cold",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "35_AFK・展示・エモートなどに使える暑すぎる、寒すぎるanimation_Very-hot",
+                    "animationType": 0,
+                    "animationName": "35_AFK・展示・エモートなどに使える暑すぎる、寒すぎるanimation_Very-hot",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "37_紹介などに使えるげんきかわいい感じのanimation",
+                    "animationType": 0,
+                    "animationName": "37_紹介などに使えるげんきかわいい感じのanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "39_だるそーなループanimation",
+                    "animationType": 0,
+                    "animationName": "39_だるそーなループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "40_指さしループanimation3種類_A",
+                    "animationType": 0,
+                    "animationName": "40_指さしループanimation3種類_A",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "40_指さしループanimation3種類_B",
+                    "animationType": 0,
+                    "animationName": "40_指さしループanimation3種類_B",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "40_指さしループanimation3種類_C",
+                    "animationType": 0,
+                    "animationName": "40_指さしループanimation3種類_C",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "47_うさぎさ～んって感じのanimation_うさぎさ～ん",
+                    "animationType": 0,
+                    "animationName": "47_うさぎさ～んって感じのanimation_うさぎさ～ん",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "48_後ろで盛り上がってる観客ループanimation",
+                    "animationType": 0,
+                    "animationName": "48_後ろで盛り上がってる観客ループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "50_ぴょんぴょんループanimation",
+                    "animationType": 0,
+                    "animationName": "50_ぴょんぴょんループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "51_ふりふりループ",
+                    "animationType": 0,
+                    "animationName": "51_ふりふりループ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "53_わくわくループanimation2種_01",
+                    "animationType": 0,
+                    "animationName": "53_わくわくループanimation2種_01",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "53_わくわくループanimation2種_02",
+                    "animationType": 0,
+                    "animationName": "53_わくわくループanimation2種_02",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "54_前髪ちぇっくanimation",
+                    "animationType": 0,
+                    "animationName": "54_前髪ちぇっくanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "55_闇の力ループanimation",
+                    "animationType": 0,
+                    "animationName": "55_闇の力ループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "57_チラシ配りセットanimation8種_ABチラシ配り待機ループ",
+                    "animationType": 0,
+                    "animationName": "57_チラシ配りセットanimation8種_ABチラシ配り待機ループ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "57_チラシ配りセットanimation8種_Aチラシ配り 渡す",
+                    "animationType": 0,
+                    "animationName": "57_チラシ配りセットanimation8種_Aチラシ配り 渡す",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "57_チラシ配りセットanimation8種_Aチラシ配り 渡すもらい待ちループ",
+                    "animationType": 0,
+                    "animationName": "57_チラシ配りセットanimation8種_Aチラシ配り 渡すもらい待ちループ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "57_チラシ配りセットanimation8種_Aチラシ配り 渡すもらってもらえない",
+                    "animationType": 0,
+                    "animationName": "57_チラシ配りセットanimation8種_Aチラシ配り 渡すもらってもらえない",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "57_チラシ配りセットanimation8種_Bチラシ配り 渡す もらってくれた",
+                    "animationType": 0,
+                    "animationName": "57_チラシ配りセットanimation8種_Bチラシ配り 渡す もらってくれた",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "57_チラシ配りセットanimation8種_Bチラシ配り 渡すまで",
+                    "animationType": 0,
+                    "animationName": "57_チラシ配りセットanimation8種_Bチラシ配り 渡すまで",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "57_チラシ配りセットanimation8種_Bチラシ配り 渡すもらってくれる一連",
+                    "animationType": 0,
+                    "animationName": "57_チラシ配りセットanimation8種_Bチラシ配り 渡すもらってくれる一連",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "57_チラシ配りセットanimation8種_チラシ配り一連ループ",
+                    "animationType": 0,
+                    "animationName": "57_チラシ配りセットanimation8種_チラシ配り一連ループ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "60_かわいいおばけループanimation3種_おばけふりふり",
+                    "animationType": 0,
+                    "animationName": "60_かわいいおばけループanimation3種_おばけふりふり",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "60_かわいいおばけループanimation3種_きょんしーじゃんぷ",
+                    "animationType": 0,
+                    "animationName": "60_かわいいおばけループanimation3種_きょんしーじゃんぷ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "60_かわいいおばけループanimation3種_てのばしふりふり",
+                    "animationType": 0,
+                    "animationName": "60_かわいいおばけループanimation3種_てのばしふりふり",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "61_閉じ込められた人ループanimation",
+                    "animationType": 0,
+                    "animationName": "61_閉じ込められた人ループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "62_ロボの名乗り的なループanimation",
+                    "animationType": 0,
+                    "animationName": "62_ロボの名乗り的なループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "64_下からアピールループanimation",
+                    "animationType": 0,
+                    "animationName": "64_下からアピールループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "65_考え中ループanimation",
+                    "animationType": 0,
+                    "animationName": "65_考え中ループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "66_説明中ループanimation",
+                    "animationType": 0,
+                    "animationName": "66_説明中ループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "67_喧嘩を止めるanimation",
+                    "animationType": 0,
+                    "animationName": "67_喧嘩を止めるanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "70_ぐるぐるループanimation",
+                    "animationType": 0,
+                    "animationName": "70_ぐるぐるループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "71_がおがお接近animation",
+                    "animationType": 0,
+                    "animationName": "71_がおがお接近animation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "72_これ見てめっちゃよくない？ループanimation",
+                    "animationType": 0,
+                    "animationName": "72_これ見てめっちゃよくない？ループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "73_ふりふりループ2号",
+                    "animationType": 0,
+                    "animationName": "73_ふりふりループ2号",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "75_ふにゃふにゃループ",
+                    "animationType": 0,
+                    "animationName": "75_ふにゃふにゃループ",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "77_ふわふわループanimation",
+                    "animationType": 0,
+                    "animationName": "77_ふわふわループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "78_ポケダンスっぽいanimation",
+                    "animationType": 0,
+                    "animationName": "78_ポケダンスっぽいanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "79_どろんでござるanimation",
+                    "animationType": 0,
+                    "animationName": "79_どろんでござるanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "80_ふりふりループanimation3号",
+                    "animationType": 0,
+                    "animationName": "80_ふりふりループanimation3号",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "81_メイドねこループanimation",
+                    "animationType": 0,
+                    "animationName": "81_メイドねこループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "83_いい波乗ってるループanimation",
+                    "animationType": 0,
+                    "animationName": "83_いい波乗ってるループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "84_がんばれえいえいおーanimation",
+                    "animationType": 0,
+                    "animationName": "84_がんばれえいえいおーanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "85_やる気だけはある人animation",
+                    "animationType": 0,
+                    "animationName": "85_やる気だけはある人animation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "86_触りたくないものを触るanimation",
+                    "animationType": 0,
+                    "animationName": "86_触りたくないものを触るanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "87_のりのりループanimation",
+                    "animationType": 0,
+                    "animationName": "87_のりのりループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "88_にゃんにゃんループanimation",
+                    "animationType": 0,
+                    "animationName": "88_にゃんにゃんループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "89_がくぶるループanimation",
+                    "animationType": 0,
+                    "animationName": "89_がくぶるループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "90_丁寧ご挨拶animation",
+                    "animationType": 0,
+                    "animationName": "90_丁寧ご挨拶animation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "93_きめポーズするanimation",
+                    "animationType": 0,
+                    "animationName": "93_きめポーズするanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "94_ｽﾞｲｽﾞｲループanimation",
+                    "animationType": 0,
+                    "animationName": "94_ｽﾞｲｽﾞｲループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "95_全然おぼえてない人ループanimation",
+                    "animationType": 0,
+                    "animationName": "95_全然おぼえてない人ループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "96_よびこみループanimation",
+                    "animationType": 0,
+                    "animationName": "96_よびこみループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "97_ヘドバンループanimation",
+                    "animationType": 0,
+                    "animationName": "97_ヘドバンループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "98_手の上紹介ループanimation",
+                    "animationType": 0,
+                    "animationName": "98_手の上紹介ループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "99_ぱんちぱんちループanimation",
+                    "animationType": 0,
+                    "animationName": "99_ぱんちぱんちループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_C_世間話A",
+                    "animationType": 0,
+                    "animationName": "21_もいらんどのラビットライドanimation_C_世間話A",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "BJ_17 座って首を振る",
+                    "animationType": 1,
+                    "animationName": "BJ_17_Waitmotion_cute_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_17 ストレッチ 胡坐みたいな状態で前屈",
+                    "animationType": 1,
+                    "animationName": "DY_17_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_18 ストレッチ 床に座り片足立てて左右に腰ひねり",
+                    "animationType": 1,
+                    "animationName": "DY_18_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "DY_19 ストレッチ 床に座り足を伸ばして左右の足首を掴む",
+                    "animationType": 1,
+                    "animationName": "DY_19_stretching_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EJ_01 床に横座りで普通に待機",
+                    "animationType": 1,
+                    "animationName": "EJ_01_wait_sitliedown_F_009_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EJ_02 床に横座りでセクシーに待機",
+                    "animationType": 1,
+                    "animationName": "EJ_02_wait_sitliedown_F_005_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EJ_03 床に女の子座りでかわいく待機",
+                    "animationType": 1,
+                    "animationName": "EJ_03_wait_sitliedown_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EJ_04 床に女の子座りで伸びしつつ待機",
+                    "animationType": 1,
+                    "animationName": "EJ_04_wait_sitliedown_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EJ_05 床に三角座りで待機",
+                    "animationType": 1,
+                    "animationName": "EJ_05_wait_sitliedown_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EJ_06 床に胡坐をかいてストレッチしつつ待機",
+                    "animationType": 1,
+                    "animationName": "EJ_06_wait_sitliedown_F_007_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EJ_07 床で足を伸ばして座りつつ普通に待機",
+                    "animationType": 1,
+                    "animationName": "EJ_07_wait_sitliedown_F_002_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EJ_08 床で正座しつつじっと待機",
+                    "animationType": 1,
+                    "animationName": "EJ_08_wait_sitliedown_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EK_03 眠そうにあくび（横座り）",
+                    "animationType": 1,
+                    "animationName": "EK_03_sleepy_languid_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EK_04 寝そうになりそのままうたた寝（横座り）",
+                    "animationType": 1,
+                    "animationName": "EK_04_sleepy_languid_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EK_05 眠そうにあくび（女の子座り）",
+                    "animationType": 1,
+                    "animationName": "EK_05_sleepy_languid_F_001_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EK_06 寝そうになりそのままうたた寝（女の子座り）",
+                    "animationType": 1,
+                    "animationName": "EK_06_sleepy_languid_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EK_07 眠そうにあくび（三角座り）",
+                    "animationType": 1,
+                    "animationName": "EK_07_sleepy_languid_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EK_08 寝そうになりそのままうたた寝（三角座り）",
+                    "animationType": 1,
+                    "animationName": "EK_08_sleepy_languid_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EK_09 眠そうにあくび（床で足伸ばし座り）",
+                    "animationType": 1,
+                    "animationName": "EK_09_sleepy_languid_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EK_10 寝そうになりそのままうたた寝（床で足伸ばし座り）",
+                    "animationType": 1,
+                    "animationName": "EK_10_sleepy_languid_F_FBX",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "EJ_07_wait_sitliedown_F_002_FBX_Idle",
+                    "animationType": 1,
+                    "animationName": "EJ_07_wait_sitliedown_F_002_FBX_Idle",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "58_寝返りループanimation",
+                    "animationType": 1,
+                    "animationName": "58_寝返りループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "82_やだやだちらっループanimation",
+                    "animationType": 1,
+                    "animationName": "82_やだやだちらっループanimation",
+                    "isEnabled": true
+                },
+                {
+                    "displayName": "21_もいらんどのラビットライドanimation_A_ピヨピヨ",
+                    "animationType": 1,
+                    "animationName": "21_もいらんどのラビットライドanimation_A_ピヨピヨ",
+                    "isEnabled": true
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }
