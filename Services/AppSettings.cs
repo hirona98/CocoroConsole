@@ -42,9 +42,9 @@ namespace CocoroConsole.Services
 
         public int CocoroConsolePort { get; set; }
         public int CocoroGhostPort { get; set; }
-        public string CocoroGhostHost { get; set; } = "127.0.0.1";
         // 外部の CocoroGhost を利用するか（true: 外部 / false: ローカル）
         public bool UseExternalCocoroGhost { get; set; } = false;
+        public string CocoroGhostHost { get; set; } = "127.0.0.1";
         public int CocoroShellPort { get; set; }
         // /api/events/stream で hello を送るためのクライアントID（安定ID）
         public string ClientId { get; set; } = string.Empty;
@@ -142,11 +142,11 @@ namespace CocoroConsole.Services
         {
             CocoroConsolePort = config.CocoroConsolePort;
             CocoroGhostPort = config.cocoroCorePort;
+
+            // --- 現行では OtomeKairo を外部サーバーとして扱う前提に寄せる ---
+            UseExternalCocoroGhost = config.useExternalCocoroGhost ?? true;
             var cocoroGhostHost = NormalizeCocoroGhostHost(config.cocoroGhostHost);
             CocoroGhostHost = cocoroGhostHost;
-
-            // --- 旧設定（フラグ未定義）との互換のため、未定義時は host から外部利用を推定 ---
-            UseExternalCocoroGhost = config.useExternalCocoroGhost ?? !IsLoopbackHost(cocoroGhostHost);
 
             CocoroShellPort = config.cocoroShellPort;
             ClientId = config.clientId;
@@ -154,7 +154,11 @@ namespace CocoroConsole.Services
             {
                 ClientId = $"console-{Guid.NewGuid()}";
             }
-            CocoroGhostBearerToken = config.cocoroGhostBearerToken ?? string.Empty;
+            // --- 旧既定値のプレースホルダートークンは未設定として扱う ---
+            var cocoroGhostBearerToken = config.cocoroGhostBearerToken ?? string.Empty;
+            CocoroGhostBearerToken = string.Equals(cocoroGhostBearerToken, "cocoro_token", StringComparison.Ordinal)
+                ? string.Empty
+                : cocoroGhostBearerToken;
             IsUseLLM = config.isUseLLM;
             IsRestoreWindowPosition = config.isRestoreWindowPosition;
             IsTopmost = config.isTopmost;
@@ -229,8 +233,8 @@ namespace CocoroConsole.Services
             {
                 CocoroConsolePort = CocoroConsolePort,
                 cocoroCorePort = CocoroGhostPort,
-                cocoroGhostHost = CocoroGhostHost,
                 useExternalCocoroGhost = UseExternalCocoroGhost,
+                cocoroGhostHost = CocoroGhostHost,
                 cocoroShellPort = CocoroShellPort,
                 clientId = ClientId,
                 cocoroGhostBearerToken = CocoroGhostBearerToken,

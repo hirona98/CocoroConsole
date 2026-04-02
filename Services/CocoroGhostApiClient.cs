@@ -1,8 +1,9 @@
-using CocoroConsole.Models.CocoroGhostApi;
+﻿using CocoroConsole.Models.CocoroGhostApi;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -34,11 +35,6 @@ namespace CocoroConsole.Services
                 throw new ArgumentException("baseUrlを指定してください", nameof(baseUrl));
             }
 
-            if (string.IsNullOrWhiteSpace(bearerToken))
-            {
-                throw new ArgumentException("Bearerトークンを指定してください", nameof(bearerToken));
-            }
-
             _baseUrl = baseUrl.TrimEnd('/');
             if (handler == null)
             {
@@ -52,7 +48,10 @@ namespace CocoroConsole.Services
             }
             _httpClient = new HttpClient(handler);
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+            if (!string.IsNullOrWhiteSpace(bearerToken))
+            {
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+            }
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             _serializerOptions = new JsonSerializerOptions
@@ -60,6 +59,42 @@ namespace CocoroConsole.Services
                 PropertyNameCaseInsensitive = true,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
+        }
+
+        /// <summary>
+        /// OtomeKairo の bootstrap 状態を取得する。
+        /// </summary>
+        public Task<OtomeKairoBootstrapProbeResponse> ProbeBootstrapAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoBootstrapProbeResponse>(HttpMethod.Get, "/api/bootstrap/probe", null, cancellationToken);
+        }
+
+        /// <summary>
+        /// OtomeKairo の最初の console_access_token を取得する。
+        /// </summary>
+        public Task<OtomeKairoRegisterFirstConsoleResponse> RegisterFirstConsoleAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoRegisterFirstConsoleResponse>(HttpMethod.Post, "/api/bootstrap/register-first-console", new { }, cancellationToken);
+        }
+
+        /// <summary>
+        /// OtomeKairo の状態要約を取得する。
+        /// </summary>
+        public Task<OtomeKairoStatusResponse> GetOtomeKairoStatusAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoStatusResponse>(HttpMethod.Get, "/api/status", null, cancellationToken);
+        }
+
+        /// <summary>
+        /// OtomeKairo に会話観測を送信する。
+        /// </summary>
+        public Task<OtomeKairoConversationResponse> ObserveConversationAsync(OtomeKairoConversationRequest request, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoConversationResponse>(HttpMethod.Post, "/api/observations/conversation", request, cancellationToken);
         }
 
         /// <summary>
@@ -252,6 +287,55 @@ namespace CocoroConsole.Services
             return SendNoContentAsync(HttpMethod.Post, "/api/v2/vision/capture-response", request, cancellationToken);
         }
 
+        private async Task<T> SendOtomeKairoAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
+        {
+            var url = BuildUrl(path);
+            using var request = new HttpRequestMessage(method, url);
+            if (payload != null)
+            {
+                request.Content = CreateJsonContent(payload);
+            }
+
+            try
+            {
+                using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorEnvelope = JsonSerializer.Deserialize<OtomeKairoErrorEnvelope>(responseBody, _serializerOptions);
+                    var errorCode = errorEnvelope?.Error?.Code;
+                    var errorMessage = errorEnvelope?.Error?.Message
+                        ?? $"OtomeKairo APIエラー: {(int)response.StatusCode} {response.ReasonPhrase}";
+                    throw new OtomeKairoApiException((int)response.StatusCode, errorCode, errorMessage);
+                }
+
+                var successEnvelope = JsonSerializer.Deserialize<OtomeKairoSuccessEnvelope<T>>(responseBody, _serializerOptions);
+                if (successEnvelope == null || !successEnvelope.Ok || successEnvelope.Data == null)
+                {
+                    throw new InvalidOperationException("OtomeKairo APIレスポンスの解析に失敗しました");
+                }
+
+                return successEnvelope.Data;
+            }
+            catch (TaskCanceledException ex)
+            {
+                throw new TimeoutException("OtomeKairo APIリクエストがタイムアウトしました", ex);
+            }
+            catch (OtomeKairoApiException)
+            {
+                throw;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new InvalidOperationException($"OtomeKairo API通信に失敗しました: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"OtomeKairo API通信に失敗しました: {ex.Message}", ex);
+            }
+        }
+
         private async Task SendNoContentAsync(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
         {
             var url = BuildUrl(path);
@@ -420,6 +504,100 @@ namespace CocoroConsole.Services
                 throw new ObjectDisposedException(nameof(CocoroGhostApiClient));
             }
         }
+    }
+
+    public class OtomeKairoApiException : Exception
+    {
+        public int StatusCode { get; }
+        public string? ErrorCode { get; }
+
+        public OtomeKairoApiException(int statusCode, string? errorCode, string message)
+            : base(message)
+        {
+            StatusCode = statusCode;
+            ErrorCode = errorCode;
+        }
+    }
+
+    internal class OtomeKairoSuccessEnvelope<T>
+    {
+        [JsonPropertyName("ok")]
+        public bool Ok { get; set; }
+
+        [JsonPropertyName("data")]
+        public T? Data { get; set; }
+    }
+
+    internal class OtomeKairoErrorEnvelope
+    {
+        [JsonPropertyName("ok")]
+        public bool Ok { get; set; }
+
+        [JsonPropertyName("error")]
+        public OtomeKairoErrorBody? Error { get; set; }
+    }
+
+    internal class OtomeKairoErrorBody
+    {
+        [JsonPropertyName("code")]
+        public string? Code { get; set; }
+
+        [JsonPropertyName("message")]
+        public string? Message { get; set; }
+    }
+
+    public class OtomeKairoBootstrapProbeResponse
+    {
+        [JsonPropertyName("bootstrap_available")]
+        public bool BootstrapAvailable { get; set; }
+
+        [JsonPropertyName("https_required")]
+        public bool HttpsRequired { get; set; }
+
+        [JsonPropertyName("bootstrap_state")]
+        public string BootstrapState { get; set; } = string.Empty;
+    }
+
+    public class OtomeKairoRegisterFirstConsoleResponse
+    {
+        [JsonPropertyName("console_access_token")]
+        public string ConsoleAccessToken { get; set; } = string.Empty;
+    }
+
+    public class OtomeKairoStatusResponse
+    {
+        [JsonPropertyName("settings_snapshot")]
+        public Dictionary<string, object?> SettingsSnapshot { get; set; } = new Dictionary<string, object?>();
+
+        [JsonPropertyName("runtime_summary")]
+        public Dictionary<string, object?> RuntimeSummary { get; set; } = new Dictionary<string, object?>();
+    }
+
+    public class OtomeKairoConversationRequest
+    {
+        [JsonPropertyName("text")]
+        public string Text { get; set; } = string.Empty;
+
+        [JsonPropertyName("client_context")]
+        public Dictionary<string, object?>? ClientContext { get; set; }
+    }
+
+    public class OtomeKairoConversationResponse
+    {
+        [JsonPropertyName("cycle_id")]
+        public string CycleId { get; set; } = string.Empty;
+
+        [JsonPropertyName("result_kind")]
+        public string ResultKind { get; set; } = string.Empty;
+
+        [JsonPropertyName("reply")]
+        public OtomeKairoConversationReply? Reply { get; set; }
+    }
+
+    public class OtomeKairoConversationReply
+    {
+        [JsonPropertyName("text")]
+        public string Text { get; set; } = string.Empty;
     }
 
     /// <summary>

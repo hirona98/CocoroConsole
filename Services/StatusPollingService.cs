@@ -29,7 +29,7 @@ namespace CocoroConsole.Services
     public class StatusPollingService : IDisposable
     {
         private readonly HttpClient _httpClient;
-        private readonly string _healthEndpoint;
+        private readonly string _probeEndpoint;
         private readonly Timer _pollingTimer;
         private int _pollingInProgress = 0;
         private CocoroGhostStatus _currentStatus = CocoroGhostStatus.WaitingForStartup;
@@ -48,7 +48,7 @@ namespace CocoroConsole.Services
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="baseUrl">CocoroGhostのベースURL（デフォルト: https://127.0.0.1:55601）</param>
+        /// <param name="baseUrl">OtomeKairoのベースURL（デフォルト: https://127.0.0.1:55601）</param>
         public StatusPollingService(string baseUrl = "https://127.0.0.1:55601")
         {
             // --- CocoroGhost は自己署名HTTPSを前提とする ---
@@ -62,7 +62,7 @@ namespace CocoroConsole.Services
             {
                 Timeout = TimeSpan.FromMilliseconds(800)
             };
-            _healthEndpoint = $"{baseUrl.TrimEnd('/')}/api/health";
+            _probeEndpoint = $"{baseUrl.TrimEnd('/')}/api/bootstrap/probe";
 
             // 1秒間隔でポーリング開始（起動待ち用）
             _pollingTimer = new Timer(_ =>
@@ -94,13 +94,15 @@ namespace CocoroConsole.Services
 
             try
             {
-                using var response = await _httpClient.GetAsync(_healthEndpoint).ConfigureAwait(false);
+                using var response = await _httpClient.GetAsync(_probeEndpoint).ConfigureAwait(false);
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    var healthCheck = JsonSerializer.Deserialize<Communication.HealthCheckResponse>(content);
+                    using var document = JsonDocument.Parse(content);
+                    var probeSucceeded = document.RootElement.TryGetProperty("ok", out var okElement)
+                        && okElement.ValueKind == JsonValueKind.True;
 
-                    if (healthCheck != null && healthCheck.status == "healthy")
+                    if (probeSucceeded)
                     {
                         if (_currentStatus == CocoroGhostStatus.WaitingForStartup)
                         {

@@ -1,7 +1,7 @@
 ﻿<Window x:Class="CocoroConsole.Windows.CocoroGhostSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="CocoroGhost設定"
+        Title="OtomeKairo設定"
         Width="530"
         Height="430"
         WindowStartupLocation="CenterOwner"
@@ -35,8 +35,8 @@
                       VerticalScrollBarVisibility="Auto"
                       Padding="16,16,16,0">
             <StackPanel>
-                <!-- CocoroGhost 接続設定 -->
-                <GroupBox Header="CocoroGhost接続設定"
+                <!-- OtomeKairo 接続設定 -->
+                <GroupBox Header="OtomeKairo接続設定"
                           Margin="0,0,0,16"
                           Style="{StaticResource SettingsGroupBoxStyle}">
                     <Border Background="White"
@@ -46,18 +46,14 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                                CocoroAIコア機能のアドレスを指定します。
+                                OtomeKairo サーバーの接続先を指定します。
                                 <LineBreak/>
-                                <Hyperlink NavigateUri="https://github.com/hirona98/CocoroGhost"
-                                           RequestNavigate="CocoroGhostLink_RequestNavigate">
-                                    https://github.com/hirona98/CocoroGhost
-                                </Hyperlink>
-                                を動作させてください。
+                                HTTPS で起動している OtomeKairo に接続してください。
                             </TextBlock>
 
                             <!-- 外部利用チェック -->
                             <CheckBox x:Name="UseExternalCocoroGhostCheckBox"
-                                      Content="外部のCocoroGhostを使用する"
+                                      Content="外部の OtomeKairo サーバーを使用する"
                                       Foreground="#FF4873CF"
                                       Margin="0,0,0,8"
                                       Checked="UseExternalCocoroGhostCheckBox_Changed"
@@ -95,7 +91,8 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                                APIで使用するBearer Tokenです（現在は編集できません）。
+                                OtomeKairo の console_access_token を設定します。
+                                未発行のときは接続後に自動取得されます。必要なら手動で入力できます。
                             </TextBlock>
 
                             <!-- Bearer Token -->
@@ -105,7 +102,7 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0"
-                                           Text="Bearer Token:"
+                                           Text="Access Token:"
                                            VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="1"
                                          x:Name="BearerTokenTextBox"
@@ -113,7 +110,7 @@
                                          VerticalAlignment="Center"
                                          Width="260"
                                          HorizontalAlignment="Left"
-                                         IsEnabled="False"/>
+                                         IsEnabled="True"/>
                             </Grid>
                         </StackPanel>
                     </Border>

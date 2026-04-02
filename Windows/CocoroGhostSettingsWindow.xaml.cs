@@ -41,7 +41,7 @@ namespace CocoroConsole.Windows
             UseExternalCocoroGhostCheckBox.IsChecked = _appSettings.UseExternalCocoroGhost;
             CocoroGhostHostTextBox.Text = (_appSettings.CocoroGhostHost ?? string.Empty).Trim();
 
-            // Bearer Token を反映（読み取り専用）
+            // Access Token を反映する
             BearerTokenTextBox.Text = _appSettings.CocoroGhostBearerToken ?? string.Empty;
 
             // 接続方式に応じて入力欄の有効/無効を切り替え
@@ -66,6 +66,7 @@ namespace CocoroConsole.Windows
             // 入力値を取得
             var host = (CocoroGhostHostTextBox.Text ?? string.Empty).Trim();
             var useExternal = UseExternalCocoroGhostCheckBox.IsChecked ?? false;
+            var bearerToken = (BearerTokenTextBox.Text ?? string.Empty).Trim();
 
             // 接続先ホストは空欄不可
             if (string.IsNullOrWhiteSpace(host))
@@ -84,9 +85,10 @@ namespace CocoroConsole.Windows
             var endpointChanged =
                 !string.Equals(currentHost, host, StringComparison.OrdinalIgnoreCase) ||
                 _appSettings.UseExternalCocoroGhost != useExternal;
+            var bearerTokenChanged = !string.Equals(_appSettings.CocoroGhostBearerToken ?? string.Empty, bearerToken, StringComparison.Ordinal);
 
             // 変更が無い場合は保存を行わない
-            if (!endpointChanged)
+            if (!endpointChanged && !bearerTokenChanged)
             {
                 return true;
             }
@@ -94,10 +96,11 @@ namespace CocoroConsole.Windows
             // 設定値を保存
             _appSettings.CocoroGhostHost = host;
             _appSettings.UseExternalCocoroGhost = useExternal;
+            _appSettings.CocoroGhostBearerToken = bearerToken;
             _appSettings.SaveAppSettings();
 
-            // 通信サービスの表示キャッシュを再取得
-            if (endpointChanged && _communicationService != null)
+            // 通信サービスの接続初期化をやり直す
+            if (_communicationService != null)
             {
                 await _communicationService.RefreshCocoroGhostSettingsAsync();
             }

@@ -345,7 +345,7 @@ namespace CocoroConsole
             bool isLLMEnabled = _appSettings.IsUseLLM;
             bool isChatBusy = _communicationService?.IsChatBusy ?? false;
 
-            // --- CocoroGhost起動待ちは最優先表示（ログ上書きより優先） ---
+            // --- OtomeKairo起動待ちは最優先表示（ログ上書きより優先） ---
             if (status == CocoroGhostStatus.WaitingForStartup)
             {
                 _statusBarOverrideTimer?.Stop();
@@ -885,7 +885,7 @@ namespace CocoroConsole
         /// <param name="overrideText">ステータスバーに表示するテキスト（例: "状態: VoiceRecognition 〜"）</param>
         private void SetStatusBarOverride(string overrideText)
         {
-            // --- CocoroGhost起動待ちは最優先表示（上書きしない） ---
+            // --- OtomeKairo起動待ちは最優先表示（上書きしない） ---
             if (_latestCocoroGhostStatus == CocoroGhostStatus.WaitingForStartup)
             {
                 return;
@@ -927,10 +927,10 @@ namespace CocoroConsole
         /// <summary>
         /// 現在の状態（または一時上書き）に基づき、ステータスバーの表示を更新する
         /// </summary>
-        /// <param name="normalStatusText">通常表示テキスト（例: "状態: 正常動作中"）</param>
+        /// <param name="normalStatusText">通常表示テキスト（例: "状態: OtomeKairo 正常動作中"）</param>
         private void RenderStatusBarText(string normalStatusText)
         {
-            // --- CocoroGhost起動待ちは最優先表示 ---
+            // --- OtomeKairo起動待ちは最優先表示 ---
             // 起動待ち中にログが流れても、ユーザーが状況を誤認しないよう「起動待ち」を固定で出す。
             var textToShow = _latestCocoroGhostStatus == CocoroGhostStatus.WaitingForStartup
                 ? BuildCocoroGhostStatusBarText(CocoroGhostStatus.WaitingForStartup)
@@ -953,7 +953,7 @@ namespace CocoroConsole
             var isLLMEnabled = _appSettings.IsUseLLM;
             var statusText = status switch
             {
-                CocoroGhostStatus.WaitingForStartup => isLLMEnabled ? "CocoroGhost起動待ち" : "LLM無効",
+                CocoroGhostStatus.WaitingForStartup => isLLMEnabled ? "OtomeKairo起動待ち" : "LLM無効",
                 CocoroGhostStatus.Normal => isLLMEnabled ? "正常動作中" : "LLM無効",
                 CocoroGhostStatus.ProcessingMessage => "LLMメッセージ処理中",
                 CocoroGhostStatus.ProcessingImage => "LLM画像処理中",
