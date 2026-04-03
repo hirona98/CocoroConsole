@@ -1,5 +1,6 @@
-﻿using CocoroConsole.Communication;
+using CocoroConsole.Communication;
 using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using CocoroConsole.Utilities;
 using System;
@@ -27,6 +28,9 @@ namespace CocoroConsole.Controls
 
         // cocoro_ghost APIクライアント
         private CocoroGhostApiClient? _apiClient;
+
+        // OtomeKairo の editor-state を保持
+        private OtomeKairoEditorState? _loadedOtomeKairoEditorState;
 
         // CocoroCore再起動が必要な設定の前回値を保存
         private ConfigSettings _previousCocoroCoreSettings;
@@ -143,30 +147,33 @@ namespace CocoroConsole.Controls
 
             try
             {
-                // APIから設定を取得
-                CocoroGhostSettings settings = await _apiClient.GetSettingsAsync();
+                // --- OtomeKairo の editor-state を取得して UI へ変換する ---
+                _loadedOtomeKairoEditorState = await _apiClient.GetEditorStateAsync();
 
-                // LLM設定をリスト全体でロード
-                List<LlmPreset> llmPresets = settings.LlmPreset ?? new List<LlmPreset>();
+                // --- LLM設定をリスト全体でロードする ---
+                List<LlmPreset> llmPresets = BuildLlmPresetsFromEditorState(_loadedOtomeKairoEditorState);
                 LlmSettingsControl.SetApiClient(_apiClient, SaveLlmPresetsToApiAsync);
-                LlmSettingsControl.LoadSettingsList(llmPresets, settings.ActiveLlmPresetId);
+                LlmSettingsControl.LoadSettingsList(llmPresets, _loadedOtomeKairoEditorState.Current.SelectedModelPresetId);
 
-                // Embedding設定をリスト全体でロード
-                List<EmbeddingPreset> embeddingPresets = settings.EmbeddingPreset ?? new List<EmbeddingPreset>();
+                // --- Embedding設定をリスト全体でロードする ---
+                List<EmbeddingPreset> embeddingPresets = BuildEmbeddingPresetsFromEditorState(_loadedOtomeKairoEditorState);
                 EmbeddingSettingsControl.SetApiClient(_apiClient, SaveEmbeddingPresetsToApiAsync);
-                EmbeddingSettingsControl.IsMemoryEnabled = settings.MemoryEnabled;
-                EmbeddingSettingsControl.LoadSettingsList(embeddingPresets, settings.ActiveEmbeddingPresetId);
+                EmbeddingSettingsControl.IsMemoryEnabled = _loadedOtomeKairoEditorState.Current.MemoryEnabled;
+                EmbeddingSettingsControl.LoadSettingsList(embeddingPresets, _loadedOtomeKairoEditorState.Current.SelectedModelPresetId);
 
-                // Promptプリセットをロード
+                // --- Promptプリセットをロードする ---
                 PromptSettingsControl.SetApiClient(_apiClient, SaveAllSettingsToApiAsync);
                 PromptSettingsControl.LoadSettings(
-                    settings.PersonaPreset ?? new List<PersonaPreset>(),
-                    settings.ActivePersonaPresetId,
-                    settings.AddonPreset ?? new List<AddonPreset>(),
-                    settings.ActiveAddonPresetId
+                    BuildPersonaPresetsFromEditorState(_loadedOtomeKairoEditorState),
+                    _loadedOtomeKairoEditorState.Current.SelectedPersonaId,
+                    BuildAddonPresetsFromEditorState(_loadedOtomeKairoEditorState),
+                    _loadedOtomeKairoEditorState.Current.SelectedPersonaId
                 );
 
-                // 設定変更イベントを登録
+                // --- desktop_watch などの現在設定を System タブへ反映する ---
+                SystemSettingsControl.ApplyOtomeKairoCurrentSettings(_loadedOtomeKairoEditorState.Current);
+
+                // --- 設定変更イベントを登録する ---
                 LlmSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 EmbeddingSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 PromptSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
@@ -452,76 +459,38 @@ namespace CocoroConsole.Controls
 
             try
             {
-                // /api/settings は全量PUTのため、無効時にdesktop_watch_target_client_idを消さないよう現値を保持する
-                var latestSettings = await _apiClient.GetSettingsAsync();
+                // --- 未読込なら最新 editor-state を先に取得する ---
+                _loadedOtomeKairoEditorState ??= await _apiClient.GetEditorStateAsync();
 
-                bool memoryEnabled = EmbeddingSettingsControl.IsMemoryEnabled;
-                bool desktopWatchEnabled = SystemSettingsControl.GetDesktopWatchEnabled();
-                int desktopWatchIntervalSeconds = SystemSettingsControl.GetDesktopWatchIntervalSeconds();
-                var desktopWatchTargetClientId = desktopWatchEnabled
-                    ? AppSettings.Instance.ClientId
-                    : latestSettings.DesktopWatchTargetClientId;
-                List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
-                List<EmbeddingPreset> embeddingPresets = EmbeddingSettingsControl.GetAllPresets();
-                List<PersonaPreset> personaPresets = PromptSettingsControl.GetAllPersonaPresets();
-                List<AddonPreset> addonPresets = PromptSettingsControl.GetAllAddonPresets();
+                // --- UI から OtomeKairo の editor-state を組み立てる ---
+                var request = BuildEditorStateFromUi(_loadedOtomeKairoEditorState);
+                var updated = await _apiClient.ReplaceEditorStateAsync(request);
+                _loadedOtomeKairoEditorState = updated;
+                Debug.WriteLine("[SettingWindow] editor-state を API に保存しました");
 
-                EnsurePresetIds(llmPresets, p => p.LlmPresetId, (p, id) => p.LlmPresetId = id);
-                EnsurePresetIds(embeddingPresets, p => p.EmbeddingPresetId, (p, id) => p.EmbeddingPresetId = id);
-                EnsurePresetIds(personaPresets, p => p.PersonaPresetId, (p, id) => p.PersonaPresetId = id);
-                EnsurePresetIds(addonPresets, p => p.AddonPresetId, (p, id) => p.AddonPresetId = id);
-
-                var activeLlmId = ResolveActivePresetId(llmPresets, LlmSettingsControl.GetActivePresetId(), p => p.LlmPresetId);
-                var activeEmbeddingId = ResolveActivePresetId(embeddingPresets, EmbeddingSettingsControl.GetActivePresetId(), p => p.EmbeddingPresetId);
-                var activePersonaId = ResolveActivePresetId(personaPresets, PromptSettingsControl.GetActivePersonaPresetId(), p => p.PersonaPresetId);
-                var activeAddonId = ResolveActivePresetId(addonPresets, PromptSettingsControl.GetActiveAddonPresetId(), p => p.AddonPresetId);
-
-                if (string.IsNullOrWhiteSpace(activeLlmId) ||
-                    string.IsNullOrWhiteSpace(activeEmbeddingId) ||
-                    string.IsNullOrWhiteSpace(activePersonaId) ||
-                    string.IsNullOrWhiteSpace(activeAddonId))
-                {
-                    Debug.WriteLine("[SettingWindow] 設定の保存に失敗しました: active preset id missing");
-                    MessageBox.Show("アクティブなプリセットが選択されていません。cocoro_ghost側のsettings.dbを確認してください。", "エラー",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
-                {
-                    MemoryEnabled = memoryEnabled,
-                    DesktopWatchEnabled = desktopWatchEnabled,
-                    DesktopWatchIntervalSeconds = desktopWatchIntervalSeconds,
-                    DesktopWatchTargetClientId = desktopWatchTargetClientId,
-                    ActiveLlmPresetId = activeLlmId!,
-                    ActiveEmbeddingPresetId = activeEmbeddingId!,
-                    ActivePersonaPresetId = activePersonaId!,
-                    ActiveAddonPresetId = activeAddonId!,
-                    LlmPreset = llmPresets,
-                    EmbeddingPreset = embeddingPresets,
-                    PersonaPreset = personaPresets,
-                    AddonPreset = addonPresets
-                };
-
-                CocoroGhostSettings updated = await _apiClient.UpdateSettingsAsync(request);
-                Debug.WriteLine("[SettingWindow] 設定をAPIに保存しました");
-
-                // リマインダー設定/CRUDを保存（別API）
+                // --- reminders は未実装のため no-op だが、保存フローは統一して呼ぶ ---
                 await SystemSettingsControl.SaveRemindersToApiAsync();
 
-                List<LlmPreset> updatedLlmPresets = updated.LlmPreset ?? new List<LlmPreset>();
-                LlmSettingsControl.LoadSettingsList(updatedLlmPresets, updated.ActiveLlmPresetId);
+                // --- 保存後の server 状態で UI を再同期する ---
+                LlmSettingsControl.LoadSettingsList(
+                    BuildLlmPresetsFromEditorState(updated),
+                    updated.Current.SelectedModelPresetId
+                );
 
-                List<EmbeddingPreset> updatedEmbeddingPresets = updated.EmbeddingPreset ?? new List<EmbeddingPreset>();
-                EmbeddingSettingsControl.IsMemoryEnabled = updated.MemoryEnabled;
-                EmbeddingSettingsControl.LoadSettingsList(updatedEmbeddingPresets, updated.ActiveEmbeddingPresetId);
+                EmbeddingSettingsControl.IsMemoryEnabled = updated.Current.MemoryEnabled;
+                EmbeddingSettingsControl.LoadSettingsList(
+                    BuildEmbeddingPresetsFromEditorState(updated),
+                    updated.Current.SelectedModelPresetId
+                );
 
                 PromptSettingsControl.LoadSettings(
-                    updated.PersonaPreset ?? new List<PersonaPreset>(),
-                    updated.ActivePersonaPresetId,
-                    updated.AddonPreset ?? new List<AddonPreset>(),
-                    updated.ActiveAddonPresetId
+                    BuildPersonaPresetsFromEditorState(updated),
+                    updated.Current.SelectedPersonaId,
+                    BuildAddonPresetsFromEditorState(updated),
+                    updated.Current.SelectedPersonaId
                 );
+
+                SystemSettingsControl.ApplyOtomeKairoCurrentSettings(updated.Current);
             }
             catch (Exception ex)
             {
@@ -579,6 +548,658 @@ namespace CocoroConsole.Controls
             }
 
             return idGetter(resolved)?.Trim();
+        }
+
+        private List<LlmPreset> BuildLlmPresetsFromEditorState(OtomeKairoEditorState editorState)
+        {
+            // --- model_preset と generation profile から LLM UI 用 DTO を組み立てる ---
+            var profilesById = editorState.ModelProfiles.ToDictionary(p => p.ModelProfileId, StringComparer.OrdinalIgnoreCase);
+            return editorState.ModelPresets
+                .Select(preset => BuildLlmPreset(preset, profilesById))
+                .ToList();
+        }
+
+        private List<EmbeddingPreset> BuildEmbeddingPresetsFromEditorState(OtomeKairoEditorState editorState)
+        {
+            // --- model_preset と embedding profile から Embedding UI 用 DTO を組み立てる ---
+            var profilesById = editorState.ModelProfiles.ToDictionary(p => p.ModelProfileId, StringComparer.OrdinalIgnoreCase);
+            return editorState.ModelPresets
+                .Select(preset => BuildEmbeddingPreset(preset, profilesById))
+                .ToList();
+        }
+
+        private List<PersonaPreset> BuildPersonaPresetsFromEditorState(OtomeKairoEditorState editorState)
+        {
+            // --- persona 資源を persona preset UI に写す ---
+            return editorState.Personas
+                .Select(persona => new PersonaPreset
+                {
+                    PersonaPresetId = persona.PersonaId,
+                    PersonaPresetName = persona.DisplayName,
+                    PersonaText = persona.PersonaText ?? string.Empty,
+                    SecondPersonLabel = persona.SecondPersonLabel ?? string.Empty,
+                })
+                .ToList();
+        }
+
+        private List<AddonPreset> BuildAddonPresetsFromEditorState(OtomeKairoEditorState editorState)
+        {
+            // --- persona.addon_text を addon preset UI に写す ---
+            return editorState.Personas
+                .Select(persona => new AddonPreset
+                {
+                    AddonPresetId = persona.PersonaId,
+                    AddonPresetName = persona.DisplayName,
+                    AddonText = persona.AddonText ?? string.Empty,
+                })
+                .ToList();
+        }
+
+        private OtomeKairoEditorState BuildEditorStateFromUi(OtomeKairoEditorState baseState)
+        {
+            // --- UI 上の preset 群から editor-state 全体を再構成する ---
+            List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
+            List<EmbeddingPreset> embeddingPresets = EmbeddingSettingsControl.GetAllPresets();
+            List<PersonaPreset> personaPresets = PromptSettingsControl.GetAllPersonaPresets();
+            List<AddonPreset> addonPresets = PromptSettingsControl.GetAllAddonPresets();
+
+            EnsurePresetIds(llmPresets, p => p.LlmPresetId, (p, id) => p.LlmPresetId = id);
+            EnsurePresetIds(embeddingPresets, p => p.EmbeddingPresetId, (p, id) => p.EmbeddingPresetId = id);
+            EnsurePresetIds(personaPresets, p => p.PersonaPresetId, (p, id) => p.PersonaPresetId = id);
+            EnsurePresetIds(addonPresets, p => p.AddonPresetId, (p, id) => p.AddonPresetId = id);
+
+            var activeModelPresetId = ResolveActivePresetId(llmPresets, LlmSettingsControl.GetActivePresetId(), p => p.LlmPresetId)
+                ?? ResolveActivePresetId(embeddingPresets, EmbeddingSettingsControl.GetActivePresetId(), p => p.EmbeddingPresetId);
+            var activePersonaId = ResolveActivePresetId(personaPresets, PromptSettingsControl.GetActivePersonaPresetId(), p => p.PersonaPresetId)
+                ?? ResolveActivePresetId(addonPresets, PromptSettingsControl.GetActiveAddonPresetId(), p => p.AddonPresetId);
+
+            if (string.IsNullOrWhiteSpace(activeModelPresetId) || string.IsNullOrWhiteSpace(activePersonaId))
+            {
+                throw new InvalidOperationException("アクティブな OtomeKairo 設定資源を解決できませんでした。");
+            }
+
+            var personas = BuildPersonasFromUi(baseState, personaPresets, addonPresets);
+            var modelResources = BuildModelResourcesFromUi(baseState, llmPresets, embeddingPresets);
+            bool desktopWatchEnabled = SystemSettingsControl.GetDesktopWatchEnabled();
+            string? preservedTargetClientId = baseState.Current.DesktopWatch?.TargetClientId;
+
+            // --- memory_set は現 UI で編集しないため、読み込んだ定義をそのまま維持する ---
+            return new OtomeKairoEditorState
+            {
+                Current = new OtomeKairoCurrentSettings
+                {
+                    SelectedPersonaId = activePersonaId,
+                    SelectedMemorySetId = FirstNonEmpty(
+                        baseState.Current.SelectedMemorySetId,
+                        baseState.MemorySets.FirstOrDefault()?.MemorySetId,
+                        "memory_set:default"
+                    ),
+                    SelectedModelPresetId = activeModelPresetId,
+                    MemoryEnabled = EmbeddingSettingsControl.IsMemoryEnabled,
+                    DesktopWatch = new OtomeKairoDesktopWatchSettings
+                    {
+                        Enabled = desktopWatchEnabled,
+                        IntervalSeconds = SystemSettingsControl.GetDesktopWatchIntervalSeconds(),
+                        TargetClientId = desktopWatchEnabled ? AppSettings.Instance.ClientId : preservedTargetClientId,
+                    },
+                    WakePolicy = CloneObjectMap(baseState.Current.WakePolicy),
+                },
+                Personas = personas,
+                MemorySets = baseState.MemorySets
+                    .Select(memorySet => new OtomeKairoMemorySetDefinition
+                    {
+                        MemorySetId = memorySet.MemorySetId,
+                        DisplayName = memorySet.DisplayName,
+                        Description = memorySet.Description,
+                    })
+                    .ToList(),
+                ModelPresets = modelResources.ModelPresets,
+                ModelProfiles = modelResources.ModelProfiles,
+            };
+        }
+
+        private List<OtomeKairoPersonaDefinition> BuildPersonasFromUi(
+            OtomeKairoEditorState baseState,
+            IReadOnlyList<PersonaPreset> personaPresets,
+            IReadOnlyList<AddonPreset> addonPresets)
+        {
+            // --- persona preset と addon preset を 1 つの persona 資源に統合する ---
+            var existingById = baseState.Personas.ToDictionary(p => p.PersonaId, StringComparer.OrdinalIgnoreCase);
+            var personaById = personaPresets
+                .Where(p => !string.IsNullOrWhiteSpace(p.PersonaPresetId))
+                .ToDictionary(p => p.PersonaPresetId!, StringComparer.OrdinalIgnoreCase);
+            var addonById = addonPresets
+                .Where(p => !string.IsNullOrWhiteSpace(p.AddonPresetId))
+                .ToDictionary(p => p.AddonPresetId!, StringComparer.OrdinalIgnoreCase);
+            var orderedIds = personaPresets.Select(p => p.PersonaPresetId!)
+                .Concat(addonPresets.Select(p => p.AddonPresetId!))
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            // --- addon 側だけで追加された preset も、最小 persona 定義を補って保持する ---
+            return orderedIds
+                .Select(id =>
+                {
+                    existingById.TryGetValue(id, out var existing);
+                    personaById.TryGetValue(id, out var personaPreset);
+                    addonById.TryGetValue(id, out var addonPreset);
+                    return new OtomeKairoPersonaDefinition
+                    {
+                        PersonaId = id,
+                        DisplayName = FirstNonEmpty(
+                            personaPreset?.PersonaPresetName,
+                            addonPreset?.AddonPresetName,
+                            existing?.DisplayName,
+                            id
+                        ),
+                        PersonaText = FirstNonEmpty(
+                            personaPreset?.PersonaText,
+                            existing?.PersonaText,
+                            personaPreset?.PersonaPresetName,
+                            addonPreset?.AddonPresetName,
+                            id
+                        ),
+                        SecondPersonLabel = FirstNonEmpty(
+                            personaPreset?.SecondPersonLabel,
+                            existing?.SecondPersonLabel,
+                            "あなた"
+                        ),
+                        AddonText = FirstNonEmpty(
+                            addonPreset?.AddonText,
+                            existing?.AddonText,
+                            string.Empty
+                        ),
+                        CorePersona = BuildCorePersona(existing),
+                        ExpressionStyle = BuildExpressionStyle(existing),
+                    };
+                })
+                .ToList();
+        }
+
+        private (List<OtomeKairoModelPresetDefinition> ModelPresets, List<OtomeKairoModelProfileDefinition> ModelProfiles) BuildModelResourcesFromUi(
+            OtomeKairoEditorState baseState,
+            IReadOnlyList<LlmPreset> llmPresets,
+            IReadOnlyList<EmbeddingPreset> embeddingPresets)
+        {
+            // --- LLM preset と Embedding preset を 1 つの model_preset 群へ統合する ---
+            var existingPresetsById = baseState.ModelPresets.ToDictionary(p => p.ModelPresetId, StringComparer.OrdinalIgnoreCase);
+            var existingProfilesById = baseState.ModelProfiles.ToDictionary(p => p.ModelProfileId, StringComparer.OrdinalIgnoreCase);
+            var llmById = llmPresets
+                .Where(p => !string.IsNullOrWhiteSpace(p.LlmPresetId))
+                .ToDictionary(p => p.LlmPresetId!, StringComparer.OrdinalIgnoreCase);
+            var embeddingById = embeddingPresets
+                .Where(p => !string.IsNullOrWhiteSpace(p.EmbeddingPresetId))
+                .ToDictionary(p => p.EmbeddingPresetId!, StringComparer.OrdinalIgnoreCase);
+            var orderedIds = llmPresets.Select(p => p.LlmPresetId!)
+                .Concat(embeddingPresets.Select(p => p.EmbeddingPresetId!))
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var modelPresets = new List<OtomeKairoModelPresetDefinition>();
+            var modelProfiles = new List<OtomeKairoModelProfileDefinition>();
+
+            foreach (var presetId in orderedIds)
+            {
+                existingPresetsById.TryGetValue(presetId, out var existingPreset);
+                llmById.TryGetValue(presetId, out var llmPreset);
+                embeddingById.TryGetValue(presetId, out var embeddingPreset);
+
+                var generationProfileId = ResolveGenerationProfileId(existingPreset, presetId);
+                var embeddingProfileId = ResolveEmbeddingProfileId(existingPreset, presetId);
+                existingProfilesById.TryGetValue(generationProfileId, out var existingGenerationProfile);
+                existingProfilesById.TryGetValue(embeddingProfileId, out var existingEmbeddingProfile);
+
+                var generationProfile = BuildGenerationProfile(
+                    presetId,
+                    llmPreset,
+                    existingGenerationProfile,
+                    generationProfileId
+                );
+                var embeddingProfile = BuildEmbeddingProfile(
+                    presetId,
+                    embeddingPreset,
+                    existingEmbeddingProfile,
+                    embeddingProfileId
+                );
+
+                modelProfiles.Add(generationProfile);
+                modelProfiles.Add(embeddingProfile);
+                modelPresets.Add(BuildModelPresetDefinition(
+                    presetId,
+                    llmPreset,
+                    embeddingPreset,
+                    existingPreset,
+                    generationProfileId,
+                    embeddingProfileId
+                ));
+            }
+
+            return (modelPresets, modelProfiles);
+        }
+
+        private static LlmPreset BuildLlmPreset(
+            OtomeKairoModelPresetDefinition modelPreset,
+            IReadOnlyDictionary<string, OtomeKairoModelProfileDefinition> profilesById)
+        {
+            // --- reply_generation と generation profile を UI 用の 1 件へ投影する ---
+            var replyRole = GetRole(modelPreset, "reply_generation");
+            var profileId = ReadString(replyRole, "model_profile_id");
+            profilesById.TryGetValue(profileId ?? string.Empty, out var generationProfile);
+
+            return new LlmPreset
+            {
+                LlmPresetId = modelPreset.ModelPresetId,
+                LlmPresetName = modelPreset.DisplayName,
+                LlmApiKey = ReadAuthToken(generationProfile?.Auth) ?? string.Empty,
+                LlmModel = generationProfile?.ModelName ?? string.Empty,
+                LlmBaseUrl = generationProfile?.BaseUrl,
+                MaxTurnsWindow = ReadInt(replyRole, "max_turns_window", LlmPreset.DefaultMaxTurnsWindow),
+                MaxTokens = ReadInt(replyRole, "max_tokens", LlmPreset.DefaultMaxTokens),
+                ReasoningEffort = ReadString(replyRole, "reasoning_effort"),
+                ReplyWebSearchEnabled = ReadBool(replyRole, "reply_web_search_enabled", true),
+                ImageModelApiKey = ReadAuthToken(generationProfile?.VisionAuth),
+                ImageModel = generationProfile?.VisionModelName ?? string.Empty,
+                ImageLlmBaseUrl = generationProfile?.VisionBaseUrl,
+                MaxTokensVision = generationProfile?.VisionMaxTokens ?? LlmPreset.DefaultMaxTokensVision,
+                ImageTimeoutSeconds = generationProfile?.VisionTimeoutSeconds ?? LlmPreset.DefaultImageTimeoutSeconds,
+            };
+        }
+
+        private static EmbeddingPreset BuildEmbeddingPreset(
+            OtomeKairoModelPresetDefinition modelPreset,
+            IReadOnlyDictionary<string, OtomeKairoModelProfileDefinition> profilesById)
+        {
+            // --- embedding role と embedding profile を UI 用の 1 件へ投影する ---
+            var embeddingRole = GetRole(modelPreset, "embedding");
+            var profileId = ReadString(embeddingRole, "model_profile_id");
+            profilesById.TryGetValue(profileId ?? string.Empty, out var embeddingProfile);
+
+            return new EmbeddingPreset
+            {
+                EmbeddingPresetId = modelPreset.ModelPresetId,
+                EmbeddingPresetName = modelPreset.DisplayName,
+                EmbeddingModelApiKey = ReadAuthToken(embeddingProfile?.Auth),
+                EmbeddingModel = embeddingProfile?.ModelName ?? string.Empty,
+                EmbeddingBaseUrl = embeddingProfile?.BaseUrl,
+                EmbeddingDimension = ReadInt(embeddingRole, "embedding_dimension", EmbeddingPreset.DefaultEmbeddingDimension),
+                SimilarEpisodesLimit = ReadInt(embeddingRole, "similar_episodes_limit", EmbeddingPreset.DefaultSimilarEpisodesLimit),
+            };
+        }
+
+        private static OtomeKairoModelPresetDefinition BuildModelPresetDefinition(
+            string presetId,
+            LlmPreset? llmPreset,
+            EmbeddingPreset? embeddingPreset,
+            OtomeKairoModelPresetDefinition? existingPreset,
+            string generationProfileId,
+            string embeddingProfileId)
+        {
+            // --- UI から編集できる値だけ role 辞書へ反映し、その他は既存値を引き継ぐ ---
+            var replyRole = CloneRole(GetRole(existingPreset, "reply_generation"));
+            replyRole["model_profile_id"] = generationProfileId;
+            replyRole["max_turns_window"] = llmPreset?.MaxTurnsWindow ?? ReadInt(replyRole, "max_turns_window", LlmPreset.DefaultMaxTurnsWindow);
+            replyRole["max_tokens"] = llmPreset?.MaxTokens ?? ReadInt(replyRole, "max_tokens", LlmPreset.DefaultMaxTokens);
+            replyRole["reply_web_search_enabled"] = llmPreset?.ReplyWebSearchEnabled ?? ReadBool(replyRole, "reply_web_search_enabled", true);
+            if (!string.IsNullOrWhiteSpace(llmPreset?.ReasoningEffort))
+            {
+                replyRole["reasoning_effort"] = llmPreset!.ReasoningEffort!;
+            }
+            else
+            {
+                replyRole.Remove("reasoning_effort");
+            }
+
+            var decisionRole = CloneRole(GetRole(existingPreset, "decision_generation"));
+            decisionRole["model_profile_id"] = generationProfileId;
+            if (!decisionRole.ContainsKey("max_tokens"))
+            {
+                decisionRole["max_tokens"] = llmPreset?.MaxTokens ?? LlmPreset.DefaultMaxTokens;
+            }
+
+            var recallRole = CloneRole(GetRole(existingPreset, "recall_hint_generation"));
+            recallRole["model_profile_id"] = generationProfileId;
+            if (!recallRole.ContainsKey("max_tokens"))
+            {
+                recallRole["max_tokens"] = 2048;
+            }
+
+            var memoryRole = CloneRole(GetRole(existingPreset, "memory_interpretation"));
+            memoryRole["model_profile_id"] = generationProfileId;
+            if (!memoryRole.ContainsKey("max_tokens"))
+            {
+                memoryRole["max_tokens"] = llmPreset?.MaxTokens ?? LlmPreset.DefaultMaxTokens;
+            }
+
+            var embeddingRole = CloneRole(GetRole(existingPreset, "embedding"));
+            embeddingRole["model_profile_id"] = embeddingProfileId;
+            embeddingRole["embedding_dimension"] = embeddingPreset?.EmbeddingDimension ?? ReadInt(embeddingRole, "embedding_dimension", EmbeddingPreset.DefaultEmbeddingDimension);
+            embeddingRole["similar_episodes_limit"] = embeddingPreset?.SimilarEpisodesLimit ?? ReadInt(embeddingRole, "similar_episodes_limit", EmbeddingPreset.DefaultSimilarEpisodesLimit);
+
+            return new OtomeKairoModelPresetDefinition
+            {
+                ModelPresetId = presetId,
+                DisplayName = FirstNonEmpty(
+                    llmPreset?.LlmPresetName,
+                    embeddingPreset?.EmbeddingPresetName,
+                    existingPreset?.DisplayName,
+                    presetId
+                ),
+                Roles = new Dictionary<string, Dictionary<string, object?>>
+                {
+                    ["reply_generation"] = replyRole,
+                    ["decision_generation"] = decisionRole,
+                    ["recall_hint_generation"] = recallRole,
+                    ["memory_interpretation"] = memoryRole,
+                    ["embedding"] = embeddingRole,
+                },
+            };
+        }
+
+        private static OtomeKairoModelProfileDefinition BuildGenerationProfile(
+            string presetId,
+            LlmPreset? llmPreset,
+            OtomeKairoModelProfileDefinition? existingProfile,
+            string profileId)
+        {
+            // --- 生成系 profile は 1 つに寄せ、未入力時は mock に落とす ---
+            string modelName = llmPreset?.LlmModel?.Trim() ?? string.Empty;
+            string? baseUrl = NormalizeEmptyToNull(llmPreset?.LlmBaseUrl);
+            string apiKey = llmPreset?.LlmApiKey?.Trim() ?? string.Empty;
+            bool useMock = string.IsNullOrWhiteSpace(modelName) && string.IsNullOrWhiteSpace(baseUrl) && string.IsNullOrWhiteSpace(apiKey);
+
+            return new OtomeKairoModelProfileDefinition
+            {
+                ModelProfileId = profileId,
+                DisplayName = FirstNonEmpty(llmPreset?.LlmPresetName, existingProfile?.DisplayName, $"{presetId} Text"),
+                Kind = "generation",
+                Provider = useMock ? "mock" : ResolveProvider(baseUrl),
+                ModelName = useMock ? "mock-reply" : modelName,
+                BaseUrl = useMock ? null : ResolveBaseUrl(baseUrl),
+                Auth = useMock ? null : BuildAuth(apiKey),
+                VisionModelName = NormalizeEmptyToNull(llmPreset?.ImageModel),
+                VisionBaseUrl = NormalizeEmptyToNull(llmPreset?.ImageLlmBaseUrl),
+                VisionAuth = string.IsNullOrWhiteSpace(llmPreset?.ImageModelApiKey) && string.IsNullOrWhiteSpace(llmPreset?.ImageLlmBaseUrl) && string.IsNullOrWhiteSpace(llmPreset?.ImageModel)
+                    ? null
+                    : BuildAuth(llmPreset?.ImageModelApiKey),
+                VisionMaxTokens = llmPreset?.MaxTokensVision,
+                VisionTimeoutSeconds = llmPreset?.ImageTimeoutSeconds,
+            };
+        }
+
+        private static OtomeKairoModelProfileDefinition BuildEmbeddingProfile(
+            string presetId,
+            EmbeddingPreset? embeddingPreset,
+            OtomeKairoModelProfileDefinition? existingProfile,
+            string profileId)
+        {
+            // --- embedding profile も未入力時は mock に落とす ---
+            string modelName = embeddingPreset?.EmbeddingModel?.Trim() ?? string.Empty;
+            string? baseUrl = NormalizeEmptyToNull(embeddingPreset?.EmbeddingBaseUrl);
+            string apiKey = embeddingPreset?.EmbeddingModelApiKey?.Trim() ?? string.Empty;
+            bool useMock = string.IsNullOrWhiteSpace(modelName) && string.IsNullOrWhiteSpace(baseUrl) && string.IsNullOrWhiteSpace(apiKey);
+
+            return new OtomeKairoModelProfileDefinition
+            {
+                ModelProfileId = profileId,
+                DisplayName = FirstNonEmpty(embeddingPreset?.EmbeddingPresetName, existingProfile?.DisplayName, $"{presetId} Embedding"),
+                Kind = "embedding",
+                Provider = useMock ? "mock" : ResolveProvider(baseUrl),
+                ModelName = useMock ? "mock-embedding" : modelName,
+                BaseUrl = useMock ? null : ResolveBaseUrl(baseUrl),
+                Auth = useMock ? null : BuildAuth(apiKey),
+            };
+        }
+
+        private static Dictionary<string, object?> BuildCorePersona(OtomeKairoPersonaDefinition? existing)
+        {
+            // --- persona の中核は既存値を優先し、無ければ最小既定値を補う ---
+            var result = CloneObjectMap(existing?.CorePersona);
+            if (!result.ContainsKey("self_image"))
+            {
+                result["self_image"] = "long-term companion";
+            }
+            if (!result.ContainsKey("judgement_style"))
+            {
+                result["judgement_style"] = "careful and warm";
+            }
+            if (!result.ContainsKey("relation_baseline"))
+            {
+                result["relation_baseline"] = "supportive";
+            }
+            return result;
+        }
+
+        private static Dictionary<string, object?> BuildExpressionStyle(OtomeKairoPersonaDefinition? existing)
+        {
+            // --- expression_style.tone は必須なので、必ず埋める ---
+            var result = CloneObjectMap(existing?.ExpressionStyle);
+            if (!result.ContainsKey("tone"))
+            {
+                result["tone"] = "gentle";
+            }
+            if (!result.ContainsKey("sentence_length"))
+            {
+                result["sentence_length"] = "medium";
+            }
+            if (!result.ContainsKey("emotional_expressiveness"))
+            {
+                result["emotional_expressiveness"] = "moderate";
+            }
+            return result;
+        }
+
+        private static Dictionary<string, object?> CloneObjectMap(Dictionary<string, object?>? source)
+        {
+            // --- shallow copy で十分な設定辞書を複製する ---
+            return source == null
+                ? new Dictionary<string, object?>()
+                : source.ToDictionary(entry => entry.Key, entry => entry.Value);
+        }
+
+        private static Dictionary<string, object?> CloneRole(Dictionary<string, object?>? source)
+        {
+            // --- role 辞書も shallow copy で扱う ---
+            return source == null
+                ? new Dictionary<string, object?>()
+                : source.ToDictionary(entry => entry.Key, entry => entry.Value);
+        }
+
+        private static Dictionary<string, object?> GetRole(OtomeKairoModelPresetDefinition? preset, string roleName)
+        {
+            // --- role が無い場合でも空辞書を返し、呼び出し側で埋める ---
+            if (preset == null || preset.Roles == null || !preset.Roles.TryGetValue(roleName, out var role) || role == null)
+            {
+                return new Dictionary<string, object?>();
+            }
+
+            return role;
+        }
+
+        private static string ResolveGenerationProfileId(OtomeKairoModelPresetDefinition? existingPreset, string presetId)
+        {
+            // --- 既存 preset があれば reply_generation の profile id を維持する ---
+            var existingId = ReadString(GetRole(existingPreset, "reply_generation"), "model_profile_id");
+            return !string.IsNullOrWhiteSpace(existingId) ? existingId! : $"model_profile:{presetId}:generation";
+        }
+
+        private static string ResolveEmbeddingProfileId(OtomeKairoModelPresetDefinition? existingPreset, string presetId)
+        {
+            // --- 既存 preset があれば embedding の profile id を維持する ---
+            var existingId = ReadString(GetRole(existingPreset, "embedding"), "model_profile_id");
+            return !string.IsNullOrWhiteSpace(existingId) ? existingId! : $"model_profile:{presetId}:embedding";
+        }
+
+        private static string ResolveProvider(string? baseUrl)
+        {
+            // --- base_url 未指定は OpenAI 既定、指定ありは互換 API とみなす ---
+            return string.IsNullOrWhiteSpace(baseUrl) ? "openai" : "openai_compatible";
+        }
+
+        private static string ResolveBaseUrl(string? baseUrl)
+        {
+            // --- OpenAI 既定の base_url を補う ---
+            return string.IsNullOrWhiteSpace(baseUrl) ? "https://api.openai.com/v1" : baseUrl!;
+        }
+
+        private static Dictionary<string, object?> BuildAuth(string? apiKey)
+        {
+            // --- API キー未設定のローカルサーバも表現できるよう、none を許す ---
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                return new Dictionary<string, object?>
+                {
+                    ["type"] = "none",
+                };
+            }
+
+            return new Dictionary<string, object?>
+            {
+                ["type"] = "bearer",
+                ["token"] = apiKey,
+            };
+        }
+
+        private static string? ReadAuthToken(Dictionary<string, object?>? auth)
+        {
+            // --- OtomeKairo 側へ書いた bearer token を UI 用文字列へ戻す ---
+            if (auth == null)
+            {
+                return null;
+            }
+
+            return ReadString(auth, "token");
+        }
+
+        private static string? ReadString(Dictionary<string, object?> values, string key)
+        {
+            // --- object/JsonElement の混在を吸収して string を読む ---
+            if (!values.TryGetValue(key, out var value))
+            {
+                return null;
+            }
+
+            return ReadString(value);
+        }
+
+        private static string? ReadString(object? value)
+        {
+            if (value is null)
+            {
+                return null;
+            }
+
+            if (value is string text)
+            {
+                return text;
+            }
+
+            if (value is System.Text.Json.JsonElement element)
+            {
+                if (element.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    return element.GetString();
+                }
+                if (element.ValueKind != System.Text.Json.JsonValueKind.Null && element.ValueKind != System.Text.Json.JsonValueKind.Undefined)
+                {
+                    return element.ToString();
+                }
+            }
+
+            return value.ToString();
+        }
+
+        private static int ReadInt(Dictionary<string, object?> values, string key, int fallback)
+        {
+            // --- int 系の role 値を安全に読む ---
+            if (!values.TryGetValue(key, out var value))
+            {
+                return fallback;
+            }
+
+            if (value is int intValue)
+            {
+                return intValue;
+            }
+
+            if (value is long longValue)
+            {
+                return (int)longValue;
+            }
+
+            if (value is System.Text.Json.JsonElement element)
+            {
+                if (element.ValueKind == System.Text.Json.JsonValueKind.Number && element.TryGetInt32(out var jsonValue))
+                {
+                    return jsonValue;
+                }
+                if (element.ValueKind == System.Text.Json.JsonValueKind.String && int.TryParse(element.GetString(), out var parsed))
+                {
+                    return parsed;
+                }
+            }
+
+            if (int.TryParse(value?.ToString(), out var direct))
+            {
+                return direct;
+            }
+
+            return fallback;
+        }
+
+        private static bool ReadBool(Dictionary<string, object?> values, string key, bool fallback)
+        {
+            // --- bool 系の role 値を安全に読む ---
+            if (!values.TryGetValue(key, out var value))
+            {
+                return fallback;
+            }
+
+            if (value is bool boolValue)
+            {
+                return boolValue;
+            }
+
+            if (value is System.Text.Json.JsonElement element)
+            {
+                if (element.ValueKind == System.Text.Json.JsonValueKind.True || element.ValueKind == System.Text.Json.JsonValueKind.False)
+                {
+                    return element.GetBoolean();
+                }
+                if (element.ValueKind == System.Text.Json.JsonValueKind.String && bool.TryParse(element.GetString(), out var parsed))
+                {
+                    return parsed;
+                }
+            }
+
+            if (bool.TryParse(value?.ToString(), out var direct))
+            {
+                return direct;
+            }
+
+            return fallback;
+        }
+
+        private static string FirstNonEmpty(params string?[] values)
+        {
+            // --- 空文字を飛ばして最初の値を返す ---
+            foreach (var value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value!;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static string? NormalizeEmptyToNull(string? value)
+        {
+            // --- 空白だけの入力は null に寄せる ---
+            var trimmed = value?.Trim();
+            return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
         }
 
         private Task SaveLlmPresetsToApiAsync() => SaveAllSettingsToApiAsync();

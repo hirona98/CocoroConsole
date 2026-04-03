@@ -1,4 +1,4 @@
-﻿using CocoroConsole.Communication;
+using CocoroConsole.Communication;
 using CocoroConsole.Models.CocoroGhostApi;
 using CocoroAI.Services;
 using System;
@@ -466,10 +466,12 @@ namespace CocoroConsole.Services
                 await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
                 Debug.WriteLine("[CommunicationService] OtomeKairo への接続初期化を完了しました");
 
-                // --- 現 API では desktop watch 設定取得が無いため、固定値で UI を初期化する ---
+                // --- status.settings_snapshot から desktop_watch の現在値を UI へ流す ---
+                var statusResponse = await _cocoroGhostApiClient.GetOtomeKairoStatusAsync().ConfigureAwait(false);
+                var desktopWatchEnabled = TryReadDesktopWatchEnabled(statusResponse.SettingsSnapshot);
                 CocoroGhostSettingsUpdated?.Invoke(this, new CocoroGhostSettings
                 {
-                    DesktopWatchEnabled = false
+                    DesktopWatchEnabled = desktopWatchEnabled
                 });
             }
             catch (Exception ex)
@@ -481,6 +483,25 @@ namespace CocoroConsole.Services
         public Task RefreshCocoroGhostSettingsAsync()
         {
             return FetchAndApplySettingsFromCocoroGhostAsync();
+        }
+
+        private static bool TryReadDesktopWatchEnabled(Dictionary<string, object?> settingsSnapshot)
+        {
+            // --- settings_snapshot.desktop_watch.enabled を安全に読む ---
+            if (!settingsSnapshot.TryGetValue("desktop_watch", out var desktopWatchValue))
+            {
+                return false;
+            }
+
+            if (desktopWatchValue is System.Text.Json.JsonElement element &&
+                element.ValueKind == System.Text.Json.JsonValueKind.Object &&
+                element.TryGetProperty("enabled", out var enabledElement) &&
+                (enabledElement.ValueKind == System.Text.Json.JsonValueKind.True || enabledElement.ValueKind == System.Text.Json.JsonValueKind.False))
+            {
+                return enabledElement.GetBoolean();
+            }
+
+            return false;
         }
 
         /// <summary>

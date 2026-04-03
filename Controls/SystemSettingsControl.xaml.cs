@@ -1,5 +1,6 @@
-﻿using CocoroConsole.Communication;
+using CocoroConsole.Communication;
 using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using CocoroConsole.Windows;
 using System;
@@ -50,12 +51,6 @@ namespace CocoroConsole.Controls
         private static readonly TimeSpan FixedTimeZoneOffset = TimeSpan.FromHours(9);
 
         /// <summary>
-        /// /api/reminders/settings から読み込んだ時点の RemindersEnabled。
-        /// 変更検知・保存時の差分把握に使う。
-        /// </summary>
-        private bool _remindersEnabledBaseline = false;
-
-        /// <summary>
         /// UI 上で編集されるリマインダー（サーバー未保存の新規も含む）。
         /// </summary>
         private readonly List<ReminderDraft> _reminderDrafts = new();
@@ -103,11 +98,11 @@ namespace CocoroConsole.Controls
             {
                 var appSettings = AppSettings.Instance;
 
-                // /api/settings から設定を読み込み（API利用可能な場合）
-                await LoadSystemSettingsFromApiAsync(appSettings);
+                // --- OtomeKairo 側の AI 設定は SettingWindow から後で流し込む ---
+                ApplyDefaultRemoteSettings();
 
-                // /api/reminders からリマインダーを読み込み（API利用可能な場合）
-                await LoadRemindersFromApiAsync();
+                // --- リマインダー API は OtomeKairo では未実装のため UI を無効化する ---
+                ApplyRemindersUnavailableState();
 
                 // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
                 ExcludeWindowTitlePatternsTextBox.Text = string.Join(
@@ -136,12 +131,52 @@ namespace CocoroConsole.Controls
 
                 // 初期化完了後にのみ変更イベントを流す（InitializeAsync 中は OnSettingsChanged が発火しないようにする）
                 _isInitialized = true;
+
+                // --- 非同期シグネチャを維持するための最小 await ---
+                await Task.CompletedTask;
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"システム設定の初期化エラー: {ex.Message}", "エラー",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>
+        /// OtomeKairo から取得した現在設定を反映する。
+        /// </summary>
+        public void ApplyOtomeKairoCurrentSettings(OtomeKairoCurrentSettings current)
+        {
+            // --- desktop_watch は OtomeKairo の current から UI に反映する ---
+            var desktopWatch = current?.DesktopWatch ?? new OtomeKairoDesktopWatchSettings();
+            DesktopWatchEnabledCheckBox.IsChecked = desktopWatch.Enabled;
+            DesktopWatchIntervalSecondsTextBox.Text = (desktopWatch.IntervalSeconds > 0 ? desktopWatch.IntervalSeconds : 300).ToString(CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// リモート設定の未読込時に使う既定値を反映する。
+        /// </summary>
+        private void ApplyDefaultRemoteSettings()
+        {
+            // --- サーバ設定がまだ無い状態でも UI を初期化できるようにする ---
+            DesktopWatchEnabledCheckBox.IsChecked = false;
+            DesktopWatchIntervalSecondsTextBox.Text = "300";
+        }
+
+        /// <summary>
+        /// リマインダー未対応状態を UI に反映する。
+        /// </summary>
+        private void ApplyRemindersUnavailableState()
+        {
+            // --- OtomeKairo 側に reminders API が無いため、関連 UI は固定で無効化する ---
+            EnableReminderCheckBox.IsChecked = false;
+            EnableReminderCheckBox.IsEnabled = false;
+            AddReminderButton.IsEnabled = false;
+            RemindersItemsControl.IsEnabled = false;
+            _reminderDrafts.Clear();
+            _remindersBaselineById.Clear();
+            _deletedReminderIds.Clear();
+            UpdateReminderListUI();
         }
 
         /// <summary>
@@ -264,35 +299,7 @@ namespace CocoroConsole.Controls
             // speakerRecognitionThresholdはInitializeAsyncで設定済み
         }
 
-        #region /api/settings API連携
-
-        /// <summary>
-        /// APIから設定を読み込み（desktop_watch）
-        /// </summary>
-        private async Task LoadSystemSettingsFromApiAsync(IAppSettings appSettings)
-        {
-            try
-            {
-                if (_apiClient != null)
-                {
-                    var settings = await _apiClient.GetSettingsAsync();
-                    if (settings != null)
-                    {
-                        DesktopWatchEnabledCheckBox.IsChecked = settings.DesktopWatchEnabled;
-                        DesktopWatchIntervalSecondsTextBox.Text = (settings.DesktopWatchIntervalSeconds > 0 ? settings.DesktopWatchIntervalSeconds : 300).ToString();
-                        return;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"APIから設定の読み込みに失敗: {ex.Message}");
-            }
-
-            // APIが利用できない場合はローカル設定を使用
-            DesktopWatchEnabledCheckBox.IsChecked = false;
-            DesktopWatchIntervalSecondsTextBox.Text = "300";
-        }
+        #region OtomeKairo current 連携
 
         /// <summary>
         /// スクショ除外（ウィンドウタイトル正規表現）のUI値を取得
@@ -316,112 +323,12 @@ namespace CocoroConsole.Controls
         #region リマインダー関連メソッド
 
         /// <summary>
-        /// リマインダー設定/一覧をAPIから読み込み（失敗時は無効化）
-        /// </summary>
-        private async Task LoadRemindersFromApiAsync()
-        {
-            try
-            {
-                if (_apiClient == null)
-                {
-                    // API が使えない場合は UI を無効状態（読み込み失敗扱い）に寄せる
-                    EnableReminderCheckBox.IsChecked = false;
-                    _remindersEnabledBaseline = false;
-                    _reminderDrafts.Clear();
-                    _remindersBaselineById.Clear();
-                    _deletedReminderIds.Clear();
-                    UpdateReminderListUI();
-                    return;
-                }
-
-                var settings = await _apiClient.GetRemindersSettingsAsync();
-                EnableReminderCheckBox.IsChecked = settings?.RemindersEnabled ?? false;
-                _remindersEnabledBaseline = EnableReminderCheckBox.IsChecked ?? false;
-
-                var items = await _apiClient.GetRemindersAsync();
-                _reminderDrafts.Clear();
-                _remindersBaselineById.Clear();
-                _deletedReminderIds.Clear();
-
-                foreach (var item in items)
-                {
-                    if (string.IsNullOrWhiteSpace(item.Id))
-                    {
-                        continue;
-                    }
-
-                    var draft = ReminderDraft.FromApi(item);
-                    _reminderDrafts.Add(draft);
-                    _remindersBaselineById[item.Id] = draft.Clone();
-                }
-
-                UpdateReminderListUI();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"APIからリマインダーの読み込みに失敗: {ex.Message}");
-                EnableReminderCheckBox.IsChecked = false;
-                _remindersEnabledBaseline = false;
-                _reminderDrafts.Clear();
-                _remindersBaselineById.Clear();
-                _deletedReminderIds.Clear();
-                UpdateReminderListUI();
-            }
-        }
-
-        /// <summary>
-        /// 現在の UI 編集内容を /api/reminders に反映する。
-        /// 
-        /// 実行内容:
-        /// - settings の更新（enabled）
-        /// - 削除対象 ID の削除
-        /// - 新規 draft の作成（serverId が無いもの）
-        /// - baseline と差分がある既存 draft の Patch
-        /// - 最後に API から再読み込みして baseline を更新
+        /// 現在の UI 編集内容を reminders API へ反映する。
         /// </summary>
         public async Task SaveRemindersToApiAsync()
         {
-            if (_apiClient == null)
-            {
-                return;
-            }
-
-            var enabled = EnableReminderCheckBox.IsChecked ?? false;
-            await _apiClient.UpdateRemindersSettingsAsync(new CocoroGhostRemindersSettingsUpdateRequest
-            {
-                RemindersEnabled = enabled
-            });
-
-            foreach (var id in _deletedReminderIds.ToList())
-            {
-                await _apiClient.DeleteReminderAsync(id);
-            }
-
-            foreach (var draft in _reminderDrafts.Where(d => d.ServerId == null).ToList())
-            {
-                var created = await _apiClient.CreateReminderAsync(draft.ToCreateRequest());
-                if (!string.IsNullOrWhiteSpace(created.Id))
-                {
-                    draft.ServerId = created.Id.Trim();
-                    draft.LocalId = draft.ServerId;
-                }
-            }
-
-            foreach (var draft in _reminderDrafts.Where(d => !string.IsNullOrWhiteSpace(d.ServerId)).ToList())
-            {
-                var id = draft.ServerId!;
-                if (!_remindersBaselineById.TryGetValue(id, out var baseline))
-                {
-                    continue;
-                }
-
-                if (!baseline.IsSameAs(draft))
-                {
-                    await _apiClient.PatchReminderAsync(id, draft.ToPatchRequest());
-                }
-            }
-
-            await LoadRemindersFromApiAsync();
+            // --- OtomeKairo 側に reminders API はまだ無いため保存対象にしない ---
+            await Task.CompletedTask;
         }
 
         /// <summary>

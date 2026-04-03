@@ -1,4 +1,5 @@
-﻿using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Models.OtomeKairoApi;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -95,6 +96,42 @@ namespace CocoroConsole.Services
         {
             ThrowIfDisposed();
             return SendOtomeKairoAsync<OtomeKairoConversationResponse>(HttpMethod.Post, "/api/observations/conversation", request, cancellationToken);
+        }
+
+        /// <summary>
+        /// OtomeKairo の現在設定を取得する。
+        /// </summary>
+        public Task<OtomeKairoConfigResponse> GetOtomeKairoConfigAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoConfigResponse>(HttpMethod.Get, "/api/config", null, cancellationToken);
+        }
+
+        /// <summary>
+        /// OtomeKairo の editor-state を取得する。
+        /// </summary>
+        public Task<OtomeKairoEditorState> GetEditorStateAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoEditorState>(HttpMethod.Get, "/api/config/editor-state", null, cancellationToken);
+        }
+
+        /// <summary>
+        /// OtomeKairo の editor-state を全体置換する。
+        /// </summary>
+        public Task<OtomeKairoEditorState> ReplaceEditorStateAsync(OtomeKairoEditorState request, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoEditorState>(HttpMethod.Put, "/api/config/editor-state", request, cancellationToken);
+        }
+
+        /// <summary>
+        /// OtomeKairo の現在設定を部分更新する。
+        /// </summary>
+        public Task<OtomeKairoConfigResponse> PatchCurrentConfigAsync(OtomeKairoCurrentSettingsPatch request, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoConfigResponse>(new HttpMethod("PATCH"), "/api/config/current", request, cancellationToken);
         }
 
         /// <summary>
@@ -571,6 +608,51 @@ namespace CocoroConsole.Services
 
         [JsonPropertyName("runtime_summary")]
         public Dictionary<string, object?> RuntimeSummary { get; set; } = new Dictionary<string, object?>();
+    }
+
+    public class OtomeKairoConfigResponse
+    {
+        [JsonPropertyName("settings_snapshot")]
+        public OtomeKairoCurrentSettings SettingsSnapshot { get; set; } = new OtomeKairoCurrentSettings();
+
+        [JsonPropertyName("selected_persona")]
+        public OtomeKairoPersonaDefinition SelectedPersona { get; set; } = new OtomeKairoPersonaDefinition();
+
+        [JsonPropertyName("selected_memory_set")]
+        public OtomeKairoMemorySetDefinition SelectedMemorySet { get; set; } = new OtomeKairoMemorySetDefinition();
+
+        [JsonPropertyName("selected_model_preset")]
+        public OtomeKairoModelPresetDefinition SelectedModelPreset { get; set; } = new OtomeKairoModelPresetDefinition();
+
+        [JsonPropertyName("selected_model_profile_ids")]
+        public Dictionary<string, string> SelectedModelProfileIds { get; set; } = new Dictionary<string, string>();
+    }
+
+    public class OtomeKairoCurrentSettingsPatch
+    {
+        [JsonPropertyName("selected_persona_id")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? SelectedPersonaId { get; set; }
+
+        [JsonPropertyName("selected_memory_set_id")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? SelectedMemorySetId { get; set; }
+
+        [JsonPropertyName("selected_model_preset_id")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? SelectedModelPresetId { get; set; }
+
+        [JsonPropertyName("memory_enabled")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public bool? MemoryEnabled { get; set; }
+
+        [JsonPropertyName("desktop_watch")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public OtomeKairoDesktopWatchSettings? DesktopWatch { get; set; }
+
+        [JsonPropertyName("wake_policy")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public Dictionary<string, object?>? WakePolicy { get; set; }
     }
 
     public class OtomeKairoConversationRequest
