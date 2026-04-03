@@ -1,9 +1,9 @@
 using System.Text.Json.Serialization;
 
-namespace CocoroConsole.Models.CocoroGhostApi
+namespace CocoroConsole.Models.OtomeKairoApi
 {
     /// <summary>
-    /// CocoroGhost API とやり取りするための LLM プリセット定義です。
+    /// OtomeKairo API とやり取りするための LLM プリセット定義です。
     /// </summary>
     public class LlmPreset
     {

@@ -1,4 +1,4 @@
-﻿using CocoroConsole.Services;
+using CocoroConsole.Services;
 using System;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,7 +31,7 @@ namespace CocoroConsole.Controls
 
         private static string GetNotificationApiDetails()
         {
-            var baseUrl = AppSettings.Instance.GetCocoroGhostBaseUrl();
+            var baseUrl = AppSettings.Instance.GetOtomeKairoBaseUrl();
             var sb = new StringBuilder();
             sb.AppendLine("用途:");
             sb.AppendLine("- 外部プログラムから通知依頼を送る");
@@ -88,7 +88,7 @@ namespace CocoroConsole.Controls
 
         private static string GetMetaRequestApiDetails()
         {
-            var baseUrl = AppSettings.Instance.GetCocoroGhostBaseUrl();
+            var baseUrl = AppSettings.Instance.GetOtomeKairoBaseUrl();
             var sb = new StringBuilder();
             sb.AppendLine("用途:");
             sb.AppendLine("- 外部プログラムからメタ要求(指示 + テキスト)を送る");

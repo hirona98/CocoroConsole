@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace CocoroConsole.Communication
 {
     /// <summary>
-    /// cocoro_ghost の /api/events/stream に接続してイベント(notification/meta-request/desktop_watch + vision command)を受信するクライアント
+    /// otomekairo の /api/events/stream に接続してイベント(notification/meta-request/desktop_watch + vision command)を受信するクライアント
     /// </summary>
     public sealed class EventsStreamClient : IDisposable
     {
@@ -39,7 +39,7 @@ namespace CocoroConsole.Communication
         private bool _reconnectDisabled;
         private bool _disposed;
 
-        public event EventHandler<CocoroGhostEvent>? EventReceived;
+        public event EventHandler<OtomeKairoEvent>? EventReceived;
         public event EventHandler<bool>? ConnectionStateChanged;
         public event EventHandler<string>? ErrorOccurred;
 
@@ -170,7 +170,7 @@ namespace CocoroConsole.Communication
 
             _connectionTokenSource = CancellationTokenSource.CreateLinkedTokenSource(supervisorToken);
             _webSocket = new ClientWebSocket();
-            // --- CocoroGhost は自己署名HTTPS（wss）を前提とする ---
+            // --- OtomeKairo は自己署名HTTPS（wss）を前提とする ---
             // CocoroConsole はローカル接続のみの前提で、証明書のホスト検証は行わない。
             _webSocket.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
             _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {_bearerToken}");
@@ -339,9 +339,9 @@ namespace CocoroConsole.Communication
             }
         }
 
-        private static bool TryParseEvent(JsonElement element, out CocoroGhostEvent ev)
+        private static bool TryParseEvent(JsonElement element, out OtomeKairoEvent ev)
         {
-            ev = new CocoroGhostEvent();
+            ev = new OtomeKairoEvent();
 
             if (element.ValueKind != JsonValueKind.Object)
             {
@@ -356,7 +356,7 @@ namespace CocoroConsole.Communication
                     return false;
                 }
 
-                // --- event_id（cocoro_ghost の events.event_id、命令は 0） ---
+                // --- event_id（otomekairo の events.event_id、命令は 0） ---
                 if (!element.TryGetProperty("event_id", out var eventIdElement))
                 {
                     return false;
@@ -366,7 +366,7 @@ namespace CocoroConsole.Communication
                     return false;
                 }
 
-                var data = new CocoroGhostEventData();
+                var data = new OtomeKairoEventData();
                 if (element.TryGetProperty("data", out var dataElement) && dataElement.ValueKind == JsonValueKind.Object)
                 {
                     // --- 通常イベント（notification/meta-request/desktop_watch/reminder） ---
@@ -409,7 +409,7 @@ namespace CocoroConsole.Communication
                         : null;
                 }
 
-                ev = new CocoroGhostEvent
+                ev = new OtomeKairoEvent
                 {
                     EventId = eventId,
                     Type = type,
@@ -447,14 +447,14 @@ namespace CocoroConsole.Communication
         }
     }
 
-    public sealed class CocoroGhostEvent
+    public sealed class OtomeKairoEvent
     {
         public int EventId { get; set; }
         public string Type { get; set; } = string.Empty;
-        public CocoroGhostEventData Data { get; set; } = new CocoroGhostEventData();
+        public OtomeKairoEventData Data { get; set; } = new OtomeKairoEventData();
     }
 
-    public sealed class CocoroGhostEventData
+    public sealed class OtomeKairoEventData
     {
         public string? SystemText { get; set; }
         public string? Message { get; set; }

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using CocoroConsole.Utilities;
 
@@ -15,7 +15,7 @@ namespace CocoroConsole.Controls
         private bool _isInitializing = false;
         private List<EmbeddingPreset> _presets = new List<EmbeddingPreset>();
         private int _currentPresetIndex = -1;
-        private CocoroGhostApiClient? _apiClient;
+        private OtomeKairoApiClient? _apiClient;
         private Func<Task>? _onPresetListChanged;
 
         public event EventHandler? SettingsChanged;
@@ -44,7 +44,7 @@ namespace CocoroConsole.Controls
             }
         }
 
-        public void SetApiClient(CocoroGhostApiClient apiClient, Func<Task> onPresetListChanged)
+        public void SetApiClient(OtomeKairoApiClient apiClient, Func<Task> onPresetListChanged)
         {
             _apiClient = apiClient;
             _onPresetListChanged = onPresetListChanged;

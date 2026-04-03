@@ -1,6 +1,6 @@
-﻿using CocoroConsole.Communication;
+using CocoroConsole.Communication;
 using CocoroConsole.Models;
-using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
@@ -41,15 +41,15 @@ namespace CocoroConsole.Services
         private string DefaultAnimationSettingsFilePath => Path.Combine(UserDataDirectory, "DefaultAnimationSettings.json");
 
         public int CocoroConsolePort { get; set; }
-        public int CocoroGhostPort { get; set; }
-        // 外部の CocoroGhost を利用するか（true: 外部 / false: ローカル）
-        public bool UseExternalCocoroGhost { get; set; } = false;
-        public string CocoroGhostHost { get; set; } = "127.0.0.1";
+        public int OtomeKairoPort { get; set; }
+        // 外部の OtomeKairo を利用するか（true: 外部 / false: ローカル）
+        public bool UseExternalOtomeKairo { get; set; } = false;
+        public string OtomeKairoHost { get; set; } = "127.0.0.1";
         public int CocoroShellPort { get; set; }
         // /api/events/stream で hello を送るためのクライアントID（安定ID）
         public string ClientId { get; set; } = string.Empty;
-        // cocoro_ghost API Bearer トークン
-        public string CocoroGhostBearerToken { get; set; } = string.Empty;
+        // otomekairo API Bearer トークン
+        public string OtomeKairoBearerToken { get; set; } = string.Empty;
         // LLMを使用するか
         public bool IsUseLLM { get; set; } = false;
         // UI設定
@@ -141,12 +141,12 @@ namespace CocoroConsole.Services
         public void UpdateSettings(ConfigSettings config)
         {
             CocoroConsolePort = config.CocoroConsolePort;
-            CocoroGhostPort = config.cocoroCorePort;
+            OtomeKairoPort = config.cocoroCorePort;
 
             // --- 現行では OtomeKairo を外部サーバーとして扱う前提に寄せる ---
-            UseExternalCocoroGhost = config.useExternalCocoroGhost ?? true;
-            var cocoroGhostHost = NormalizeCocoroGhostHost(config.cocoroGhostHost);
-            CocoroGhostHost = cocoroGhostHost;
+            UseExternalOtomeKairo = config.useExternalOtomeKairo ?? true;
+            var otomeKairoHost = NormalizeOtomeKairoHost(config.otomeKairoHost);
+            OtomeKairoHost = otomeKairoHost;
 
             CocoroShellPort = config.cocoroShellPort;
             ClientId = config.clientId;
@@ -155,10 +155,10 @@ namespace CocoroConsole.Services
                 ClientId = $"console-{Guid.NewGuid()}";
             }
             // --- 旧既定値のプレースホルダートークンは未設定として扱う ---
-            var cocoroGhostBearerToken = config.cocoroGhostBearerToken ?? string.Empty;
-            CocoroGhostBearerToken = string.Equals(cocoroGhostBearerToken, "cocoro_token", StringComparison.Ordinal)
+            var otomeKairoBearerToken = config.otomeKairoBearerToken ?? string.Empty;
+            OtomeKairoBearerToken = string.Equals(otomeKairoBearerToken, "cocoro_token", StringComparison.Ordinal)
                 ? string.Empty
-                : cocoroGhostBearerToken;
+                : otomeKairoBearerToken;
             IsUseLLM = config.isUseLLM;
             IsRestoreWindowPosition = config.isRestoreWindowPosition;
             IsTopmost = config.isTopmost;
@@ -232,12 +232,12 @@ namespace CocoroConsole.Services
             return new ConfigSettings
             {
                 CocoroConsolePort = CocoroConsolePort,
-                cocoroCorePort = CocoroGhostPort,
-                useExternalCocoroGhost = UseExternalCocoroGhost,
-                cocoroGhostHost = CocoroGhostHost,
+                cocoroCorePort = OtomeKairoPort,
+                useExternalOtomeKairo = UseExternalOtomeKairo,
+                otomeKairoHost = OtomeKairoHost,
                 cocoroShellPort = CocoroShellPort,
                 clientId = ClientId,
-                cocoroGhostBearerToken = CocoroGhostBearerToken,
+                otomeKairoBearerToken = OtomeKairoBearerToken,
                 isUseLLM = IsUseLLM,
                 isRestoreWindowPosition = IsRestoreWindowPosition,
                 isTopmost = IsTopmost,
@@ -266,47 +266,47 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// CocoroGhost の HTTPS ベースURLを返す。
+        /// OtomeKairo の HTTPS ベースURLを返す。
         /// </summary>
-        public string GetCocoroGhostBaseUrl()
+        public string GetOtomeKairoBaseUrl()
         {
             // --- 接続モードに応じた実効ホストで URL を組み立てる ---
-            var host = GetEffectiveCocoroGhostHost();
-            return $"https://{host}:{CocoroGhostPort}";
+            var host = GetEffectiveOtomeKairoHost();
+            return $"https://{host}:{OtomeKairoPort}";
         }
 
         /// <summary>
-        /// CocoroGhost の WSS ベースURLを返す。
+        /// OtomeKairo の WSS ベースURLを返す。
         /// </summary>
-        public string GetCocoroGhostWebSocketBaseUrl()
+        public string GetOtomeKairoWebSocketBaseUrl()
         {
             // --- 接続モードに応じた実効ホストで URL を組み立てる ---
-            var host = GetEffectiveCocoroGhostHost();
-            return $"wss://{host}:{CocoroGhostPort}";
+            var host = GetEffectiveOtomeKairoHost();
+            return $"wss://{host}:{OtomeKairoPort}";
         }
 
         /// <summary>
-        /// CocoroGhost の接続先がローカルかどうかを返す。
+        /// OtomeKairo の接続先がローカルかどうかを返す。
         /// </summary>
-        public bool IsCocoroGhostLocal()
+        public bool IsOtomeKairoLocal()
         {
             // --- 外部利用フラグがOFFのときのみローカル起動対象 ---
-            return !UseExternalCocoroGhost;
+            return !UseExternalOtomeKairo;
         }
 
         /// <summary>
         /// 接続モードに応じた実効ホストを返す。
         /// </summary>
-        private string GetEffectiveCocoroGhostHost()
+        private string GetEffectiveOtomeKairoHost()
         {
             // --- 内部利用時は常にローカルへ接続 ---
-            if (!UseExternalCocoroGhost)
+            if (!UseExternalOtomeKairo)
             {
                 return "127.0.0.1";
             }
 
             // --- 外部利用時は設定ホストを採用 ---
-            return NormalizeCocoroGhostHost(CocoroGhostHost);
+            return NormalizeOtomeKairoHost(OtomeKairoHost);
         }
 
         /// <summary>
@@ -322,9 +322,9 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// CocoroGhost ホスト文字列を正規化する。
+        /// OtomeKairo ホスト文字列を正規化する。
         /// </summary>
-        private static string NormalizeCocoroGhostHost(string? host)
+        private static string NormalizeOtomeKairoHost(string? host)
         {
             // --- 空値はローカル既定に寄せる ---
             var normalized = (host ?? string.Empty).Trim();

@@ -1,5 +1,4 @@
 using CocoroConsole.Communication;
-using CocoroConsole.Models.CocoroGhostApi;
 using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using CocoroConsole.Utilities;
@@ -26,8 +25,8 @@ namespace CocoroConsole.Controls
         // 通信サービス
         private ICommunicationService? _communicationService;
 
-        // cocoro_ghost APIクライアント
-        private CocoroGhostApiClient? _apiClient;
+        // otomekairo APIクライアント
+        private OtomeKairoApiClient? _apiClient;
 
         // OtomeKairo の editor-state を保持
         private OtomeKairoEditorState? _loadedOtomeKairoEditorState;
@@ -51,7 +50,7 @@ namespace CocoroConsole.Controls
             LlmSettingsControl.IsUseLlm = AppSettings.Instance.IsUseLLM;
             EmbeddingSettingsControl.LlmApiKeyProvider = () => LlmSettingsControl.GetCurrentLlmApiKey();
 
-            // cocoro_ghost APIクライアントを初期化
+            // otomekairo APIクライアントを初期化
             InitializeApiClient();
 
             // Display タブ初期化
@@ -77,7 +76,7 @@ namespace CocoroConsole.Controls
             // 元の設定のバックアップを作成
             BackupSettings();
 
-            // CocoroGhost再起動チェック用に現在の設定のディープコピーを保存
+            // OtomeKairo再起動チェック用に現在の設定のディープコピーを保存
             _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
         }
 
@@ -113,7 +112,7 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// cocoro_ghost APIクライアントを初期化
+        /// otomekairo APIクライアントを初期化
         /// </summary>
         private void InitializeApiClient()
         {
@@ -124,12 +123,12 @@ namespace CocoroConsole.Controls
                 _apiClient = null;
 
                 var appSettings = AppSettings.Instance;
-                var baseUrl = appSettings.GetCocoroGhostBaseUrl();
-                var token = appSettings.CocoroGhostBearerToken;
+                var baseUrl = appSettings.GetOtomeKairoBaseUrl();
+                var token = appSettings.OtomeKairoBearerToken;
 
                 if (!string.IsNullOrEmpty(token))
                 {
-                    _apiClient = new CocoroGhostApiClient(baseUrl, token);
+                    _apiClient = new OtomeKairoApiClient(baseUrl, token);
                 }
             }
             catch (Exception ex)
@@ -369,12 +368,12 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task ApplySettingsChangesAsync()
         {
-            // CocoroGhost 接続情報は専用ウィンドウで管理し、ここでは現在の保存値を参照する。
-            var bearerToken = AppSettings.Instance.CocoroGhostBearerToken;
+            // OtomeKairo 接続情報は専用ウィンドウで管理し、ここでは現在の保存値を参照する。
+            var bearerToken = AppSettings.Instance.OtomeKairoBearerToken;
             if (string.IsNullOrWhiteSpace(bearerToken))
             {
                 var result = MessageBox.Show(
-                    "cocoro_ghostのBearerトークンが未設定です。チャット/通知/キャプチャは送受信できません。このまま保存しますか？",
+                    "otomekairoのBearerトークンが未設定です。チャット/通知/キャプチャは送受信できません。このまま保存しますか？",
                     "Bearerトークン未設定",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
@@ -387,19 +386,19 @@ namespace CocoroConsole.Controls
             // すべてのタブの設定を保存（プリセットの保存・有効化を含む）
             await SaveAllSettingsAsync();
 
-            // 保存後の設定を取得してCocoroGhost再起動が必要かチェック
+            // 保存後の設定を取得してOtomeKairo再起動が必要かチェック
             var currentSettings = GetCurrentUISettings();
-            bool needsCocoroGhostRestart =
-                HasCocoroGhostRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings);
+            bool needsOtomeKairoRestart =
+                HasOtomeKairoRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings);
 
             // CocoroShellを再起動
             RestartCocoroShell();
 
-            // CocoroGhostの設定変更があった場合は再起動
-            if (needsCocoroGhostRestart)
+            // OtomeKairoの設定変更があった場合は再起動
+            if (needsOtomeKairoRestart)
             {
-                await RestartCocoroGhostAsync();
-                Debug.WriteLine("CocoroGhost再起動処理を実行しました");
+                await RestartOtomeKairoAsync();
+                Debug.WriteLine("OtomeKairo再起動処理を実行しました");
             }
         }
 
@@ -434,7 +433,7 @@ namespace CocoroConsole.Controls
 
                 if (_communicationService != null)
                 {
-                    await _communicationService.RefreshCocoroGhostSettingsAsync();
+                    await _communicationService.RefreshOtomeKairoSettingsAsync();
                 }
             }
             catch (System.Exception ex)
@@ -1454,16 +1453,16 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// CocoroGhostを再起動する
+        /// OtomeKairoを再起動する
         /// </summary>
-        private async Task RestartCocoroGhostAsync()
+        private async Task RestartOtomeKairoAsync()
         {
             try
             {
                 // --- リモート接続時はローカルプロセス再起動を行わない ---
-                if (!AppSettings.Instance.IsCocoroGhostLocal())
+                if (!AppSettings.Instance.IsOtomeKairoLocal())
                 {
-                    Debug.WriteLine("CocoroGhost はリモート接続設定のため、ローカル再起動をスキップします。");
+                    Debug.WriteLine("OtomeKairo はリモート接続設定のため、ローカル再起動をスキップします。");
                     return;
                 }
 
@@ -1472,28 +1471,28 @@ namespace CocoroConsole.Controls
                 if (mainWindow != null)
                 {
                     // 再起動開始を通知して起動待ち状態に戻す
-                    _communicationService?.NotifyCocoroGhostRestarting();
+                    _communicationService?.NotifyOtomeKairoRestarting();
 
-                    // ProcessOperation.RestartIfRunning を指定してCocoroGhostを再起動（非同期）
-                    await mainWindow.LaunchCocoroGhostAsync(ProcessOperation.RestartIfRunning);
-                    Debug.WriteLine("CocoroGhostを再起動要求をしました");
+                    // ProcessOperation.RestartIfRunning を指定してOtomeKairoを再起動（非同期）
+                    await mainWindow.LaunchOtomeKairoAsync(ProcessOperation.RestartIfRunning);
+                    Debug.WriteLine("OtomeKairoを再起動要求をしました");
 
                     // 再起動完了を待機
-                    await WaitForCocoroGhostRestartAsync();
-                    Debug.WriteLine("CocoroGhostの再起動が完了しました");
+                    await WaitForOtomeKairoRestartAsync();
+                    Debug.WriteLine("OtomeKairoの再起動が完了しました");
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"CocoroGhost再起動中にエラーが発生しました: {ex.Message}");
-                throw new Exception($"CocoroGhostの再起動に失敗しました: {ex.Message}");
+                Debug.WriteLine($"OtomeKairo再起動中にエラーが発生しました: {ex.Message}");
+                throw new Exception($"OtomeKairoの再起動に失敗しました: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// CocoroGhostの再起動完了を待機
+        /// OtomeKairoの再起動完了を待機
         /// </summary>
-        private async Task WaitForCocoroGhostRestartAsync()
+        private async Task WaitForOtomeKairoRestartAsync()
         {
             // 最大待機時間
             var timeout = TimeSpan.FromSeconds(120);
@@ -1505,7 +1504,7 @@ namespace CocoroConsole.Controls
             }
 
             // 既に起動完了状態なら即終了
-            if (IsCocoroGhostReadyStatus(_communicationService.CurrentStatus))
+            if (IsOtomeKairoReadyStatus(_communicationService.CurrentStatus))
             {
                 return;
             }
@@ -1514,10 +1513,10 @@ namespace CocoroConsole.Controls
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             // ステータス変更イベント
-            void OnStatusChanged(object? sender, CocoroGhostStatus status)
+            void OnStatusChanged(object? sender, OtomeKairoStatus status)
             {
                 // 起動完了状態に戻ったら終了
-                if (IsCocoroGhostReadyStatus(status))
+                if (IsOtomeKairoReadyStatus(status))
                 {
                     tcs.TrySetResult(true);
                 }
@@ -1529,7 +1528,7 @@ namespace CocoroConsole.Controls
             try
             {
                 // 購読後に再確認（取りこぼし防止）
-                if (IsCocoroGhostReadyStatus(_communicationService.CurrentStatus))
+                if (IsOtomeKairoReadyStatus(_communicationService.CurrentStatus))
                 {
                     return;
                 }
@@ -1538,7 +1537,7 @@ namespace CocoroConsole.Controls
                 var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
                 if (completed != tcs.Task)
                 {
-                    throw new TimeoutException("CocoroGhostの再起動がタイムアウトしました");
+                    throw new TimeoutException("OtomeKairoの再起動がタイムアウトしました");
                 }
 
                 await tcs.Task;
@@ -1551,16 +1550,16 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// CocoroGhostが起動完了状態かどうかを判定する
+        /// OtomeKairoが起動完了状態かどうかを判定する
         /// </summary>
-        /// <param name="status">CocoroGhostのステータス</param>
+        /// <param name="status">OtomeKairoのステータス</param>
         /// <returns>起動完了状態の場合true</returns>
-        private static bool IsCocoroGhostReadyStatus(CocoroGhostStatus status)
+        private static bool IsOtomeKairoReadyStatus(OtomeKairoStatus status)
         {
             // Normal / Processing は起動完了扱い
-            return status == CocoroGhostStatus.Normal ||
-                   status == CocoroGhostStatus.ProcessingMessage ||
-                   status == CocoroGhostStatus.ProcessingImage;
+            return status == OtomeKairoStatus.Normal ||
+                   status == OtomeKairoStatus.ProcessingMessage ||
+                   status == OtomeKairoStatus.ProcessingImage;
         }
 
         /// <summary>
@@ -1590,12 +1589,12 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// CocoroGhost再起動が必要な設定項目が変更されたかどうかをチェック
+        /// OtomeKairo再起動が必要な設定項目が変更されたかどうかをチェック
         /// </summary>
         /// <param name="previousSettings">以前の設定</param>
         /// <param name="currentSettings">現在の設定</param>
-        /// <returns>CocoroGhost再起動が必要な変更があった場合true</returns>
-        private bool HasCocoroGhostRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
+        /// <returns>OtomeKairo再起動が必要な変更があった場合true</returns>
+        private bool HasOtomeKairoRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
         {
             // 基本設定項目の比較
             if (currentSettings.currentCharacterIndex != previousSettings.currentCharacterIndex)

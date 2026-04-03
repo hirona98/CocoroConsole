@@ -1,4 +1,3 @@
-using CocoroConsole.Models.CocoroGhostApi;
 using CocoroConsole.Models.OtomeKairoApi;
 using System;
 using System.Collections.Generic;
@@ -16,20 +15,20 @@ using System.Threading.Tasks;
 namespace CocoroConsole.Services
 {
     /// <summary>
-    /// cocoro_ghost の HTTP API クライアント。
+    /// otomekairo の HTTP API クライアント。
     /// 
     /// - Bearer 認証ヘッダを付与して JSON API を呼び出す
     /// - /api/chat は Server-Sent Events (SSE) をストリーミングとして読み取る
     /// - タイムアウト/HTTP エラーは例外として呼び出し元へ伝播する
     /// </summary>
-    public class CocoroGhostApiClient : IDisposable
+    public class OtomeKairoApiClient : IDisposable
     {
         private readonly HttpClient _httpClient;
         private readonly string _baseUrl;
         private readonly JsonSerializerOptions _serializerOptions;
         private bool _disposed;
 
-        public CocoroGhostApiClient(string baseUrl, string bearerToken, HttpMessageHandler? handler = null)
+        public OtomeKairoApiClient(string baseUrl, string bearerToken, HttpMessageHandler? handler = null)
         {
             if (string.IsNullOrWhiteSpace(baseUrl))
             {
@@ -39,7 +38,7 @@ namespace CocoroConsole.Services
             _baseUrl = baseUrl.TrimEnd('/');
             if (handler == null)
             {
-                // --- CocoroGhost は自己署名HTTPSを前提とする ---
+                // --- OtomeKairo は自己署名HTTPSを前提とする ---
                 // LAN公開（Web UI含む）に寄せるため HTTPS 必須の設計になっている。
                 // CocoroConsole はローカル接続のみの前提で、証明書のホスト検証は行わない。
                 handler = new HttpClientHandler
@@ -137,32 +136,32 @@ namespace CocoroConsole.Services
         /// <summary>
         /// /api/settings を取得する。
         /// </summary>
-        public Task<CocoroGhostSettings> GetSettingsAsync(CancellationToken cancellationToken = default)
+        public Task<OtomeKairoSettings> GetSettingsAsync(CancellationToken cancellationToken = default)
         {
-            return SendAsync<CocoroGhostSettings>(HttpMethod.Get, "/api/settings", null, cancellationToken);
+            return SendAsync<OtomeKairoSettings>(HttpMethod.Get, "/api/settings", null, cancellationToken);
         }
 
         /// <summary>
         /// /api/settings を更新（PUT）する。
         /// </summary>
-        public Task<CocoroGhostSettings> UpdateSettingsAsync(CocoroGhostSettingsUpdateRequest request, CancellationToken cancellationToken = default)
+        public Task<OtomeKairoSettings> UpdateSettingsAsync(OtomeKairoSettingsUpdateRequest request, CancellationToken cancellationToken = default)
         {
-            return SendAsync<CocoroGhostSettings>(HttpMethod.Put, "/api/settings", request, cancellationToken);
+            return SendAsync<OtomeKairoSettings>(HttpMethod.Put, "/api/settings", request, cancellationToken);
         }
 
         /// <summary>
         /// /api/reminders/settings を取得する。
         /// </summary>
-        public Task<CocoroGhostRemindersSettings> GetRemindersSettingsAsync(CancellationToken cancellationToken = default)
+        public Task<OtomeKairoRemindersSettings> GetRemindersSettingsAsync(CancellationToken cancellationToken = default)
         {
-            return SendAsync<CocoroGhostRemindersSettings>(HttpMethod.Get, "/api/reminders/settings", null, cancellationToken);
+            return SendAsync<OtomeKairoRemindersSettings>(HttpMethod.Get, "/api/reminders/settings", null, cancellationToken);
         }
 
         /// <summary>
         /// /api/reminders/settings を更新（PUT）する。
-        /// cocoro_ghost 側が NoContent を返す実装もあるため、更新後に再取得して返す。
+        /// otomekairo 側が NoContent を返す実装もあるため、更新後に再取得して返す。
         /// </summary>
-        public async Task<CocoroGhostRemindersSettings> UpdateRemindersSettingsAsync(CocoroGhostRemindersSettingsUpdateRequest request, CancellationToken cancellationToken = default)
+        public async Task<OtomeKairoRemindersSettings> UpdateRemindersSettingsAsync(OtomeKairoRemindersSettingsUpdateRequest request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             await SendNoContentAsync(HttpMethod.Put, "/api/reminders/settings", request, cancellationToken).ConfigureAwait(false);
@@ -172,24 +171,24 @@ namespace CocoroConsole.Services
         /// <summary>
         /// /api/reminders を取得する。
         /// </summary>
-        public async Task<IReadOnlyList<CocoroGhostReminderItem>> GetRemindersAsync(CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<OtomeKairoReminderItem>> GetRemindersAsync(CancellationToken cancellationToken = default)
         {
-            var response = await SendAsync<CocoroGhostRemindersListResponse>(HttpMethod.Get, "/api/reminders", null, cancellationToken);
-            return response.Items ?? new List<CocoroGhostReminderItem>();
+            var response = await SendAsync<OtomeKairoRemindersListResponse>(HttpMethod.Get, "/api/reminders", null, cancellationToken);
+            return response.Items ?? new List<OtomeKairoReminderItem>();
         }
 
         /// <summary>
         /// /api/reminders を作成（POST）する。
         /// </summary>
-        public Task<CocoroGhostReminderCreateResponse> CreateReminderAsync(CocoroGhostReminderCreateRequest request, CancellationToken cancellationToken = default)
+        public Task<OtomeKairoReminderCreateResponse> CreateReminderAsync(OtomeKairoReminderCreateRequest request, CancellationToken cancellationToken = default)
         {
-            return SendAsync<CocoroGhostReminderCreateResponse>(HttpMethod.Post, "/api/reminders", request, cancellationToken);
+            return SendAsync<OtomeKairoReminderCreateResponse>(HttpMethod.Post, "/api/reminders", request, cancellationToken);
         }
 
         /// <summary>
         /// /api/reminders/{id} を更新（PATCH）する。
         /// </summary>
-        public Task PatchReminderAsync(string reminderId, CocoroGhostReminderPatchRequest request, CancellationToken cancellationToken = default)
+        public Task PatchReminderAsync(string reminderId, OtomeKairoReminderPatchRequest request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             if (string.IsNullOrWhiteSpace(reminderId))
@@ -250,7 +249,7 @@ namespace CocoroConsole.Services
             if (!response.IsSuccessStatusCode)
             {
                 var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                throw new HttpRequestException($"cocoro_ghost chat APIエラー: {(int)response.StatusCode} {response.ReasonPhrase} {body}");
+                throw new HttpRequestException($"otomekairo chat APIエラー: {(int)response.StatusCode} {response.ReasonPhrase} {body}");
             }
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
@@ -389,12 +388,12 @@ namespace CocoroConsole.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new HttpRequestException($"cocoro_ghost APIエラー: {(int)response.StatusCode} {response.ReasonPhrase} {responseBody}");
+                    throw new HttpRequestException($"otomekairo APIエラー: {(int)response.StatusCode} {response.ReasonPhrase} {responseBody}");
                 }
             }
             catch (TaskCanceledException ex)
             {
-                throw new TimeoutException("cocoro_ghost APIリクエストがタイムアウトしました", ex);
+                throw new TimeoutException("otomekairo APIリクエストがタイムアウトしました", ex);
             }
             catch (HttpRequestException)
             {
@@ -402,7 +401,7 @@ namespace CocoroConsole.Services
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"cocoro_ghost API通信に失敗しました: {ex.Message}", ex);
+                throw new InvalidOperationException($"otomekairo API通信に失敗しました: {ex.Message}", ex);
             }
         }
 
@@ -422,20 +421,20 @@ namespace CocoroConsole.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new HttpRequestException($"cocoro_ghost APIエラー: {(int)response.StatusCode} {response.ReasonPhrase} {responseBody}");
+                    throw new HttpRequestException($"otomekairo APIエラー: {(int)response.StatusCode} {response.ReasonPhrase} {responseBody}");
                 }
 
                 var result = JsonSerializer.Deserialize<T>(responseBody, _serializerOptions);
                 if (result == null)
                 {
-                    throw new InvalidOperationException("cocoro_ghost APIレスポンスの解析に失敗しました");
+                    throw new InvalidOperationException("otomekairo APIレスポンスの解析に失敗しました");
                 }
 
                 return result;
             }
             catch (TaskCanceledException ex)
             {
-                throw new TimeoutException("cocoro_ghost APIリクエストがタイムアウトしました", ex);
+                throw new TimeoutException("otomekairo APIリクエストがタイムアウトしました", ex);
             }
             catch (HttpRequestException)
             {
@@ -443,7 +442,7 @@ namespace CocoroConsole.Services
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"cocoro_ghost API通信に失敗しました: {ex.Message}", ex);
+                throw new InvalidOperationException($"otomekairo API通信に失敗しました: {ex.Message}", ex);
             }
             finally
             {
@@ -538,7 +537,7 @@ namespace CocoroConsole.Services
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(nameof(CocoroGhostApiClient));
+                throw new ObjectDisposedException(nameof(OtomeKairoApiClient));
             }
         }
     }
@@ -700,7 +699,7 @@ namespace CocoroConsole.Services
         /// 画像（Data URI）一覧。
         /// 
         /// - 例: "data:image/png;base64,...."
-        /// - cocoro_ghost 側で MIME/サイズ上限を検証する
+        /// - otomekairo 側で MIME/サイズ上限を検証する
         /// </summary>
         [JsonPropertyName("images")]
         public List<string>? Images { get; set; }
@@ -733,7 +732,7 @@ namespace CocoroConsole.Services
         public string? ReplyText { get; set; }
 
         /// <summary>
-        /// done イベント時の event_id（cocoro_ghost の events.event_id）。
+        /// done イベント時の event_id（otomekairo の events.event_id）。
         /// </summary>
         public int? EventId { get; set; }
 

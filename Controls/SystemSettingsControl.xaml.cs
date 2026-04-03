@@ -1,5 +1,4 @@
 using CocoroConsole.Communication;
-using CocoroConsole.Models.CocoroGhostApi;
 using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using CocoroConsole.Windows;
@@ -18,7 +17,7 @@ namespace CocoroConsole.Controls
     /// SystemSettingsControl.xaml の相互作用ロジック。
     /// 
     /// 主に以下を扱う:
-    /// - cocoro_ghost 側の設定読み込み/保存（desktop_watch 等）
+    /// - otomekairo 側の設定読み込み/保存（desktop_watch 等）
     /// - リマインダーの一覧表示/編集（API同期あり）
     /// - ローカル設定（スクショ除外/マイク閾値等）の UI バインド
     /// </summary>
@@ -35,12 +34,12 @@ namespace CocoroConsole.Controls
         private bool _isInitialized = false;
 
         /// <summary>
-        /// cocoro_ghost API クライアント
+        /// otomekairo API クライアント
         /// </summary>
-        private CocoroGhostApiClient? _apiClient;
+        private OtomeKairoApiClient? _apiClient;
 
         /// <summary>
-        /// cocoro_ghost のリマインダー API と同じ固定タイムゾーン（UI 表示・日時変換で使用）。
+        /// otomekairo のリマインダー API と同じ固定タイムゾーン（UI 表示・日時変換で使用）。
         /// </summary>
         private const string FixedTimeZone = "Asia/Tokyo";
 
@@ -82,9 +81,9 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// cocoro_ghost APIクライアントを設定
+        /// otomekairo APIクライアントを設定
         /// </summary>
-        public void SetApiClient(CocoroGhostApiClient? apiClient)
+        public void SetApiClient(OtomeKairoApiClient? apiClient)
         {
             _apiClient = apiClient;
         }
@@ -191,7 +190,7 @@ namespace CocoroConsole.Controls
             // スクショ除外（ウィンドウタイトル正規表現）
             ExcludeWindowTitlePatternsTextBox.TextChanged += OnSettingsChanged;
 
-            // デスクトップウォッチ（cocoro_ghost側）
+            // デスクトップウォッチ（otomekairo側）
             DesktopWatchEnabledCheckBox.Checked += OnSettingsChanged;
             DesktopWatchEnabledCheckBox.Unchecked += OnSettingsChanged;
             DesktopWatchIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
@@ -573,7 +572,7 @@ namespace CocoroConsole.Controls
         /// - ServerId: サーバー上の ID（null の場合は未保存新規）
         /// - LocalId: UI 上の識別子（新規作成時も一意になるよう付与）
         /// 
-        /// cocoro_ghost の API モデルと、編集ダイアログ用モデルの橋渡しを担う。
+        /// otomekairo の API モデルと、編集ダイアログ用モデルの橋渡しを担う。
         /// </summary>
         private sealed class ReminderDraft
         {
@@ -587,7 +586,7 @@ namespace CocoroConsole.Controls
             public List<string>? Weekdays { get; set; }
             public long? NextFireAtUtc { get; set; }
 
-            public static ReminderDraft FromApi(CocoroGhostReminderItem item)
+            public static ReminderDraft FromApi(OtomeKairoReminderItem item)
             {
                 // API から取得した値は repeat_kind を正規化して内部表現に寄せる
                 var kind = (item.RepeatKind ?? "daily").Trim().ToLowerInvariant();
@@ -719,10 +718,10 @@ namespace CocoroConsole.Controls
                 NextFireAtUtc = null;
             }
 
-            public CocoroGhostReminderCreateRequest ToCreateRequest()
+            public OtomeKairoReminderCreateRequest ToCreateRequest()
             {
                 var kind = (RepeatKind ?? string.Empty).Trim().ToLowerInvariant();
-                return new CocoroGhostReminderCreateRequest
+                return new OtomeKairoReminderCreateRequest
                 {
                     Enabled = Enabled,
                     RepeatKind = kind,
@@ -733,10 +732,10 @@ namespace CocoroConsole.Controls
                 };
             }
 
-            public CocoroGhostReminderPatchRequest ToPatchRequest()
+            public OtomeKairoReminderPatchRequest ToPatchRequest()
             {
                 var kind = (RepeatKind ?? string.Empty).Trim().ToLowerInvariant();
-                return new CocoroGhostReminderPatchRequest
+                return new OtomeKairoReminderPatchRequest
                 {
                     Enabled = Enabled,
                     Content = Content,

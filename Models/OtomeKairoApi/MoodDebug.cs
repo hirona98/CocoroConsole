@@ -2,7 +2,7 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace CocoroConsole.Models.CocoroGhostApi
+namespace CocoroConsole.Models.OtomeKairoApi
 {
     /// <summary>
     /// /api/mood/debug のレスポンスDTO。

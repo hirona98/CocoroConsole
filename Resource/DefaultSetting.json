@@ -1,10 +1,10 @@
 {
   "cocoroConsolePort": 55600,
   "cocoroCorePort": 55601,
-  "useExternalCocoroGhost": true,
-  "cocoroGhostHost": "127.0.0.1",
+  "useExternalOtomeKairo": true,
+  "otomeKairoHost": "127.0.0.1",
   "cocoroShellPort": 55605,
-  "cocoroGhostBearerToken": "",
+  "otomeKairoBearerToken": "",
   "isUseLLM": true,
   "isRestoreWindowPosition": false,
   "isTopmost": true,

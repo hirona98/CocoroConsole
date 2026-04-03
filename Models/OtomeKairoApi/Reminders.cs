@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace CocoroConsole.Models.CocoroGhostApi
+namespace CocoroConsole.Models.OtomeKairoApi
 {
     /// <summary>
     /// /api/reminders/settings のレスポンス DTO。
     /// リマインダー機能の有効/無効を表す。
     /// </summary>
-    public sealed class CocoroGhostRemindersSettings
+    public sealed class OtomeKairoRemindersSettings
     {
         /// <summary>
         /// リマインダー機能が有効か。
@@ -19,7 +19,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
     /// <summary>
     /// /api/reminders/settings 更新（PUT）リクエスト DTO。
     /// </summary>
-    public sealed class CocoroGhostRemindersSettingsUpdateRequest
+    public sealed class OtomeKairoRemindersSettingsUpdateRequest
     {
         /// <summary>
         /// リマインダー機能が有効か。
@@ -32,20 +32,20 @@ namespace CocoroConsole.Models.CocoroGhostApi
     /// /api/reminders のレスポンス DTO。
     /// items がリマインダー一覧。
     /// </summary>
-    public sealed class CocoroGhostRemindersListResponse
+    public sealed class OtomeKairoRemindersListResponse
     {
         /// <summary>
         /// リマインダー一覧。
         /// </summary>
         [JsonPropertyName("items")]
-        public List<CocoroGhostReminderItem> Items { get; set; } = new List<CocoroGhostReminderItem>();
+        public List<OtomeKairoReminderItem> Items { get; set; } = new List<OtomeKairoReminderItem>();
     }
 
     /// <summary>
     /// リマインダー 1 件の DTO。
     /// repeat_kind に応じて scheduled_at / time_of_day / weekdays が使用される。
     /// </summary>
-    public sealed class CocoroGhostReminderItem
+    public sealed class OtomeKairoReminderItem
     {
         /// <summary>
         /// リマインダーID（サーバー側の識別子）。
@@ -103,7 +103,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
     /// /api/reminders 作成（POST）リクエスト DTO。
     /// repeat_kind に応じて scheduled_at / time_of_day / weekdays を設定する。
     /// </summary>
-    public sealed class CocoroGhostReminderCreateRequest
+    public sealed class OtomeKairoReminderCreateRequest
     {
         /// <summary>
         /// 有効/無効（既定: true）。
@@ -145,7 +145,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
     /// <summary>
     /// /api/reminders 作成（POST）レスポンス DTO。
     /// </summary>
-    public sealed class CocoroGhostReminderCreateResponse
+    public sealed class OtomeKairoReminderCreateResponse
     {
         /// <summary>
         /// 作成されたリマインダーID。
@@ -157,7 +157,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
     /// <summary>
     /// /api/reminders/{id} 更新（PATCH）リクエスト DTO。
     /// </summary>
-    public sealed class CocoroGhostReminderPatchRequest
+    public sealed class OtomeKairoReminderPatchRequest
     {
         /// <summary>
         /// 有効/無効。

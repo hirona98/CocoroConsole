@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -12,7 +12,7 @@ using CocoroConsole.Communication;
 namespace CocoroConsole.Communication
 {
     /// <summary>
-    /// cocoro_ghost の /api/logs/stream に接続してログを受信するクライアント
+    /// otomekairo の /api/logs/stream に接続してログを受信するクライアント
     /// </summary>
     public class LogStreamClient : IDisposable
     {
@@ -172,7 +172,7 @@ namespace CocoroConsole.Communication
 
             _connectionTokenSource = CancellationTokenSource.CreateLinkedTokenSource(supervisorToken);
             _webSocket = new ClientWebSocket();
-            // --- CocoroGhost は自己署名HTTPS（wss）を前提とする ---
+            // --- OtomeKairo は自己署名HTTPS（wss）を前提とする ---
             // CocoroConsole はローカル接続のみの前提で、証明書のホスト検証は行わない。
             _webSocket.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
             _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {_bearerToken}");

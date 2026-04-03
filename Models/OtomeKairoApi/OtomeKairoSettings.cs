@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace CocoroConsole.Models.CocoroGhostApi
+namespace CocoroConsole.Models.OtomeKairoApi
 {
-    public class CocoroGhostSettings
+    public class OtomeKairoSettings
     {
         [JsonPropertyName("memory_enabled")]
         public bool MemoryEnabled { get; set; }
@@ -43,7 +43,7 @@ namespace CocoroConsole.Models.CocoroGhostApi
         public List<AddonPreset> AddonPreset { get; set; } = new List<AddonPreset>();
     }
 
-    public class CocoroGhostSettingsUpdateRequest
+    public class OtomeKairoSettingsUpdateRequest
     {
         [JsonPropertyName("memory_enabled")]
         public bool MemoryEnabled { get; set; }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -29,7 +29,7 @@ namespace CocoroConsole.Utilities
     /// </summary>
     public static class ProcessHelper
     {
-        // --- CocoroGhost は自己署名HTTPSを前提とする ---
+        // --- OtomeKairo は自己署名HTTPSを前提とする ---
         // LAN公開（Web UI含む）に寄せるため HTTPS 必須の設計になっている。
         // CocoroConsole からのローカル制御（/api/control）は証明書のホスト検証を行わない。
         private static readonly HttpClient httpClient = new HttpClient(
@@ -149,7 +149,7 @@ namespace CocoroConsole.Utilities
             var settings = AppSettings.Instance;
             int? port = processName.ToLower() switch
             {
-                "cocoroghost" => settings.CocoroGhostPort,
+                "otomekairo" => settings.OtomeKairoPort,
                 "cocoroshell" => settings.CocoroShellPort,
                 _ => null
             };
@@ -213,7 +213,7 @@ namespace CocoroConsole.Utilities
             var settings = AppSettings.Instance;
             int? port = processName.ToLower() switch
             {
-                "cocoroghost" => settings.CocoroGhostPort,
+                "otomekairo" => settings.OtomeKairoPort,
                 "cocoroshell" => settings.CocoroShellPort,
                 _ => null
             };
@@ -337,7 +337,7 @@ namespace CocoroConsole.Utilities
                 var settings = AppSettings.Instance;
                 int? port = processName.ToLower() switch
                 {
-                    "cocoroghost" => settings.CocoroGhostPort,
+                    "otomekairo" => settings.OtomeKairoPort,
                     "cocoroshell" => settings.CocoroShellPort,
                     _ => null
                 };
@@ -348,36 +348,36 @@ namespace CocoroConsole.Utilities
                     return false;
                 }
 
-                // --- CocoroGhost がリモート設定の場合、ローカル制御は行わない ---
-                if (processName.Equals("CocoroGhost", StringComparison.OrdinalIgnoreCase) &&
-                    !settings.IsCocoroGhostLocal())
+                // --- OtomeKairo がリモート設定の場合、ローカル制御は行わない ---
+                if (processName.Equals("OtomeKairo", StringComparison.OrdinalIgnoreCase) &&
+                    !settings.IsOtomeKairoLocal())
                 {
-                    Debug.WriteLine("CocoroGhost がリモート設定のため、ローカルの終了要求は送信しません。");
+                    Debug.WriteLine("OtomeKairo がリモート設定のため、ローカルの終了要求は送信しません。");
                     return false;
                 }
 
-                // --- CocoroGhost は Release ビルドのみ REST API で止める（デバッグ時は送信しない） ---
+                // --- OtomeKairo は Release ビルドのみ REST API で止める（デバッグ時は送信しない） ---
                 string? bearerToken = null;
 
 #if !DEBUG
-                if (processName.Equals("CocoroGhost", StringComparison.OrdinalIgnoreCase))
+                if (processName.Equals("OtomeKairo", StringComparison.OrdinalIgnoreCase))
                 {
-                    bearerToken = (settings.CocoroGhostBearerToken ?? string.Empty).Trim();
+                    bearerToken = (settings.OtomeKairoBearerToken ?? string.Empty).Trim();
                     if (string.IsNullOrWhiteSpace(bearerToken))
                     {
-                        Debug.WriteLine("cocoro_ghost の Bearer トークンが未設定のため、REST API 経由の終了はできません。");
+                        Debug.WriteLine("otomekairo の Bearer トークンが未設定のため、REST API 経由の終了はできません。");
                         return false;
                     }
                 }
 #else
-                if (processName.Equals("CocoroGhost", StringComparison.OrdinalIgnoreCase))
+                if (processName.Equals("OtomeKairo", StringComparison.OrdinalIgnoreCase))
                 {
-                    Debug.WriteLine("Debugビルドのため、cocoro_ghost へ /api/control を送信しません。");
+                    Debug.WriteLine("Debugビルドのため、otomekairo へ /api/control を送信しません。");
                     return false;
                 }
 #endif
 
-                // --- shutdown コマンドを JSON で作成（CocoroGhost: docs/api.md の /api/control） ---
+                // --- shutdown コマンドを JSON で作成（OtomeKairo: docs/api.md の /api/control） ---
                 var shutdownRequest = new
                 {
                     action = "shutdown",
@@ -386,9 +386,9 @@ namespace CocoroConsole.Utilities
                 var json = System.Text.Json.JsonSerializer.Serialize(shutdownRequest);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // --- API URL を組み立てる（CocoroGhostは設定された接続先、CocoroShellはローカル固定） ---
-                var apiUrl = processName.Equals("CocoroGhost", StringComparison.OrdinalIgnoreCase)
-                    ? $"{settings.GetCocoroGhostBaseUrl()}/api/control"
+                // --- API URL を組み立てる（OtomeKairoは設定された接続先、CocoroShellはローカル固定） ---
+                var apiUrl = processName.Equals("OtomeKairo", StringComparison.OrdinalIgnoreCase)
+                    ? $"{settings.GetOtomeKairoBaseUrl()}/api/control"
                     : $"http://127.0.0.1:{port}/api/control";
 
                 // --- /api/control エンドポイントに POST で送信（必要なら Authorization を付与） ---
@@ -453,7 +453,7 @@ namespace CocoroConsole.Utilities
                     var settings = AppSettings.Instance;
                     int? port = processName.ToLower() switch
                     {
-                        "cocoroghost" => settings.CocoroGhostPort,
+                        "otomekairo" => settings.OtomeKairoPort,
                         "cocoroshell" => settings.CocoroShellPort,
                         _ => null
                     };
@@ -538,11 +538,11 @@ namespace CocoroConsole.Utilities
                 // 同名の実行中プロセスをチェックして終了または再起動
                 string processName = Path.GetFileNameWithoutExtension(exeName);
 
-                // --- CocoroGhost が外部利用設定の場合、ローカル起動/終了は行わない ---
-                if (processName.Equals("CocoroGhost", StringComparison.OrdinalIgnoreCase) &&
-                    !AppSettings.Instance.IsCocoroGhostLocal())
+                // --- OtomeKairo が外部利用設定の場合、ローカル起動/終了は行わない ---
+                if (processName.Equals("OtomeKairo", StringComparison.OrdinalIgnoreCase) &&
+                    !AppSettings.Instance.IsOtomeKairoLocal())
                 {
-                    Debug.WriteLine("[ProcessHelper] CocoroGhost は外部利用設定のため、ローカルプロセス操作をスキップします。");
+                    Debug.WriteLine("[ProcessHelper] OtomeKairo は外部利用設定のため、ローカルプロセス操作をスキップします。");
                     return;
                 }
 
@@ -640,11 +640,11 @@ namespace CocoroConsole.Utilities
                 // 同名の実行中プロセスをチェックして終了または再起動
                 string processName = Path.GetFileNameWithoutExtension(exeName);
 
-                // --- CocoroGhost が外部利用設定の場合、ローカル起動/終了は行わない ---
-                if (processName.Equals("CocoroGhost", StringComparison.OrdinalIgnoreCase) &&
-                    !AppSettings.Instance.IsCocoroGhostLocal())
+                // --- OtomeKairo が外部利用設定の場合、ローカル起動/終了は行わない ---
+                if (processName.Equals("OtomeKairo", StringComparison.OrdinalIgnoreCase) &&
+                    !AppSettings.Instance.IsOtomeKairoLocal())
                 {
-                    Debug.WriteLine("[ProcessHelper] CocoroGhost は外部利用設定のため、ローカルプロセス操作をスキップします。");
+                    Debug.WriteLine("[ProcessHelper] OtomeKairo は外部利用設定のため、ローカルプロセス操作をスキップします。");
                     return;
                 }
 

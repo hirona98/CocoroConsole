@@ -1,6 +1,6 @@
-﻿using CocoroConsole.Communication;
+using CocoroConsole.Communication;
 using CocoroAI.Services;
-using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Models.OtomeKairoApi;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -55,7 +55,7 @@ namespace CocoroConsole.Services
         event EventHandler<ChatRequest>? ChatMessageReceived;
 
         /// <summary>
-        /// 通知メッセージ受信イベント（cocoro_ghost events/stream 由来）
+        /// 通知メッセージ受信イベント（otomekairo events/stream 由来）
         /// </summary>
         event Action<ChatMessagePayload, List<System.Windows.Media.Imaging.BitmapSource>?>? NotificationMessageReceived;
 
@@ -85,14 +85,14 @@ namespace CocoroConsole.Services
         event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
 
         /// <summary>
-        /// CocoroGhostステータス変更イベント
+        /// OtomeKairoステータス変更イベント
         /// </summary>
-        event EventHandler<CocoroGhostStatus>? StatusChanged;
+        event EventHandler<OtomeKairoStatus>? StatusChanged;
 
         /// <summary>
-        /// cocoro_ghost の /api/settings 取得・更新後に発火
+        /// otomekairo の /api/settings 取得・更新後に発火
         /// </summary>
-        event EventHandler<CocoroConsole.Models.CocoroGhostApi.CocoroGhostSettings>? CocoroGhostSettingsUpdated;
+        event EventHandler<CocoroConsole.Models.OtomeKairoApi.OtomeKairoSettings>? OtomeKairoSettingsUpdated;
 
         /// <summary>
         /// ログストリームメッセージ受信イベント
@@ -125,9 +125,9 @@ namespace CocoroConsole.Services
         bool IsServerRunning { get; }
 
         /// <summary>
-        /// 現在のCocoroGhostステータス
+        /// 現在のOtomeKairoステータス
         /// </summary>
-        CocoroGhostStatus CurrentStatus { get; }
+        OtomeKairoStatus CurrentStatus { get; }
 
         /// <summary>
         /// チャット送信中かどうか
@@ -226,17 +226,17 @@ namespace CocoroConsole.Services
         void RefreshSettingsCache();
 
         /// <summary>
-        /// CocoroGhost再起動開始を通知して起動待ち状態に戻す
+        /// OtomeKairo再起動開始を通知して起動待ち状態に戻す
         /// </summary>
-        void NotifyCocoroGhostRestarting();
+        void NotifyOtomeKairoRestarting();
 
         /// <summary>
-        /// cocoro_ghost の /api/settings を再取得して反映する
+        /// otomekairo の /api/settings を再取得して反映する
         /// </summary>
-        Task RefreshCocoroGhostSettingsAsync();
+        Task RefreshOtomeKairoSettingsAsync();
 
         /// <summary>
-        /// デスクトップウォッチ（cocoro_ghost側）の有効/無効を更新する
+        /// デスクトップウォッチ（otomekairo側）の有効/無効を更新する
         /// </summary>
         Task SetDesktopWatchEnabledAsync(bool enabled);
     }

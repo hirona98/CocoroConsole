@@ -1,4 +1,4 @@
-﻿<Window x:Class="CocoroConsole.Windows.CocoroGhostSettingsWindow"
+<Window x:Class="CocoroConsole.Windows.OtomeKairoSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="OtomeKairo設定"
@@ -52,12 +52,12 @@
                             </TextBlock>
 
                             <!-- 外部利用チェック -->
-                            <CheckBox x:Name="UseExternalCocoroGhostCheckBox"
+                            <CheckBox x:Name="UseExternalOtomeKairoCheckBox"
                                       Content="外部の OtomeKairo サーバーを使用する"
                                       Foreground="#FF4873CF"
                                       Margin="0,0,0,8"
-                                      Checked="UseExternalCocoroGhostCheckBox_Changed"
-                                      Unchecked="UseExternalCocoroGhostCheckBox_Changed"/>
+                                      Checked="UseExternalOtomeKairoCheckBox_Changed"
+                                      Unchecked="UseExternalOtomeKairoCheckBox_Changed"/>
 
                             <!-- 接続先ホスト -->
                             <Grid Margin="0,5,0,0">
@@ -69,7 +69,7 @@
                                            Text="接続先ホスト:"
                                            VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="1"
-                                         x:Name="CocoroGhostHostTextBox"
+                                         x:Name="OtomeKairoHostTextBox"
                                          Padding="2"
                                          VerticalAlignment="Center"
                                          Width="260"

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 
 namespace CocoroConsole.Controls
@@ -13,7 +13,7 @@ namespace CocoroConsole.Controls
     {
         private bool _isInitializing;
 
-        private CocoroGhostApiClient? _apiClient;
+        private OtomeKairoApiClient? _apiClient;
         private Func<Task>? _onPresetListChanged;
 
         private readonly List<PersonaPreset> _personaPresets = new();
@@ -29,7 +29,7 @@ namespace CocoroConsole.Controls
             InitializeComponent();
         }
 
-        public void SetApiClient(CocoroGhostApiClient apiClient, Func<Task> onPresetListChanged)
+        public void SetApiClient(OtomeKairoApiClient apiClient, Func<Task> onPresetListChanged)
         {
             _apiClient = apiClient;
             _onPresetListChanged = onPresetListChanged;

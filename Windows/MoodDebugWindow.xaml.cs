@@ -1,4 +1,4 @@
-﻿using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using System;
 using System.Collections.Generic;
@@ -12,7 +12,7 @@ using System.Windows.Threading;
 namespace CocoroConsole.Windows
 {
     /// <summary>
-    /// cocoro_ghost の /api/mood/debug を表示するデバッグウィンドウ。
+    /// otomekairo の /api/mood/debug を表示するデバッグウィンドウ。
     ///
     /// - ウィンドウが開いている間だけ 1 秒ポーリングする
     /// - 取得処理自体は ICommunicationService に委譲し、UI は表示に専念する

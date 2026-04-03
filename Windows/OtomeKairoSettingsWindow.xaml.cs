@@ -1,4 +1,4 @@
-﻿using CocoroConsole.Services;
+using CocoroConsole.Services;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -8,9 +8,9 @@ using System.Windows.Navigation;
 namespace CocoroConsole.Windows
 {
     /// <summary>
-    /// CocoroGhost 接続設定専用ウィンドウ。
+    /// OtomeKairo 接続設定専用ウィンドウ。
     /// </summary>
-    public partial class CocoroGhostSettingsWindow : Window
+    public partial class OtomeKairoSettingsWindow : Window
     {
         // 設定サービス
         private readonly IAppSettings _appSettings;
@@ -20,7 +20,7 @@ namespace CocoroConsole.Windows
 
         public bool IsClosed { get; private set; } = false;
 
-        public CocoroGhostSettingsWindow(ICommunicationService? communicationService)
+        public OtomeKairoSettingsWindow(ICommunicationService? communicationService)
         {
             InitializeComponent();
 
@@ -38,11 +38,11 @@ namespace CocoroConsole.Windows
         private void LoadSettingsToUi()
         {
             // 接続設定を反映
-            UseExternalCocoroGhostCheckBox.IsChecked = _appSettings.UseExternalCocoroGhost;
-            CocoroGhostHostTextBox.Text = (_appSettings.CocoroGhostHost ?? string.Empty).Trim();
+            UseExternalOtomeKairoCheckBox.IsChecked = _appSettings.UseExternalOtomeKairo;
+            OtomeKairoHostTextBox.Text = (_appSettings.OtomeKairoHost ?? string.Empty).Trim();
 
             // Access Token を反映する
-            BearerTokenTextBox.Text = _appSettings.CocoroGhostBearerToken ?? string.Empty;
+            BearerTokenTextBox.Text = _appSettings.OtomeKairoBearerToken ?? string.Empty;
 
             // 接続方式に応じて入力欄の有効/無効を切り替え
             UpdateConnectionUiState();
@@ -54,8 +54,8 @@ namespace CocoroConsole.Windows
         private void UpdateConnectionUiState()
         {
             // 外部接続時のみホスト入力を許可
-            var useExternal = UseExternalCocoroGhostCheckBox.IsChecked ?? false;
-            CocoroGhostHostTextBox.IsEnabled = useExternal;
+            var useExternal = UseExternalOtomeKairoCheckBox.IsChecked ?? false;
+            OtomeKairoHostTextBox.IsEnabled = useExternal;
         }
 
         /// <summary>
@@ -64,8 +64,8 @@ namespace CocoroConsole.Windows
         private async Task<bool> ApplySettingsAsync()
         {
             // 入力値を取得
-            var host = (CocoroGhostHostTextBox.Text ?? string.Empty).Trim();
-            var useExternal = UseExternalCocoroGhostCheckBox.IsChecked ?? false;
+            var host = (OtomeKairoHostTextBox.Text ?? string.Empty).Trim();
+            var useExternal = UseExternalOtomeKairoCheckBox.IsChecked ?? false;
             var bearerToken = (BearerTokenTextBox.Text ?? string.Empty).Trim();
 
             // 接続先ホストは空欄不可
@@ -76,16 +76,16 @@ namespace CocoroConsole.Windows
                     "入力エラー",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
-                CocoroGhostHostTextBox.Focus();
+                OtomeKairoHostTextBox.Focus();
                 return false;
             }
 
             // エンドポイント変更有無を判定
-            var currentHost = (_appSettings.CocoroGhostHost ?? string.Empty).Trim();
+            var currentHost = (_appSettings.OtomeKairoHost ?? string.Empty).Trim();
             var endpointChanged =
                 !string.Equals(currentHost, host, StringComparison.OrdinalIgnoreCase) ||
-                _appSettings.UseExternalCocoroGhost != useExternal;
-            var bearerTokenChanged = !string.Equals(_appSettings.CocoroGhostBearerToken ?? string.Empty, bearerToken, StringComparison.Ordinal);
+                _appSettings.UseExternalOtomeKairo != useExternal;
+            var bearerTokenChanged = !string.Equals(_appSettings.OtomeKairoBearerToken ?? string.Empty, bearerToken, StringComparison.Ordinal);
 
             // 変更が無い場合は保存を行わない
             if (!endpointChanged && !bearerTokenChanged)
@@ -94,15 +94,15 @@ namespace CocoroConsole.Windows
             }
 
             // 設定値を保存
-            _appSettings.CocoroGhostHost = host;
-            _appSettings.UseExternalCocoroGhost = useExternal;
-            _appSettings.CocoroGhostBearerToken = bearerToken;
+            _appSettings.OtomeKairoHost = host;
+            _appSettings.UseExternalOtomeKairo = useExternal;
+            _appSettings.OtomeKairoBearerToken = bearerToken;
             _appSettings.SaveAppSettings();
 
             // 通信サービスの接続初期化をやり直す
             if (_communicationService != null)
             {
-                await _communicationService.RefreshCocoroGhostSettingsAsync();
+                await _communicationService.RefreshOtomeKairoSettingsAsync();
             }
 
             return true;
@@ -141,7 +141,7 @@ namespace CocoroConsole.Windows
         /// <summary>
         /// 外部利用チェック変更時。
         /// </summary>
-        private void UseExternalCocoroGhostCheckBox_Changed(object sender, RoutedEventArgs e)
+        private void UseExternalOtomeKairoCheckBox_Changed(object sender, RoutedEventArgs e)
         {
             // 接続方式に応じてホスト入力欄を切り替え
             UpdateConnectionUiState();
@@ -150,7 +150,7 @@ namespace CocoroConsole.Windows
         /// <summary>
         /// リンククリック時。
         /// </summary>
-        private void CocoroGhostLink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        private void OtomeKairoLink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
             try
             {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
@@ -8,13 +8,13 @@ using System.Diagnostics;
 namespace CocoroConsole.Services
 {
     /// <summary>
-    /// CocoroGhostのステータス状態を表す列挙型
+    /// OtomeKairoのステータス状態を表す列挙型
     /// </summary>
-    public enum CocoroGhostStatus
+    public enum OtomeKairoStatus
     {
-        /// <summary>CocoroGhost起動待ち</summary>
+        /// <summary>OtomeKairo起動待ち</summary>
         WaitingForStartup,
-        /// <summary>正常動作中（CocoroGhostとのポーリングが正常なとき）</summary>
+        /// <summary>正常動作中（OtomeKairoとのポーリングが正常なとき）</summary>
         Normal,
         /// <summary>LLMメッセージ処理中</summary>
         ProcessingMessage,
@@ -24,7 +24,7 @@ namespace CocoroConsole.Services
 
 
     /// <summary>
-    /// CocoroGhostのステータスポーリングサービス
+    /// OtomeKairoのステータスポーリングサービス
     /// </summary>
     public class StatusPollingService : IDisposable
     {
@@ -32,18 +32,18 @@ namespace CocoroConsole.Services
         private readonly string _probeEndpoint;
         private readonly Timer _pollingTimer;
         private int _pollingInProgress = 0;
-        private CocoroGhostStatus _currentStatus = CocoroGhostStatus.WaitingForStartup;
+        private OtomeKairoStatus _currentStatus = OtomeKairoStatus.WaitingForStartup;
         private volatile bool _disposed = false;
 
         /// <summary>
         /// ステータス変更時のイベント
         /// </summary>
-        public event EventHandler<CocoroGhostStatus>? StatusChanged;
+        public event EventHandler<OtomeKairoStatus>? StatusChanged;
 
         /// <summary>
         /// 現在のステータス
         /// </summary>
-        public CocoroGhostStatus CurrentStatus => _currentStatus;
+        public OtomeKairoStatus CurrentStatus => _currentStatus;
 
         /// <summary>
         /// コンストラクタ
@@ -51,7 +51,7 @@ namespace CocoroConsole.Services
         /// <param name="baseUrl">OtomeKairoのベースURL（デフォルト: https://127.0.0.1:55601）</param>
         public StatusPollingService(string baseUrl = "https://127.0.0.1:55601")
         {
-            // --- CocoroGhost は自己署名HTTPSを前提とする ---
+            // --- OtomeKairo は自己署名HTTPSを前提とする ---
             // LAN公開（Web UI含む）に寄せるため HTTPS 必須の設計になっている。
             // CocoroConsole はローカル接続のみの前提で、証明書のホスト検証は行わない。
             var handler = new HttpClientHandler
@@ -104,18 +104,18 @@ namespace CocoroConsole.Services
 
                     if (probeSucceeded)
                     {
-                        if (_currentStatus == CocoroGhostStatus.WaitingForStartup)
+                        if (_currentStatus == OtomeKairoStatus.WaitingForStartup)
                         {
-                            UpdateStatus(CocoroGhostStatus.Normal);
+                            UpdateStatus(OtomeKairoStatus.Normal);
                             // 起動完了したら10秒間隔に変更
                             _pollingTimer.Change(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
                         }
                     }
                     else
                     {
-                        if (_currentStatus != CocoroGhostStatus.WaitingForStartup)
+                        if (_currentStatus != OtomeKairoStatus.WaitingForStartup)
                         {
-                            UpdateStatus(CocoroGhostStatus.WaitingForStartup);
+                            UpdateStatus(OtomeKairoStatus.WaitingForStartup);
                             // 起動待ちに戻ったら1秒間隔に変更
                             _pollingTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
                         }
@@ -123,18 +123,18 @@ namespace CocoroConsole.Services
                 }
                 else
                 {
-                    if (_currentStatus != CocoroGhostStatus.WaitingForStartup)
+                    if (_currentStatus != OtomeKairoStatus.WaitingForStartup)
                     {
-                        UpdateStatus(CocoroGhostStatus.WaitingForStartup);
+                        UpdateStatus(OtomeKairoStatus.WaitingForStartup);
                         _pollingTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
                     }
                 }
             }
             catch (Exception)
             {
-                if (_currentStatus != CocoroGhostStatus.WaitingForStartup)
+                if (_currentStatus != OtomeKairoStatus.WaitingForStartup)
                 {
-                    UpdateStatus(CocoroGhostStatus.WaitingForStartup);
+                    UpdateStatus(OtomeKairoStatus.WaitingForStartup);
                     _pollingTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
                 }
             }
@@ -148,7 +148,7 @@ namespace CocoroConsole.Services
         /// ステータスを更新してイベントを発火
         /// </summary>
         /// <param name="newStatus">新しいステータス</param>
-        private void UpdateStatus(CocoroGhostStatus newStatus)
+        private void UpdateStatus(OtomeKairoStatus newStatus)
         {
             if (_currentStatus != newStatus)
             {
@@ -161,10 +161,10 @@ namespace CocoroConsole.Services
         /// 処理状態を手動で設定（通信開始時に呼び出し）
         /// </summary>
         /// <param name="processingStatus">処理状態</param>
-        public void SetProcessingStatus(CocoroGhostStatus processingStatus)
+        public void SetProcessingStatus(OtomeKairoStatus processingStatus)
         {
-            if (processingStatus == CocoroGhostStatus.ProcessingMessage ||
-                processingStatus == CocoroGhostStatus.ProcessingImage)
+            if (processingStatus == OtomeKairoStatus.ProcessingMessage ||
+                processingStatus == OtomeKairoStatus.ProcessingImage)
             {
                 UpdateStatus(processingStatus);
             }
@@ -175,7 +175,7 @@ namespace CocoroConsole.Services
         /// </summary>
         public void SetNormalStatus()
         {
-            UpdateStatus(CocoroGhostStatus.Normal);
+            UpdateStatus(OtomeKairoStatus.Normal);
         }
 
         /// <summary>
@@ -184,7 +184,7 @@ namespace CocoroConsole.Services
         public void SetWaitingForStartup()
         {
             // 起動待ち状態を明示し、ポーリング間隔を短くする
-            UpdateStatus(CocoroGhostStatus.WaitingForStartup);
+            UpdateStatus(OtomeKairoStatus.WaitingForStartup);
             _pollingTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
         }
 

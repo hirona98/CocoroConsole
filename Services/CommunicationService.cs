@@ -1,5 +1,5 @@
 using CocoroConsole.Communication;
-using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroAI.Services;
 using System;
 using System.Collections.Generic;
@@ -17,13 +17,13 @@ using System.Windows.Media.Imaging;
 namespace CocoroConsole.Services
 {
     /// <summary>
-    /// CocoroAI（CocoroConsole / CocoroGhost / CocoroShell）間の通信を集約するサービス。
+    /// CocoroAI（CocoroConsole / OtomeKairo / CocoroShell）間の通信を集約するサービス。
     /// 
     /// 主な責務:
     /// - CocoroConsole API サーバーの起動/停止（外部からの chat/control/status 更新を受ける）
     /// - CocoroShell への送信（発話/表示の連携）
-    /// - CocoroGhost の状態ポーリングと、状態変化イベントの転送
-    /// - cocoro_ghost HTTP API（Bearer 認証）を用いた設定取得やチャット SSE ストリーミング
+    /// - OtomeKairo の状態ポーリングと、状態変化イベントの転送
+    /// - otomekairo HTTP API（Bearer 認証）を用いた設定取得やチャット SSE ストリーミング
     /// - ログ/イベントのストリーミング接続の管理
     /// </summary>
     public class CommunicationService : ICommunicationService
@@ -38,13 +38,13 @@ namespace CocoroConsole.Services
 
         private readonly IAppSettings _appSettings;
 
-        // cocoro_ghost の状態を定期取得して UI に通知する
+        // otomekairo の状態を定期取得して UI に通知する
         private StatusPollingService _statusPollingService;
 
-        // cocoro_ghost HTTP API（Bearer トークン必須）。トークン未設定時は null。
-        private CocoroGhostApiClient? _cocoroGhostApiClient;
+        // otomekairo HTTP API（Bearer トークン必須）。トークン未設定時は null。
+        private OtomeKairoApiClient? _otomeKairoApiClient;
 
-        // cocoro_ghost のログ/イベントを購読するストリームクライアント（必要時に開始/停止）
+        // otomekairo のログ/イベントを購読するストリームクライアント（必要時に開始/停止）
         private LogStreamClient? _logStreamClient;
         private EventsStreamClient? _eventsStreamClient;
 
@@ -75,7 +75,7 @@ namespace CocoroConsole.Services
         // memory_id キャッシュ（チャット返信を UI へ戻す際に付与）
         private string _cachedMemoryId = "memory";
 
-        // 起動後、cocoro_ghost が Normal になったタイミングで一度だけ設定取得するためのフラグ
+        // 起動後、otomekairo が Normal になったタイミングで一度だけ設定取得するためのフラグ
         private bool _initialSettingsFetched = false;
 
         // desktop_watch 用: 直近のデスクトップキャプチャ（vision.capture_request）を一時キャッシュして
@@ -105,8 +105,8 @@ namespace CocoroConsole.Services
         public event EventHandler<ControlRequest>? ControlCommandReceived;
         public event EventHandler<string>? ErrorOccurred;
         public event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
-        public event EventHandler<CocoroGhostStatus>? StatusChanged;
-        public event EventHandler<CocoroConsole.Models.CocoroGhostApi.CocoroGhostSettings>? CocoroGhostSettingsUpdated;
+        public event EventHandler<OtomeKairoStatus>? StatusChanged;
+        public event EventHandler<CocoroConsole.Models.OtomeKairoApi.OtomeKairoSettings>? OtomeKairoSettingsUpdated;
         public event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
         public event EventHandler<bool>? LogStreamConnectionChanged;
         public event EventHandler<string>? LogStreamError;
@@ -116,9 +116,9 @@ namespace CocoroConsole.Services
         public bool IsServerRunning => _apiServer.IsRunning;
 
         /// <summary>
-        /// 現在のCocoroGhostステータス
+        /// 現在のOtomeKairoステータス
         /// </summary>
-        public CocoroGhostStatus CurrentStatus => _statusPollingService.CurrentStatus;
+        public OtomeKairoStatus CurrentStatus => _statusPollingService.CurrentStatus;
 
         /// <summary>
         /// チャット送信中かどうか
@@ -133,7 +133,7 @@ namespace CocoroConsole.Services
         {
             _appSettings = appSettings;
 
-            // --- ClientId は cocoro_ghost の events stream の hello で必須になるため、起動時に確実に用意する ---
+            // --- ClientId は otomekairo の events stream の hello で必須になるため、起動時に確実に用意する ---
             EnsureClientIdInitialized();
 
             // APIサーバーの初期化
@@ -143,15 +143,15 @@ namespace CocoroConsole.Services
             _shellClient = new CocoroShellClient(_appSettings.CocoroShellPort);
 
             // OtomeKairo APIクライアントを初期化する
-            var bearerToken = _appSettings.CocoroGhostBearerToken;
-            var baseUrl = _appSettings.GetCocoroGhostBaseUrl();
-            _cocoroGhostApiClient = new CocoroGhostApiClient(baseUrl, bearerToken);
+            var bearerToken = _appSettings.OtomeKairoBearerToken;
+            var baseUrl = _appSettings.GetOtomeKairoBaseUrl();
+            _otomeKairoApiClient = new OtomeKairoApiClient(baseUrl, bearerToken);
 
             // 設定キャッシュを初期化
             RefreshSettingsCache();
 
             // ステータスポーリングサービスの初期化
-            _statusPollingService = new StatusPollingService(_appSettings.GetCocoroGhostBaseUrl());
+            _statusPollingService = new StatusPollingService(_appSettings.GetOtomeKairoBaseUrl());
             _statusPollingService.StatusChanged += OnStatusPollingServiceStatusChanged;
 
             // AppSettingsの変更イベントを購読
@@ -177,7 +177,7 @@ namespace CocoroConsole.Services
 
         private async Task EnsureOtomeKairoReadyAsync()
         {
-            if (_cocoroGhostApiClient == null)
+            if (_otomeKairoApiClient == null)
             {
                 return;
             }
@@ -186,30 +186,30 @@ namespace CocoroConsole.Services
             try
             {
                 // --- 既存トークンがあれば、まず有効性を確認する ---
-                var bearerToken = (_appSettings.CocoroGhostBearerToken ?? string.Empty).Trim();
+                var bearerToken = (_appSettings.OtomeKairoBearerToken ?? string.Empty).Trim();
                 if (!string.IsNullOrWhiteSpace(bearerToken))
                 {
                     try
                     {
-                        await _cocoroGhostApiClient.GetOtomeKairoStatusAsync().ConfigureAwait(false);
+                        await _otomeKairoApiClient.GetOtomeKairoStatusAsync().ConfigureAwait(false);
                         return;
                     }
                     catch (OtomeKairoApiException ex) when (ex.ErrorCode == "invalid_token" || ex.ErrorCode == "bootstrap_required")
                     {
-                        _appSettings.CocoroGhostBearerToken = string.Empty;
+                        _appSettings.OtomeKairoBearerToken = string.Empty;
                         _appSettings.SaveAppSettings();
                     }
                 }
 
                 // --- 未発行状態のときだけ最初のトークンを自動取得する ---
-                var probe = await _cocoroGhostApiClient.ProbeBootstrapAsync().ConfigureAwait(false);
+                var probe = await _otomeKairoApiClient.ProbeBootstrapAsync().ConfigureAwait(false);
                 if (!string.Equals(probe.BootstrapState, "ready_for_first_console", StringComparison.Ordinal))
                 {
                     return;
                 }
 
-                var registered = await _cocoroGhostApiClient.RegisterFirstConsoleAsync().ConfigureAwait(false);
-                _appSettings.CocoroGhostBearerToken = registered.ConsoleAccessToken;
+                var registered = await _otomeKairoApiClient.RegisterFirstConsoleAsync().ConfigureAwait(false);
+                _appSettings.OtomeKairoBearerToken = registered.ConsoleAccessToken;
                 _appSettings.SaveAppSettings();
             }
             finally
@@ -292,9 +292,9 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// CocoroGhost再起動開始を通知して起動待ち状態に戻す
+        /// OtomeKairo再起動開始を通知して起動待ち状態に戻す
         /// </summary>
-        public void NotifyCocoroGhostRestarting()
+        public void NotifyOtomeKairoRestarting()
         {
             // 再起動の切り替えを即時に反映し、ヘルスチェックを短周期に戻す
             _statusPollingService.SetWaitingForStartup();
@@ -334,15 +334,15 @@ namespace CocoroConsole.Services
             bool shellPortChanged = previousSettings.cocoroShellPort != currentSettings.cocoroShellPort;
             bool ghostPortChanged = previousSettings.cocoroCorePort != currentSettings.cocoroCorePort;
             bool ghostHostChanged = !string.Equals(
-                previousSettings.cocoroGhostHost ?? string.Empty,
-                currentSettings.cocoroGhostHost ?? string.Empty,
+                previousSettings.otomeKairoHost ?? string.Empty,
+                currentSettings.otomeKairoHost ?? string.Empty,
                 StringComparison.OrdinalIgnoreCase);
             bool useExternalGhostChanged =
-                (previousSettings.useExternalCocoroGhost ?? false) !=
-                (currentSettings.useExternalCocoroGhost ?? false);
+                (previousSettings.useExternalOtomeKairo ?? false) !=
+                (currentSettings.useExternalOtomeKairo ?? false);
             bool ghostEndpointChanged = ghostPortChanged || ghostHostChanged || useExternalGhostChanged;
-            bool bearerTokenChanged = !string.Equals(previousSettings.cocoroGhostBearerToken ?? string.Empty,
-                currentSettings.cocoroGhostBearerToken ?? string.Empty, StringComparison.Ordinal);
+            bool bearerTokenChanged = !string.Equals(previousSettings.otomeKairoBearerToken ?? string.Empty,
+                currentSettings.otomeKairoBearerToken ?? string.Empty, StringComparison.Ordinal);
 
             if (consolePortChanged)
             {
@@ -362,7 +362,7 @@ namespace CocoroConsole.Services
 
             if (ghostEndpointChanged || bearerTokenChanged)
             {
-                UpdateCocoroGhostApiClient(currentSettings);
+                UpdateOtomeKairoApiClient(currentSettings);
                 _initialSettingsFetched = false;
 
                 _ = StopEventsStreamAsync();
@@ -411,38 +411,38 @@ namespace CocoroConsole.Services
             _statusPollingService.StatusChanged -= OnStatusPollingServiceStatusChanged;
             _statusPollingService.Dispose();
 
-            _statusPollingService = new StatusPollingService(_appSettings.GetCocoroGhostBaseUrl());
+            _statusPollingService = new StatusPollingService(_appSettings.GetOtomeKairoBaseUrl());
             _statusPollingService.StatusChanged += OnStatusPollingServiceStatusChanged;
         }
 
-        private void UpdateCocoroGhostApiClient(ConfigSettings settings)
+        private void UpdateOtomeKairoApiClient(ConfigSettings settings)
         {
             // 変更（ポート/トークン）に追従するため、既存クライアントは破棄して作り直す
-            _cocoroGhostApiClient?.Dispose();
-            _cocoroGhostApiClient = null;
+            _otomeKairoApiClient?.Dispose();
+            _otomeKairoApiClient = null;
 
-            var bearerToken = settings.cocoroGhostBearerToken ?? string.Empty;
-            var baseUrl = _appSettings.GetCocoroGhostBaseUrl();
-            _cocoroGhostApiClient = new CocoroGhostApiClient(baseUrl, bearerToken);
+            var bearerToken = settings.otomeKairoBearerToken ?? string.Empty;
+            var baseUrl = _appSettings.GetOtomeKairoBaseUrl();
+            _otomeKairoApiClient = new OtomeKairoApiClient(baseUrl, bearerToken);
         }
 
 
         /// <summary>
         /// StatusPollingServiceのステータス変更ハンドラ
         /// </summary>
-        private void OnStatusPollingServiceStatusChanged(object? sender, CocoroGhostStatus status)
+        private void OnStatusPollingServiceStatusChanged(object? sender, OtomeKairoStatus status)
         {
             // 外部イベントに転送
             StatusChanged?.Invoke(this, status);
 
             // 初回Normal時に OtomeKairo への接続初期化を行う
-            if (!_initialSettingsFetched && status == CocoroGhostStatus.Normal)
+            if (!_initialSettingsFetched && status == OtomeKairoStatus.Normal)
             {
                 _initialSettingsFetched = true;
-                _ = FetchAndApplySettingsFromCocoroGhostAsync();
+                _ = FetchAndApplySettingsFromOtomeKairoAsync();
             }
 
-            if (status == CocoroGhostStatus.WaitingForStartup)
+            if (status == OtomeKairoStatus.WaitingForStartup)
             {
                 // 起動待ちに戻った場合は旧イベントストリームを停止
                 _ = StopEventsStreamAsync();
@@ -450,11 +450,11 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// cocoro_ghostから設定を取得してキャッシュ/イベントに反映
+        /// otomekairoから設定を取得してキャッシュ/イベントに反映
         /// </summary>
-        public async Task FetchAndApplySettingsFromCocoroGhostAsync()
+        public async Task FetchAndApplySettingsFromOtomeKairoAsync()
         {
-            if (_cocoroGhostApiClient == null)
+            if (_otomeKairoApiClient == null)
             {
                 Debug.WriteLine("[CommunicationService] APIクライアントが初期化されていないため、接続初期化をスキップ");
                 return;
@@ -467,9 +467,9 @@ namespace CocoroConsole.Services
                 Debug.WriteLine("[CommunicationService] OtomeKairo への接続初期化を完了しました");
 
                 // --- status.settings_snapshot から desktop_watch の現在値を UI へ流す ---
-                var statusResponse = await _cocoroGhostApiClient.GetOtomeKairoStatusAsync().ConfigureAwait(false);
+                var statusResponse = await _otomeKairoApiClient.GetOtomeKairoStatusAsync().ConfigureAwait(false);
                 var desktopWatchEnabled = TryReadDesktopWatchEnabled(statusResponse.SettingsSnapshot);
-                CocoroGhostSettingsUpdated?.Invoke(this, new CocoroGhostSettings
+                OtomeKairoSettingsUpdated?.Invoke(this, new OtomeKairoSettings
                 {
                     DesktopWatchEnabled = desktopWatchEnabled
                 });
@@ -480,9 +480,9 @@ namespace CocoroConsole.Services
             }
         }
 
-        public Task RefreshCocoroGhostSettingsAsync()
+        public Task RefreshOtomeKairoSettingsAsync()
         {
-            return FetchAndApplySettingsFromCocoroGhostAsync();
+            return FetchAndApplySettingsFromOtomeKairoAsync();
         }
 
         private static bool TryReadDesktopWatchEnabled(Dictionary<string, object?> settingsSnapshot)
@@ -513,7 +513,7 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// CocoroGhostにチャットメッセージを送信（HTTP/SSE）
+        /// OtomeKairoにチャットメッセージを送信（HTTP/SSE）
         /// </summary>
         /// <param name="message">送信メッセージ</param>
         /// <param name="characterName">キャラクター名（オプション）</param>
@@ -533,7 +533,7 @@ namespace CocoroConsole.Services
         /// <param name="imageDataUrls">画像データURLリスト（オプション）</param>
         public async Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, List<string>? imageDataUrls = null)
         {
-            if (_cocoroGhostApiClient == null)
+            if (_otomeKairoApiClient == null)
             {
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, "OtomeKairo APIクライアントを初期化できませんでした"));
                 return;
@@ -594,7 +594,7 @@ namespace CocoroConsole.Services
 
                 // --- 送信前に bootstrap と認証状態を整える ---
                 await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
-                if (_cocoroGhostApiClient == null || string.IsNullOrWhiteSpace(_appSettings.CocoroGhostBearerToken))
+                if (_otomeKairoApiClient == null || string.IsNullOrWhiteSpace(_appSettings.OtomeKairoBearerToken))
                 {
                     var errorMessage = "OtomeKairo の console_access_token を取得できませんでした";
                     StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
@@ -609,11 +609,11 @@ namespace CocoroConsole.Services
                 }
 
                 // --- 送信中ステータスを反映する ---
-                _statusPollingService.SetProcessingStatus(CocoroGhostStatus.ProcessingMessage);
+                _statusPollingService.SetProcessingStatus(OtomeKairoStatus.ProcessingMessage);
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット送信開始"));
 
                 // --- OtomeKairo の会話観測 API を呼ぶ ---
-                var response = await _cocoroGhostApiClient.ObserveConversationAsync(new OtomeKairoConversationRequest
+                var response = await _otomeKairoApiClient.ObserveConversationAsync(new OtomeKairoConversationRequest
                 {
                     Text = message,
                     ClientContext = BuildOtomeKairoClientContext()
@@ -1053,9 +1053,9 @@ namespace CocoroConsole.Services
                 try
                 {
                     // --- APIクライアント未初期化（トークン未設定等）の場合はエラー通知して待機 ---
-                    if (_cocoroGhostApiClient == null)
+                    if (_otomeKairoApiClient == null)
                     {
-                        MoodDebugError?.Invoke(this, "cocoro_ghost のBearerトークンが未設定のため、感情デバッグを取得できません。");
+                        MoodDebugError?.Invoke(this, "otomekairo のBearerトークンが未設定のため、感情デバッグを取得できません。");
                         await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
                         continue;
                     }
@@ -1064,7 +1064,7 @@ namespace CocoroConsole.Services
                     using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                     timeoutCts.CancelAfter(TimeSpan.FromMilliseconds(900));
 
-                    var response = await _cocoroGhostApiClient.GetMoodDebugAsync(timeoutCts.Token).ConfigureAwait(false);
+                    var response = await _otomeKairoApiClient.GetMoodDebugAsync(timeoutCts.Token).ConfigureAwait(false);
                     MoodDebugUpdated?.Invoke(this, new MoodDebugUpdatedEventArgs(response, DateTimeOffset.Now));
                 }
                 catch (OperationCanceledException)
@@ -1099,7 +1099,7 @@ namespace CocoroConsole.Services
                 return;
             }
 
-            var bearerToken = _appSettings.CocoroGhostBearerToken;
+            var bearerToken = _appSettings.OtomeKairoBearerToken;
             if (string.IsNullOrWhiteSpace(bearerToken))
             {
                 return;
@@ -1108,7 +1108,7 @@ namespace CocoroConsole.Services
             // events stream の hello を確実に送るため、ClientId を用意しておく
             EnsureClientIdInitialized();
 
-            var eventsStreamUri = new Uri($"{_appSettings.GetCocoroGhostWebSocketBaseUrl()}/api/events/stream");
+            var eventsStreamUri = new Uri($"{_appSettings.GetOtomeKairoWebSocketBaseUrl()}/api/events/stream");
             _eventsStreamClient = new EventsStreamClient(
                 eventsStreamUri,
                 bearerToken,
@@ -1159,7 +1159,7 @@ namespace CocoroConsole.Services
             StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(isConnected, message));
         }
 
-        private void OnEventsStreamEventReceived(object? sender, CocoroGhostEvent ev)
+        private void OnEventsStreamEventReceived(object? sender, OtomeKairoEvent ev)
         {
             try
             {
@@ -1300,7 +1300,7 @@ namespace CocoroConsole.Services
             return string.Empty;
         }
 
-        private void HandlePartnerMessageFromEvent(CocoroGhostEvent ev, string partnerMessage)
+        private void HandlePartnerMessageFromEvent(OtomeKairoEvent ev, string partnerMessage)
         {
             var chatReply = new ChatRequest
             {
@@ -1335,9 +1335,9 @@ namespace CocoroConsole.Services
             return string.IsNullOrEmpty(extracted) ? null : extracted;
         }
 
-        private async Task HandleVisionCaptureRequestAsync(CocoroGhostEvent ev)
+        private async Task HandleVisionCaptureRequestAsync(OtomeKairoEvent ev)
         {
-            if (_cocoroGhostApiClient == null)
+            if (_otomeKairoApiClient == null)
             {
                 return;
             }
@@ -1373,7 +1373,7 @@ namespace CocoroConsole.Services
                 var isDesktopWatchPurpose = string.Equals(purpose, "desktop_watch", StringComparison.OrdinalIgnoreCase);
                 if (string.Equals(source, "desktop", StringComparison.Ordinal))
                 {
-                    _statusPollingService.SetProcessingStatus(CocoroGhostStatus.ProcessingImage);
+                    _statusPollingService.SetProcessingStatus(OtomeKairoStatus.ProcessingImage);
                     var (dataUri, windowTitle, captureError) = await CaptureDesktopStillAsync(cts.Token);
 
                     if (clientContext != null && !string.IsNullOrWhiteSpace(windowTitle))
@@ -1417,7 +1417,7 @@ namespace CocoroConsole.Services
 
             try
             {
-                await _cocoroGhostApiClient.SendVisionCaptureResponseAsync(response, cts.Token);
+                await _otomeKairoApiClient.SendVisionCaptureResponseAsync(response, cts.Token);
             }
             catch (Exception ex)
             {
@@ -1677,9 +1677,9 @@ namespace CocoroConsole.Services
             }
         }
 
-        private static CocoroGhostSettingsUpdateRequest CreateSettingsUpdateRequest(CocoroGhostSettings latestSettings)
+        private static OtomeKairoSettingsUpdateRequest CreateSettingsUpdateRequest(OtomeKairoSettings latestSettings)
         {
-            latestSettings ??= new CocoroGhostSettings();
+            latestSettings ??= new OtomeKairoSettings();
 
             var activeLlmId = latestSettings.ActiveLlmPresetId ?? latestSettings.LlmPreset.FirstOrDefault()?.LlmPresetId;
             var activeEmbeddingId = latestSettings.ActiveEmbeddingPresetId ?? latestSettings.EmbeddingPreset.FirstOrDefault()?.EmbeddingPresetId;
@@ -1691,10 +1691,10 @@ namespace CocoroConsole.Services
                 string.IsNullOrWhiteSpace(activePersonaId) ||
                 string.IsNullOrWhiteSpace(activeAddonId))
             {
-                throw new InvalidOperationException("API設定のアクティブプリセットIDが取得できません。cocoro_ghost側のsettings.dbを確認してください。");
+                throw new InvalidOperationException("API設定のアクティブプリセットIDが取得できません。otomekairo側のsettings.dbを確認してください。");
             }
 
-            return new CocoroGhostSettingsUpdateRequest
+            return new OtomeKairoSettingsUpdateRequest
             {
                 MemoryEnabled = latestSettings.MemoryEnabled,
                 DesktopWatchEnabled = latestSettings.DesktopWatchEnabled,
@@ -1819,7 +1819,7 @@ namespace CocoroConsole.Services
             }
             _apiServer?.Dispose();
             _shellClient?.Dispose();
-            _cocoroGhostApiClient?.Dispose();
+            _otomeKairoApiClient?.Dispose();
             _logStreamClient?.Dispose();
             _eventsStreamClient?.Dispose();
             _otomeKairoBootstrapSemaphore?.Dispose();

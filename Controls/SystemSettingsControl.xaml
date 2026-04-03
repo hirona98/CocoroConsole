@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="CocoroConsole.Controls.SystemSettingsControl"
+<UserControl x:Class="CocoroConsole.Controls.SystemSettingsControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -147,9 +147,9 @@
                             LLMプロバイダのポリシーに反する画像を送るとアカウント停止の可能性があるので注意してください。
                             </TextBlock>
 
-                            <!-- ウォッチ機能の有効/無効設定（cocoro_ghost側） -->
+                            <!-- ウォッチ機能の有効/無効設定（otomekairo側） -->
                             <CheckBox x:Name="DesktopWatchEnabledCheckBox"
-                                      Content="デスクトップウォッチを有効にする（cocoro_ghostが能動的に取得要求を出します）"
+                                      Content="デスクトップウォッチを有効にする（otomekairoが能動的に取得要求を出します）"
                                       Margin="0,5,0,10"
                                       Foreground="#FF4873CF"
                                       ToolTip="Enable desktop watch (server-driven)"/>
