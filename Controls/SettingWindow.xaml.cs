@@ -792,7 +792,7 @@ namespace CocoroConsole.Controls
                 LlmPresetId = modelPreset.ModelPresetId,
                 LlmPresetName = modelPreset.DisplayName,
                 LlmApiKey = ReadAuthToken(generationProfile?.Auth) ?? string.Empty,
-                LlmModel = generationProfile?.ModelName ?? string.Empty,
+                LlmModel = generationProfile?.Model ?? string.Empty,
                 LlmBaseUrl = generationProfile?.BaseUrl,
                 MaxTurnsWindow = ReadInt(replyRole, "max_turns_window", LlmPreset.DefaultMaxTurnsWindow),
                 MaxTokens = ReadInt(replyRole, "max_tokens", LlmPreset.DefaultMaxTokens),
@@ -820,7 +820,7 @@ namespace CocoroConsole.Controls
                 EmbeddingPresetId = modelPreset.ModelPresetId,
                 EmbeddingPresetName = modelPreset.DisplayName,
                 EmbeddingModelApiKey = ReadAuthToken(embeddingProfile?.Auth),
-                EmbeddingModel = embeddingProfile?.ModelName ?? string.Empty,
+                EmbeddingModel = embeddingProfile?.Model ?? string.Empty,
                 EmbeddingBaseUrl = embeddingProfile?.BaseUrl,
                 EmbeddingDimension = ReadInt(embeddingRole, "embedding_dimension", EmbeddingPreset.DefaultEmbeddingDimension),
                 SimilarEpisodesLimit = ReadInt(embeddingRole, "similar_episodes_limit", EmbeddingPreset.DefaultSimilarEpisodesLimit),
@@ -902,21 +902,19 @@ namespace CocoroConsole.Controls
             OtomeKairoModelProfileDefinition? existingProfile,
             string profileId)
         {
-            // --- 生成系 profile は 1 つに寄せ、未入力時は mock に落とす ---
-            string modelName = llmPreset?.LlmModel?.Trim() ?? string.Empty;
+            // --- 生成系 profile は model 文字列を正本にして組み立てる ---
+            string model = llmPreset?.LlmModel?.Trim() ?? string.Empty;
             string? baseUrl = NormalizeEmptyToNull(llmPreset?.LlmBaseUrl);
             string apiKey = llmPreset?.LlmApiKey?.Trim() ?? string.Empty;
-            bool useMock = string.IsNullOrWhiteSpace(modelName) && string.IsNullOrWhiteSpace(baseUrl) && string.IsNullOrWhiteSpace(apiKey);
 
             return new OtomeKairoModelProfileDefinition
             {
                 ModelProfileId = profileId,
                 DisplayName = FirstNonEmpty(llmPreset?.LlmPresetName, existingProfile?.DisplayName, $"{presetId} Text"),
                 Kind = "generation",
-                Provider = useMock ? "mock" : ResolveProvider(baseUrl),
-                ModelName = useMock ? "mock-reply" : modelName,
-                BaseUrl = useMock ? null : ResolveBaseUrl(baseUrl),
-                Auth = useMock ? null : BuildAuth(apiKey),
+                Model = model,
+                BaseUrl = baseUrl,
+                Auth = BuildAuth(apiKey),
                 VisionModelName = NormalizeEmptyToNull(llmPreset?.ImageModel),
                 VisionBaseUrl = NormalizeEmptyToNull(llmPreset?.ImageLlmBaseUrl),
                 VisionAuth = string.IsNullOrWhiteSpace(llmPreset?.ImageModelApiKey) && string.IsNullOrWhiteSpace(llmPreset?.ImageLlmBaseUrl) && string.IsNullOrWhiteSpace(llmPreset?.ImageModel)
@@ -933,21 +931,19 @@ namespace CocoroConsole.Controls
             OtomeKairoModelProfileDefinition? existingProfile,
             string profileId)
         {
-            // --- embedding profile も未入力時は mock に落とす ---
-            string modelName = embeddingPreset?.EmbeddingModel?.Trim() ?? string.Empty;
+            // --- embedding profile も model 文字列を正本にして組み立てる ---
+            string model = embeddingPreset?.EmbeddingModel?.Trim() ?? string.Empty;
             string? baseUrl = NormalizeEmptyToNull(embeddingPreset?.EmbeddingBaseUrl);
             string apiKey = embeddingPreset?.EmbeddingModelApiKey?.Trim() ?? string.Empty;
-            bool useMock = string.IsNullOrWhiteSpace(modelName) && string.IsNullOrWhiteSpace(baseUrl) && string.IsNullOrWhiteSpace(apiKey);
 
             return new OtomeKairoModelProfileDefinition
             {
                 ModelProfileId = profileId,
                 DisplayName = FirstNonEmpty(embeddingPreset?.EmbeddingPresetName, existingProfile?.DisplayName, $"{presetId} Embedding"),
                 Kind = "embedding",
-                Provider = useMock ? "mock" : ResolveProvider(baseUrl),
-                ModelName = useMock ? "mock-embedding" : modelName,
-                BaseUrl = useMock ? null : ResolveBaseUrl(baseUrl),
-                Auth = useMock ? null : BuildAuth(apiKey),
+                Model = model,
+                BaseUrl = baseUrl,
+                Auth = BuildAuth(apiKey),
             };
         }
 
@@ -1030,21 +1026,9 @@ namespace CocoroConsole.Controls
             return !string.IsNullOrWhiteSpace(existingId) ? existingId! : $"model_profile:{presetId}:embedding";
         }
 
-        private static string ResolveProvider(string? baseUrl)
-        {
-            // --- base_url 未指定は OpenAI 既定、指定ありは互換 API とみなす ---
-            return string.IsNullOrWhiteSpace(baseUrl) ? "openai" : "openai_compatible";
-        }
-
-        private static string ResolveBaseUrl(string? baseUrl)
-        {
-            // --- OpenAI 既定の base_url を補う ---
-            return string.IsNullOrWhiteSpace(baseUrl) ? "https://api.openai.com/v1" : baseUrl!;
-        }
-
         private static Dictionary<string, object?> BuildAuth(string? apiKey)
         {
-            // --- API キー未設定のローカルサーバも表現できるよう、none を許す ---
+            // --- API キー未設定もそのまま表現できるよう、none を許す ---
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 return new Dictionary<string, object?>

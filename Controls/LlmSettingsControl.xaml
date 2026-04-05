@@ -255,17 +255,17 @@
                                         </Hyperlink>
                                         <Run Text="）"/>
                                         <LineBreak/>
-                                        <Run Text="openai/gpt-5-mini"/>
+                                        <Run Text="openai/gpt-5"/>
                                         <LineBreak/>
-                                        <Run Text="gemini/gemini-2.5-flash"/>
+                                        <Run Text="openrouter/google/gemini-3.1-flash-lite-preview"/>
                                         <LineBreak/>
-                                        <Run Text="xai/grok-4-fast-non-reasoning"/>
+                                        <Run Text="xai/grok-2-latest"/>
                                         <LineBreak/>
-                                        <Run Text="openrouter/google/gemini-3-flash-preview"/>
+                                        <Run Text="openrouter/openai/gpt-5"/>
                                         <LineBreak/>
-                                        <Run Text="ollama_chat/gemma3:12b（BASE URLはhttp://localhost:11434）"/>
+                                        <Run Text="ollama/llama3.1（BASE URLはhttp://localhost:11434）"/>
                                         <LineBreak/>
-                                        <Run Text="lm_studio/google/gemma-3-4b（BASE URLはhttp://127.0.0.1:1234/v1）※未対応"/>
+                                        <Run Text="lm_studio/google/gemma-3-4b（BASE URLはhttp://127.0.0.1:1234/v1）"/>
                                     </Paragraph>
                                 </FlowDocument>
                             </RichTextBox>
@@ -282,7 +282,7 @@
                             <Grid Grid.Column="1">
                                 <TextBox x:Name="LlmBaseUrlTextBox"
                                          Style="{StaticResource SettingTextBoxStyle}"
-                                         ToolTip="ローカルLLM使用時のベースURL（例: http://localhost:11434）"
+                                         ToolTip="必要な場合だけベースURLを設定します（例: http://localhost:11434）"
                                          TextChanged="OnSettingChanged"/>
                                 <TextBlock Text="必要に応じてベースURLを設定できます（例: http://localhost:11434）"
                                            Foreground="#999999"
@@ -451,6 +451,7 @@
                             <TextBox x:Name="VisionBaseUrlTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
+                                     ToolTip="必要な場合だけベースURLを設定します（例: http://localhost:11434）"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
 

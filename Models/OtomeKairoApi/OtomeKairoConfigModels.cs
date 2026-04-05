@@ -146,11 +146,8 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("kind")]
         public string Kind { get; set; } = string.Empty;
 
-        [JsonPropertyName("provider")]
-        public string Provider { get; set; } = string.Empty;
-
-        [JsonPropertyName("model_name")]
-        public string ModelName { get; set; } = string.Empty;
+        [JsonPropertyName("model")]
+        public string Model { get; set; } = string.Empty;
 
         [JsonPropertyName("base_url")]
         public string? BaseUrl { get; set; }

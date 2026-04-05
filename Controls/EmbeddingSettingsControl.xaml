@@ -255,7 +255,7 @@
                                         <LineBreak/>
                                         <Run Text="openai/text-embedding-3-large"/>
                                         <LineBreak/>
-                                        <Run Text="gemini/gemini-embedding-001"/>
+                                        <Run Text="openrouter/google/gemini-embedding-001"/>
                                         <LineBreak/>
                                         <Run Text="openrouter/openai/text-embedding-3-large"/>
                                         <LineBreak/>
