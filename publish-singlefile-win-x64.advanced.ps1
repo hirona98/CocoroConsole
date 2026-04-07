@@ -12,42 +12,42 @@ param(
     [string]$Output = "publish"
 )
 
-# Block: Strict mode and error handling.
+# Strict mode and error handling.
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-# Block: Resolve paths.
+# Resolve paths.
 $repoRoot = Resolve-Path $PSScriptRoot
 $projectPath = Join-Path $repoRoot "CocoroConsole.csproj"
 $outDir = Join-Path $repoRoot $Output
 
-# Block: Validate inputs.
+# Validate inputs.
 if (-not (Test-Path $projectPath)) {
     throw "Project file not found: $projectPath"
 }
 
-# Block: Clean output folders when requested.
+# Clean output folders when requested.
 if ($Clean -and (Test-Path $outDir)) {
     Remove-Item -LiteralPath $outDir -Recurse -Force
 }
 
-# Block: Clean legacy output to avoid confusion.
+# Clean legacy output to avoid confusion.
 $legacyOutDir = Join-Path $repoRoot "artifacts\\publish\\singlefile-win-x64"
 if ($Clean -and (Test-Path $legacyOutDir)) {
     Remove-Item -LiteralPath $legacyOutDir -Recurse -Force
 }
 
-# Block: Ensure output directory exists.
+# Ensure output directory exists.
 New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 
-# Block: Publish settings display.
+# Publish settings display.
 Write-Host "Publishing single-file build..." -ForegroundColor Cyan
 Write-Host "  Project : $projectPath"
 Write-Host "  Config  : $Configuration"
 Write-Host "  Runtime : $Runtime"
 Write-Host "  Output  : $outDir"
 
-# Block: Publish with explicit argument array to avoid line-continuation issues.
+# Publish with explicit argument array to avoid line-continuation issues.
 $publishArgs = @(
     "publish",
     $projectPath,
@@ -63,10 +63,10 @@ $publishArgs = @(
 )
 & dotnet @publishArgs
 
-# Block: Remove unnecessary artifacts for distribution.
+# Remove unnecessary artifacts for distribution.
 Get-ChildItem -LiteralPath $outDir -File -Filter "*.pdb" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
 Get-ChildItem -LiteralPath $outDir -File -Filter "*.lib" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
 
-# Block: Done message.
+# Done message.
 Write-Host "Done." -ForegroundColor Green
 Write-Host "Publish output: $outDir"

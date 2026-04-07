@@ -8,11 +8,11 @@ namespace CocoroConsole.Models.OtomeKairoApi
     /// </summary>
     public class OtomeKairoEditorState
     {
-        // Block: Current
+        // Current
         [JsonPropertyName("current")]
         public OtomeKairoCurrentSettings Current { get; set; } = new OtomeKairoCurrentSettings();
 
-        // Block: Resources
+        // Resources
         [JsonPropertyName("personas")]
         public List<OtomeKairoPersonaDefinition> Personas { get; set; } = new List<OtomeKairoPersonaDefinition>();
 
@@ -31,7 +31,7 @@ namespace CocoroConsole.Models.OtomeKairoApi
     /// </summary>
     public class OtomeKairoCurrentSettings
     {
-        // Block: Identity
+        // Identity
         [JsonPropertyName("selected_persona_id")]
         public string SelectedPersonaId { get; set; } = string.Empty;
 
@@ -41,7 +41,7 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("selected_model_preset_id")]
         public string SelectedModelPresetId { get; set; } = string.Empty;
 
-        // Block: RuntimeToggles
+        // RuntimeToggles
         [JsonPropertyName("memory_enabled")]
         public bool MemoryEnabled { get; set; }
 
@@ -57,7 +57,7 @@ namespace CocoroConsole.Models.OtomeKairoApi
     /// </summary>
     public class OtomeKairoDesktopWatchSettings
     {
-        // Block: Fields
+        // Fields
         [JsonPropertyName("enabled")]
         public bool Enabled { get; set; }
 
@@ -73,14 +73,14 @@ namespace CocoroConsole.Models.OtomeKairoApi
     /// </summary>
     public class OtomeKairoPersonaDefinition
     {
-        // Block: Identity
+        // Identity
         [JsonPropertyName("persona_id")]
         public string PersonaId { get; set; } = string.Empty;
 
         [JsonPropertyName("display_name")]
         public string DisplayName { get; set; } = string.Empty;
 
-        // Block: EditableText
+        // EditableText
         [JsonPropertyName("persona_text")]
         public string PersonaText { get; set; } = string.Empty;
 
@@ -90,7 +90,7 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("addon_text")]
         public string AddonText { get; set; } = string.Empty;
 
-        // Block: PersonaCore
+        // PersonaCore
         [JsonPropertyName("core_persona")]
         public Dictionary<string, object?> CorePersona { get; set; } = new Dictionary<string, object?>();
 
@@ -103,7 +103,7 @@ namespace CocoroConsole.Models.OtomeKairoApi
     /// </summary>
     public class OtomeKairoMemorySetDefinition
     {
-        // Block: Fields
+        // Fields
         [JsonPropertyName("memory_set_id")]
         public string MemorySetId { get; set; } = string.Empty;
 
@@ -119,7 +119,7 @@ namespace CocoroConsole.Models.OtomeKairoApi
     /// </summary>
     public class OtomeKairoModelPresetDefinition
     {
-        // Block: Fields
+        // Fields
         [JsonPropertyName("model_preset_id")]
         public string ModelPresetId { get; set; } = string.Empty;
 
@@ -135,14 +135,14 @@ namespace CocoroConsole.Models.OtomeKairoApi
     /// </summary>
     public class OtomeKairoModelProfileDefinition
     {
-        // Block: Identity
+        // Identity
         [JsonPropertyName("model_profile_id")]
         public string ModelProfileId { get; set; } = string.Empty;
 
         [JsonPropertyName("display_name")]
         public string DisplayName { get; set; } = string.Empty;
 
-        // Block: BaseConnection
+        // BaseConnection
         [JsonPropertyName("kind")]
         public string Kind { get; set; } = string.Empty;
 
@@ -155,7 +155,7 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("auth")]
         public Dictionary<string, object?>? Auth { get; set; }
 
-        // Block: VisionSettings
+        // VisionSettings
         [JsonPropertyName("vision_model_name")]
         public string? VisionModelName { get; set; }
 
