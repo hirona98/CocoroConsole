@@ -942,11 +942,34 @@ namespace CocoroConsole.Services
         /// <summary>
         /// ログストリーム接続を開始
         /// </summary>
-        public Task StartLogStreamAsync()
+        public async Task StartLogStreamAsync()
         {
-            // --- 現在の OtomeKairo API ではログストリームを公開していない ---
-            LogStreamError?.Invoke(this, "現在の OtomeKairo API ではログストリームは未対応です");
-            return Task.CompletedTask;
+            if (_logStreamClient != null)
+            {
+                return;
+            }
+
+            var bearerToken = _appSettings.OtomeKairoBearerToken;
+            if (string.IsNullOrWhiteSpace(bearerToken))
+            {
+                return;
+            }
+
+            var logStreamUri = new Uri($"{_appSettings.GetOtomeKairoWebSocketBaseUrl()}/api/logs/stream");
+            _logStreamClient = new LogStreamClient(logStreamUri, bearerToken);
+            _logStreamClient.LogsReceived += OnLogStreamLogsReceived;
+            _logStreamClient.ConnectionStateChanged += OnLogStreamConnectionStateChanged;
+            _logStreamClient.ErrorOccurred += OnLogStreamErrorOccurred;
+
+            try
+            {
+                await _logStreamClient.StartAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ログストリーム接続に失敗しました: {ex.Message}");
+                await StopLogStreamAsync();
+            }
         }
 
         /// <summary>
