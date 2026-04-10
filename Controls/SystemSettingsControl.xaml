@@ -27,118 +27,12 @@
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <!-- リマインダー設定 -->
-                <GroupBox Header="リマインダー"
-                          Margin="0,0,20,20"
-                          Style="{StaticResource SettingsGroupBoxStyle}">
-                    <Border Background="White"
-                            Padding="10">
-                        <StackPanel>
-                            <!-- リマインダー機能チェックボックス（グローバル） -->
-                            <CheckBox x:Name="EnableReminderCheckBox"
-                                      Content="リマインダー機能を有効にする"
-                                      Margin="0,0,0,10"
-                                      Foreground="#FF4873CF"/>
-
-                            <StackPanel Orientation="Horizontal"
-                                        Margin="0,0,0,10">
-                                <Button x:Name="AddReminderButton"
-                                        Content="追加"
-                                        Padding="10,5"
-                                        Click="AddReminderButton_Click"/>
-                            </StackPanel>
-
-                            <!-- リマインダーリスト -->
-                            <Border BorderBrush="#DDDDDD"
-                                    BorderThickness="1"
-                                    Background="White"
-                                    MaxHeight="240">
-                                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                              HorizontalScrollBarVisibility="Disabled">
-                                    <ItemsControl x:Name="RemindersItemsControl">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Grid>
-                                                    <Grid.RowDefinitions>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="1"/>
-                                                    </Grid.RowDefinitions>
-
-                                                    <Grid Grid.Row="0"
-                                                          Margin="8">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="26"/>
-                                                            <ColumnDefinition Width="150"/>
-                                                            <ColumnDefinition Width="250"/>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-
-                                                        <CheckBox Grid.Column="0"
-                                                                  IsChecked="{Binding Enabled}"
-                                                                  Tag="{Binding LocalId}"
-                                                                  Checked="ReminderEnabledCheckBox_Changed"
-                                                                  Unchecked="ReminderEnabledCheckBox_Changed"
-                                                                  Width="18"
-                                                                  Height="18"
-                                                                  HorizontalAlignment="Left"
-                                                                  VerticalAlignment="Center"/>
-
-                                                        <TextBlock Grid.Column="1"
-                                                                   Text="{Binding NextFireAtLocal}"
-                                                                   VerticalAlignment="Center"
-                                                                   Margin="6,0,0,0"/>
-
-                                                        <TextBlock Grid.Column="2"
-                                                                   Text="{Binding RuleText}"
-                                                                   VerticalAlignment="Center"
-                                                                   Margin="6,0,0,0"/>
-
-                                                        <TextBlock Grid.Column="3"
-                                                                   Text="{Binding Content}"
-                                                                   TextWrapping="Wrap"
-                                                                   VerticalAlignment="Center"
-                                                                   Margin="6,0,0,0"/>
-
-                                                        <Button Grid.Column="4"
-                                                                Content="編集"
-                                                                Padding="10,3"
-                                                                Margin="10,0,0,0"
-                                                                Click="EditReminderButton_Click"
-                                                                Tag="{Binding LocalId}"/>
-
-                                                        <!-- リマインダー削除（モーションタブと同じ削除ボタン配色・ホバー挙動） -->
-                                                        <Button Grid.Column="5"
-                                                                Content="削除"
-                                                                Padding="10,3"
-                                                                Margin="8,0,0,0"
-                                                                Style="{StaticResource DeleteButtonStyle}"
-                                                                Click="DeleteReminderButton_Click"
-                                                                Tag="{Binding LocalId}"/>
-                                                    </Grid>
-
-                                                    <Rectangle Grid.Row="1"
-                                                               Fill="#E0E0E0"
-                                                               Height="1"/>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </ScrollViewer>
-                            </Border>
-                        </StackPanel>
-                    </Border>
-                </GroupBox>
-
-                <!-- デスクトップウォッチ -->
                 <GroupBox Header="デスクトップウォッチ"
                           Margin="0,0,20,20"
                           Style="{StaticResource SettingsGroupBoxStyle}">
                     <Border Background="White"
                             Padding="10">
                         <StackPanel>
-                            <!-- 説明テキスト -->
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
@@ -147,14 +41,12 @@
                             LLMプロバイダのポリシーに反する画像を送るとアカウント停止の可能性があるので注意してください。
                             </TextBlock>
 
-                            <!-- ウォッチ機能の有効/無効設定（otomekairo側） -->
                             <CheckBox x:Name="DesktopWatchEnabledCheckBox"
                                       Content="デスクトップウォッチを有効にする（otomekairoが能動的に取得要求を出します）"
                                       Margin="0,5,0,10"
                                       Foreground="#FF4873CF"
                                       ToolTip="Enable desktop watch (server-driven)"/>
 
-                            <!-- ウォッチ間隔（秒） -->
                             <Grid Margin="0,0,0,5">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="110"/>
@@ -179,7 +71,6 @@
                                            HorizontalAlignment="Left"/>
                             </Grid>
 
-                            <!-- アイドルタイムアウト（分） -->
                             <Grid Margin="0,0,0,5">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="110"/>
@@ -205,12 +96,10 @@
                                            HorizontalAlignment="Left"/>
                             </Grid>
 
-                            <!-- 区切り線 -->
                             <Rectangle Fill="#E0E0E0"
                                        Height="1"
                                        Margin="0,10,0,10"/>
 
-                            <!-- スクショ除外（ウィンドウタイトル正規表現） -->
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
@@ -233,14 +122,12 @@
                     </Border>
                 </GroupBox>
 
-                <!-- 音声認識設定 -->
                 <GroupBox Header="音声認識設定"
                           Margin="0,0,20,20"
                           Style="{StaticResource SettingsGroupBoxStyle}">
                     <Border Background="White"
                             Padding="10">
                         <StackPanel>
-                            <!-- 説明テキスト -->
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
@@ -279,7 +166,6 @@
                         </StackPanel>
                     </Border>
                 </GroupBox>
-
             </StackPanel>
         </ScrollViewer>
     </Grid>

@@ -21,9 +21,6 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
         [JsonPropertyName("model_presets")]
         public List<OtomeKairoModelPresetDefinition> ModelPresets { get; set; } = new List<OtomeKairoModelPresetDefinition>();
-
-        [JsonPropertyName("model_profiles")]
-        public List<OtomeKairoModelProfileDefinition> ModelProfiles { get; set; } = new List<OtomeKairoModelProfileDefinition>();
     }
 
     /// <summary>
@@ -128,47 +125,5 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
         [JsonPropertyName("roles")]
         public Dictionary<string, Dictionary<string, object?>> Roles { get; set; } = new Dictionary<string, Dictionary<string, object?>>();
-    }
-
-    /// <summary>
-    /// モデルプロファイル設定を表します。
-    /// </summary>
-    public class OtomeKairoModelProfileDefinition
-    {
-        // Identity
-        [JsonPropertyName("model_profile_id")]
-        public string ModelProfileId { get; set; } = string.Empty;
-
-        [JsonPropertyName("display_name")]
-        public string DisplayName { get; set; } = string.Empty;
-
-        // BaseConnection
-        [JsonPropertyName("kind")]
-        public string Kind { get; set; } = string.Empty;
-
-        [JsonPropertyName("model")]
-        public string Model { get; set; } = string.Empty;
-
-        [JsonPropertyName("base_url")]
-        public string? BaseUrl { get; set; }
-
-        [JsonPropertyName("auth")]
-        public Dictionary<string, object?>? Auth { get; set; }
-
-        // VisionSettings
-        [JsonPropertyName("vision_model_name")]
-        public string? VisionModelName { get; set; }
-
-        [JsonPropertyName("vision_base_url")]
-        public string? VisionBaseUrl { get; set; }
-
-        [JsonPropertyName("vision_auth")]
-        public Dictionary<string, object?>? VisionAuth { get; set; }
-
-        [JsonPropertyName("vision_max_tokens")]
-        public int? VisionMaxTokens { get; set; }
-
-        [JsonPropertyName("vision_timeout_seconds")]
-        public int? VisionTimeoutSeconds { get; set; }
     }
 }

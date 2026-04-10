@@ -41,14 +41,12 @@
                                                    FontWeight="SemiBold">
                                                 <TextBlock.ContextMenu>
                                                         <ContextMenu>
-                                                                <MenuItem Header="OtomeKairo"
-                                                                          Click="OtomeKairoMenuItem_Click"/>
-                                                                <MenuItem Header="感情表示"
-                                                                          Click="MoodDebugMenuItem_Click"/>
                                                                 <MenuItem Header="ログ表示"
                                                                           Click="LogViewerMenuItem_Click"/>
                                                         </ContextMenu>
                                                 </TextBlock.ContextMenu>
+
+
                                         </TextBlock>
                                 </StackPanel>
 

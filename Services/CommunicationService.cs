@@ -23,13 +23,11 @@ namespace CocoroConsole.Services
     /// - CocoroConsole API サーバーの起動/停止（外部からの chat/control/status 更新を受ける）
     /// - CocoroShell への送信（発話/表示の連携）
     /// - OtomeKairo の状態ポーリングと、状態変化イベントの転送
-    /// - otomekairo HTTP API（Bearer 認証）を用いた設定取得やチャット SSE ストリーミング
+    /// - otomekairo HTTP API（Bearer 認証）を用いた現在設定取得と会話観測送信
     /// - ログ/イベントのストリーミング接続の管理
     /// </summary>
     public class CommunicationService : ICommunicationService
     {
-        // チャットは SSE の token を逐次 UI に転送して表示する（即時表示方式）
-
         // CocoroConsole 側の HTTP API サーバー（外部クライアントからの受信）
         private CocoroConsoleApiServer _apiServer;
 
@@ -48,10 +46,6 @@ namespace CocoroConsole.Services
         private LogStreamClient? _logStreamClient;
         private EventsStreamClient? _eventsStreamClient;
 
-        // /api/mood/debug を 1 秒間隔で取得するポーリング（感情デバッグ表示用）
-        private readonly object _moodDebugPollingLock = new object();
-        private CancellationTokenSource? _moodDebugPollingCts;
-        private Task? _moodDebugPollingTask;
 
         // シェルへの送信順序を保証するためのセマフォ（同時送信を直列化）
         private readonly SemaphoreSlim _forwardMessageSemaphore = new SemaphoreSlim(1, 1);
@@ -106,12 +100,10 @@ namespace CocoroConsole.Services
         public event EventHandler<string>? ErrorOccurred;
         public event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
         public event EventHandler<OtomeKairoStatus>? StatusChanged;
-        public event EventHandler<CocoroConsole.Models.OtomeKairoApi.OtomeKairoSettings>? OtomeKairoSettingsUpdated;
+        public event EventHandler<OtomeKairoCurrentSettings>? OtomeKairoCurrentSettingsUpdated;
         public event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
         public event EventHandler<bool>? LogStreamConnectionChanged;
         public event EventHandler<string>? LogStreamError;
-        public event EventHandler<MoodDebugUpdatedEventArgs>? MoodDebugUpdated;
-        public event EventHandler<string>? MoodDebugError;
 
         public bool IsServerRunning => _apiServer.IsRunning;
 
@@ -439,7 +431,7 @@ namespace CocoroConsole.Services
             if (!_initialSettingsFetched && status == OtomeKairoStatus.Normal)
             {
                 _initialSettingsFetched = true;
-                _ = FetchAndApplySettingsFromOtomeKairoAsync();
+                _ = FetchAndApplyCurrentSettingsFromOtomeKairoAsync();
             }
 
             if (status == OtomeKairoStatus.WaitingForStartup)
@@ -450,13 +442,13 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// otomekairoから設定を取得してキャッシュ/イベントに反映
+        /// otomekairo から現在設定を取得してイベントに反映する。
         /// </summary>
-        public async Task FetchAndApplySettingsFromOtomeKairoAsync()
+        private async Task FetchAndApplyCurrentSettingsFromOtomeKairoAsync()
         {
             if (_otomeKairoApiClient == null)
             {
-                Debug.WriteLine("[CommunicationService] APIクライアントが初期化されていないため、接続初期化をスキップ");
+                Debug.WriteLine("[CommunicationService] APIクライアントが初期化されていないため、現在設定の取得をスキップ");
                 return;
             }
 
@@ -466,42 +458,18 @@ namespace CocoroConsole.Services
                 await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
                 Debug.WriteLine("[CommunicationService] OtomeKairo への接続初期化を完了しました");
 
-                // --- status.settings_snapshot から desktop_watch の現在値を UI へ流す ---
-                var statusResponse = await _otomeKairoApiClient.GetOtomeKairoStatusAsync().ConfigureAwait(false);
-                var desktopWatchEnabled = TryReadDesktopWatchEnabled(statusResponse.SettingsSnapshot);
-                OtomeKairoSettingsUpdated?.Invoke(this, new OtomeKairoSettings
-                {
-                    DesktopWatchEnabled = desktopWatchEnabled
-                });
+                var configResponse = await _otomeKairoApiClient.GetOtomeKairoConfigAsync().ConfigureAwait(false);
+                OtomeKairoCurrentSettingsUpdated?.Invoke(this, configResponse.SettingsSnapshot);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[CommunicationService] OtomeKairo への接続初期化に失敗: {ex.Message}");
+                Debug.WriteLine($"[CommunicationService] OtomeKairo 現在設定の取得に失敗: {ex.Message}");
             }
         }
 
-        public Task RefreshOtomeKairoSettingsAsync()
+        public Task RefreshOtomeKairoCurrentSettingsAsync()
         {
-            return FetchAndApplySettingsFromOtomeKairoAsync();
-        }
-
-        private static bool TryReadDesktopWatchEnabled(Dictionary<string, object?> settingsSnapshot)
-        {
-            // --- settings_snapshot.desktop_watch.enabled を安全に読む ---
-            if (!settingsSnapshot.TryGetValue("desktop_watch", out var desktopWatchValue))
-            {
-                return false;
-            }
-
-            if (desktopWatchValue is System.Text.Json.JsonElement element &&
-                element.ValueKind == System.Text.Json.JsonValueKind.Object &&
-                element.TryGetProperty("enabled", out var enabledElement) &&
-                (enabledElement.ValueKind == System.Text.Json.JsonValueKind.True || enabledElement.ValueKind == System.Text.Json.JsonValueKind.False))
-            {
-                return enabledElement.GetBoolean();
-            }
-
-            return false;
+            return FetchAndApplyCurrentSettingsFromOtomeKairoAsync();
         }
 
         /// <summary>
@@ -754,41 +722,42 @@ namespace CocoroConsole.Services
             };
         }
 
-        /// <summary>
-        /// /api/chat の error イベントを表示向けに整形する。
-        /// </summary>
-        private static string FormatChatStreamErrorMessage(string? message, string? code)
-        {
-            // --- 正規化（空白のみは null 扱い） ---
-            var cleanMessage = string.IsNullOrWhiteSpace(message) ? null : message.Trim();
-            var cleanCode = string.IsNullOrWhiteSpace(code) ? null : code.Trim();
 
-            // --- 排他（同時実行） ---
-            if (cleanCode == "chat_busy")
+        public async Task SetDesktopWatchEnabledAsync(bool enabled)
+        {
+            if (_otomeKairoApiClient == null)
             {
-                var fallback = "他のチャット処理中です。応答が完了してから再送してください。";
-                return $"{(cleanMessage ?? fallback)} (code={cleanCode})";
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, "OtomeKairo APIクライアントを初期化できませんでした"));
+                return;
             }
 
-            // --- メッセージが無い場合はコードベースで返す ---
-            if (cleanMessage == null)
+            try
             {
-                return cleanCode == null
-                    ? "チャットAPIエラーが発生しました"
-                    : $"チャットAPIエラーが発生しました (code={cleanCode})";
+                await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
+
+                var configResponse = await _otomeKairoApiClient.GetOtomeKairoConfigAsync().ConfigureAwait(false);
+                var current = configResponse.SettingsSnapshot ?? new OtomeKairoCurrentSettings();
+                var desktopWatch = current.DesktopWatch ?? new OtomeKairoDesktopWatchSettings();
+                var updated = await _otomeKairoApiClient.PatchCurrentConfigAsync(new OtomeKairoCurrentSettingsPatch
+                {
+                    DesktopWatch = new OtomeKairoDesktopWatchSettings
+                    {
+                        Enabled = enabled,
+                        IntervalSeconds = desktopWatch.IntervalSeconds > 0 ? desktopWatch.IntervalSeconds : 300,
+                        TargetClientId = enabled
+                            ? (!string.IsNullOrWhiteSpace(desktopWatch.TargetClientId) ? desktopWatch.TargetClientId : _appSettings.ClientId)
+                            : desktopWatch.TargetClientId,
+                    },
+                }).ConfigureAwait(false);
+
+                OtomeKairoCurrentSettingsUpdated?.Invoke(this, updated.SettingsSnapshot);
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, enabled ? "デスクトップウォッチを有効にしました" : "デスクトップウォッチを無効にしました"));
             }
-
-            // --- メッセージがある場合はコードがあれば添える（デバッグ用途） ---
-            return cleanCode == null ? cleanMessage : $"{cleanMessage} (code={cleanCode})";
-        }
-
-        public Task SetDesktopWatchEnabledAsync(bool enabled)
-        {
-            // --- 現在の OtomeKairo API では desktop watch 設定操作を公開していない ---
-            var message = "現在の OtomeKairo API ではデスクトップウォッチ設定変更は未対応です";
-            Debug.WriteLine($"[DesktopWatch] {message}");
-            StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, message));
-            return Task.CompletedTask;
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[DesktopWatch] 切り替え失敗: {ex.Message}");
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"デスクトップウォッチ設定変更に失敗しました: {ex.Message}"));
+            }
         }
 
 
@@ -1009,110 +978,6 @@ namespace CocoroConsole.Services
         private void OnLogStreamErrorOccurred(object? sender, string errorMessage)
         {
             LogStreamError?.Invoke(this, errorMessage);
-        }
-
-        /// <summary>
-        /// /api/mood/debug のポーリングを開始（1秒間隔）
-        /// </summary>
-        public Task StartMoodDebugPollingAsync()
-        {
-            // --- 現在の OtomeKairo API では mood/debug を公開していない ---
-            MoodDebugError?.Invoke(this, "現在の OtomeKairo API では mood/debug は未対応です");
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// /api/mood/debug のポーリングを停止
-        /// </summary>
-        public async Task StopMoodDebugPollingAsync()
-        {
-            CancellationTokenSource? cts;
-            Task? pollingTask;
-
-            // --- 参照を切ってからキャンセル/待機する（ロック時間を最小化） ---
-            lock (_moodDebugPollingLock)
-            {
-                cts = _moodDebugPollingCts;
-                pollingTask = _moodDebugPollingTask;
-                _moodDebugPollingCts = null;
-                _moodDebugPollingTask = null;
-            }
-
-            if (cts == null)
-            {
-                return;
-            }
-
-            try
-            {
-                cts.Cancel();
-            }
-            finally
-            {
-                cts.Dispose();
-            }
-
-            try
-            {
-                if (pollingTask != null)
-                {
-                    await pollingTask.ConfigureAwait(false);
-                }
-            }
-            catch
-            {
-                // --- 停止処理の例外は握りつぶす（UI/シャットダウンを阻害しない） ---
-            }
-        }
-
-        /// <summary>
-        /// /api/mood/debug を定期取得してイベント転送する（単一ループ・直列実行）
-        /// </summary>
-        private async Task MoodDebugPollingLoopAsync(CancellationToken cancellationToken)
-        {
-            // --- 1秒ごとのポーリング（処理が遅い場合は「終わってから1秒後」になる） ---
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    // --- APIクライアント未初期化（トークン未設定等）の場合はエラー通知して待機 ---
-                    if (_otomeKairoApiClient == null)
-                    {
-                        MoodDebugError?.Invoke(this, "otomekairo のBearerトークンが未設定のため、感情デバッグを取得できません。");
-                        await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
-                        continue;
-                    }
-
-                    // --- 1秒ポーリング前提のため、1回の取得は短いタイムアウトにする ---
-                    using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    timeoutCts.CancelAfter(TimeSpan.FromMilliseconds(900));
-
-                    var response = await _otomeKairoApiClient.GetMoodDebugAsync(timeoutCts.Token).ConfigureAwait(false);
-                    MoodDebugUpdated?.Invoke(this, new MoodDebugUpdatedEventArgs(response, DateTimeOffset.Now));
-                }
-                catch (OperationCanceledException)
-                {
-                    // --- アプリ終了/停止要求時は静かに抜ける。タイムアウトはエラーとして扱う ---
-                    if (!cancellationToken.IsCancellationRequested)
-                    {
-                        MoodDebugError?.Invoke(this, "感情デバッグの取得がタイムアウトしました。");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MoodDebugError?.Invoke(this, $"感情デバッグの取得に失敗しました: {ex.Message}");
-                }
-
-                try
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    // --- 停止要求 ---
-                    break;
-                }
-            }
         }
 
         private async Task StartEventsStreamAsync()
@@ -1700,39 +1565,6 @@ namespace CocoroConsole.Services
             }
         }
 
-        private static OtomeKairoSettingsUpdateRequest CreateSettingsUpdateRequest(OtomeKairoSettings latestSettings)
-        {
-            latestSettings ??= new OtomeKairoSettings();
-
-            var activeLlmId = latestSettings.ActiveLlmPresetId ?? latestSettings.LlmPreset.FirstOrDefault()?.LlmPresetId;
-            var activeEmbeddingId = latestSettings.ActiveEmbeddingPresetId ?? latestSettings.EmbeddingPreset.FirstOrDefault()?.EmbeddingPresetId;
-            var activePersonaId = latestSettings.ActivePersonaPresetId ?? latestSettings.PersonaPreset.FirstOrDefault()?.PersonaPresetId;
-            var activeAddonId = latestSettings.ActiveAddonPresetId ?? latestSettings.AddonPreset.FirstOrDefault()?.AddonPresetId;
-
-            if (string.IsNullOrWhiteSpace(activeLlmId) ||
-                string.IsNullOrWhiteSpace(activeEmbeddingId) ||
-                string.IsNullOrWhiteSpace(activePersonaId) ||
-                string.IsNullOrWhiteSpace(activeAddonId))
-            {
-                throw new InvalidOperationException("API設定のアクティブプリセットIDが取得できません。otomekairo側のsettings.dbを確認してください。");
-            }
-
-            return new OtomeKairoSettingsUpdateRequest
-            {
-                MemoryEnabled = latestSettings.MemoryEnabled,
-                DesktopWatchEnabled = latestSettings.DesktopWatchEnabled,
-                DesktopWatchIntervalSeconds = latestSettings.DesktopWatchIntervalSeconds,
-                DesktopWatchTargetClientId = latestSettings.DesktopWatchTargetClientId,
-                ActiveLlmPresetId = activeLlmId!,
-                ActiveEmbeddingPresetId = activeEmbeddingId!,
-                ActivePersonaPresetId = activePersonaId!,
-                ActiveAddonPresetId = activeAddonId!,
-                LlmPreset = latestSettings.LlmPreset ?? new List<LlmPreset>(),
-                EmbeddingPreset = latestSettings.EmbeddingPreset ?? new List<EmbeddingPreset>(),
-                PersonaPreset = latestSettings.PersonaPreset ?? new List<PersonaPreset>(),
-                AddonPreset = latestSettings.AddonPreset ?? new List<AddonPreset>()
-            };
-        }
 
         private void OnEventsStreamErrorOccurred(object? sender, string errorMessage)
         {
@@ -1812,25 +1644,6 @@ namespace CocoroConsole.Services
         {
             // イベント購読解除
             AppSettings.SettingsSaved -= OnSettingsSaved;
-
-            // --- 感情デバッグポーリングの停止（Disposeは同期のため、キャンセルのみ行う） ---
-            lock (_moodDebugPollingLock)
-            {
-                try
-                {
-                    _moodDebugPollingCts?.Cancel();
-                }
-                catch
-                {
-                    // --- Dispose中の例外は握りつぶす ---
-                }
-                finally
-                {
-                    _moodDebugPollingCts?.Dispose();
-                    _moodDebugPollingCts = null;
-                    _moodDebugPollingTask = null;
-                }
-            }
 
             // セマフォの解放
             _forwardMessageSemaphore?.Dispose();

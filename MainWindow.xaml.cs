@@ -30,8 +30,6 @@ namespace CocoroConsole
         private RealtimeVoiceRecognitionService? _voiceRecognitionService;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
-        private MoodDebugWindow? _moodDebugWindow;
-        private OtomeKairoSettingsWindow? _otomeKairoSettingsWindow;
         private DebugTraceListener? _debugTraceListener;
         private bool _isStreamingChatActive;
         private bool _skipNextAssistantMessage;
@@ -40,8 +38,6 @@ namespace CocoroConsole
         private const string MainWindowPlacementKey = "MainWindow";
         private const string SettingWindowPlacementKey = "SettingWindow";
         private const string LogViewerWindowPlacementKey = "LogViewerWindow";
-        private const string MoodDebugWindowPlacementKey = "MoodDebugWindow";
-        private const string OtomeKairoSettingsWindowPlacementKey = "OtomeKairoSettingsWindow";
 
         // --- OtomeKairo の最新ステータス（ステータスバー復帰先） ---
         // ログ表示で一時的に上書きしても、指定時間後「その時点の最新状態」に戻すために保持する。
@@ -89,15 +85,6 @@ namespace CocoroConsole
             OpenLogViewer();
         }
 
-        private void MoodDebugMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            OpenMoodDebugWindow();
-        }
-
-        private void OtomeKairoMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            OpenOtomeKairoSettingsWindow();
-        }
 
         /// <summary>
         /// チャット履歴をクリア
@@ -207,7 +194,7 @@ namespace CocoroConsole
         /// </summary>
         private void InitializeButtonStates()
         {
-            // デスクトップウォッチの状態を反映（otomekairo /api/settings 由来）
+            // デスクトップウォッチの状態を反映（otomekairo current 設定由来）
             UpdateDesktopWatchButtonState();
 
             // 現在のキャラクターの設定を反映
@@ -294,7 +281,7 @@ namespace CocoroConsole
             _communicationService.ControlCommandReceived += OnControlCommandReceived;
             _communicationService.ErrorOccurred += OnErrorOccurred;
             _communicationService.StatusChanged += OnOtomeKairoStatusChanged;
-            _communicationService.OtomeKairoSettingsUpdated += OnOtomeKairoSettingsUpdated;
+            _communicationService.OtomeKairoCurrentSettingsUpdated += OnOtomeKairoCurrentSettingsUpdated;
         }
 
         /// <summary>
@@ -619,11 +606,11 @@ namespace CocoroConsole
             });
         }
 
-        private void OnOtomeKairoSettingsUpdated(object? sender, OtomeKairoSettings settings)
+        private void OnOtomeKairoCurrentSettingsUpdated(object? sender, OtomeKairoCurrentSettings current)
         {
             UIHelper.RunOnUIThread(() =>
             {
-                _isDesktopWatchEnabled = settings.DesktopWatchEnabled;
+                _isDesktopWatchEnabled = current.DesktopWatch?.Enabled ?? false;
                 UpdateDesktopWatchButtonState();
             });
         }
@@ -678,89 +665,6 @@ namespace CocoroConsole
             _logViewerWindow.Show();
         }
 
-        /// <summary>
-        /// 感情デバッグウィンドウを開く（/api/mood/debug の表示）
-        /// </summary>
-        public void OpenMoodDebugWindow()
-        {
-            // --- 通信サービスが無い場合は開けない ---
-            if (_communicationService == null)
-            {
-                UIHelper.ShowError("エラー", "通信サービスが初期化されていません。");
-                return;
-            }
-
-            // --- 既に開いている場合はアクティブにする ---
-            if (_moodDebugWindow != null && !_moodDebugWindow.IsClosed)
-            {
-                _moodDebugWindow.Activate();
-                _moodDebugWindow.WindowState = WindowState.Normal;
-                return;
-            }
-
-            // --- 新規作成 ---
-            _moodDebugWindow = new MoodDebugWindow(_communicationService);
-            var isMoodDebugPositionRestored = WindowPlacementManager.AttachAndRestore(
-                _moodDebugWindow,
-                MoodDebugWindowPlacementKey,
-                _appSettings);
-            if (!isMoodDebugPositionRestored)
-            {
-                PositionWindowNearMain(_moodDebugWindow);
-            }
-
-            // --- ウィンドウが閉じられた時の処理 ---
-            _moodDebugWindow.Closed += (_, __) =>
-            {
-                _moodDebugWindow = null;
-            };
-
-            _moodDebugWindow.Show();
-        }
-
-        /// <summary>
-        /// OtomeKairo設定ウィンドウを開く
-        /// </summary>
-        public void OpenOtomeKairoSettingsWindow()
-        {
-            // --- 設定ウィンドウが開いている場合は表示しない ---
-            if (_settingWindow != null && !_settingWindow.IsClosed)
-            {
-                MessageBox.Show(
-                    "先に設定ウインドウを閉じてください",
-                    "OtomeKairo",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                return;
-            }
-
-            // --- 既に開いている場合は前面化する ---
-            if (_otomeKairoSettingsWindow != null && !_otomeKairoSettingsWindow.IsClosed)
-            {
-                _otomeKairoSettingsWindow.Activate();
-                _otomeKairoSettingsWindow.WindowState = WindowState.Normal;
-                return;
-            }
-
-            // --- 新規作成して位置を復元する ---
-            _otomeKairoSettingsWindow = new OtomeKairoSettingsWindow(_communicationService);
-            var isPositionRestored = WindowPlacementManager.AttachAndRestore(
-                _otomeKairoSettingsWindow,
-                OtomeKairoSettingsWindowPlacementKey,
-                _appSettings);
-            if (!isPositionRestored)
-            {
-                PositionWindowNearMain(_otomeKairoSettingsWindow);
-            }
-
-            // --- 閉じたら参照を解放する ---
-            _otomeKairoSettingsWindow.Closed += (_, __) =>
-            {
-                _otomeKairoSettingsWindow = null;
-            };
-
-            _otomeKairoSettingsWindow.Show();
-        }
 
         private void AttachLogStreamHandlers()
         {
@@ -1008,16 +912,6 @@ namespace CocoroConsole
         {
             try
             {
-                // --- OtomeKairo設定ウィンドウが開いている場合は設定画面を開かない ---
-                if (_otomeKairoSettingsWindow != null && !_otomeKairoSettingsWindow.IsClosed)
-                {
-                    MessageBox.Show(
-                        "先にOtomeKairo設定ウインドウを閉じてください",
-                        "設定",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                    return;
-                }
 
                 // 既に設定画面が開いている場合はアクティブにする
                 if (_settingWindow != null && !_settingWindow.IsClosed)
@@ -1583,7 +1477,6 @@ namespace CocoroConsole
                 {
                     _settingWindow?.Close();
                     _logViewerWindow?.Close();
-                    _otomeKairoSettingsWindow?.Close();
                 }
                 catch (Exception ex)
                 {

@@ -61,7 +61,6 @@ namespace CocoroConsole.Controls
             InitializeCharacterSettings();
 
             // システム設定コントロールを初期化（APIクライアント設定後に初期化）
-            SystemSettingsControl.SetApiClient(_apiClient);
             _ = InitializeSystemSettingsAsync();
 
             // システム設定変更イベントを登録
@@ -433,7 +432,7 @@ namespace CocoroConsole.Controls
 
                 if (_communicationService != null)
                 {
-                    await _communicationService.RefreshOtomeKairoSettingsAsync();
+                    await _communicationService.RefreshOtomeKairoCurrentSettingsAsync();
                 }
             }
             catch (System.Exception ex)
@@ -450,7 +449,6 @@ namespace CocoroConsole.Controls
         {
             // --- 保存時点の接続設定（host/port/token）で API クライアントを再構築する ---
             InitializeApiClient();
-            SystemSettingsControl.SetApiClient(_apiClient);
             if (_apiClient == null) return;
             LlmSettingsControl.SetApiClient(_apiClient, SaveLlmPresetsToApiAsync);
             EmbeddingSettingsControl.SetApiClient(_apiClient, SaveEmbeddingPresetsToApiAsync);
@@ -467,8 +465,6 @@ namespace CocoroConsole.Controls
                 _loadedOtomeKairoEditorState = updated;
                 Debug.WriteLine("[SettingWindow] editor-state を API に保存しました");
 
-                // --- reminders は未実装のため no-op だが、保存フローは統一して呼ぶ ---
-                await SystemSettingsControl.SaveRemindersToApiAsync();
 
                 // --- 保存後の server 状態で UI を再同期する ---
                 LlmSettingsControl.LoadSettingsList(
@@ -551,19 +547,15 @@ namespace CocoroConsole.Controls
 
         private List<LlmPreset> BuildLlmPresetsFromEditorState(OtomeKairoEditorState editorState)
         {
-            // --- model_preset と generation profile から LLM UI 用 DTO を組み立てる ---
-            var profilesById = editorState.ModelProfiles.ToDictionary(p => p.ModelProfileId, StringComparer.OrdinalIgnoreCase);
             return editorState.ModelPresets
-                .Select(preset => BuildLlmPreset(preset, profilesById))
+                .Select(BuildLlmPreset)
                 .ToList();
         }
 
         private List<EmbeddingPreset> BuildEmbeddingPresetsFromEditorState(OtomeKairoEditorState editorState)
         {
-            // --- model_preset と embedding profile から Embedding UI 用 DTO を組み立てる ---
-            var profilesById = editorState.ModelProfiles.ToDictionary(p => p.ModelProfileId, StringComparer.OrdinalIgnoreCase);
             return editorState.ModelPresets
-                .Select(preset => BuildEmbeddingPreset(preset, profilesById))
+                .Select(BuildEmbeddingPreset)
                 .ToList();
         }
 
@@ -618,7 +610,7 @@ namespace CocoroConsole.Controls
             }
 
             var personas = BuildPersonasFromUi(baseState, personaPresets, addonPresets);
-            var modelResources = BuildModelResourcesFromUi(baseState, llmPresets, embeddingPresets);
+            var modelPresets = BuildModelPresetsFromUi(baseState, llmPresets, embeddingPresets);
             bool desktopWatchEnabled = SystemSettingsControl.GetDesktopWatchEnabled();
             string? preservedTargetClientId = baseState.Current.DesktopWatch?.TargetClientId;
 
@@ -652,8 +644,7 @@ namespace CocoroConsole.Controls
                         Description = memorySet.Description,
                     })
                     .ToList(),
-                ModelPresets = modelResources.ModelPresets,
-                ModelProfiles = modelResources.ModelProfiles,
+                ModelPresets = modelPresets,
             };
         }
 
@@ -716,14 +707,13 @@ namespace CocoroConsole.Controls
                 .ToList();
         }
 
-        private (List<OtomeKairoModelPresetDefinition> ModelPresets, List<OtomeKairoModelProfileDefinition> ModelProfiles) BuildModelResourcesFromUi(
+        private List<OtomeKairoModelPresetDefinition> BuildModelPresetsFromUi(
             OtomeKairoEditorState baseState,
             IReadOnlyList<LlmPreset> llmPresets,
             IReadOnlyList<EmbeddingPreset> embeddingPresets)
         {
             // --- LLM preset と Embedding preset を 1 つの model_preset 群へ統合する ---
             var existingPresetsById = baseState.ModelPresets.ToDictionary(p => p.ModelPresetId, StringComparer.OrdinalIgnoreCase);
-            var existingProfilesById = baseState.ModelProfiles.ToDictionary(p => p.ModelProfileId, StringComparer.OrdinalIgnoreCase);
             var llmById = llmPresets
                 .Where(p => !string.IsNullOrWhiteSpace(p.LlmPresetId))
                 .ToDictionary(p => p.LlmPresetId!, StringComparer.OrdinalIgnoreCase);
@@ -737,7 +727,6 @@ namespace CocoroConsole.Controls
                 .ToList();
 
             var modelPresets = new List<OtomeKairoModelPresetDefinition>();
-            var modelProfiles = new List<OtomeKairoModelProfileDefinition>();
 
             foreach (var presetId in orderedIds)
             {
@@ -745,83 +734,53 @@ namespace CocoroConsole.Controls
                 llmById.TryGetValue(presetId, out var llmPreset);
                 embeddingById.TryGetValue(presetId, out var embeddingPreset);
 
-                var generationProfileId = ResolveGenerationProfileId(existingPreset, presetId);
-                var embeddingProfileId = ResolveEmbeddingProfileId(existingPreset, presetId);
-                existingProfilesById.TryGetValue(generationProfileId, out var existingGenerationProfile);
-                existingProfilesById.TryGetValue(embeddingProfileId, out var existingEmbeddingProfile);
-
-                var generationProfile = BuildGenerationProfile(
-                    presetId,
-                    llmPreset,
-                    existingGenerationProfile,
-                    generationProfileId
-                );
-                var embeddingProfile = BuildEmbeddingProfile(
-                    presetId,
-                    embeddingPreset,
-                    existingEmbeddingProfile,
-                    embeddingProfileId
-                );
-
-                modelProfiles.Add(generationProfile);
-                modelProfiles.Add(embeddingProfile);
                 modelPresets.Add(BuildModelPresetDefinition(
                     presetId,
                     llmPreset,
                     embeddingPreset,
-                    existingPreset,
-                    generationProfileId,
-                    embeddingProfileId
+                    existingPreset
                 ));
             }
 
-            return (modelPresets, modelProfiles);
+            return modelPresets;
         }
 
-        private static LlmPreset BuildLlmPreset(
-            OtomeKairoModelPresetDefinition modelPreset,
-            IReadOnlyDictionary<string, OtomeKairoModelProfileDefinition> profilesById)
+        private static LlmPreset BuildLlmPreset(OtomeKairoModelPresetDefinition modelPreset)
         {
-            // --- reply_generation と generation profile を UI 用の 1 件へ投影する ---
-            var replyRole = GetRole(modelPreset, "reply_generation");
-            var profileId = ReadString(replyRole, "model_profile_id");
-            profilesById.TryGetValue(profileId ?? string.Empty, out var generationProfile);
+            // --- expression_generation role を UI 用の 1 件へ投影する ---
+            var expressionRole = GetRole(modelPreset, "expression_generation");
 
             return new LlmPreset
             {
                 LlmPresetId = modelPreset.ModelPresetId,
                 LlmPresetName = modelPreset.DisplayName,
-                LlmApiKey = ReadAuthToken(generationProfile?.Auth) ?? string.Empty,
-                LlmModel = generationProfile?.Model ?? string.Empty,
-                LlmBaseUrl = generationProfile?.BaseUrl,
-                MaxTurnsWindow = ReadInt(replyRole, "max_turns_window", LlmPreset.DefaultMaxTurnsWindow),
-                MaxTokens = ReadInt(replyRole, "max_tokens", LlmPreset.DefaultMaxTokens),
-                ReasoningEffort = ReadString(replyRole, "reasoning_effort"),
-                ReplyWebSearchEnabled = ReadBool(replyRole, "reply_web_search_enabled", true),
-                ImageModelApiKey = ReadAuthToken(generationProfile?.VisionAuth),
-                ImageModel = generationProfile?.VisionModelName ?? string.Empty,
-                ImageLlmBaseUrl = generationProfile?.VisionBaseUrl,
-                MaxTokensVision = generationProfile?.VisionMaxTokens ?? LlmPreset.DefaultMaxTokensVision,
-                ImageTimeoutSeconds = generationProfile?.VisionTimeoutSeconds ?? LlmPreset.DefaultImageTimeoutSeconds,
+                LlmApiKey = ReadString(expressionRole, "api_key") ?? string.Empty,
+                LlmModel = ReadString(expressionRole, "model") ?? string.Empty,
+                LlmBaseUrl = NormalizeEndpointRefForUi(ReadString(expressionRole, "endpoint_ref")),
+                MaxTurnsWindow = ReadInt(expressionRole, "max_turns_window", LlmPreset.DefaultMaxTurnsWindow),
+                MaxTokens = ReadInt(expressionRole, "max_tokens", LlmPreset.DefaultMaxTokens),
+                ReasoningEffort = ReadString(expressionRole, "reasoning_effort"),
+                ReplyWebSearchEnabled = ReadBool(expressionRole, "reply_web_search_enabled", true),
+                ImageModelApiKey = ReadString(expressionRole, "vision_api_key"),
+                ImageModel = ReadString(expressionRole, "vision_model") ?? string.Empty,
+                ImageLlmBaseUrl = NormalizeEndpointRefForUi(ReadString(expressionRole, "vision_endpoint_ref")),
+                MaxTokensVision = ReadInt(expressionRole, "vision_max_tokens", LlmPreset.DefaultMaxTokensVision),
+                ImageTimeoutSeconds = ReadInt(expressionRole, "vision_timeout_seconds", LlmPreset.DefaultImageTimeoutSeconds),
             };
         }
 
-        private static EmbeddingPreset BuildEmbeddingPreset(
-            OtomeKairoModelPresetDefinition modelPreset,
-            IReadOnlyDictionary<string, OtomeKairoModelProfileDefinition> profilesById)
+        private static EmbeddingPreset BuildEmbeddingPreset(OtomeKairoModelPresetDefinition modelPreset)
         {
-            // --- embedding role と embedding profile を UI 用の 1 件へ投影する ---
+            // --- embedding role を UI 用の 1 件へ投影する ---
             var embeddingRole = GetRole(modelPreset, "embedding");
-            var profileId = ReadString(embeddingRole, "model_profile_id");
-            profilesById.TryGetValue(profileId ?? string.Empty, out var embeddingProfile);
 
             return new EmbeddingPreset
             {
                 EmbeddingPresetId = modelPreset.ModelPresetId,
                 EmbeddingPresetName = modelPreset.DisplayName,
-                EmbeddingModelApiKey = ReadAuthToken(embeddingProfile?.Auth),
-                EmbeddingModel = embeddingProfile?.Model ?? string.Empty,
-                EmbeddingBaseUrl = embeddingProfile?.BaseUrl,
+                EmbeddingModelApiKey = ReadString(embeddingRole, "api_key"),
+                EmbeddingModel = ReadString(embeddingRole, "model") ?? string.Empty,
+                EmbeddingBaseUrl = NormalizeEndpointRefForUi(ReadString(embeddingRole, "endpoint_ref")),
                 EmbeddingDimension = ReadInt(embeddingRole, "embedding_dimension", EmbeddingPreset.DefaultEmbeddingDimension),
                 SimilarEpisodesLimit = ReadInt(embeddingRole, "similar_episodes_limit", EmbeddingPreset.DefaultSimilarEpisodesLimit),
             };
@@ -831,50 +790,26 @@ namespace CocoroConsole.Controls
             string presetId,
             LlmPreset? llmPreset,
             EmbeddingPreset? embeddingPreset,
-            OtomeKairoModelPresetDefinition? existingPreset,
-            string generationProfileId,
-            string embeddingProfileId)
+            OtomeKairoModelPresetDefinition? existingPreset)
         {
-            // --- UI から編集できる値だけ role 辞書へ反映し、その他は既存値を引き継ぐ ---
-            var replyRole = CloneRole(GetRole(existingPreset, "reply_generation"));
-            replyRole["model_profile_id"] = generationProfileId;
-            replyRole["max_turns_window"] = llmPreset?.MaxTurnsWindow ?? ReadInt(replyRole, "max_turns_window", LlmPreset.DefaultMaxTurnsWindow);
-            replyRole["max_tokens"] = llmPreset?.MaxTokens ?? ReadInt(replyRole, "max_tokens", LlmPreset.DefaultMaxTokens);
-            replyRole["reply_web_search_enabled"] = llmPreset?.ReplyWebSearchEnabled ?? ReadBool(replyRole, "reply_web_search_enabled", true);
-            if (!string.IsNullOrWhiteSpace(llmPreset?.ReasoningEffort))
-            {
-                replyRole["reasoning_effort"] = llmPreset!.ReasoningEffort!;
-            }
-            else
-            {
-                replyRole.Remove("reasoning_effort");
-            }
-
-            var decisionRole = CloneRole(GetRole(existingPreset, "decision_generation"));
-            decisionRole["model_profile_id"] = generationProfileId;
-            if (!decisionRole.ContainsKey("max_tokens"))
-            {
-                decisionRole["max_tokens"] = llmPreset?.MaxTokens ?? LlmPreset.DefaultMaxTokens;
-            }
-
-            var recallRole = CloneRole(GetRole(existingPreset, "recall_hint_generation"));
-            recallRole["model_profile_id"] = generationProfileId;
-            if (!recallRole.ContainsKey("max_tokens"))
-            {
-                recallRole["max_tokens"] = 2048;
-            }
-
-            var memoryRole = CloneRole(GetRole(existingPreset, "memory_interpretation"));
-            memoryRole["model_profile_id"] = generationProfileId;
-            if (!memoryRole.ContainsKey("max_tokens"))
-            {
-                memoryRole["max_tokens"] = llmPreset?.MaxTokens ?? LlmPreset.DefaultMaxTokens;
-            }
-
-            var embeddingRole = CloneRole(GetRole(existingPreset, "embedding"));
-            embeddingRole["model_profile_id"] = embeddingProfileId;
-            embeddingRole["embedding_dimension"] = embeddingPreset?.EmbeddingDimension ?? ReadInt(embeddingRole, "embedding_dimension", EmbeddingPreset.DefaultEmbeddingDimension);
-            embeddingRole["similar_episodes_limit"] = embeddingPreset?.SimilarEpisodesLimit ?? ReadInt(embeddingRole, "similar_episodes_limit", EmbeddingPreset.DefaultSimilarEpisodesLimit);
+            // --- UI で編集した generation / embedding 設定を各 role に反映する ---
+            var expressionRole = BuildExpressionGenerationRole(GetRole(existingPreset, "expression_generation"), llmPreset);
+            var observationRole = BuildSharedGenerationRole(
+                GetRole(existingPreset, "observation_interpretation"),
+                llmPreset,
+                defaultMaxTokens: 2048
+            );
+            var decisionRole = BuildSharedGenerationRole(
+                GetRole(existingPreset, "decision_generation"),
+                llmPreset,
+                defaultMaxTokens: LlmPreset.DefaultMaxTokens
+            );
+            var memoryRole = BuildSharedGenerationRole(
+                GetRole(existingPreset, "memory_interpretation"),
+                llmPreset,
+                defaultMaxTokens: LlmPreset.DefaultMaxTokens
+            );
+            var embeddingRole = BuildEmbeddingRole(GetRole(existingPreset, "embedding"), embeddingPreset);
 
             return new OtomeKairoModelPresetDefinition
             {
@@ -887,64 +822,76 @@ namespace CocoroConsole.Controls
                 ),
                 Roles = new Dictionary<string, Dictionary<string, object?>>
                 {
-                    ["reply_generation"] = replyRole,
+                    ["observation_interpretation"] = observationRole,
                     ["decision_generation"] = decisionRole,
-                    ["recall_hint_generation"] = recallRole,
+                    ["expression_generation"] = expressionRole,
                     ["memory_interpretation"] = memoryRole,
                     ["embedding"] = embeddingRole,
                 },
             };
         }
 
-        private static OtomeKairoModelProfileDefinition BuildGenerationProfile(
-            string presetId,
-            LlmPreset? llmPreset,
-            OtomeKairoModelProfileDefinition? existingProfile,
-            string profileId)
+        private static Dictionary<string, object?> BuildExpressionGenerationRole(
+            Dictionary<string, object?> existingRole,
+            LlmPreset? llmPreset)
         {
-            // --- 生成系 profile は model 文字列を正本にして組み立てる ---
-            string model = llmPreset?.LlmModel?.Trim() ?? string.Empty;
-            string? baseUrl = NormalizeEmptyToNull(llmPreset?.LlmBaseUrl);
-            string apiKey = llmPreset?.LlmApiKey?.Trim() ?? string.Empty;
-
-            return new OtomeKairoModelProfileDefinition
-            {
-                ModelProfileId = profileId,
-                DisplayName = FirstNonEmpty(llmPreset?.LlmPresetName, existingProfile?.DisplayName, $"{presetId} Text"),
-                Kind = "generation",
-                Model = model,
-                BaseUrl = baseUrl,
-                Auth = BuildAuth(apiKey),
-                VisionModelName = NormalizeEmptyToNull(llmPreset?.ImageModel),
-                VisionBaseUrl = NormalizeEmptyToNull(llmPreset?.ImageLlmBaseUrl),
-                VisionAuth = string.IsNullOrWhiteSpace(llmPreset?.ImageModelApiKey) && string.IsNullOrWhiteSpace(llmPreset?.ImageLlmBaseUrl) && string.IsNullOrWhiteSpace(llmPreset?.ImageModel)
-                    ? null
-                    : BuildAuth(llmPreset?.ImageModelApiKey),
-                VisionMaxTokens = llmPreset?.MaxTokensVision,
-                VisionTimeoutSeconds = llmPreset?.ImageTimeoutSeconds,
-            };
+            var role = BuildSharedGenerationRole(existingRole, llmPreset, LlmPreset.DefaultMaxTokens);
+            role["max_turns_window"] = llmPreset?.MaxTurnsWindow ?? ReadInt(existingRole, "max_turns_window", LlmPreset.DefaultMaxTurnsWindow);
+            role["reply_web_search_enabled"] = llmPreset?.ReplyWebSearchEnabled ?? ReadBool(existingRole, "reply_web_search_enabled", true);
+            role["vision_model"] = FirstNonEmpty(
+                NormalizeEmptyToNull(llmPreset?.ImageModel),
+                ReadString(existingRole, "vision_model")
+            );
+            role["vision_endpoint_ref"] = ResolveEndpointRef(
+                existingRole,
+                NormalizeEmptyToNull(llmPreset?.ImageLlmBaseUrl),
+                "vision_endpoint_ref",
+                ResolveProvider(existingRole, llmPreset?.ImageModel, llmPreset?.ImageLlmBaseUrl)
+            );
+            role["vision_api_key"] = llmPreset?.ImageModelApiKey?.Trim() ?? ReadString(existingRole, "vision_api_key") ?? string.Empty;
+            role["vision_max_tokens"] = llmPreset?.MaxTokensVision ?? ReadInt(existingRole, "vision_max_tokens", LlmPreset.DefaultMaxTokensVision);
+            role["vision_timeout_seconds"] = llmPreset?.ImageTimeoutSeconds ?? ReadInt(existingRole, "vision_timeout_seconds", LlmPreset.DefaultImageTimeoutSeconds);
+            return role;
         }
 
-        private static OtomeKairoModelProfileDefinition BuildEmbeddingProfile(
-            string presetId,
-            EmbeddingPreset? embeddingPreset,
-            OtomeKairoModelProfileDefinition? existingProfile,
-            string profileId)
+        private static Dictionary<string, object?> BuildSharedGenerationRole(
+            Dictionary<string, object?> existingRole,
+            LlmPreset? llmPreset,
+            int defaultMaxTokens)
         {
-            // --- embedding profile も model 文字列を正本にして組み立てる ---
-            string model = embeddingPreset?.EmbeddingModel?.Trim() ?? string.Empty;
-            string? baseUrl = NormalizeEmptyToNull(embeddingPreset?.EmbeddingBaseUrl);
-            string apiKey = embeddingPreset?.EmbeddingModelApiKey?.Trim() ?? string.Empty;
-
-            return new OtomeKairoModelProfileDefinition
+            var role = CloneRole(existingRole);
+            string provider = ResolveProvider(role, llmPreset?.LlmModel, llmPreset?.LlmBaseUrl);
+            role["kind"] = "generation";
+            role["provider"] = provider;
+            role["model"] = FirstNonEmpty(llmPreset?.LlmModel, ReadString(existingRole, "model"));
+            role["endpoint_ref"] = ResolveEndpointRef(role, NormalizeEmptyToNull(llmPreset?.LlmBaseUrl), "endpoint_ref", provider);
+            role["api_key"] = llmPreset?.LlmApiKey?.Trim() ?? ReadString(existingRole, "api_key") ?? string.Empty;
+            role["max_tokens"] = llmPreset?.MaxTokens ?? ReadInt(existingRole, "max_tokens", defaultMaxTokens);
+            if (!string.IsNullOrWhiteSpace(llmPreset?.ReasoningEffort))
             {
-                ModelProfileId = profileId,
-                DisplayName = FirstNonEmpty(embeddingPreset?.EmbeddingPresetName, existingProfile?.DisplayName, $"{presetId} Embedding"),
-                Kind = "embedding",
-                Model = model,
-                BaseUrl = baseUrl,
-                Auth = BuildAuth(apiKey),
-            };
+                role["reasoning_effort"] = llmPreset!.ReasoningEffort!.Trim();
+            }
+            else
+            {
+                role.Remove("reasoning_effort");
+            }
+            return role;
+        }
+
+        private static Dictionary<string, object?> BuildEmbeddingRole(
+            Dictionary<string, object?> existingRole,
+            EmbeddingPreset? embeddingPreset)
+        {
+            var role = CloneRole(existingRole);
+            string provider = ResolveProvider(role, embeddingPreset?.EmbeddingModel, embeddingPreset?.EmbeddingBaseUrl);
+            role["kind"] = "embedding";
+            role["provider"] = provider;
+            role["model"] = FirstNonEmpty(embeddingPreset?.EmbeddingModel, ReadString(existingRole, "model"));
+            role["endpoint_ref"] = ResolveEndpointRef(role, NormalizeEmptyToNull(embeddingPreset?.EmbeddingBaseUrl), "endpoint_ref", provider);
+            role["api_key"] = embeddingPreset?.EmbeddingModelApiKey?.Trim() ?? ReadString(existingRole, "api_key") ?? string.Empty;
+            role["embedding_dimension"] = embeddingPreset?.EmbeddingDimension ?? ReadInt(existingRole, "embedding_dimension", EmbeddingPreset.DefaultEmbeddingDimension);
+            role["similar_episodes_limit"] = embeddingPreset?.SimilarEpisodesLimit ?? ReadInt(existingRole, "similar_episodes_limit", EmbeddingPreset.DefaultSimilarEpisodesLimit);
+            return role;
         }
 
         private static Dictionary<string, object?> BuildCorePersona(OtomeKairoPersonaDefinition? existing)
@@ -1001,6 +948,7 @@ namespace CocoroConsole.Controls
                 : source.ToDictionary(entry => entry.Key, entry => entry.Value);
         }
 
+
         private static Dictionary<string, object?> GetRole(OtomeKairoModelPresetDefinition? preset, string roleName)
         {
             // --- role が無い場合でも空辞書を返し、呼び出し側で埋める ---
@@ -1012,47 +960,66 @@ namespace CocoroConsole.Controls
             return role;
         }
 
-        private static string ResolveGenerationProfileId(OtomeKairoModelPresetDefinition? existingPreset, string presetId)
+        private static string ResolveProvider(
+            Dictionary<string, object?> existingRole,
+            string? model,
+            string? endpointLike)
         {
-            // --- 既存 preset があれば reply_generation の profile id を維持する ---
-            var existingId = ReadString(GetRole(existingPreset, "reply_generation"), "model_profile_id");
-            return !string.IsNullOrWhiteSpace(existingId) ? existingId! : $"model_profile:{presetId}:generation";
-        }
-
-        private static string ResolveEmbeddingProfileId(OtomeKairoModelPresetDefinition? existingPreset, string presetId)
-        {
-            // --- 既存 preset があれば embedding の profile id を維持する ---
-            var existingId = ReadString(GetRole(existingPreset, "embedding"), "model_profile_id");
-            return !string.IsNullOrWhiteSpace(existingId) ? existingId! : $"model_profile:{presetId}:embedding";
-        }
-
-        private static Dictionary<string, object?> BuildAuth(string? apiKey)
-        {
-            // --- API キー未設定もそのまま表現できるよう、none を許す ---
-            if (string.IsNullOrWhiteSpace(apiKey))
+            var existingProvider = ReadString(existingRole, "provider");
+            if (!string.IsNullOrWhiteSpace(existingProvider))
             {
-                return new Dictionary<string, object?>
-                {
-                    ["type"] = "none",
-                };
+                return existingProvider!;
             }
 
-            return new Dictionary<string, object?>
+            var normalizedModel = NormalizeEmptyToNull(model);
+            if (!string.IsNullOrWhiteSpace(normalizedModel) && normalizedModel!.StartsWith("openrouter/", StringComparison.OrdinalIgnoreCase))
             {
-                ["type"] = "bearer",
-                ["token"] = apiKey,
-            };
+                return "openrouter";
+            }
+
+            var normalizedEndpoint = NormalizeEmptyToNull(endpointLike);
+            if (!string.IsNullOrWhiteSpace(normalizedEndpoint) && normalizedEndpoint!.Contains("openrouter", StringComparison.OrdinalIgnoreCase))
+            {
+                return "openrouter";
+            }
+
+            return "openrouter";
         }
 
-        private static string? ReadAuthToken(Dictionary<string, object?>? auth)
+        private static string ResolveEndpointRef(
+            Dictionary<string, object?> existingRole,
+            string? endpointLike,
+            string keyName,
+            string provider)
         {
-            // --- OtomeKairo 側へ書いた bearer token を UI 用文字列へ戻す ---
-            if (auth == null)
+            var normalizedEndpoint = NormalizeEmptyToNull(endpointLike);
+            if (!string.IsNullOrWhiteSpace(normalizedEndpoint))
+            {
+                return normalizedEndpoint!;
+            }
+
+            var existingEndpoint = ReadString(existingRole, keyName);
+            if (!string.IsNullOrWhiteSpace(existingEndpoint))
+            {
+                return existingEndpoint!;
+            }
+
+            return string.Equals(provider, "openrouter", StringComparison.OrdinalIgnoreCase)
+                ? "endpoint:openrouter_primary"
+                : "endpoint:default";
+        }
+
+        private static string? NormalizeEndpointRefForUi(string? endpointRef)
+        {
+            var normalized = NormalizeEmptyToNull(endpointRef);
+            if (string.IsNullOrWhiteSpace(normalized))
             {
                 return null;
             }
 
-            return ReadString(auth, "token");
+            return normalized!.StartsWith("endpoint:", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : normalized;
         }
 
         private static string? ReadString(Dictionary<string, object?> values, string key)
