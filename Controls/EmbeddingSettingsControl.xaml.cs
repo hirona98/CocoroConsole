@@ -1,26 +1,28 @@
+using CocoroConsole.Models.OtomeKairoApi;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using CocoroConsole.Models.OtomeKairoApi;
-using CocoroConsole.Services;
-using CocoroConsole.Utilities;
 
 namespace CocoroConsole.Controls
 {
     public partial class EmbeddingSettingsControl : UserControl
     {
-        private bool _isInitializing = false;
-        private List<EmbeddingPreset> _presets = new List<EmbeddingPreset>();
-        private int _currentPresetIndex = -1;
-        private OtomeKairoApiClient? _apiClient;
-        private Func<Task>? _onPresetListChanged;
+        private sealed class MemorySetEditorItem
+        {
+            public string MemorySetId { get; set; } = string.Empty;
+            public string DisplayName { get; set; } = string.Empty;
+            public string Description { get; set; } = string.Empty;
+            public string? ServerBackedMemorySetId { get; set; }
+            public string? CloneSourceMemorySetId { get; set; }
+        }
+
+        private readonly List<MemorySetEditorItem> _memorySets = new();
+        private bool _isInitializing;
+        private int _currentMemorySetIndex = -1;
 
         public event EventHandler? SettingsChanged;
-
-        public Func<string?>? LlmApiKeyProvider { get; set; }
 
         public EmbeddingSettingsControl()
         {
@@ -44,101 +46,38 @@ namespace CocoroConsole.Controls
             }
         }
 
-        public void SetApiClient(OtomeKairoApiClient apiClient, Func<Task> onPresetListChanged)
-        {
-            _apiClient = apiClient;
-            _onPresetListChanged = onPresetListChanged;
-        }
-
-        public List<EmbeddingPreset> GetAllPresets()
-        {
-            // 現在のUI値を現在のプリセットに反映
-            if (_currentPresetIndex >= 0 && _currentPresetIndex < _presets.Count)
-            {
-                SaveCurrentUIToPreset();
-            }
-            return _presets.ToList();
-        }
-
-        private void SaveCurrentUIToPreset()
-        {
-            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count) return;
-
-            // 現在のUI入力を現在のプリセットに反映する
-            EmbeddingPreset preset = _presets[_currentPresetIndex];
-            preset.EmbeddingPresetName = MemoryIdTextBox.Text;
-            preset.EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Text) ? null : EmbeddingApiKeyPasswordBox.Text;
-            preset.EmbeddingModel = EmbeddingModelTextBox.Text ?? string.Empty;
-            preset.EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text;
-            preset.EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : EmbeddingPreset.DefaultEmbeddingDimension;
-            preset.SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : EmbeddingPreset.DefaultSimilarEpisodesLimit;
-        }
-
-        public void LoadSettings(EmbeddingPreset? preset)
+        public void LoadSettings(List<OtomeKairoMemorySetDefinition>? memorySets, string? activeMemorySetId, bool memoryEnabled)
         {
             _isInitializing = true;
-
             try
             {
-                _presets.Clear();
-                PresetSelectComboBox.Items.Clear();
+                MemoryEnabledCheckBox.IsChecked = memoryEnabled;
+                _memorySets.Clear();
+                MemorySetSelectComboBox.Items.Clear();
 
-                if (preset == null)
+                if (memorySets == null || memorySets.Count == 0)
                 {
-                    ClearSettings();
-                    _currentPresetIndex = -1;
+                    _currentMemorySetIndex = -1;
+                    ClearUi();
                     return;
                 }
 
-                // 単一プリセットをリストに追加
-                _presets.Add(preset);
-                PresetSelectComboBox.Items.Add(preset.EmbeddingPresetName);
-                PresetSelectComboBox.SelectedIndex = 0;
-                _currentPresetIndex = 0;
-
-                LoadPresetToUI(preset);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-        }
-
-        public void LoadSettingsList(List<EmbeddingPreset>? presets, string? activePresetId = null)
-        {
-            _isInitializing = true;
-
-            try
-            {
-                _presets.Clear();
-                PresetSelectComboBox.Items.Clear();
-
-                if (presets == null || presets.Count == 0)
+                foreach (var memorySet in memorySets)
                 {
-                    ClearSettings();
-                    _currentPresetIndex = -1;
-                    return;
-                }
-
-                _presets.AddRange(presets);
-                foreach (EmbeddingPreset preset in presets)
-                {
-                    PresetSelectComboBox.Items.Add(preset.EmbeddingPresetName);
-                }
-                var activeIndex = 0;
-                if (!string.IsNullOrWhiteSpace(activePresetId))
-                {
-                    activeIndex = _presets.FindIndex(p => string.Equals(p.EmbeddingPresetId, activePresetId, StringComparison.OrdinalIgnoreCase));
-                    if (activeIndex < 0)
+                    _memorySets.Add(new MemorySetEditorItem
                     {
-                        activeIndex = 0;
-                    }
+                        MemorySetId = memorySet.MemorySetId,
+                        DisplayName = memorySet.DisplayName,
+                        Description = memorySet.Description ?? string.Empty,
+                        ServerBackedMemorySetId = memorySet.MemorySetId,
+                        CloneSourceMemorySetId = null,
+                    });
+                    MemorySetSelectComboBox.Items.Add(memorySet.DisplayName);
                 }
 
-                PresetSelectComboBox.SelectedIndex = activeIndex;
-                _currentPresetIndex = activeIndex;
-
-                LoadPresetToUI(_presets[activeIndex]);
+                _currentMemorySetIndex = ResolveActiveIndex(_memorySets.Select(p => p.MemorySetId).ToList(), activeMemorySetId);
+                MemorySetSelectComboBox.SelectedIndex = _currentMemorySetIndex;
+                LoadMemorySetToUi(_memorySets[_currentMemorySetIndex]);
             }
             finally
             {
@@ -146,66 +85,166 @@ namespace CocoroConsole.Controls
             }
         }
 
-        private void LoadPresetToUI(EmbeddingPreset preset)
+        public List<OtomeKairoMemorySetDefinition> GetAllMemorySets()
         {
-            MemoryIdTextBox.Text = preset.EmbeddingPresetName ?? string.Empty;
-            EmbeddingApiKeyPasswordBox.Text = preset.EmbeddingModelApiKey ?? string.Empty;
-            EmbeddingModelTextBox.Text = preset.EmbeddingModel ?? string.Empty;
-            EmbeddingBaseUrlTextBox.Text = preset.EmbeddingBaseUrl ?? string.Empty;
-            EmbeddingDimensionTextBox.Text = preset.EmbeddingDimension.ToString();
-            SimilarEpisodesLimitTextBox.Text = preset.SimilarEpisodesLimit.ToString();
+            SyncCurrentMemorySetFromUi();
+            return _memorySets.Select(item => new OtomeKairoMemorySetDefinition
+            {
+                MemorySetId = item.MemorySetId,
+                DisplayName = item.DisplayName,
+                Description = string.IsNullOrWhiteSpace(item.Description) ? null : item.Description,
+            }).ToList();
         }
 
-        public EmbeddingPreset? GetSettings()
+        public List<(string SourceMemorySetId, OtomeKairoMemorySetDefinition Definition)> GetPendingCloneRequests()
         {
-            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            SyncCurrentMemorySetFromUi();
+            return _memorySets
+                .Where(item => string.IsNullOrWhiteSpace(item.ServerBackedMemorySetId)
+                    && !string.IsNullOrWhiteSpace(item.CloneSourceMemorySetId))
+                .Select(item => (
+                    SourceMemorySetId: item.CloneSourceMemorySetId!,
+                    Definition: new OtomeKairoMemorySetDefinition
+                    {
+                        MemorySetId = item.MemorySetId,
+                        DisplayName = item.DisplayName,
+                        Description = string.IsNullOrWhiteSpace(item.Description) ? null : item.Description,
+                    }))
+                .ToList();
+        }
+
+        public string? GetActiveMemorySetId()
+        {
+            if (_currentMemorySetIndex < 0 || _currentMemorySetIndex >= _memorySets.Count)
             {
                 return null;
             }
 
-            EmbeddingPreset currentPreset = _presets[_currentPresetIndex];
+            return _memorySets[_currentMemorySetIndex].MemorySetId;
+        }
 
-            // UI入力をAPI送信用のプリセットに変換する
-            EmbeddingPreset preset = new EmbeddingPreset
+        private void AddMemorySetButton_Click(object sender, RoutedEventArgs e)
+        {
+            SyncCurrentMemorySetFromUi();
+
+            var item = new MemorySetEditorItem
             {
-                EmbeddingPresetId = currentPreset.EmbeddingPresetId,
-                EmbeddingPresetName = MemoryIdTextBox.Text,
-                EmbeddingModelApiKey = string.IsNullOrWhiteSpace(EmbeddingApiKeyPasswordBox.Text) ? null : EmbeddingApiKeyPasswordBox.Text,
-                EmbeddingModel = EmbeddingModelTextBox.Text ?? string.Empty,
-                EmbeddingBaseUrl = string.IsNullOrWhiteSpace(EmbeddingBaseUrlTextBox.Text) ? null : EmbeddingBaseUrlTextBox.Text,
-                EmbeddingDimension = int.TryParse(EmbeddingDimensionTextBox.Text, out int dimension) ? dimension : EmbeddingPreset.DefaultEmbeddingDimension,
-                SimilarEpisodesLimit = int.TryParse(SimilarEpisodesLimitTextBox.Text, out int limit) ? limit : EmbeddingPreset.DefaultSimilarEpisodesLimit
+                MemorySetId = $"memory_set:{Guid.NewGuid():N}",
+                DisplayName = GenerateUniqueName(_memorySets.Select(p => p.DisplayName), "新規記憶集合"),
+                Description = string.Empty,
+                ServerBackedMemorySetId = null,
+                CloneSourceMemorySetId = null,
             };
 
-            return preset;
-        }
-
-        private void ClearSettings()
-        {
-            // UI初期化は、モデルの既定値（唯一の定義元）を反映して行う
-            LoadPresetToUI(EmbeddingPreset.CreateDefault());
-        }
-
-        private void PresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_isInitializing) return;
-
-            // 現在のUI値を保存
-            SaveCurrentUIToPreset();
-
-            int selectedIndex = PresetSelectComboBox.SelectedIndex;
-            if (selectedIndex >= 0 && selectedIndex < _presets.Count)
+            _isInitializing = true;
+            try
             {
-                _currentPresetIndex = selectedIndex;
-                _isInitializing = true;
-                try
-                {
-                    LoadPresetToUI(_presets[selectedIndex]);
-                }
-                finally
-                {
-                    _isInitializing = false;
-                }
+                _memorySets.Add(item);
+                MemorySetSelectComboBox.Items.Add(item.DisplayName);
+                _currentMemorySetIndex = _memorySets.Count - 1;
+                MemorySetSelectComboBox.SelectedIndex = _currentMemorySetIndex;
+                LoadMemorySetToUi(item);
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void DuplicateMemorySetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentMemorySetIndex < 0 || _currentMemorySetIndex >= _memorySets.Count)
+            {
+                MessageBox.Show("複製する記憶集合を選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            SyncCurrentMemorySetFromUi();
+            var source = _memorySets[_currentMemorySetIndex];
+            var cloneSourceMemorySetId = ResolveCloneSourceMemorySetId(source);
+            var item = new MemorySetEditorItem
+            {
+                MemorySetId = $"memory_set:{Guid.NewGuid():N}",
+                DisplayName = GenerateUniqueName(_memorySets.Select(p => p.DisplayName), $"{source.DisplayName} (コピー)"),
+                Description = source.Description,
+                ServerBackedMemorySetId = null,
+                CloneSourceMemorySetId = cloneSourceMemorySetId,
+            };
+
+            _isInitializing = true;
+            try
+            {
+                _memorySets.Add(item);
+                MemorySetSelectComboBox.Items.Add(item.DisplayName);
+                _currentMemorySetIndex = _memorySets.Count - 1;
+                MemorySetSelectComboBox.SelectedIndex = _currentMemorySetIndex;
+                LoadMemorySetToUi(item);
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void DeleteMemorySetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentMemorySetIndex < 0 || _currentMemorySetIndex >= _memorySets.Count)
+            {
+                MessageBox.Show("削除する記憶集合を選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (_memorySets.Count <= 1)
+            {
+                MessageBox.Show("最後の記憶集合は削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            _isInitializing = true;
+            try
+            {
+                _memorySets.RemoveAt(_currentMemorySetIndex);
+                MemorySetSelectComboBox.Items.RemoveAt(_currentMemorySetIndex);
+                _currentMemorySetIndex = Math.Min(_currentMemorySetIndex, _memorySets.Count - 1);
+                MemorySetSelectComboBox.SelectedIndex = _currentMemorySetIndex;
+                LoadMemorySetToUi(_memorySets[_currentMemorySetIndex]);
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void MemorySetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            SyncCurrentMemorySetFromUi();
+
+            var selectedIndex = MemorySetSelectComboBox.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= _memorySets.Count)
+            {
+                return;
+            }
+
+            _isInitializing = true;
+            try
+            {
+                _currentMemorySetIndex = selectedIndex;
+                LoadMemorySetToUi(_memorySets[selectedIndex]);
+            }
+            finally
+            {
+                _isInitializing = false;
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
@@ -213,182 +252,114 @@ namespace CocoroConsole.Controls
 
         private void MemoryEnabledCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            if (_isInitializing) return;
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void AddPresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            SaveCurrentUIToPreset();
-
-            // 新規プリセットは、既定値を必ずモデル側の定義から生成する
-            EmbeddingPreset newPreset = EmbeddingPreset.CreateDefault();
-            newPreset.EmbeddingPresetId = Guid.NewGuid().ToString();
-            newPreset.EmbeddingPresetName = GenerateNewPresetName();
-
-            _presets.Add(newPreset);
-            PresetSelectComboBox.Items.Add(newPreset.EmbeddingPresetName);
-            PresetSelectComboBox.SelectedIndex = _presets.Count - 1;
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void DuplicatePresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            if (_isInitializing)
             {
-                MessageBox.Show("複製するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            SaveCurrentUIToPreset();
-
-            EmbeddingPreset source = _presets[_currentPresetIndex];
-            EmbeddingPreset duplicate = new EmbeddingPreset
-            {
-                EmbeddingPresetId = Guid.NewGuid().ToString(),
-                EmbeddingPresetName = GenerateDuplicatePresetName(source.EmbeddingPresetName),
-                EmbeddingModelApiKey = source.EmbeddingModelApiKey,
-                EmbeddingModel = source.EmbeddingModel,
-                EmbeddingBaseUrl = source.EmbeddingBaseUrl,
-                EmbeddingDimension = source.EmbeddingDimension,
-                SimilarEpisodesLimit = source.SimilarEpisodesLimit
-            };
-
-            _presets.Add(duplicate);
-            PresetSelectComboBox.Items.Add(duplicate.EmbeddingPresetName);
-            PresetSelectComboBox.SelectedIndex = _presets.Count - 1;
-
             SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void EmbeddingApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClipboardPasteOverride.PasteOverwrite(EmbeddingApiKeyPasswordBox);
-        }
-
-        private void EmbeddingApiKeyPasteFromLlmApiKeyButton_Click(object sender, RoutedEventArgs e)
-        {
-            string llmApiKey = (LlmApiKeyProvider?.Invoke() ?? string.Empty).Trim();
-            EmbeddingApiKeyPasswordBox.Text = llmApiKey;
-        }
-
-        private void EmbeddingApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClipboardPasteOverride.CopyToClipboard(EmbeddingApiKeyPasswordBox);
-        }
-
-        private void DeletePresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
-            {
-                MessageBox.Show("削除するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            if (_presets.Count <= 1)
-            {
-                MessageBox.Show("最後のプリセットは削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-            _isInitializing = true;
-            try
-            {
-                _presets.RemoveAt(_currentPresetIndex);
-                PresetSelectComboBox.Items.RemoveAt(_currentPresetIndex);
-
-                int newIndex = Math.Min(_currentPresetIndex, _presets.Count - 1);
-                if (newIndex >= 0)
-                {
-                    PresetSelectComboBox.SelectedIndex = newIndex;
-                    _currentPresetIndex = newIndex;
-                    LoadPresetToUI(_presets[newIndex]);
-                }
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private string GenerateNewPresetName()
-        {
-            int counter = 1;
-            string baseName = "新規プリセット";
-            string name = baseName;
-
-            while (_presets.Any(p => p.EmbeddingPresetName == name))
-            {
-                counter++;
-                name = $"{baseName} {counter}";
-            }
-
-            return name;
-        }
-
-        private string GenerateDuplicatePresetName(string sourceName)
-        {
-            int counter = 1;
-            string baseName = $"{sourceName} (コピー)";
-            string name = baseName;
-
-            while (_presets.Any(p => p.EmbeddingPresetName == name))
-            {
-                counter++;
-                name = $"{baseName} {counter}";
-            }
-
-            return name;
-        }
-
-        private void OnSettingChanged(object sender, RoutedEventArgs e)
-        {
-            if (!_isInitializing)
-            {
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
         }
 
         private void OnSettingChanged(object sender, TextChangedEventArgs e)
         {
-            if (!_isInitializing)
+            if (_isInitializing)
             {
-                // 名前変更時はプリセットリストとComboBoxの表示を更新
-                if (sender == MemoryIdTextBox && _currentPresetIndex >= 0 && _currentPresetIndex < _presets.Count)
+                return;
+            }
+
+            if (sender == MemorySetDisplayNameTextBox && _currentMemorySetIndex >= 0 && _currentMemorySetIndex < _memorySets.Count)
+            {
+                _memorySets[_currentMemorySetIndex].DisplayName = MemorySetDisplayNameTextBox.Text;
+                RefreshComboBoxItems();
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void SyncCurrentMemorySetFromUi()
+        {
+            if (_currentMemorySetIndex < 0 || _currentMemorySetIndex >= _memorySets.Count)
+            {
+                return;
+            }
+
+            var current = _memorySets[_currentMemorySetIndex];
+            current.DisplayName = MemorySetDisplayNameTextBox.Text;
+            current.Description = MemorySetDescriptionTextBox.Text;
+        }
+
+        private void LoadMemorySetToUi(MemorySetEditorItem item)
+        {
+            MemorySetDisplayNameTextBox.Text = item.DisplayName;
+            MemorySetDescriptionTextBox.Text = item.Description;
+        }
+
+        private void ClearUi()
+        {
+            MemorySetDisplayNameTextBox.Text = string.Empty;
+            MemorySetDescriptionTextBox.Text = string.Empty;
+        }
+
+        private void RefreshComboBoxItems()
+        {
+            var currentIndex = _currentMemorySetIndex;
+            MemorySetSelectComboBox.SelectionChanged -= MemorySetSelectComboBox_SelectionChanged;
+            MemorySetSelectComboBox.Items.Clear();
+            foreach (var memorySet in _memorySets)
+            {
+                MemorySetSelectComboBox.Items.Add(memorySet.DisplayName);
+            }
+            MemorySetSelectComboBox.SelectedIndex = currentIndex;
+            MemorySetSelectComboBox.SelectionChanged += MemorySetSelectComboBox_SelectionChanged;
+        }
+
+        private static int ResolveActiveIndex(IReadOnlyList<string?> ids, string? activeId)
+        {
+            if (ids.Count == 0)
+            {
+                return -1;
+            }
+
+            if (!string.IsNullOrWhiteSpace(activeId))
+            {
+                for (var i = 0; i < ids.Count; i++)
                 {
-                    // プリセットの名前を更新
-                    _presets[_currentPresetIndex].EmbeddingPresetName = MemoryIdTextBox.Text;
-
-                    // ComboBoxを更新
-                    var currentIndex = _currentPresetIndex;
-                    PresetSelectComboBox.SelectionChanged -= PresetSelectComboBox_SelectionChanged;
-                    PresetSelectComboBox.Items.Clear();
-                    foreach (var preset in _presets)
+                    if (string.Equals(ids[i], activeId, StringComparison.OrdinalIgnoreCase))
                     {
-                        PresetSelectComboBox.Items.Add(preset.EmbeddingPresetName);
+                        return i;
                     }
-                    PresetSelectComboBox.SelectedIndex = currentIndex;
-                    PresetSelectComboBox.SelectionChanged += PresetSelectComboBox_SelectionChanged;
                 }
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
+
+            return 0;
         }
 
-        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        private static string GenerateUniqueName(IEnumerable<string> existingNames, string baseName)
         {
-            Utilities.UIHelper.HandleHyperlinkNavigation(e);
-        }
-
-        public string? GetActivePresetId()
-        {
-            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            var existing = new HashSet<string>(existingNames.Where(name => !string.IsNullOrWhiteSpace(name)));
+            var name = baseName;
+            var counter = 1;
+            while (existing.Contains(name))
             {
-                return null;
+                counter += 1;
+                name = $"{baseName} {counter}";
+            }
+            return name;
+        }
+
+        private static string? ResolveCloneSourceMemorySetId(MemorySetEditorItem item)
+        {
+            if (!string.IsNullOrWhiteSpace(item.ServerBackedMemorySetId))
+            {
+                return item.ServerBackedMemorySetId;
             }
 
-            return _presets[_currentPresetIndex].EmbeddingPresetId;
+            if (!string.IsNullOrWhiteSpace(item.CloneSourceMemorySetId))
+            {
+                return item.CloneSourceMemorySetId;
+            }
+
+            return null;
         }
     }
 }

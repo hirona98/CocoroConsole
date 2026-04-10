@@ -5,15 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace CocoroConsole.Controls
 {
-    /// <summary>
-    /// SystemSettingsControl.xaml の相互作用ロジック。
-    /// </summary>
     public partial class SystemSettingsControl : UserControl
     {
         public event EventHandler? SettingsChanged;
@@ -25,10 +21,7 @@ namespace CocoroConsole.Controls
             InitializeComponent();
         }
 
-        /// <summary>
-        /// 初期化処理
-        /// </summary>
-        public Task InitializeAsync()
+        public System.Threading.Tasks.Task InitializeAsync()
         {
             try
             {
@@ -62,24 +55,30 @@ namespace CocoroConsole.Controls
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
-            return Task.CompletedTask;
+            return System.Threading.Tasks.Task.CompletedTask;
         }
 
-        /// <summary>
-        /// OtomeKairo から取得した現在設定を反映する。
-        /// </summary>
         public void ApplyOtomeKairoCurrentSettings(OtomeKairoCurrentSettings current)
         {
             var desktopWatch = current?.DesktopWatch ?? new OtomeKairoDesktopWatchSettings();
             DesktopWatchEnabledCheckBox.IsChecked = desktopWatch.Enabled;
             DesktopWatchIntervalSecondsTextBox.Text = (desktopWatch.IntervalSeconds > 0 ? desktopWatch.IntervalSeconds : 300)
                 .ToString(CultureInfo.InvariantCulture);
+            DesktopWatchTargetClientIdTextBox.Text = desktopWatch.TargetClientId ?? string.Empty;
+
+            var wakePolicy = current?.WakePolicy ?? new Dictionary<string, object?>();
+            var mode = ReadString(wakePolicy, "mode");
+            WakePolicyEnabledCheckBox.IsChecked = string.Equals(mode, "interval", StringComparison.OrdinalIgnoreCase);
+            WakeIntervalMinutesTextBox.Text = ReadInt(wakePolicy, "interval_minutes", 5).ToString(CultureInfo.InvariantCulture);
         }
 
         private void ApplyDefaultRemoteSettings()
         {
             DesktopWatchEnabledCheckBox.IsChecked = false;
             DesktopWatchIntervalSecondsTextBox.Text = "300";
+            DesktopWatchTargetClientIdTextBox.Text = string.Empty;
+            WakePolicyEnabledCheckBox.IsChecked = false;
+            WakeIntervalMinutesTextBox.Text = "5";
         }
 
         private void SetupEventHandlers()
@@ -87,8 +86,12 @@ namespace CocoroConsole.Controls
             DesktopWatchEnabledCheckBox.Checked += OnSettingsChanged;
             DesktopWatchEnabledCheckBox.Unchecked += OnSettingsChanged;
             DesktopWatchIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
+            DesktopWatchTargetClientIdTextBox.TextChanged += OnSettingsChanged;
             DesktopWatchIdleTimeoutMinutesTextBox.TextChanged += OnSettingsChanged;
             ExcludeWindowTitlePatternsTextBox.TextChanged += OnSettingsChanged;
+            WakePolicyEnabledCheckBox.Checked += OnSettingsChanged;
+            WakePolicyEnabledCheckBox.Unchecked += OnSettingsChanged;
+            WakeIntervalMinutesTextBox.TextChanged += OnSettingsChanged;
             MicThresholdSlider.ValueChanged += OnSettingsChanged;
         }
 
@@ -115,6 +118,35 @@ namespace CocoroConsole.Controls
             }
 
             return 300;
+        }
+
+        public string? GetDesktopWatchTargetClientId()
+        {
+            var value = DesktopWatchTargetClientIdTextBox.Text?.Trim();
+            return string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+
+        public Dictionary<string, object?> GetWakePolicy()
+        {
+            if (WakePolicyEnabledCheckBox.IsChecked ?? false)
+            {
+                var intervalMinutes = 5;
+                if (int.TryParse(WakeIntervalMinutesTextBox.Text, out var parsed) && parsed > 0)
+                {
+                    intervalMinutes = parsed;
+                }
+
+                return new Dictionary<string, object?>
+                {
+                    ["mode"] = "interval",
+                    ["interval_minutes"] = intervalMinutes,
+                };
+            }
+
+            return new Dictionary<string, object?>
+            {
+                ["mode"] = "disabled",
+            };
         }
 
         public int GetDesktopWatchIdleTimeoutMinutes()
@@ -148,6 +180,36 @@ namespace CocoroConsole.Controls
                 .Select(p => p.Trim())
                 .Where(p => !string.IsNullOrEmpty(p))
                 .ToList();
+        }
+
+        private static string? ReadString(Dictionary<string, object?> values, string key)
+        {
+            if (!values.TryGetValue(key, out var value) || value == null)
+            {
+                return null;
+            }
+
+            return value.ToString();
+        }
+
+        private static int ReadInt(Dictionary<string, object?> values, string key, int fallback)
+        {
+            if (!values.TryGetValue(key, out var value) || value == null)
+            {
+                return fallback;
+            }
+
+            if (value is int intValue)
+            {
+                return intValue;
+            }
+
+            if (int.TryParse(value.ToString(), out var parsed))
+            {
+                return parsed;
+            }
+
+            return fallback;
         }
     }
 }

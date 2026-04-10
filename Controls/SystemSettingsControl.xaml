@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:CocoroConsole.Controls"
              mc:Ignorable="d"
-             d:DesignHeight="1200"
+             d:DesignHeight="1300"
              d:DesignWidth="800">
 
     <UserControl.Resources>
@@ -36,64 +36,69 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                            デスクトップの画面を定期的に取得し内容に応じたコメントをします。
-                            <LineBreak/>
-                            LLMプロバイダのポリシーに反する画像を送るとアカウント停止の可能性があるので注意してください。
+                                デスクトップの画面を定期的に取得し内容に応じたコメントをします。
                             </TextBlock>
 
                             <CheckBox x:Name="DesktopWatchEnabledCheckBox"
-                                      Content="デスクトップウォッチを有効にする（otomekairoが能動的に取得要求を出します）"
+                                      Content="デスクトップウォッチを有効にする"
                                       Margin="0,5,0,10"
-                                      Foreground="#FF4873CF"
-                                      ToolTip="Enable desktop watch (server-driven)"/>
+                                      Foreground="#FF4873CF"/>
 
                             <Grid Margin="0,0,0,5">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="28"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0"
                                            Text="ウォッチ間隔:"
-                                           VerticalAlignment="Center"
-                                           Height="19"/>
+                                           VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="1"
                                          x:Name="DesktopWatchIntervalSecondsTextBox"
                                          Foreground="#FF0078D7"
                                          Padding="2"
-                                         VerticalAlignment="Center"
-                                         Width="50"
-                                         HorizontalAlignment="Left"
+                                         Width="60"
                                          Margin="10,0,10,0"/>
                                 <TextBlock Grid.Column="2"
                                            Text="秒"
-                                           VerticalAlignment="Center"
-                                           HorizontalAlignment="Left"/>
+                                           VerticalAlignment="Center"/>
                             </Grid>
 
                             <Grid Margin="0,0,0,5">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="対象クライアントID:"
+                                           VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1"
+                                         x:Name="DesktopWatchTargetClientIdTextBox"
+                                         Foreground="#FF0078D7"
+                                         Padding="2"
+                                         Margin="10,0,0,0"
+                                         ToolTip="空欄なら未設定として送ります。"/>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0"
                                            Text="アイドル:"
-                                           VerticalAlignment="Center"
-                                           Height="19"/>
+                                           VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="1"
                                          x:Name="DesktopWatchIdleTimeoutMinutesTextBox"
                                          Foreground="#FF0078D7"
                                          Padding="2"
-                                         VerticalAlignment="Center"
-                                         Width="50"
-                                         HorizontalAlignment="Left"
+                                         Width="60"
                                          Margin="10,0,10,0"
                                          ToolTip="ユーザーがこの分数以上操作していない場合は、キャプチャ要求が来てもスキップします。0で無効。"/>
                                 <TextBlock Grid.Column="2"
                                            Text="分（0で無効）"
-                                           VerticalAlignment="Center"
-                                           HorizontalAlignment="Left"/>
+                                           VerticalAlignment="Center"/>
                             </Grid>
 
                             <Rectangle Fill="#E0E0E0"
@@ -103,10 +108,7 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                            アクティブウィンドウのタイトルに対して正規表現でマッチ判定し、
-                            マッチした場合は画面キャプチャをスキップします。
-                            <LineBreak/>
-                            （1行に1つ。トリムして保存されます。大文字小文字は区別しません）
+                                アクティブウィンドウのタイトルに対して正規表現でマッチ判定し、マッチした場合は画面キャプチャをスキップします。
                             </TextBlock>
 
                             <TextBox x:Name="ExcludeWindowTitlePatternsTextBox"
@@ -116,8 +118,47 @@
                                      AcceptsReturn="True"
                                      VerticalScrollBarVisibility="Auto"
                                      Height="120"
-                                     Margin="0,0,0,5"
-                                     ToolTip="1行に1つ。正規表現。ウィンドウタイトルにマッチしたらキャプチャをスキップします。"/>
+                                     ToolTip="1行に1つ。正規表現。"/>
+                        </StackPanel>
+                    </Border>
+                </GroupBox>
+
+                <GroupBox Header="自律起床"
+                          Margin="0,0,20,20"
+                          Style="{StaticResource SettingsGroupBoxStyle}">
+                    <Border Background="White"
+                            Padding="10">
+                        <StackPanel>
+                            <TextBlock TextWrapping="Wrap"
+                                       Foreground="#666666"
+                                       Margin="0,0,0,10">
+                                `wake_policy` を編集します。無効時は `mode=disabled`、有効時は `mode=interval` を使います。
+                            </TextBlock>
+
+                            <CheckBox x:Name="WakePolicyEnabledCheckBox"
+                                      Content="自律起床を有効にする"
+                                      Margin="0,5,0,10"
+                                      Foreground="#FF4873CF"/>
+
+                            <Grid Margin="0,0,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="28"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="起床間隔:"
+                                           VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1"
+                                         x:Name="WakeIntervalMinutesTextBox"
+                                         Foreground="#FF0078D7"
+                                         Padding="2"
+                                         Width="60"
+                                         Margin="10,0,10,0"/>
+                                <TextBlock Grid.Column="2"
+                                           Text="分"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </GroupBox>
@@ -131,7 +172,7 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                            マイクと話者識別の設定を行います。話者登録すると特定の人物の声だけを認識します。
+                                マイクと話者識別の設定を行います。話者登録すると特定の人物の声だけを認識します。
                             </TextBlock>
                             <Grid Margin="0,5,0,5">
                                 <Grid.ColumnDefinitions>
@@ -158,7 +199,7 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                            ※値が低いほど（-50dBに近いほど）音声を拾いやすくなりますが、環境音も拾いやすくなります。
+                                ※値が低いほど（-50dBに近いほど）音声を拾いやすくなりますが、環境音も拾いやすくなります。
                             </TextBlock>
 
                             <local:SpeakerManagementControl x:Name="SpeakerManagementControl"

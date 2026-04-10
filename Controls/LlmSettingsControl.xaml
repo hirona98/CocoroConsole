@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="800"
+             d:DesignHeight="1100"
              d:DesignWidth="800">
 
     <UserControl.Resources>
@@ -28,7 +28,6 @@
             <Setter Property="BorderThickness"
                     Value="1"/>
         </Style>
-        <!-- プリセットボタン共通スタイル -->
         <Style x:Key="PresetButtonStyle"
                TargetType="Button">
             <Setter Property="Background"
@@ -39,61 +38,24 @@
                     Value="0"/>
             <Setter Property="Padding"
                     Value="10,5"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"
-                                              Content="{TemplateBinding Content}"
-                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsEnabled"
-                                     Value="False">
-                                <Setter Property="Background"
-                                        Value="#CCCCCC"/>
-                                <Setter Property="Foreground"
-                                        Value="#888888"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver"
-                                     Value="True">
-                                <Setter Property="Background"
-                                        Value="#5A84D9"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed"
-                                     Value="True">
-                                <Setter Property="Background"
-                                        Value="#3A62B8"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
-        <!-- 削除ボタンは App.xaml の DeleteButtonStyle を使用 -->
     </UserControl.Resources>
 
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <!-- 有効化 -->
                 <CheckBox x:Name="IsUseLLMCheckBox"
-                          Content="会話機能（LLM）を使用する - 記憶タブも設定してください"
+                          Content="会話機能（LLM）を使用する"
                           Foreground="#FF4873CF"
                           Checked="IsUseLLMCheckBox_Changed"
                           Unchecked="IsUseLLMCheckBox_Changed"
-                          Margin="0,5,0,20"
-                          ToolTip="Use LLM"/>
+                          Margin="0,5,0,20"/>
 
-                <!-- プリセット選択 -->
-                <GroupBox Header="プリセット選択"
+                <GroupBox Header="モデルプリセット"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
-                        <Grid>
+                        <Grid Margin="0,0,0,15">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="80"/>
@@ -106,54 +68,34 @@
                                       Margin="0,5,10,5"
                                       SelectionChanged="PresetSelectComboBox_SelectionChanged"/>
 
-                            <Button x:Name="AddPresetButton"
-                                    Grid.Column="1"
+                            <Button Grid.Column="1"
                                     Content="追加"
                                     Margin="0,5,0,5"
                                     Padding="10,5"
-                                    Click="AddPresetButton_Click"
-                                    ToolTipService.ShowOnDisabled="True"
-                                    ToolTip="プリセットを追加"/>
+                                    Style="{StaticResource PresetButtonStyle}"
+                                    Click="AddPresetButton_Click"/>
 
-                            <Button x:Name="DuplicatePresetButton"
-                                    Grid.Column="2"
+                            <Button Grid.Column="2"
                                     Content="複製"
                                     Margin="5,5,0,5"
                                     Padding="10,5"
-                                    Click="DuplicatePresetButton_Click"
-                                    ToolTipService.ShowOnDisabled="True"
-                                    ToolTip="現在のプリセットを複製"/>
+                                    Style="{StaticResource PresetButtonStyle}"
+                                    Click="DuplicatePresetButton_Click"/>
 
-                            <Button x:Name="DeletePresetButton"
-                                    Grid.Column="3"
+                            <Button Grid.Column="3"
                                     Content="削除"
                                     Margin="5,5,0,5"
                                     Padding="10,5"
                                     Style="{StaticResource DeleteButtonStyle}"
-                                    Click="DeletePresetButton_Click"
-                                    ToolTipService.ShowOnDisabled="True"
-                                    ToolTip="このプリセットを削除"/>
+                                    Click="DeletePresetButton_Click"/>
                         </Grid>
 
-                        <TextBlock Margin="0,8,0,0"
-                                   Foreground="#666666"
-                                   Text="システムプロンプトは「ペルソナ」タブで設定します。"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- 基本設定 -->
-                <GroupBox Header="基本設定"
-                          Margin="0,0,20,20"
-                          Padding="10">
-                    <StackPanel>
-                        <!-- 名前 -->
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="140"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="プリセット名:"
+                            <TextBlock Text="表示名:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="PresetNameTextBox"
                                      Grid.Column="1"
@@ -163,330 +105,118 @@
                     </StackPanel>
                 </GroupBox>
 
-                <!-- LLM設定 -->
-                <GroupBox Header="LLM設定"
+                <GroupBox Header="observation_interpretation"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
-                        <!-- APIキー -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="APIキー:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <Grid Grid.Column="1">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBox x:Name="LlmApiKeyPasswordBox"
-                                         Grid.Column="0"
-                                         Foreground="#FF0078D7"
-                                         Padding="2"
-                                         Width="50"
-                                         HorizontalAlignment="Left"
-                                         BorderBrush="#CCCCCC"
-                                         BorderThickness="1"
-                                         TextChanged="OnSettingChanged"/>
-                                <Button Grid.Column="1"
-                                        Content="コピー"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="LlmApiKeyCopyButton_Click"
-                                        ToolTip="クリップボードにコピー"/>
-                                <Button Grid.Column="2"
-                                        Content="上書き貼付け"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="LlmApiKeyPasteOverrideButton_Click"
-                                        ToolTip="クリップボードのテキストで上書き"/>
-                            </Grid>
-                        </Grid>
-
-                        <!-- LLMモデル -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="LLMモデル:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="LlmModelTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <!-- LLMモデル説明（折りたたみ） -->
-                        <Expander Header="モデル詳細説明"
-                                  Margin="140,0,0,5"
-                                  IsExpanded="False"
-                                  Foreground="#666666">
-                            <!-- RichTextBoxにすることでマウス選択/コピー可能にする -->
-                            <RichTextBox Margin="0,5,0,0"
-                                         IsReadOnly="True"
-                                         IsReadOnlyCaretVisible="False"
-                                         IsTabStop="False"
-                                         IsDocumentEnabled="True"
-                                         BorderThickness="0"
-                                         Background="Transparent"
-                                         Foreground="#666666"
-                                         Padding="0"
-                                         VerticalScrollBarVisibility="Disabled"
-                                         HorizontalScrollBarVisibility="Disabled">
-                                <RichTextBox.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="コピー"
-                                                  Command="ApplicationCommands.Copy"/>
-                                        <MenuItem Header="すべて選択"
-                                                  Command="ApplicationCommands.SelectAll"/>
-                                    </ContextMenu>
-                                </RichTextBox.ContextMenu>
-                                <FlowDocument PagePadding="0"
-                                              LineHeight="18">
-                                    <Paragraph Margin="0">
-                                        <Run Text="以下のようにLiteLLMの書式で記載してください"/>
-                                        <Run Text="（詳細は "/>
-                                        <Hyperlink NavigateUri="https://docs.litellm.ai/docs/providers"
-                                                   RequestNavigate="Hyperlink_RequestNavigate">
-                                            <Run Text="https://docs.litellm.ai/docs/providers"/>
-                                        </Hyperlink>
-                                        <Run Text="）"/>
-                                        <LineBreak/>
-                                        <Run Text="openai/gpt-5"/>
-                                        <LineBreak/>
-                                        <Run Text="openrouter/google/gemini-3.1-flash-lite-preview"/>
-                                        <LineBreak/>
-                                        <Run Text="xai/grok-2-latest"/>
-                                        <LineBreak/>
-                                        <Run Text="openrouter/openai/gpt-5"/>
-                                        <LineBreak/>
-                                        <Run Text="ollama/llama3.1（BASE URLはhttp://localhost:11434）"/>
-                                        <LineBreak/>
-                                        <Run Text="lm_studio/google/gemma-3-4b（BASE URLはhttp://127.0.0.1:1234/v1）"/>
-                                    </Paragraph>
-                                </FlowDocument>
-                            </RichTextBox>
-                        </Expander>
-
-                        <!-- Base URL -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Base URL:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <Grid Grid.Column="1">
-                                <TextBox x:Name="LlmBaseUrlTextBox"
-                                         Style="{StaticResource SettingTextBoxStyle}"
-                                         ToolTip="必要な場合だけベースURLを設定します（例: http://localhost:11434）"
-                                         TextChanged="OnSettingChanged"/>
-                                <TextBlock Text="必要に応じてベースURLを設定できます（例: http://localhost:11434）"
-                                           Foreground="#999999"
-                                           Margin="6,0,6,0"
-                                           VerticalAlignment="Center"
-                                           TextWrapping="NoWrap"
-                                           TextTrimming="CharacterEllipsis"
-                                           IsHitTestVisible="False">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Visibility"
-                                                    Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Text, ElementName=LlmBaseUrlTextBox}"
-                                                             Value="">
-                                                    <Setter Property="Visibility"
-                                                            Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </Grid>
-                        </Grid>
-
-                        <!-- Reasoning Effort -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="200"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Reasoning Effort:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="ReasoningEffortTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <TextBlock Foreground="#666666"
-                                   Margin="140,0,0,5"
-                                   Text="推論レベルです。空白にすると無効か最低レベルになります。"
-                                   TextWrapping="Wrap"/>
-
-                        <!-- 最大ターンウィンドウ -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="80"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="会話履歴件数:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="MaxTurnsWindowTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <!-- 会話履歴件数の補足 -->
-                        <TextBlock Foreground="#666666"
-                                   Margin="140,0,0,5"
-                                   Text="少なめでも記憶から補完します。"
-                                   TextWrapping="Wrap"/>
-
-                        <!-- 最大トークン -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="80"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="最大トークン:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="MaxTokensTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <TextBlock Foreground="#666666"
-                                   Margin="140,0,0,5"
-                                   TextWrapping="Wrap">
-                            大きくするほど長い回答が可能になりますが、処理時間とコストが増加します
-                            <LineBreak/>
-                            エラーに気づきにくいため、変更後はしばらくログを確認してください。
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="#666666"
+                                   Margin="0,0,0,8">
+                            観測解釈 role の object を JSON で編集します。
                         </TextBlock>
-                        <!-- Web検索 -->
-                        <Grid Margin="0,5">
-                            <CheckBox x:Name="ReplyWebSearchEnabledCheckBox"
-                                      Content="Web検索を有効化する"
-                                      Foreground="#FF0078D7"
-                                      Checked="OnSettingChanged"
-                                      Unchecked="OnSettingChanged"/>
-                        </Grid>
+                        <TextBox x:Name="ObservationRoleJsonTextBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto"
+                                 Height="180"
+                                 FontFamily="Consolas"
+                                 Foreground="#FF0078D7"
+                                 BorderBrush="#CCCCCC"
+                                 BorderThickness="1"
+                                 TextChanged="OnSettingChanged"/>
                     </StackPanel>
                 </GroupBox>
 
-                <!-- 画像認識LLM設定（マルチモーダルLLM） -->
-                <GroupBox Header="画像認識用LLM設定（マルチモーダルLLM）"
+                <GroupBox Header="decision_generation"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
-                        <!-- Vision APIキー -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="APIキー:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <Grid Grid.Column="1">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBox x:Name="VisionApiKeyPasswordBox"
-                                         Grid.Column="0"
-                                         Foreground="#FF0078D7"
-                                         Padding="2"
-                                         Width="50"
-                                         HorizontalAlignment="Left"
-                                         BorderBrush="#CCCCCC"
-                                         BorderThickness="1"
-                                         TextChanged="OnSettingChanged"/>
-                                <Button Grid.Column="1"
-                                        Content="コピー"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="VisionApiKeyCopyButton_Click"
-                                        ToolTip="クリップボードにコピー"/>
-                                <Button Grid.Column="2"
-                                        Content="上書き貼付け"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="VisionApiKeyPasteOverrideButton_Click"
-                                        ToolTip="クリップボードのテキストで上書き"/>
-                                <Button Grid.Column="3"
-                                        Content="LLMモデルのAPIキーを貼付け"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="VisionApiKeyPasteFromLlmApiKeyButton_Click"
-                                        ToolTip="LLM設定のAPIキーで上書き"/>
-                            </Grid>
-                        </Grid>
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="#666666"
+                                   Margin="0,0,0,8">
+                            意図判断 role の object を JSON で編集します。
+                        </TextBlock>
+                        <TextBox x:Name="DecisionRoleJsonTextBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto"
+                                 Height="180"
+                                 FontFamily="Consolas"
+                                 Foreground="#FF0078D7"
+                                 BorderBrush="#CCCCCC"
+                                 BorderThickness="1"
+                                 TextChanged="OnSettingChanged"/>
+                    </StackPanel>
+                </GroupBox>
 
-                        <!-- Visionモデル -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="モデル:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="VisionModelTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
+                <GroupBox Header="expression_generation"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="#666666"
+                                   Margin="0,0,0,8">
+                            表現生成 role の object を JSON で編集します。
+                        </TextBlock>
+                        <TextBox x:Name="ExpressionRoleJsonTextBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto"
+                                 Height="180"
+                                 FontFamily="Consolas"
+                                 Foreground="#FF0078D7"
+                                 BorderBrush="#CCCCCC"
+                                 BorderThickness="1"
+                                 TextChanged="OnSettingChanged"/>
+                    </StackPanel>
+                </GroupBox>
 
-                        <!-- Vision Base URL -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Base URL:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="VisionBaseUrlTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="必要な場合だけベースURLを設定します（例: http://localhost:11434）"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
+                <GroupBox Header="memory_interpretation"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="#666666"
+                                   Margin="0,0,0,8">
+                            記憶解釈 role の object を JSON で編集します。
+                        </TextBlock>
+                        <TextBox x:Name="MemoryRoleJsonTextBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto"
+                                 Height="180"
+                                 FontFamily="Consolas"
+                                 Foreground="#FF0078D7"
+                                 BorderBrush="#CCCCCC"
+                                 BorderThickness="1"
+                                 TextChanged="OnSettingChanged"/>
+                    </StackPanel>
+                </GroupBox>
 
-                        <!-- Vision最大トークン -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="80"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="最大トークン:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="MaxTokensVisionTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-
-                        <!-- 画像タイムアウト -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="タイムアウト:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="ImageTimeoutSecondsTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                            <TextBlock Text="秒"
-                                       Grid.Column="2"
-                                       VerticalAlignment="Center"
-                                       Margin="5,0,0,0"/>
-                        </Grid>
+                <GroupBox Header="embedding"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="#666666"
+                                   Margin="0,0,0,8">
+                            埋め込み role の object を JSON で編集します。
+                        </TextBlock>
+                        <TextBox x:Name="EmbeddingRoleJsonTextBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto"
+                                 Height="180"
+                                 FontFamily="Consolas"
+                                 Foreground="#FF0078D7"
+                                 BorderBrush="#CCCCCC"
+                                 BorderThickness="1"
+                                 TextChanged="OnSettingChanged"/>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

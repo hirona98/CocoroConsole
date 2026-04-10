@@ -7,323 +7,123 @@
              d:DesignHeight="800"
              d:DesignWidth="800">
 
-    <UserControl.Resources>
-        <Style x:Key="SettingLabelStyle"
-               TargetType="TextBlock">
-            <Setter Property="VerticalAlignment"
-                    Value="Center"/>
-            <Setter Property="Margin"
-                    Value="0,0,10,0"/>
-            <Setter Property="Width"
-                    Value="160"/>
-        </Style>
-        <Style x:Key="SettingTextBoxStyle"
-               TargetType="TextBox">
-            <Setter Property="Foreground"
-                    Value="#FF0078D7"/>
-            <Setter Property="Padding"
-                    Value="2"/>
-            <Setter Property="BorderBrush"
-                    Value="#CCCCCC"/>
-            <Setter Property="BorderThickness"
-                    Value="1"/>
-        </Style>
-        <!-- プリセットボタン共通スタイル -->
-        <Style x:Key="PresetButtonStyle"
-               TargetType="Button">
-            <Setter Property="Background"
-                    Value="#4873CF"/>
-            <Setter Property="Foreground"
-                    Value="WhiteSmoke"/>
-            <Setter Property="BorderThickness"
-                    Value="0"/>
-            <Setter Property="Padding"
-                    Value="10,5"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"
-                                              Content="{TemplateBinding Content}"
-                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsEnabled"
-                                     Value="False">
-                                <Setter Property="Background"
-                                        Value="#CCCCCC"/>
-                                <Setter Property="Foreground"
-                                        Value="#888888"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver"
-                                     Value="True">
-                                <Setter Property="Background"
-                                        Value="#5A84D9"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed"
-                                     Value="True">
-                                <Setter Property="Background"
-                                        Value="#3A62B8"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-	        <!-- 削除ボタンは App.xaml の DeleteButtonStyle を使用 -->
-    </UserControl.Resources>
+        <UserControl.Resources>
+                <Style x:Key="SettingLabelStyle"
+                       TargetType="TextBlock">
+                        <Setter Property="VerticalAlignment"
+                                Value="Center"/>
+                        <Setter Property="Margin"
+                                Value="0,0,10,0"/>
+                        <Setter Property="Width"
+                                Value="140"/>
+                </Style>
+                <Style x:Key="SettingTextBoxStyle"
+                       TargetType="TextBox">
+                        <Setter Property="Foreground"
+                                Value="#FF0078D7"/>
+                        <Setter Property="Padding"
+                                Value="2"/>
+                        <Setter Property="BorderBrush"
+                                Value="#CCCCCC"/>
+                        <Setter Property="BorderThickness"
+                                Value="1"/>
+                </Style>
+                <Style x:Key="PresetButtonStyle"
+                       TargetType="Button">
+                        <Setter Property="Background"
+                                Value="#4873CF"/>
+                        <Setter Property="Foreground"
+                                Value="WhiteSmoke"/>
+                        <Setter Property="BorderThickness"
+                                Value="0"/>
+                        <Setter Property="Padding"
+                                Value="10,5"/>
+                </Style>
+        </UserControl.Resources>
 
-    <Grid>
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <!-- 有効化 -->
-                <CheckBox x:Name="MemoryEnabledCheckBox"
-                          Content="記憶機能（Embedding）を使用する - OFFには出来ません"
-                          Foreground="#FF4873CF"
-                          IsChecked="True"
-                          IsEnabled="False"
-                          Checked="MemoryEnabledCheckBox_Changed"
-                          Unchecked="MemoryEnabledCheckBox_Changed"
-                          Margin="0,5,0,20"
-                          ToolTip="Enable memory (embeddings)"/>
+        <Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                                <CheckBox x:Name="MemoryEnabledCheckBox"
+                                          Content="記憶機能を有効にする"
+                                          Foreground="#FF4873CF"
+                                          Checked="MemoryEnabledCheckBox_Changed"
+                                          Unchecked="MemoryEnabledCheckBox_Changed"
+                                          Margin="0,5,0,20"/>
 
-                <!-- プリセット選択 -->
-                <GroupBox Header="プリセット選択"
-                          Margin="0,0,20,20"
-                          Padding="10">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="85"/>
-                        </Grid.ColumnDefinitions>
+                                <GroupBox Header="記憶集合"
+                                          Margin="0,0,20,20"
+                                          Padding="10">
+                                        <StackPanel>
+                                                <Grid Margin="0,0,0,15">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="80"/>
+                                                                <ColumnDefinition Width="80"/>
+                                                                <ColumnDefinition Width="85"/>
+                                                        </Grid.ColumnDefinitions>
 
-                        <ComboBox x:Name="PresetSelectComboBox"
-                                  Grid.Column="0"
-                                  Margin="0,5,10,5"
-                                  SelectionChanged="PresetSelectComboBox_SelectionChanged"/>
+                                                        <ComboBox x:Name="MemorySetSelectComboBox"
+                                                                  Grid.Column="0"
+                                                                  Margin="0,5,10,5"
+                                                                  SelectionChanged="MemorySetSelectComboBox_SelectionChanged"/>
 
-                        <Button x:Name="AddPresetButton"
-                                Grid.Column="1"
-                                Content="追加"
-                                Margin="0,5,0,5"
-                                Padding="10,5"
-                                Click="AddPresetButton_Click"
-                                ToolTipService.ShowOnDisabled="True"
-                                ToolTip="プリセットを追加"/>
+                                                        <Button Grid.Column="1"
+                                                                Content="追加"
+                                                                Margin="0,5,0,5"
+                                                                Padding="10,5"
+                                                                Style="{StaticResource PresetButtonStyle}"
+                                                                Click="AddMemorySetButton_Click"/>
 
-                        <Button x:Name="DuplicatePresetButton"
-                                Grid.Column="2"
-                                Content="複製"
-                                Margin="5,5,0,5"
-                                Padding="10,5"
-                                Click="DuplicatePresetButton_Click"
-                                ToolTipService.ShowOnDisabled="True"
-                                ToolTip="現在のプリセットを複製"/>
+                                                        <Button Grid.Column="2"
+                                                                Content="複製"
+                                                                Margin="5,5,0,5"
+                                                                Padding="10,5"
+                                                                Style="{StaticResource PresetButtonStyle}"
+                                                                Click="DuplicateMemorySetButton_Click"/>
 
-                        <Button x:Name="DeletePresetButton"
-                                Grid.Column="3"
-                                Content="削除"
-                                Margin="5,5,0,5"
-                                Padding="10,5"
-                                Style="{StaticResource DeleteButtonStyle}"
-                                Click="DeletePresetButton_Click"
-                                ToolTipService.ShowOnDisabled="True"
-                                ToolTip="このプリセットを削除"/>
-                    </Grid>
-                </GroupBox>
+                                                        <Button Grid.Column="3"
+                                                                Content="削除"
+                                                                Margin="5,5,0,5"
+                                                                Padding="10,5"
+                                                                Style="{StaticResource DeleteButtonStyle}"
+                                                                Click="DeleteMemorySetButton_Click"/>
+                                                </Grid>
 
-                <!-- Embedding設定 -->
-                <GroupBox Header="Embedding設定"
-                          Margin="0,0,20,20"
-                          Padding="10">
-                    <StackPanel>
-                        <!-- 警告テキスト -->
-                        <TextBlock Foreground="Red"
-                                   Margin="0,0,0,10"
-                                   Text="※赤字項目は一度設定したら変更しないでください"/>
+                                                <TextBlock TextWrapping="Wrap"
+                                                           Foreground="#666666"
+                                                           Margin="0,0,0,10">
+                            `memory_set` は人格設定と独立に選択・複製できます。個別のエピソード削除はここでは扱いません。
+                                                </TextBlock>
 
-                        <!-- プリセット名(memory_id) -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="160"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Memory ID:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="MemoryIdTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="記憶データベースの識別子"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
+                                                <Grid Margin="0,5">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="140"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="表示名:"
+                                                                   Style="{StaticResource SettingLabelStyle}"/>
+                                                        <TextBox x:Name="MemorySetDisplayNameTextBox"
+                                                                 Grid.Column="1"
+                                                                 Style="{StaticResource SettingTextBoxStyle}"
+                                                                 TextChanged="OnSettingChanged"/>
+                                                </Grid>
 
-                        <!-- Embedding APIキー -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="160"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Embedding APIキー:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <Grid Grid.Column="1">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBox x:Name="EmbeddingApiKeyPasswordBox"
-                                         Grid.Column="0"
-                                         Foreground="#FF0078D7"
-                                         Padding="2"
-                                         Width="50"
-                                         HorizontalAlignment="Left"
-                                         BorderBrush="#CCCCCC"
-                                         BorderThickness="1"
-                                         ToolTip="空欄の場合はLLM APIキーを使用"
-                                         TextChanged="OnSettingChanged"/>
-                                <Button Grid.Column="1"
-                                        Content="コピー"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="EmbeddingApiKeyCopyButton_Click"
-                                        ToolTip="クリップボードにコピー"/>
-                                <Button Grid.Column="2"
-                                        Content="上書き貼付け"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="EmbeddingApiKeyPasteOverrideButton_Click"
-                                        ToolTip="クリップボードのテキストで上書き"/>
-                                <Button Grid.Column="3"
-                                        Content="LLMモデルのAPIキーを貼付け"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="EmbeddingApiKeyPasteFromLlmApiKeyButton_Click"
-                                        ToolTip="会話タブのLLM APIキーで上書き"/>
-                            </Grid>
-                        </Grid>
-
-                        <!-- Embeddingモデル -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="160"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Embeddingモデル:"
-                                       Style="{StaticResource SettingLabelStyle}"
-                                       Foreground="Red"/>
-                            <TextBox x:Name="EmbeddingModelTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="例: text-embedding-3-small"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <!-- Embeddingモデル説明（折りたたみ） -->
-                        <Expander Header="モデル詳細説明"
-                                  Margin="160,0,0,5"
-                                  IsExpanded="False"
-                                  Foreground="#666666">
-                            <!-- RichTextBoxにすることでマウス選択/コピー可能にする -->
-                            <RichTextBox Margin="0,5,0,0"
-                                         IsReadOnly="True"
-                                         IsReadOnlyCaretVisible="False"
-                                         IsTabStop="False"
-                                         IsDocumentEnabled="True"
-                                         BorderThickness="0"
-                                         Background="Transparent"
-                                         Foreground="#666666"
-                                         Padding="0"
-                                         VerticalScrollBarVisibility="Disabled"
-                                         HorizontalScrollBarVisibility="Disabled">
-                                <RichTextBox.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="コピー"
-                                                  Command="ApplicationCommands.Copy"/>
-                                        <MenuItem Header="すべて選択"
-                                                  Command="ApplicationCommands.SelectAll"/>
-                                    </ContextMenu>
-                                </RichTextBox.ContextMenu>
-                                <FlowDocument PagePadding="0"
-                                              LineHeight="18">
-                                    <Paragraph Margin="0">
-                                        <Run Text="記憶DBで使うモデルを設定します。以下書式で入力してください。"/>
-                                        <LineBreak/>
-                                        <Run Text="openai/text-embedding-3-large"/>
-                                        <LineBreak/>
-                                        <Run Text="openrouter/google/gemini-embedding-001"/>
-                                        <LineBreak/>
-                                        <Run Text="openrouter/openai/text-embedding-3-large"/>
-                                        <LineBreak/>
-                                        <Run Text="openrouter/google/gemini-embedding-001"/>
-                                        <LineBreak/>
-                                        <Run Text="ollama/nomic-embed-text（BASE URLは http://localhost:11434）※問題あったら教えてね"/>
-                                        <LineBreak/>
-                                        <Run Text="lm_studio/XXX（BASE URLはhttp://127.0.0.1:1234/v1）※未対応"/>
-                                        <LineBreak/>
-                                        <Run Text="参考: "/>
-                                        <Hyperlink NavigateUri="https://docs.litellm.ai/docs/embedding/supported_embedding"
-                                                   RequestNavigate="Hyperlink_RequestNavigate">
-                                            <Run Text="https://docs.litellm.ai/docs/embedding/supported_embedding"/>
-                                        </Hyperlink>
-                                    </Paragraph>
-                                </FlowDocument>
-                            </RichTextBox>
-                        </Expander>
-
-                        <!-- Embedding Base URL -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="160"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Embedding Base URL:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="EmbeddingBaseUrlTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="Embedding API用のベースURL（空欄の場合はデフォルト）"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-
-                        <!-- Embedding Dimension -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="160"/>
-                                <ColumnDefinition Width="100"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Embedding次元数:"
-                                       Style="{StaticResource SettingLabelStyle}"
-                                       Foreground="Red"/>
-                            <TextBox x:Name="EmbeddingDimensionTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="Embeddingベクトルの次元数"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-
-                        <!-- 類似エピソード数 -->
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="160"/>
-                                <ColumnDefinition Width="100"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="類似エピソード数:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="SimilarEpisodesLimitTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     ToolTip="記憶検索時に取得する類似エピソードの最大数（実際に使用する記憶はさらに絞り込まれます）"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                    </StackPanel>
-                </GroupBox>
-
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+                                                <TextBlock Text="description"
+                                                           Margin="0,10,0,5"
+                                                           Foreground="#4873CF"/>
+                                                <TextBox x:Name="MemorySetDescriptionTextBox"
+                                                         AcceptsReturn="True"
+                                                         TextWrapping="Wrap"
+                                                         VerticalScrollBarVisibility="Auto"
+                                                         Height="140"
+                                                         Foreground="#FF0078D7"
+                                                         BorderBrush="#CCCCCC"
+                                                         BorderThickness="1"
+                                                         TextChanged="OnSettingChanged"/>
+                                        </StackPanel>
+                                </GroupBox>
+                        </StackPanel>
+                </ScrollViewer>
+        </Grid>
 </UserControl>

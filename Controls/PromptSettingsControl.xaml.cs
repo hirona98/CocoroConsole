@@ -1,26 +1,35 @@
+using CocoroConsole.Models.OtomeKairoApi;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
-using CocoroConsole.Models.OtomeKairoApi;
-using CocoroConsole.Services;
 
 namespace CocoroConsole.Controls
 {
     public partial class PromptSettingsControl : UserControl
     {
+        private sealed class PersonaEditorItem
+        {
+            public string PersonaId { get; set; } = string.Empty;
+            public string DisplayName { get; set; } = string.Empty;
+            public string PersonaText { get; set; } = string.Empty;
+            public string SecondPersonLabel { get; set; } = string.Empty;
+            public string AddonText { get; set; } = string.Empty;
+            public string CorePersonaJson { get; set; } = "{}";
+            public string ExpressionStyleJson { get; set; } = "{\n  \"tone\": \"gentle\"\n}";
+        }
+
+        private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+        };
+
+        private readonly List<PersonaEditorItem> _personas = new();
         private bool _isInitializing;
-
-        private OtomeKairoApiClient? _apiClient;
-        private Func<Task>? _onPresetListChanged;
-
-        private readonly List<PersonaPreset> _personaPresets = new();
-        private readonly List<AddonPreset> _addonPresets = new();
-
-        private int _currentPersonaPresetIndex = -1;
-        private int _currentAddonPresetIndex = -1;
+        private int _currentPersonaIndex = -1;
 
         public event EventHandler? SettingsChanged;
 
@@ -29,24 +38,30 @@ namespace CocoroConsole.Controls
             InitializeComponent();
         }
 
-        public void SetApiClient(OtomeKairoApiClient apiClient, Func<Task> onPresetListChanged)
-        {
-            _apiClient = apiClient;
-            _onPresetListChanged = onPresetListChanged;
-        }
-
-        public void LoadSettings(
-            List<PersonaPreset>? personaPresets,
-            string? activePersonaPresetId,
-            List<AddonPreset>? addonPresets,
-            string? activeAddonPresetId
-        )
+        public void LoadSettings(List<OtomeKairoPersonaDefinition>? personas, string? activePersonaId)
         {
             _isInitializing = true;
             try
             {
-                LoadPersonaPresets(personaPresets, activePersonaPresetId);
-                LoadAddonPresets(addonPresets, activeAddonPresetId);
+                _personas.Clear();
+                PersonaSelectComboBox.Items.Clear();
+
+                if (personas == null || personas.Count == 0)
+                {
+                    _currentPersonaIndex = -1;
+                    ClearPersonaUi();
+                    return;
+                }
+
+                foreach (var persona in personas)
+                {
+                    _personas.Add(ToEditorItem(persona));
+                    PersonaSelectComboBox.Items.Add(persona.DisplayName);
+                }
+
+                _currentPersonaIndex = ResolveActiveIndex(_personas.Select(p => p.PersonaId).ToList(), activePersonaId);
+                PersonaSelectComboBox.SelectedIndex = _currentPersonaIndex;
+                LoadPersonaToUi(_personas[_currentPersonaIndex]);
             }
             finally
             {
@@ -54,103 +69,284 @@ namespace CocoroConsole.Controls
             }
         }
 
-        public List<PersonaPreset> GetAllPersonaPresets()
+        public List<OtomeKairoPersonaDefinition> GetAllPersonas()
         {
-            SaveCurrentPersonaUiToPreset();
-            return _personaPresets.ToList();
+            SyncCurrentPersonaFromUi();
+            return _personas.Select(ToDefinition).ToList();
         }
 
-        public List<AddonPreset> GetAllAddonPresets()
+        public string? GetActivePersonaId()
         {
-            SaveCurrentAddonUiToPreset();
-            return _addonPresets.ToList();
-        }
-
-        public string? GetActivePersonaPresetId()
-        {
-            if (_currentPersonaPresetIndex < 0 || _currentPersonaPresetIndex >= _personaPresets.Count)
+            if (_currentPersonaIndex < 0 || _currentPersonaIndex >= _personas.Count)
             {
                 return null;
             }
 
-            return _personaPresets[_currentPersonaPresetIndex].PersonaPresetId;
+            return _personas[_currentPersonaIndex].PersonaId;
         }
 
-        public string? GetActiveAddonPresetId()
+        private void AddPersonaButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_currentAddonPresetIndex < 0 || _currentAddonPresetIndex >= _addonPresets.Count)
+            SyncCurrentPersonaFromUi();
+
+            var item = new PersonaEditorItem
             {
-                return null;
+                PersonaId = $"persona:{Guid.NewGuid():N}",
+                DisplayName = GenerateUniqueName(_personas.Select(p => p.DisplayName), "新規人格設定"),
+                PersonaText = string.Empty,
+                SecondPersonLabel = "あなた",
+                AddonText = string.Empty,
+                CorePersonaJson = SerializeObject(new Dictionary<string, object?> { ["self_image"] = "long-term companion" }),
+                ExpressionStyleJson = SerializeObject(new Dictionary<string, object?> { ["tone"] = "gentle" }),
+            };
+
+            _isInitializing = true;
+            try
+            {
+                _personas.Add(item);
+                PersonaSelectComboBox.Items.Add(item.DisplayName);
+                _currentPersonaIndex = _personas.Count - 1;
+                PersonaSelectComboBox.SelectedIndex = _currentPersonaIndex;
+                LoadPersonaToUi(item);
+            }
+            finally
+            {
+                _isInitializing = false;
             }
 
-            return _addonPresets[_currentAddonPresetIndex].AddonPresetId;
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void LoadPersonaPresets(List<PersonaPreset>? presets, string? activePresetId)
+        private void DuplicatePersonaButton_Click(object sender, RoutedEventArgs e)
         {
-            _personaPresets.Clear();
-            PersonaPresetSelectComboBox.Items.Clear();
-
-            if (presets == null || presets.Count == 0)
+            if (_currentPersonaIndex < 0 || _currentPersonaIndex >= _personas.Count)
             {
-                _currentPersonaPresetIndex = -1;
-                ClearPersonaUi();
+                MessageBox.Show("複製する人格設定を選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            _personaPresets.AddRange(presets);
-            foreach (var preset in _personaPresets)
+            SyncCurrentPersonaFromUi();
+            var source = _personas[_currentPersonaIndex];
+            var item = new PersonaEditorItem
             {
-                PersonaPresetSelectComboBox.Items.Add(preset.PersonaPresetName);
+                PersonaId = $"persona:{Guid.NewGuid():N}",
+                DisplayName = GenerateUniqueName(_personas.Select(p => p.DisplayName), $"{source.DisplayName} (コピー)"),
+                PersonaText = source.PersonaText,
+                SecondPersonLabel = source.SecondPersonLabel,
+                AddonText = source.AddonText,
+                CorePersonaJson = source.CorePersonaJson,
+                ExpressionStyleJson = source.ExpressionStyleJson,
+            };
+
+            _isInitializing = true;
+            try
+            {
+                _personas.Add(item);
+                PersonaSelectComboBox.Items.Add(item.DisplayName);
+                _currentPersonaIndex = _personas.Count - 1;
+                PersonaSelectComboBox.SelectedIndex = _currentPersonaIndex;
+                LoadPersonaToUi(item);
+            }
+            finally
+            {
+                _isInitializing = false;
             }
 
-            var activeIndex = ResolveActiveIndex(_personaPresets.Select(p => p.PersonaPresetId).ToList(), activePresetId);
-            _currentPersonaPresetIndex = activeIndex;
-            PersonaPresetSelectComboBox.SelectedIndex = activeIndex;
-            LoadPersonaPresetToUi(_personaPresets[activeIndex]);
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void LoadAddonPresets(List<AddonPreset>? presets, string? activePresetId)
+        private void DeletePersonaButton_Click(object sender, RoutedEventArgs e)
         {
-            _addonPresets.Clear();
-            AddonPresetSelectComboBox.Items.Clear();
-
-            if (presets == null || presets.Count == 0)
+            if (_currentPersonaIndex < 0 || _currentPersonaIndex >= _personas.Count)
             {
-                _currentAddonPresetIndex = -1;
-                ClearAddonUi();
+                MessageBox.Show("削除する人格設定を選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            _addonPresets.AddRange(presets);
-            foreach (var preset in _addonPresets)
+            if (_personas.Count <= 1)
             {
-                AddonPresetSelectComboBox.Items.Add(preset.AddonPresetName);
+                MessageBox.Show("最後の人格設定は削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
             }
 
-            var activeIndex = ResolveActiveIndex(_addonPresets.Select(p => p.AddonPresetId).ToList(), activePresetId);
-            _currentAddonPresetIndex = activeIndex;
-            AddonPresetSelectComboBox.SelectedIndex = activeIndex;
-            LoadAddonPresetToUi(_addonPresets[activeIndex]);
+            _isInitializing = true;
+            try
+            {
+                _personas.RemoveAt(_currentPersonaIndex);
+                PersonaSelectComboBox.Items.RemoveAt(_currentPersonaIndex);
+                _currentPersonaIndex = Math.Min(_currentPersonaIndex, _personas.Count - 1);
+                PersonaSelectComboBox.SelectedIndex = _currentPersonaIndex;
+                LoadPersonaToUi(_personas[_currentPersonaIndex]);
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private static int ResolveActiveIndex(IReadOnlyList<string?> presetIds, string? activePresetId)
+        private void PersonaSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (presetIds.Count == 0)
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            SyncCurrentPersonaFromUi();
+
+            var selectedIndex = PersonaSelectComboBox.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= _personas.Count)
+            {
+                return;
+            }
+
+            _isInitializing = true;
+            try
+            {
+                _currentPersonaIndex = selectedIndex;
+                LoadPersonaToUi(_personas[selectedIndex]);
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void OnSettingChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            if (sender == DisplayNameTextBox && _currentPersonaIndex >= 0 && _currentPersonaIndex < _personas.Count)
+            {
+                _personas[_currentPersonaIndex].DisplayName = DisplayNameTextBox.Text;
+                RefreshComboBoxItems();
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void SyncCurrentPersonaFromUi()
+        {
+            if (_currentPersonaIndex < 0 || _currentPersonaIndex >= _personas.Count)
+            {
+                return;
+            }
+
+            var current = _personas[_currentPersonaIndex];
+            current.DisplayName = DisplayNameTextBox.Text;
+            current.SecondPersonLabel = SecondPersonLabelTextBox.Text;
+            current.PersonaText = PersonaTextBox.Text;
+            current.AddonText = AddonTextBox.Text;
+            current.CorePersonaJson = NormalizeJsonText(CorePersonaJsonTextBox.Text);
+            current.ExpressionStyleJson = NormalizeJsonText(ExpressionStyleJsonTextBox.Text);
+        }
+
+        private void LoadPersonaToUi(PersonaEditorItem item)
+        {
+            DisplayNameTextBox.Text = item.DisplayName;
+            SecondPersonLabelTextBox.Text = item.SecondPersonLabel;
+            PersonaTextBox.Text = item.PersonaText;
+            AddonTextBox.Text = item.AddonText;
+            CorePersonaJsonTextBox.Text = NormalizeJsonText(item.CorePersonaJson);
+            ExpressionStyleJsonTextBox.Text = NormalizeJsonText(item.ExpressionStyleJson);
+        }
+
+        private void ClearPersonaUi()
+        {
+            DisplayNameTextBox.Text = string.Empty;
+            SecondPersonLabelTextBox.Text = string.Empty;
+            PersonaTextBox.Text = string.Empty;
+            AddonTextBox.Text = string.Empty;
+            CorePersonaJsonTextBox.Text = "{}";
+            ExpressionStyleJsonTextBox.Text = "{\n  \"tone\": \"gentle\"\n}";
+        }
+
+        private void RefreshComboBoxItems()
+        {
+            var currentIndex = _currentPersonaIndex;
+            PersonaSelectComboBox.SelectionChanged -= PersonaSelectComboBox_SelectionChanged;
+            PersonaSelectComboBox.Items.Clear();
+            foreach (var persona in _personas)
+            {
+                PersonaSelectComboBox.Items.Add(persona.DisplayName);
+            }
+            PersonaSelectComboBox.SelectedIndex = currentIndex;
+            PersonaSelectComboBox.SelectionChanged += PersonaSelectComboBox_SelectionChanged;
+        }
+
+        private static PersonaEditorItem ToEditorItem(OtomeKairoPersonaDefinition persona)
+        {
+            return new PersonaEditorItem
+            {
+                PersonaId = persona.PersonaId,
+                DisplayName = persona.DisplayName,
+                PersonaText = persona.PersonaText ?? string.Empty,
+                SecondPersonLabel = persona.SecondPersonLabel ?? string.Empty,
+                AddonText = persona.AddonText ?? string.Empty,
+                CorePersonaJson = SerializeObject(persona.CorePersona ?? new Dictionary<string, object?>()),
+                ExpressionStyleJson = SerializeObject(persona.ExpressionStyle ?? new Dictionary<string, object?>()),
+            };
+        }
+
+        private static OtomeKairoPersonaDefinition ToDefinition(PersonaEditorItem item)
+        {
+            return new OtomeKairoPersonaDefinition
+            {
+                PersonaId = item.PersonaId,
+                DisplayName = item.DisplayName,
+                PersonaText = item.PersonaText,
+                SecondPersonLabel = item.SecondPersonLabel,
+                AddonText = item.AddonText,
+                CorePersona = ParseObject(item.CorePersonaJson, $"{item.DisplayName} の core_persona"),
+                ExpressionStyle = ParseObject(item.ExpressionStyleJson, $"{item.DisplayName} の expression_style"),
+            };
+        }
+
+        private static Dictionary<string, object?> ParseObject(string jsonText, string fieldName)
+        {
+            var normalized = NormalizeJsonText(jsonText);
+            try
+            {
+                return JsonSerializer.Deserialize<Dictionary<string, object?>>(normalized, JsonOptions)
+                    ?? new Dictionary<string, object?>();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"{fieldName} の JSON が不正です: {ex.Message}", ex);
+            }
+        }
+
+        private static string SerializeObject(Dictionary<string, object?> values)
+        {
+            return JsonSerializer.Serialize(values, JsonOptions);
+        }
+
+        private static string NormalizeJsonText(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "{}" : value.Trim();
+        }
+
+        private static int ResolveActiveIndex(IReadOnlyList<string?> ids, string? activeId)
+        {
+            if (ids.Count == 0)
             {
                 return -1;
             }
 
-            if (string.IsNullOrWhiteSpace(activePresetId))
+            if (!string.IsNullOrWhiteSpace(activeId))
             {
-                return 0;
-            }
-
-            for (var i = 0; i < presetIds.Count; i++)
-            {
-                if (string.Equals(presetIds[i], activePresetId, StringComparison.OrdinalIgnoreCase))
+                for (var i = 0; i < ids.Count; i++)
                 {
-                    return i;
+                    if (string.Equals(ids[i], activeId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return i;
+                    }
                 }
             }
 
@@ -159,387 +355,15 @@ namespace CocoroConsole.Controls
 
         private static string GenerateUniqueName(IEnumerable<string> existingNames, string baseName)
         {
-            var existing = new HashSet<string>(existingNames);
-
-            int counter = 1;
-            string name = baseName;
-
+            var existing = new HashSet<string>(existingNames.Where(name => !string.IsNullOrWhiteSpace(name)));
+            var name = baseName;
+            var counter = 1;
             while (existing.Contains(name))
             {
-                counter++;
+                counter += 1;
                 name = $"{baseName} {counter}";
             }
-
             return name;
-        }
-
-        private static string GenerateDuplicateName(IEnumerable<string> existingNames, string sourceName)
-        {
-            string baseName = $"{sourceName} (コピー)";
-            return GenerateUniqueName(existingNames, baseName);
-        }
-
-        private void SaveCurrentPersonaUiToPreset()
-        {
-            if (_currentPersonaPresetIndex < 0 || _currentPersonaPresetIndex >= _personaPresets.Count)
-            {
-                return;
-            }
-
-            var preset = _personaPresets[_currentPersonaPresetIndex];
-            preset.PersonaPresetName = PersonaPresetNameTextBox.Text;
-            preset.PersonaText = PersonaTextBox.Text;
-            preset.SecondPersonLabel = SecondPersonLabelTextBox.Text;
-        }
-
-        private void SaveCurrentAddonUiToPreset()
-        {
-            if (_currentAddonPresetIndex < 0 || _currentAddonPresetIndex >= _addonPresets.Count)
-            {
-                return;
-            }
-
-            var preset = _addonPresets[_currentAddonPresetIndex];
-            preset.AddonPresetName = AddonPresetNameTextBox.Text;
-            preset.AddonText = AddonTextBox.Text;
-        }
-
-        private void AddPersonaPresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            SaveCurrentPersonaUiToPreset();
-
-            var newPreset = new PersonaPreset
-            {
-                PersonaPresetId = Guid.NewGuid().ToString(),
-                PersonaPresetName = GenerateUniqueName(_personaPresets.Select(p => p.PersonaPresetName), "新規プリセット"),
-                PersonaText = string.Empty,
-                SecondPersonLabel = string.Empty
-            };
-
-            _isInitializing = true;
-            try
-            {
-                _personaPresets.Add(newPreset);
-                PersonaPresetSelectComboBox.Items.Add(newPreset.PersonaPresetName);
-                _currentPersonaPresetIndex = _personaPresets.Count - 1;
-                PersonaPresetSelectComboBox.SelectedIndex = _currentPersonaPresetIndex;
-                LoadPersonaPresetToUi(newPreset);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void DuplicatePersonaPresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentPersonaPresetIndex < 0 || _currentPersonaPresetIndex >= _personaPresets.Count)
-            {
-                MessageBox.Show("複製するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            SaveCurrentPersonaUiToPreset();
-
-            var source = _personaPresets[_currentPersonaPresetIndex];
-            var duplicate = new PersonaPreset
-            {
-                PersonaPresetId = Guid.NewGuid().ToString(),
-                PersonaPresetName = GenerateDuplicateName(_personaPresets.Select(p => p.PersonaPresetName), source.PersonaPresetName),
-                PersonaText = source.PersonaText,
-                SecondPersonLabel = source.SecondPersonLabel
-            };
-
-            _isInitializing = true;
-            try
-            {
-                _personaPresets.Add(duplicate);
-                PersonaPresetSelectComboBox.Items.Add(duplicate.PersonaPresetName);
-                _currentPersonaPresetIndex = _personaPresets.Count - 1;
-                PersonaPresetSelectComboBox.SelectedIndex = _currentPersonaPresetIndex;
-                LoadPersonaPresetToUi(duplicate);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void DeletePersonaPresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentPersonaPresetIndex < 0 || _currentPersonaPresetIndex >= _personaPresets.Count)
-            {
-                MessageBox.Show("削除するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            if (_personaPresets.Count <= 1)
-            {
-                MessageBox.Show("最後のプリセットは削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            _isInitializing = true;
-            try
-            {
-                _personaPresets.RemoveAt(_currentPersonaPresetIndex);
-                PersonaPresetSelectComboBox.Items.RemoveAt(_currentPersonaPresetIndex);
-
-                _currentPersonaPresetIndex = Math.Min(_currentPersonaPresetIndex, _personaPresets.Count - 1);
-                PersonaPresetSelectComboBox.SelectedIndex = _currentPersonaPresetIndex;
-                LoadPersonaPresetToUi(_personaPresets[_currentPersonaPresetIndex]);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void AddAddonPresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            SaveCurrentAddonUiToPreset();
-
-            var newPreset = new AddonPreset
-            {
-                AddonPresetId = Guid.NewGuid().ToString(),
-                AddonPresetName = GenerateUniqueName(_addonPresets.Select(p => p.AddonPresetName), "新規プリセット"),
-                AddonText = string.Empty
-            };
-
-            _isInitializing = true;
-            try
-            {
-                _addonPresets.Add(newPreset);
-                AddonPresetSelectComboBox.Items.Add(newPreset.AddonPresetName);
-                _currentAddonPresetIndex = _addonPresets.Count - 1;
-                AddonPresetSelectComboBox.SelectedIndex = _currentAddonPresetIndex;
-                LoadAddonPresetToUi(newPreset);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void DuplicateAddonPresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentAddonPresetIndex < 0 || _currentAddonPresetIndex >= _addonPresets.Count)
-            {
-                MessageBox.Show("複製するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            SaveCurrentAddonUiToPreset();
-
-            var source = _addonPresets[_currentAddonPresetIndex];
-            var duplicate = new AddonPreset
-            {
-                AddonPresetId = Guid.NewGuid().ToString(),
-                AddonPresetName = GenerateDuplicateName(_addonPresets.Select(p => p.AddonPresetName), source.AddonPresetName),
-                AddonText = source.AddonText
-            };
-
-            _isInitializing = true;
-            try
-            {
-                _addonPresets.Add(duplicate);
-                AddonPresetSelectComboBox.Items.Add(duplicate.AddonPresetName);
-                _currentAddonPresetIndex = _addonPresets.Count - 1;
-                AddonPresetSelectComboBox.SelectedIndex = _currentAddonPresetIndex;
-                LoadAddonPresetToUi(duplicate);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void DeleteAddonPresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentAddonPresetIndex < 0 || _currentAddonPresetIndex >= _addonPresets.Count)
-            {
-                MessageBox.Show("削除するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            if (_addonPresets.Count <= 1)
-            {
-                MessageBox.Show("最後のプリセットは削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            _isInitializing = true;
-            try
-            {
-                _addonPresets.RemoveAt(_currentAddonPresetIndex);
-                AddonPresetSelectComboBox.Items.RemoveAt(_currentAddonPresetIndex);
-
-                _currentAddonPresetIndex = Math.Min(_currentAddonPresetIndex, _addonPresets.Count - 1);
-                AddonPresetSelectComboBox.SelectedIndex = _currentAddonPresetIndex;
-                LoadAddonPresetToUi(_addonPresets[_currentAddonPresetIndex]);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void LoadPersonaPresetToUi(PersonaPreset preset)
-        {
-            PersonaPresetNameTextBox.Text = preset.PersonaPresetName;
-            PersonaTextBox.Text = preset.PersonaText;
-            SecondPersonLabelTextBox.Text = preset.SecondPersonLabel;
-        }
-
-        private void LoadAddonPresetToUi(AddonPreset preset)
-        {
-            AddonPresetNameTextBox.Text = preset.AddonPresetName;
-            AddonTextBox.Text = preset.AddonText;
-        }
-
-        private void ClearPersonaUi()
-        {
-            PersonaPresetNameTextBox.Text = string.Empty;
-            PersonaTextBox.Text = string.Empty;
-            SecondPersonLabelTextBox.Text = string.Empty;
-        }
-
-        private void ClearAddonUi()
-        {
-            AddonPresetNameTextBox.Text = string.Empty;
-            AddonTextBox.Text = string.Empty;
-        }
-
-        private void PersonaPresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_isInitializing)
-            {
-                return;
-            }
-
-            SaveCurrentPersonaUiToPreset();
-
-            var selectedIndex = PersonaPresetSelectComboBox.SelectedIndex;
-            if (selectedIndex < 0 || selectedIndex >= _personaPresets.Count)
-            {
-                return;
-            }
-
-            _currentPersonaPresetIndex = selectedIndex;
-            _isInitializing = true;
-            try
-            {
-                LoadPersonaPresetToUi(_personaPresets[selectedIndex]);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void AddonPresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_isInitializing)
-            {
-                return;
-            }
-
-            SaveCurrentAddonUiToPreset();
-
-            var selectedIndex = AddonPresetSelectComboBox.SelectedIndex;
-            if (selectedIndex < 0 || selectedIndex >= _addonPresets.Count)
-            {
-                return;
-            }
-
-            _currentAddonPresetIndex = selectedIndex;
-            _isInitializing = true;
-            try
-            {
-                LoadAddonPresetToUi(_addonPresets[selectedIndex]);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void OnPersonaSettingChanged(object sender, TextChangedEventArgs e)
-        {
-            if (_isInitializing)
-            {
-                return;
-            }
-
-            if (_currentPersonaPresetIndex >= 0 && _currentPersonaPresetIndex < _personaPresets.Count)
-            {
-                if (sender == PersonaPresetNameTextBox)
-                {
-                    _personaPresets[_currentPersonaPresetIndex].PersonaPresetName = PersonaPresetNameTextBox.Text;
-                    RefreshComboBoxItems(PersonaPresetSelectComboBox, _personaPresets.Select(p => p.PersonaPresetName).ToList(), _currentPersonaPresetIndex);
-                }
-                else if (sender == PersonaTextBox)
-                {
-                    _personaPresets[_currentPersonaPresetIndex].PersonaText = PersonaTextBox.Text;
-                }
-                else if (sender == SecondPersonLabelTextBox)
-                {
-                    _personaPresets[_currentPersonaPresetIndex].SecondPersonLabel = SecondPersonLabelTextBox.Text;
-                }
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void OnAddonSettingChanged(object sender, TextChangedEventArgs e)
-        {
-            if (_isInitializing)
-            {
-                return;
-            }
-
-            if (sender == AddonPresetNameTextBox && _currentAddonPresetIndex >= 0 && _currentAddonPresetIndex < _addonPresets.Count)
-            {
-                _addonPresets[_currentAddonPresetIndex].AddonPresetName = AddonPresetNameTextBox.Text;
-                RefreshComboBoxItems(AddonPresetSelectComboBox, _addonPresets.Select(p => p.AddonPresetName).ToList(), _currentAddonPresetIndex);
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void RefreshComboBoxItems(ComboBox comboBox, IReadOnlyList<string> items, int selectedIndex)
-        {
-            _isInitializing = true;
-            try
-            {
-                comboBox.Items.Clear();
-                foreach (var item in items)
-                {
-                    comboBox.Items.Add(item);
-                }
-
-                comboBox.SelectedIndex = selectedIndex;
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
         }
     }
 }

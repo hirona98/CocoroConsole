@@ -1,44 +1,41 @@
+using CocoroConsole.Models.OtomeKairoApi;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
-using CocoroConsole.Models.OtomeKairoApi;
-using CocoroConsole.Services;
-using CocoroConsole.Utilities;
 
 namespace CocoroConsole.Controls
 {
     public partial class LlmSettingsControl : UserControl
     {
-        private bool _isInitializing = false;
-        private List<LlmPreset> _presets = new List<LlmPreset>();
+        private sealed class ModelPresetEditorItem
+        {
+            public string ModelPresetId { get; set; } = string.Empty;
+            public string DisplayName { get; set; } = string.Empty;
+            public string ObservationRoleJson { get; set; } = "{}";
+            public string DecisionRoleJson { get; set; } = "{}";
+            public string ExpressionRoleJson { get; set; } = "{}";
+            public string MemoryRoleJson { get; set; } = "{}";
+            public string EmbeddingRoleJson { get; set; } = "{}";
+        }
+
+        private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+        };
+
+        private readonly List<ModelPresetEditorItem> _presets = new();
+        private bool _isInitializing;
         private int _currentPresetIndex = -1;
-        private OtomeKairoApiClient? _apiClient;
-        private Func<Task>? _onPresetListChanged;
 
         public event EventHandler? SettingsChanged;
 
         public LlmSettingsControl()
         {
             InitializeComponent();
-        }
-
-        public void SetApiClient(OtomeKairoApiClient apiClient, Func<Task> onPresetListChanged)
-        {
-            _apiClient = apiClient;
-            _onPresetListChanged = onPresetListChanged;
-        }
-
-        public List<LlmPreset> GetAllPresets()
-        {
-            // 現在のUI値を現在のプリセットに反映
-            if (_currentPresetIndex >= 0 && _currentPresetIndex < _presets.Count)
-            {
-                SaveCurrentUIToPreset();
-            }
-            return _presets.ToList();
         }
 
         public bool IsUseLlm
@@ -58,65 +55,9 @@ namespace CocoroConsole.Controls
             }
         }
 
-        public string GetCurrentLlmApiKey()
-        {
-            return LlmApiKeyPasswordBox.Text?.Trim() ?? string.Empty;
-        }
-
-        private void SaveCurrentUIToPreset()
-        {
-            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count) return;
-
-            LlmPreset preset = _presets[_currentPresetIndex];
-            preset.LlmPresetName = PresetNameTextBox.Text;
-            preset.LlmApiKey = LlmApiKeyPasswordBox.Text ?? string.Empty;
-            preset.LlmModel = LlmModelTextBox.Text ?? string.Empty;
-            preset.LlmBaseUrl = string.IsNullOrWhiteSpace(LlmBaseUrlTextBox.Text) ? null : LlmBaseUrlTextBox.Text;
-            preset.MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : LlmPreset.DefaultMaxTurnsWindow;
-            preset.MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : LlmPreset.DefaultMaxTokens;
-            preset.ReasoningEffort = !string.IsNullOrWhiteSpace(ReasoningEffortTextBox.Text) ? ReasoningEffortTextBox.Text : null;
-            preset.ReplyWebSearchEnabled = ReplyWebSearchEnabledCheckBox.IsChecked ?? true;
-            preset.ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Text) ? null : VisionApiKeyPasswordBox.Text;
-            preset.ImageModel = VisionModelTextBox.Text ?? string.Empty;
-            preset.ImageLlmBaseUrl = string.IsNullOrWhiteSpace(VisionBaseUrlTextBox.Text) ? null : VisionBaseUrlTextBox.Text;
-            preset.MaxTokensVision = int.TryParse(MaxTokensVisionTextBox.Text, out int maxTokensVision) ? maxTokensVision : LlmPreset.DefaultMaxTokensVision;
-            preset.ImageTimeoutSeconds = int.TryParse(ImageTimeoutSecondsTextBox.Text, out int imageTimeout) ? imageTimeout : LlmPreset.DefaultImageTimeoutSeconds;
-        }
-
-        public void LoadSettings(LlmPreset? preset)
+        public void LoadSettingsList(List<OtomeKairoModelPresetDefinition>? presets, string? activePresetId = null)
         {
             _isInitializing = true;
-
-            try
-            {
-                _presets.Clear();
-                PresetSelectComboBox.Items.Clear();
-
-                if (preset == null)
-                {
-                    ClearSettings();
-                    _currentPresetIndex = -1;
-                    return;
-                }
-
-                // 単一プリセットをリストに追加
-                _presets.Add(preset);
-                PresetSelectComboBox.Items.Add(preset.LlmPresetName);
-                PresetSelectComboBox.SelectedIndex = 0;
-                _currentPresetIndex = 0;
-
-                LoadPresetToUI(preset);
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-        }
-
-        public void LoadSettingsList(List<LlmPreset>? presets, string? activePresetId = null)
-        {
-            _isInitializing = true;
-
             try
             {
                 _presets.Clear();
@@ -124,31 +65,20 @@ namespace CocoroConsole.Controls
 
                 if (presets == null || presets.Count == 0)
                 {
-                    ClearSettings();
                     _currentPresetIndex = -1;
+                    ClearUi();
                     return;
                 }
 
-                _presets.AddRange(presets);
-                foreach (LlmPreset preset in presets)
+                foreach (var preset in presets)
                 {
-                    PresetSelectComboBox.Items.Add(preset.LlmPresetName);
+                    _presets.Add(ToEditorItem(preset));
+                    PresetSelectComboBox.Items.Add(preset.DisplayName);
                 }
 
-                var activeIndex = 0;
-                if (!string.IsNullOrWhiteSpace(activePresetId))
-                {
-                    activeIndex = _presets.FindIndex(p => string.Equals(p.LlmPresetId, activePresetId, StringComparison.OrdinalIgnoreCase));
-                    if (activeIndex < 0)
-                    {
-                        activeIndex = 0;
-                    }
-                }
-
-                PresetSelectComboBox.SelectedIndex = activeIndex;
-                _currentPresetIndex = activeIndex;
-
-                LoadPresetToUI(_presets[activeIndex]);
+                _currentPresetIndex = ResolveActiveIndex(_presets.Select(p => p.ModelPresetId).ToList(), activePresetId);
+                PresetSelectComboBox.SelectedIndex = _currentPresetIndex;
+                LoadPresetToUi(_presets[_currentPresetIndex]);
             }
             finally
             {
@@ -156,283 +86,10 @@ namespace CocoroConsole.Controls
             }
         }
 
-        private void LoadPresetToUI(LlmPreset preset)
+        public List<OtomeKairoModelPresetDefinition> GetAllPresets()
         {
-            PresetNameTextBox.Text = preset.LlmPresetName ?? string.Empty;
-            LlmApiKeyPasswordBox.Text = preset.LlmApiKey ?? string.Empty;
-            LlmModelTextBox.Text = preset.LlmModel ?? string.Empty;
-            LlmBaseUrlTextBox.Text = preset.LlmBaseUrl ?? string.Empty;
-            MaxTurnsWindowTextBox.Text = preset.MaxTurnsWindow.ToString();
-            MaxTokensTextBox.Text = preset.MaxTokens.ToString();
-
-            // Reasoning Effort
-            ReasoningEffortTextBox.Text = preset.ReasoningEffort ?? string.Empty;
-            ReplyWebSearchEnabledCheckBox.IsChecked = preset.ReplyWebSearchEnabled;
-
-            // 画像認識LLM設定
-            VisionApiKeyPasswordBox.Text = preset.ImageModelApiKey ?? string.Empty;
-            VisionModelTextBox.Text = preset.ImageModel ?? string.Empty;
-            VisionBaseUrlTextBox.Text = preset.ImageLlmBaseUrl ?? string.Empty;
-            MaxTokensVisionTextBox.Text = preset.MaxTokensVision.ToString();
-            ImageTimeoutSecondsTextBox.Text = preset.ImageTimeoutSeconds.ToString();
-        }
-
-        public LlmPreset? GetSettings()
-        {
-            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
-            {
-                return null;
-            }
-
-            LlmPreset currentPreset = _presets[_currentPresetIndex];
-
-            LlmPreset preset = new LlmPreset
-            {
-                LlmPresetId = currentPreset.LlmPresetId,
-                LlmPresetName = PresetNameTextBox.Text,
-                LlmApiKey = LlmApiKeyPasswordBox.Text ?? string.Empty,
-                LlmModel = LlmModelTextBox.Text ?? string.Empty,
-                LlmBaseUrl = string.IsNullOrWhiteSpace(LlmBaseUrlTextBox.Text) ? null : LlmBaseUrlTextBox.Text,
-                MaxTurnsWindow = int.TryParse(MaxTurnsWindowTextBox.Text, out int maxTurns) ? maxTurns : LlmPreset.DefaultMaxTurnsWindow,
-                MaxTokens = int.TryParse(MaxTokensTextBox.Text, out int maxTokens) ? maxTokens : LlmPreset.DefaultMaxTokens,
-                ReplyWebSearchEnabled = ReplyWebSearchEnabledCheckBox.IsChecked ?? true,
-                ImageModelApiKey = string.IsNullOrWhiteSpace(VisionApiKeyPasswordBox.Text) ? null : VisionApiKeyPasswordBox.Text,
-                ImageModel = VisionModelTextBox.Text ?? string.Empty,
-                ImageLlmBaseUrl = string.IsNullOrWhiteSpace(VisionBaseUrlTextBox.Text) ? null : VisionBaseUrlTextBox.Text,
-                MaxTokensVision = int.TryParse(MaxTokensVisionTextBox.Text, out int maxTokensVision) ? maxTokensVision : LlmPreset.DefaultMaxTokensVision,
-                ImageTimeoutSeconds = int.TryParse(ImageTimeoutSecondsTextBox.Text, out int imageTimeout) ? imageTimeout : LlmPreset.DefaultImageTimeoutSeconds
-            };
-
-            // Reasoning Effort
-            preset.ReasoningEffort = !string.IsNullOrWhiteSpace(ReasoningEffortTextBox.Text) ? ReasoningEffortTextBox.Text : null;
-
-            return preset;
-        }
-
-        private void ClearSettings()
-        {
-            // UI初期化は、モデルの既定値（唯一の定義元）を反映して行う
-            LoadPresetToUI(LlmPreset.CreateDefault());
-        }
-
-        private void PresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_isInitializing) return;
-
-            // 現在のUI値を保存
-            SaveCurrentUIToPreset();
-
-            int selectedIndex = PresetSelectComboBox.SelectedIndex;
-            if (selectedIndex >= 0 && selectedIndex < _presets.Count)
-            {
-                _currentPresetIndex = selectedIndex;
-                _isInitializing = true;
-                try
-                {
-                    LoadPresetToUI(_presets[selectedIndex]);
-                }
-                finally
-                {
-                    _isInitializing = false;
-                }
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void IsUseLLMCheckBox_Changed(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing) return;
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void AddPresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            SaveCurrentUIToPreset();
-
-            // 新規プリセットは、既定値を必ずモデル側の定義から生成する
-            LlmPreset newPreset = LlmPreset.CreateDefault();
-            newPreset.LlmPresetId = Guid.NewGuid().ToString();
-            newPreset.LlmPresetName = GenerateNewPresetName();
-
-            _presets.Add(newPreset);
-            PresetSelectComboBox.Items.Add(newPreset.LlmPresetName);
-            PresetSelectComboBox.SelectedIndex = _presets.Count - 1;
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void DuplicatePresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
-            {
-                MessageBox.Show("複製するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            SaveCurrentUIToPreset();
-
-            LlmPreset source = _presets[_currentPresetIndex];
-            LlmPreset duplicate = new LlmPreset
-            {
-                LlmPresetId = Guid.NewGuid().ToString(),
-                LlmPresetName = GenerateDuplicatePresetName(source.LlmPresetName),
-                LlmApiKey = source.LlmApiKey,
-                LlmModel = source.LlmModel,
-                LlmBaseUrl = source.LlmBaseUrl,
-                ReasoningEffort = source.ReasoningEffort,
-                ReplyWebSearchEnabled = source.ReplyWebSearchEnabled,
-                MaxTurnsWindow = source.MaxTurnsWindow,
-                MaxTokens = source.MaxTokens,
-                ImageModelApiKey = source.ImageModelApiKey,
-                ImageModel = source.ImageModel,
-                ImageLlmBaseUrl = source.ImageLlmBaseUrl,
-                MaxTokensVision = source.MaxTokensVision,
-                ImageTimeoutSeconds = source.ImageTimeoutSeconds
-            };
-
-            _presets.Add(duplicate);
-            PresetSelectComboBox.Items.Add(duplicate.LlmPresetName);
-            PresetSelectComboBox.SelectedIndex = _presets.Count - 1;
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void LlmApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClipboardPasteOverride.PasteOverwrite(LlmApiKeyPasswordBox);
-        }
-
-        private void LlmApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClipboardPasteOverride.CopyToClipboard(LlmApiKeyPasswordBox);
-        }
-
-        private void VisionApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClipboardPasteOverride.PasteOverwrite(VisionApiKeyPasswordBox);
-        }
-
-        private void VisionApiKeyPasteFromLlmApiKeyButton_Click(object sender, RoutedEventArgs e)
-        {
-            VisionApiKeyPasswordBox.Text = GetCurrentLlmApiKey();
-        }
-
-        private void VisionApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClipboardPasteOverride.CopyToClipboard(VisionApiKeyPasswordBox);
-        }
-
-        private void DeletePresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
-            {
-                MessageBox.Show("削除するプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            if (_presets.Count <= 1)
-            {
-                MessageBox.Show("最後のプリセットは削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            _isInitializing = true;
-            try
-            {
-                _presets.RemoveAt(_currentPresetIndex);
-                PresetSelectComboBox.Items.RemoveAt(_currentPresetIndex);
-
-                int newIndex = Math.Min(_currentPresetIndex, _presets.Count - 1);
-                if (newIndex >= 0)
-                {
-                    PresetSelectComboBox.SelectedIndex = newIndex;
-                    _currentPresetIndex = newIndex;
-                    LoadPresetToUI(_presets[newIndex]);
-                }
-            }
-            finally
-            {
-                _isInitializing = false;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        private string GenerateNewPresetName()
-        {
-            int counter = 1;
-            string baseName = "新規プリセット";
-            string name = baseName;
-
-            while (_presets.Any(p => p.LlmPresetName == name))
-            {
-                counter++;
-                name = $"{baseName} {counter}";
-            }
-
-            return name;
-        }
-
-        private string GenerateDuplicatePresetName(string sourceName)
-        {
-            int counter = 1;
-            string baseName = $"{sourceName} (コピー)";
-            string name = baseName;
-
-            while (_presets.Any(p => p.LlmPresetName == name))
-            {
-                counter++;
-                name = $"{baseName} {counter}";
-            }
-
-            return name;
-        }
-
-        private void OnSettingChanged(object sender, RoutedEventArgs e)
-        {
-            if (!_isInitializing)
-            {
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-        }
-
-        private void OnSettingChanged(object sender, TextChangedEventArgs e)
-        {
-            if (!_isInitializing)
-            {
-                // 名前変更時はプリセットリストとComboBoxの表示を更新
-                if (sender == PresetNameTextBox && _currentPresetIndex >= 0 && _currentPresetIndex < _presets.Count)
-                {
-                    // プリセットの名前を更新
-                    _presets[_currentPresetIndex].LlmPresetName = PresetNameTextBox.Text;
-
-                    // ComboBoxを更新
-                    var currentIndex = _currentPresetIndex;
-                    PresetSelectComboBox.SelectionChanged -= PresetSelectComboBox_SelectionChanged;
-                    PresetSelectComboBox.Items.Clear();
-                    foreach (var preset in _presets)
-                    {
-                        PresetSelectComboBox.Items.Add(preset.LlmPresetName);
-                    }
-                    PresetSelectComboBox.SelectedIndex = currentIndex;
-                    PresetSelectComboBox.SelectionChanged += PresetSelectComboBox_SelectionChanged;
-                }
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-        }
-
-        private void OnSettingChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (!_isInitializing)
-            {
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-        }
-
-        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            Utilities.UIHelper.HandleHyperlinkNavigation(e);
+            SyncCurrentPresetFromUi();
+            return _presets.Select(ToDefinition).ToList();
         }
 
         public string? GetActivePresetId()
@@ -442,7 +99,385 @@ namespace CocoroConsole.Controls
                 return null;
             }
 
-            return _presets[_currentPresetIndex].LlmPresetId;
+            return _presets[_currentPresetIndex].ModelPresetId;
+        }
+
+        public string GetCurrentLlmApiKey()
+        {
+            try
+            {
+                SyncCurrentPresetFromUi();
+                if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+                {
+                    return string.Empty;
+                }
+
+                var role = ParseObject(_presets[_currentPresetIndex].ExpressionRoleJson, "expression_generation");
+                return ReadString(role, "api_key") ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private void AddPresetButton_Click(object sender, RoutedEventArgs e)
+        {
+            SyncCurrentPresetFromUi();
+
+            var item = new ModelPresetEditorItem
+            {
+                ModelPresetId = $"model_preset:{Guid.NewGuid():N}",
+                DisplayName = GenerateUniqueName(_presets.Select(p => p.DisplayName), "新規モデルプリセット"),
+                ObservationRoleJson = SerializeObject(CreateGenerationRoleTemplate(includeReasoningEffort: true)),
+                DecisionRoleJson = SerializeObject(CreateGenerationRoleTemplate(includeReasoningEffort: false)),
+                ExpressionRoleJson = SerializeObject(CreateGenerationRoleTemplate(includeReasoningEffort: false)),
+                MemoryRoleJson = SerializeObject(CreateGenerationRoleTemplate(includeReasoningEffort: false)),
+                EmbeddingRoleJson = SerializeObject(CreateEmbeddingRoleTemplate()),
+            };
+
+            _isInitializing = true;
+            try
+            {
+                _presets.Add(item);
+                PresetSelectComboBox.Items.Add(item.DisplayName);
+                _currentPresetIndex = _presets.Count - 1;
+                PresetSelectComboBox.SelectedIndex = _currentPresetIndex;
+                LoadPresetToUi(item);
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void DuplicatePresetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            {
+                MessageBox.Show("複製するモデルプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            SyncCurrentPresetFromUi();
+            var source = _presets[_currentPresetIndex];
+            var item = new ModelPresetEditorItem
+            {
+                ModelPresetId = $"model_preset:{Guid.NewGuid():N}",
+                DisplayName = GenerateUniqueName(_presets.Select(p => p.DisplayName), $"{source.DisplayName} (コピー)"),
+                ObservationRoleJson = source.ObservationRoleJson,
+                DecisionRoleJson = source.DecisionRoleJson,
+                ExpressionRoleJson = source.ExpressionRoleJson,
+                MemoryRoleJson = source.MemoryRoleJson,
+                EmbeddingRoleJson = source.EmbeddingRoleJson,
+            };
+
+            _isInitializing = true;
+            try
+            {
+                _presets.Add(item);
+                PresetSelectComboBox.Items.Add(item.DisplayName);
+                _currentPresetIndex = _presets.Count - 1;
+                PresetSelectComboBox.SelectedIndex = _currentPresetIndex;
+                LoadPresetToUi(item);
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void DeletePresetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            {
+                MessageBox.Show("削除するモデルプリセットを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (_presets.Count <= 1)
+            {
+                MessageBox.Show("最後のモデルプリセットは削除できません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            _isInitializing = true;
+            try
+            {
+                _presets.RemoveAt(_currentPresetIndex);
+                PresetSelectComboBox.Items.RemoveAt(_currentPresetIndex);
+                _currentPresetIndex = Math.Min(_currentPresetIndex, _presets.Count - 1);
+                PresetSelectComboBox.SelectedIndex = _currentPresetIndex;
+                LoadPresetToUi(_presets[_currentPresetIndex]);
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void PresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            SyncCurrentPresetFromUi();
+
+            var selectedIndex = PresetSelectComboBox.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= _presets.Count)
+            {
+                return;
+            }
+
+            _isInitializing = true;
+            try
+            {
+                _currentPresetIndex = selectedIndex;
+                LoadPresetToUi(_presets[selectedIndex]);
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void OnSettingChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            if (sender == PresetNameTextBox && _currentPresetIndex >= 0 && _currentPresetIndex < _presets.Count)
+            {
+                _presets[_currentPresetIndex].DisplayName = PresetNameTextBox.Text;
+                RefreshComboBoxItems();
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void IsUseLLMCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void SyncCurrentPresetFromUi()
+        {
+            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            {
+                return;
+            }
+
+            var current = _presets[_currentPresetIndex];
+            current.DisplayName = PresetNameTextBox.Text;
+            current.ObservationRoleJson = NormalizeJsonText(ObservationRoleJsonTextBox.Text);
+            current.DecisionRoleJson = NormalizeJsonText(DecisionRoleJsonTextBox.Text);
+            current.ExpressionRoleJson = NormalizeJsonText(ExpressionRoleJsonTextBox.Text);
+            current.MemoryRoleJson = NormalizeJsonText(MemoryRoleJsonTextBox.Text);
+            current.EmbeddingRoleJson = NormalizeJsonText(EmbeddingRoleJsonTextBox.Text);
+        }
+
+        private void LoadPresetToUi(ModelPresetEditorItem item)
+        {
+            PresetNameTextBox.Text = item.DisplayName;
+            ObservationRoleJsonTextBox.Text = NormalizeJsonText(item.ObservationRoleJson);
+            DecisionRoleJsonTextBox.Text = NormalizeJsonText(item.DecisionRoleJson);
+            ExpressionRoleJsonTextBox.Text = NormalizeJsonText(item.ExpressionRoleJson);
+            MemoryRoleJsonTextBox.Text = NormalizeJsonText(item.MemoryRoleJson);
+            EmbeddingRoleJsonTextBox.Text = NormalizeJsonText(item.EmbeddingRoleJson);
+        }
+
+        private void ClearUi()
+        {
+            PresetNameTextBox.Text = string.Empty;
+            ObservationRoleJsonTextBox.Text = "{}";
+            DecisionRoleJsonTextBox.Text = "{}";
+            ExpressionRoleJsonTextBox.Text = "{}";
+            MemoryRoleJsonTextBox.Text = "{}";
+            EmbeddingRoleJsonTextBox.Text = "{}";
+        }
+
+        private void RefreshComboBoxItems()
+        {
+            var currentIndex = _currentPresetIndex;
+            PresetSelectComboBox.SelectionChanged -= PresetSelectComboBox_SelectionChanged;
+            PresetSelectComboBox.Items.Clear();
+            foreach (var preset in _presets)
+            {
+                PresetSelectComboBox.Items.Add(preset.DisplayName);
+            }
+            PresetSelectComboBox.SelectedIndex = currentIndex;
+            PresetSelectComboBox.SelectionChanged += PresetSelectComboBox_SelectionChanged;
+        }
+
+        private static ModelPresetEditorItem ToEditorItem(OtomeKairoModelPresetDefinition preset)
+        {
+            return new ModelPresetEditorItem
+            {
+                ModelPresetId = preset.ModelPresetId,
+                DisplayName = preset.DisplayName,
+                ObservationRoleJson = SerializeObject(GetRole(preset, "observation_interpretation")),
+                DecisionRoleJson = SerializeObject(GetRole(preset, "decision_generation")),
+                ExpressionRoleJson = SerializeObject(GetRole(preset, "expression_generation")),
+                MemoryRoleJson = SerializeObject(GetRole(preset, "memory_interpretation")),
+                EmbeddingRoleJson = SerializeObject(GetRole(preset, "embedding")),
+            };
+        }
+
+        private static OtomeKairoModelPresetDefinition ToDefinition(ModelPresetEditorItem item)
+        {
+            return new OtomeKairoModelPresetDefinition
+            {
+                ModelPresetId = item.ModelPresetId,
+                DisplayName = item.DisplayName,
+                Roles = new Dictionary<string, Dictionary<string, object?>>
+                {
+                    ["observation_interpretation"] = ParseObject(item.ObservationRoleJson, $"{item.DisplayName} の observation_interpretation"),
+                    ["decision_generation"] = ParseObject(item.DecisionRoleJson, $"{item.DisplayName} の decision_generation"),
+                    ["expression_generation"] = ParseObject(item.ExpressionRoleJson, $"{item.DisplayName} の expression_generation"),
+                    ["memory_interpretation"] = ParseObject(item.MemoryRoleJson, $"{item.DisplayName} の memory_interpretation"),
+                    ["embedding"] = ParseObject(item.EmbeddingRoleJson, $"{item.DisplayName} の embedding"),
+                },
+            };
+        }
+
+        private static Dictionary<string, object?> GetRole(OtomeKairoModelPresetDefinition preset, string roleName)
+        {
+            if (preset.Roles != null && preset.Roles.TryGetValue(roleName, out var role) && role != null)
+            {
+                return role;
+            }
+
+            return roleName == "embedding"
+                ? CreateEmbeddingRoleTemplate()
+                : CreateGenerationRoleTemplate(includeReasoningEffort: roleName == "observation_interpretation");
+        }
+
+        private static Dictionary<string, object?> ParseObject(string jsonText, string fieldName)
+        {
+            var normalized = NormalizeJsonText(jsonText);
+            try
+            {
+                return JsonSerializer.Deserialize<Dictionary<string, object?>>(normalized, JsonOptions)
+                    ?? new Dictionary<string, object?>();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"{fieldName} の JSON が不正です: {ex.Message}", ex);
+            }
+        }
+
+        private static string SerializeObject(Dictionary<string, object?> values)
+        {
+            return JsonSerializer.Serialize(values, JsonOptions);
+        }
+
+        private static string NormalizeJsonText(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "{}" : value.Trim();
+        }
+
+        private static Dictionary<string, object?> CreateGenerationRoleTemplate(bool includeReasoningEffort)
+        {
+            var role = new Dictionary<string, object?>
+            {
+                ["kind"] = "generation",
+                ["provider"] = "openrouter",
+                ["model"] = "openrouter/google/gemini-3.1-flash-lite-preview",
+                ["endpoint_ref"] = "endpoint:openrouter_primary",
+                ["api_key"] = "",
+            };
+            if (includeReasoningEffort)
+            {
+                role["reasoning_effort"] = "low";
+            }
+            return role;
+        }
+
+        private static Dictionary<string, object?> CreateEmbeddingRoleTemplate()
+        {
+            return new Dictionary<string, object?>
+            {
+                ["kind"] = "embedding",
+                ["provider"] = "openrouter",
+                ["model"] = "openrouter/google/gemini-embedding-001",
+                ["endpoint_ref"] = "endpoint:openrouter_primary",
+                ["api_key"] = "",
+            };
+        }
+
+        private static string? ReadString(Dictionary<string, object?> values, string key)
+        {
+            if (!values.TryGetValue(key, out var value) || value == null)
+            {
+                return null;
+            }
+
+            if (value is string text)
+            {
+                return text;
+            }
+
+            if (value is JsonElement element)
+            {
+                if (element.ValueKind == JsonValueKind.String)
+                {
+                    return element.GetString();
+                }
+                return element.ToString();
+            }
+
+            return value.ToString();
+        }
+
+        private static int ResolveActiveIndex(IReadOnlyList<string?> ids, string? activeId)
+        {
+            if (ids.Count == 0)
+            {
+                return -1;
+            }
+
+            if (!string.IsNullOrWhiteSpace(activeId))
+            {
+                for (var i = 0; i < ids.Count; i++)
+                {
+                    if (string.Equals(ids[i], activeId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            return 0;
+        }
+
+        private static string GenerateUniqueName(IEnumerable<string> existingNames, string baseName)
+        {
+            var existing = new HashSet<string>(existingNames.Where(name => !string.IsNullOrWhiteSpace(name)));
+            var name = baseName;
+            var counter = 1;
+            while (existing.Contains(name))
+            {
+                counter += 1;
+                name = $"{baseName} {counter}";
+            }
+            return name;
         }
     }
 }

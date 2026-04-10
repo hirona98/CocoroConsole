@@ -96,6 +96,47 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoEditorState>(HttpMethod.Put, "/api/config/editor-state", request, cancellationToken);
         }
 
+        public Task ReplaceMemorySetAsync(OtomeKairoMemorySetDefinition request, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendNoContentAsync(
+                HttpMethod.Put,
+                $"/api/config/memory-sets/{Uri.EscapeDataString(request.MemorySetId)}",
+                request,
+                cancellationToken);
+        }
+
+        public Task CloneMemorySetAsync(
+            string sourceMemorySetId,
+            string targetMemorySetId,
+            string displayName,
+            string? description,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendNoContentAsync(
+                HttpMethod.Post,
+                "/api/config/memory-sets/clone",
+                new
+                {
+                    source_memory_set_id = sourceMemorySetId,
+                    memory_set_id = targetMemorySetId,
+                    display_name = displayName,
+                    description = description,
+                },
+                cancellationToken);
+        }
+
+        public Task DeleteMemorySetAsync(string memorySetId, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendNoContentAsync(
+                HttpMethod.Delete,
+                $"/api/config/memory-sets/{Uri.EscapeDataString(memorySetId)}",
+                null,
+                cancellationToken);
+        }
+
         public Task<OtomeKairoConfigResponse> PatchCurrentConfigAsync(OtomeKairoCurrentSettingsPatch request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
