@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="1100"
+             d:DesignHeight="1250"
              d:DesignWidth="800">
 
     <UserControl.Resources>
@@ -15,10 +15,21 @@
             <Setter Property="Margin"
                     Value="0,0,10,0"/>
             <Setter Property="Width"
-                    Value="140"/>
+                    Value="150"/>
         </Style>
         <Style x:Key="SettingTextBoxStyle"
                TargetType="TextBox">
+            <Setter Property="Foreground"
+                    Value="#FF0078D7"/>
+            <Setter Property="Padding"
+                    Value="2"/>
+            <Setter Property="BorderBrush"
+                    Value="#CCCCCC"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+        </Style>
+        <Style x:Key="SettingPasswordBoxStyle"
+               TargetType="PasswordBox">
             <Setter Property="Foreground"
                     Value="#FF0078D7"/>
             <Setter Property="Padding"
@@ -45,7 +56,7 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <CheckBox x:Name="IsUseLLMCheckBox"
-                          Content="会話機能（LLM）を使用する"
+                          Content="会話機能（言語モデル）を使用する"
                           Foreground="#FF4873CF"
                           Checked="IsUseLLMCheckBox_Changed"
                           Unchecked="IsUseLLMCheckBox_Changed"
@@ -92,7 +103,7 @@
 
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="表示名:"
@@ -105,118 +116,271 @@
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="observation_interpretation"
+                <GroupBox Header="観測解釈"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
-                        <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,8">
-                            観測解釈 role の object を JSON で編集します。
-                        </TextBlock>
-                        <TextBox x:Name="ObservationRoleJsonTextBox"
-                                 AcceptsReturn="True"
-                                 TextWrapping="NoWrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Auto"
-                                 Height="180"
-                                 FontFamily="Consolas"
-                                 Foreground="#FF0078D7"
-                                 BorderBrush="#CCCCCC"
-                                 BorderThickness="1"
-                                 TextChanged="OnSettingChanged"/>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="プロバイダ:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="ObservationProviderTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="モデル:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="ObservationModelTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="エンドポイント参照:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="ObservationEndpointRefTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="APIキー:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <PasswordBox x:Name="ObservationApiKeyPasswordBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingPasswordBoxStyle}"
+                                         PasswordChanged="OnPasswordChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="推論の深さ:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="ObservationReasoningEffortTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="decision_generation"
+                <GroupBox Header="意図判断"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
-                        <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,8">
-                            意図判断 role の object を JSON で編集します。
-                        </TextBlock>
-                        <TextBox x:Name="DecisionRoleJsonTextBox"
-                                 AcceptsReturn="True"
-                                 TextWrapping="NoWrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Auto"
-                                 Height="180"
-                                 FontFamily="Consolas"
-                                 Foreground="#FF0078D7"
-                                 BorderBrush="#CCCCCC"
-                                 BorderThickness="1"
-                                 TextChanged="OnSettingChanged"/>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="プロバイダ:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="DecisionProviderTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="モデル:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="DecisionModelTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="エンドポイント参照:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="DecisionEndpointRefTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="APIキー:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <PasswordBox x:Name="DecisionApiKeyPasswordBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingPasswordBoxStyle}"
+                                         PasswordChanged="OnPasswordChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="推論の深さ:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="DecisionReasoningEffortTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="expression_generation"
+                <GroupBox Header="表現生成"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
-                        <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,8">
-                            表現生成 role の object を JSON で編集します。
-                        </TextBlock>
-                        <TextBox x:Name="ExpressionRoleJsonTextBox"
-                                 AcceptsReturn="True"
-                                 TextWrapping="NoWrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Auto"
-                                 Height="180"
-                                 FontFamily="Consolas"
-                                 Foreground="#FF0078D7"
-                                 BorderBrush="#CCCCCC"
-                                 BorderThickness="1"
-                                 TextChanged="OnSettingChanged"/>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="プロバイダ:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="ExpressionProviderTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="モデル:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="ExpressionModelTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="エンドポイント参照:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="ExpressionEndpointRefTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="APIキー:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <PasswordBox x:Name="ExpressionApiKeyPasswordBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingPasswordBoxStyle}"
+                                         PasswordChanged="OnPasswordChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="推論の深さ:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="ExpressionReasoningEffortTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="memory_interpretation"
+                <GroupBox Header="記憶解釈"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
-                        <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,8">
-                            記憶解釈 role の object を JSON で編集します。
-                        </TextBlock>
-                        <TextBox x:Name="MemoryRoleJsonTextBox"
-                                 AcceptsReturn="True"
-                                 TextWrapping="NoWrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Auto"
-                                 Height="180"
-                                 FontFamily="Consolas"
-                                 Foreground="#FF0078D7"
-                                 BorderBrush="#CCCCCC"
-                                 BorderThickness="1"
-                                 TextChanged="OnSettingChanged"/>
-                    </StackPanel>
-                </GroupBox>
-
-                <GroupBox Header="embedding"
-                          Margin="0,0,20,20"
-                          Padding="10">
-                    <StackPanel>
-                        <TextBlock TextWrapping="Wrap"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,8">
-                            埋め込み role の object を JSON で編集します。
-                        </TextBlock>
-                        <TextBox x:Name="EmbeddingRoleJsonTextBox"
-                                 AcceptsReturn="True"
-                                 TextWrapping="NoWrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Auto"
-                                 Height="180"
-                                 FontFamily="Consolas"
-                                 Foreground="#FF0078D7"
-                                 BorderBrush="#CCCCCC"
-                                 BorderThickness="1"
-                                 TextChanged="OnSettingChanged"/>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="プロバイダ:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="MemoryProviderTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="モデル:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="MemoryModelTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="エンドポイント参照:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="MemoryEndpointRefTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="APIキー:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <PasswordBox x:Name="MemoryApiKeyPasswordBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingPasswordBoxStyle}"
+                                         PasswordChanged="OnPasswordChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="推論の深さ:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="MemoryReasoningEffortTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

@@ -2,6 +2,7 @@ using CocoroConsole.Models.OtomeKairoApi;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -9,6 +10,15 @@ namespace CocoroConsole.Controls
 {
     public partial class EmbeddingSettingsControl : UserControl
     {
+        private static readonly string[] EmbeddingFieldKeys =
+        {
+            "kind",
+            "provider",
+            "model",
+            "endpoint_ref",
+            "api_key",
+        };
+
         private sealed class MemorySetEditorItem
         {
             public string MemorySetId { get; set; } = string.Empty;
@@ -18,9 +28,19 @@ namespace CocoroConsole.Controls
             public string? CloneSourceMemorySetId { get; set; }
         }
 
+        private sealed class EmbeddingRoleEditorItem
+        {
+            public string Provider { get; set; } = string.Empty;
+            public string Model { get; set; } = string.Empty;
+            public string EndpointRef { get; set; } = string.Empty;
+            public string ApiKey { get; set; } = string.Empty;
+            public Dictionary<string, object?> AdditionalFields { get; set; } = new Dictionary<string, object?>();
+        }
+
         private readonly List<MemorySetEditorItem> _memorySets = new();
         private bool _isInitializing;
         private int _currentMemorySetIndex = -1;
+        private EmbeddingRoleEditorItem _embeddingRole = CreateEmbeddingRoleTemplate();
 
         public event EventHandler? SettingsChanged;
 
@@ -46,7 +66,11 @@ namespace CocoroConsole.Controls
             }
         }
 
-        public void LoadSettings(List<OtomeKairoMemorySetDefinition>? memorySets, string? activeMemorySetId, bool memoryEnabled)
+        public void LoadSettings(
+            List<OtomeKairoMemorySetDefinition>? memorySets,
+            string? activeMemorySetId,
+            bool memoryEnabled,
+            Dictionary<string, object?>? embeddingRole)
         {
             _isInitializing = true;
             try
@@ -58,26 +82,30 @@ namespace CocoroConsole.Controls
                 if (memorySets == null || memorySets.Count == 0)
                 {
                     _currentMemorySetIndex = -1;
-                    ClearUi();
-                    return;
+                    ClearMemorySetUi();
                 }
-
-                foreach (var memorySet in memorySets)
+                else
                 {
-                    _memorySets.Add(new MemorySetEditorItem
+                    foreach (var memorySet in memorySets)
                     {
-                        MemorySetId = memorySet.MemorySetId,
-                        DisplayName = memorySet.DisplayName,
-                        Description = memorySet.Description ?? string.Empty,
-                        ServerBackedMemorySetId = memorySet.MemorySetId,
-                        CloneSourceMemorySetId = null,
-                    });
-                    MemorySetSelectComboBox.Items.Add(memorySet.DisplayName);
+                        _memorySets.Add(new MemorySetEditorItem
+                        {
+                            MemorySetId = memorySet.MemorySetId,
+                            DisplayName = memorySet.DisplayName,
+                            Description = memorySet.Description ?? string.Empty,
+                            ServerBackedMemorySetId = memorySet.MemorySetId,
+                            CloneSourceMemorySetId = null,
+                        });
+                        MemorySetSelectComboBox.Items.Add(memorySet.DisplayName);
+                    }
+
+                    _currentMemorySetIndex = ResolveActiveIndex(_memorySets.Select(p => p.MemorySetId).ToList(), activeMemorySetId);
+                    MemorySetSelectComboBox.SelectedIndex = _currentMemorySetIndex;
+                    LoadMemorySetToUi(_memorySets[_currentMemorySetIndex]);
                 }
 
-                _currentMemorySetIndex = ResolveActiveIndex(_memorySets.Select(p => p.MemorySetId).ToList(), activeMemorySetId);
-                MemorySetSelectComboBox.SelectedIndex = _currentMemorySetIndex;
-                LoadMemorySetToUi(_memorySets[_currentMemorySetIndex]);
+                SetEmbeddingRoleInternal(embeddingRole ?? CreateEmbeddingRoleTemplateDefinition());
+                LoadEmbeddingRoleToUi(_embeddingRole);
             }
             finally
             {
@@ -121,6 +149,33 @@ namespace CocoroConsole.Controls
             }
 
             return _memorySets[_currentMemorySetIndex].MemorySetId;
+        }
+
+        public Dictionary<string, object?> GetEmbeddingRole()
+        {
+            SyncEmbeddingRoleFromUi();
+            return new Dictionary<string, object?>(_embeddingRole.AdditionalFields, StringComparer.OrdinalIgnoreCase)
+            {
+                ["kind"] = "embedding",
+                ["provider"] = _embeddingRole.Provider?.Trim() ?? string.Empty,
+                ["model"] = _embeddingRole.Model?.Trim() ?? string.Empty,
+                ["endpoint_ref"] = _embeddingRole.EndpointRef?.Trim() ?? string.Empty,
+                ["api_key"] = _embeddingRole.ApiKey ?? string.Empty,
+            };
+        }
+
+        public void SetEmbeddingRole(Dictionary<string, object?> embeddingRole)
+        {
+            _isInitializing = true;
+            try
+            {
+                SetEmbeddingRoleInternal(embeddingRole);
+                LoadEmbeddingRoleToUi(_embeddingRole);
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
         }
 
         private void AddMemorySetButton_Click(object sender, RoutedEventArgs e)
@@ -276,6 +331,16 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private void OnPasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         private void SyncCurrentMemorySetFromUi()
         {
             if (_currentMemorySetIndex < 0 || _currentMemorySetIndex >= _memorySets.Count)
@@ -288,13 +353,29 @@ namespace CocoroConsole.Controls
             current.Description = MemorySetDescriptionTextBox.Text;
         }
 
+        private void SyncEmbeddingRoleFromUi()
+        {
+            _embeddingRole.Provider = EmbeddingProviderTextBox.Text;
+            _embeddingRole.Model = EmbeddingModelTextBox.Text;
+            _embeddingRole.EndpointRef = EmbeddingEndpointRefTextBox.Text;
+            _embeddingRole.ApiKey = EmbeddingApiKeyPasswordBox.Password;
+        }
+
         private void LoadMemorySetToUi(MemorySetEditorItem item)
         {
             MemorySetDisplayNameTextBox.Text = item.DisplayName;
             MemorySetDescriptionTextBox.Text = item.Description;
         }
 
-        private void ClearUi()
+        private void LoadEmbeddingRoleToUi(EmbeddingRoleEditorItem role)
+        {
+            EmbeddingProviderTextBox.Text = role.Provider;
+            EmbeddingModelTextBox.Text = role.Model;
+            EmbeddingEndpointRefTextBox.Text = role.EndpointRef;
+            EmbeddingApiKeyPasswordBox.Password = role.ApiKey;
+        }
+
+        private void ClearMemorySetUi()
         {
             MemorySetDisplayNameTextBox.Text = string.Empty;
             MemorySetDescriptionTextBox.Text = string.Empty;
@@ -311,6 +392,76 @@ namespace CocoroConsole.Controls
             }
             MemorySetSelectComboBox.SelectedIndex = currentIndex;
             MemorySetSelectComboBox.SelectionChanged += MemorySetSelectComboBox_SelectionChanged;
+        }
+
+        private void SetEmbeddingRoleInternal(IDictionary<string, object?> embeddingRole)
+        {
+            _embeddingRole = new EmbeddingRoleEditorItem
+            {
+                Provider = ReadString(embeddingRole, "provider") ?? string.Empty,
+                Model = ReadString(embeddingRole, "model") ?? string.Empty,
+                EndpointRef = ReadString(embeddingRole, "endpoint_ref") ?? string.Empty,
+                ApiKey = ReadString(embeddingRole, "api_key") ?? string.Empty,
+                AdditionalFields = CopyAdditionalFields(embeddingRole, EmbeddingFieldKeys),
+            };
+        }
+
+        private static EmbeddingRoleEditorItem CreateEmbeddingRoleTemplate()
+        {
+            return new EmbeddingRoleEditorItem
+            {
+                Provider = "openrouter",
+                Model = "openrouter/google/gemini-embedding-001",
+                EndpointRef = "endpoint:openrouter_primary",
+                ApiKey = string.Empty,
+            };
+        }
+
+        private static Dictionary<string, object?> CreateEmbeddingRoleTemplateDefinition()
+        {
+            return new Dictionary<string, object?>
+            {
+                ["kind"] = "embedding",
+                ["provider"] = "openrouter",
+                ["model"] = "openrouter/google/gemini-embedding-001",
+                ["endpoint_ref"] = "endpoint:openrouter_primary",
+                ["api_key"] = "",
+            };
+        }
+
+        private static Dictionary<string, object?> CopyAdditionalFields(
+            IDictionary<string, object?> values,
+            IEnumerable<string> excludedKeys)
+        {
+            var excluded = new HashSet<string>(excludedKeys, StringComparer.OrdinalIgnoreCase);
+            return values
+                .Where(pair => !excluded.Contains(pair.Key))
+                .ToDictionary(pair => pair.Key, pair => pair.Value);
+        }
+
+        private static string? ReadString(IDictionary<string, object?> values, string key)
+        {
+            if (!values.TryGetValue(key, out var value) || value == null)
+            {
+                return null;
+            }
+
+            if (value is string text)
+            {
+                return text;
+            }
+
+            if (value is JsonElement element)
+            {
+                if (element.ValueKind == JsonValueKind.String)
+                {
+                    return element.GetString();
+                }
+
+                return element.ToString();
+            }
+
+            return value.ToString();
         }
 
         private static int ResolveActiveIndex(IReadOnlyList<string?> ids, string? activeId)
