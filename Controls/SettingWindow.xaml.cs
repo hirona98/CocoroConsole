@@ -637,7 +637,6 @@ namespace CocoroConsole.Controls
                     {
                         Enabled = SystemSettingsControl.GetDesktopWatchEnabled(),
                         IntervalSeconds = SystemSettingsControl.GetDesktopWatchIntervalSeconds(),
-                        TargetClientId = SystemSettingsControl.GetDesktopWatchTargetClientId(),
                     },
                     WakePolicy = SystemSettingsControl.GetWakePolicy(),
                 },

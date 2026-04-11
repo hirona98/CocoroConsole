@@ -154,7 +154,7 @@ namespace CocoroConsole.Services
         /// ClientId が未設定の場合に生成して永続化する。
         /// 
         /// - /api/events/stream の hello で client_id を送るために必要
-        /// - desktop_watch_target_client_id などの「端末識別」にも使う
+        /// - desktop_watch などの「端末識別」にも使う
         /// </summary>
         private void EnsureClientIdInitialized()
         {
@@ -744,9 +744,6 @@ namespace CocoroConsole.Services
                     {
                         Enabled = enabled,
                         IntervalSeconds = desktopWatch.IntervalSeconds > 0 ? desktopWatch.IntervalSeconds : 300,
-                        TargetClientId = enabled
-                            ? (!string.IsNullOrWhiteSpace(desktopWatch.TargetClientId) ? desktopWatch.TargetClientId : _appSettings.ClientId)
-                            : desktopWatch.TargetClientId,
                     },
                 }).ConfigureAwait(false);
 

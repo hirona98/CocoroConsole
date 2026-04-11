@@ -64,7 +64,6 @@ namespace CocoroConsole.Controls
             DesktopWatchEnabledCheckBox.IsChecked = desktopWatch.Enabled;
             DesktopWatchIntervalSecondsTextBox.Text = (desktopWatch.IntervalSeconds > 0 ? desktopWatch.IntervalSeconds : 300)
                 .ToString(CultureInfo.InvariantCulture);
-            DesktopWatchTargetClientIdTextBox.Text = desktopWatch.TargetClientId ?? string.Empty;
 
             var wakePolicy = current?.WakePolicy ?? new Dictionary<string, object?>();
             var mode = ReadString(wakePolicy, "mode");
@@ -76,7 +75,6 @@ namespace CocoroConsole.Controls
         {
             DesktopWatchEnabledCheckBox.IsChecked = false;
             DesktopWatchIntervalSecondsTextBox.Text = "300";
-            DesktopWatchTargetClientIdTextBox.Text = string.Empty;
             WakePolicyEnabledCheckBox.IsChecked = false;
             WakeIntervalMinutesTextBox.Text = "5";
         }
@@ -86,7 +84,6 @@ namespace CocoroConsole.Controls
             DesktopWatchEnabledCheckBox.Checked += OnSettingsChanged;
             DesktopWatchEnabledCheckBox.Unchecked += OnSettingsChanged;
             DesktopWatchIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
-            DesktopWatchTargetClientIdTextBox.TextChanged += OnSettingsChanged;
             DesktopWatchIdleTimeoutMinutesTextBox.TextChanged += OnSettingsChanged;
             ExcludeWindowTitlePatternsTextBox.TextChanged += OnSettingsChanged;
             WakePolicyEnabledCheckBox.Checked += OnSettingsChanged;
@@ -118,12 +115,6 @@ namespace CocoroConsole.Controls
             }
 
             return 300;
-        }
-
-        public string? GetDesktopWatchTargetClientId()
-        {
-            var value = DesktopWatchTargetClientIdTextBox.Text?.Trim();
-            return string.IsNullOrWhiteSpace(value) ? null : value;
         }
 
         public Dictionary<string, object?> GetWakePolicy()

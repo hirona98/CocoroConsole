@@ -56,9 +56,6 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
         [JsonPropertyName("interval_seconds")]
         public int IntervalSeconds { get; set; }
-
-        [JsonPropertyName("target_client_id")]
-        public string? TargetClientId { get; set; }
     }
 
     /// <summary>
