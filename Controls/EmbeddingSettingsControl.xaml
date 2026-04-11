@@ -142,15 +142,45 @@
                                                                 <ColumnDefinition Width="150"/>
                                                                 <ColumnDefinition Width="*"/>
                                                         </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="次元数:"
+                                                                   Style="{StaticResource SettingLabelStyle}"/>
+                                                        <TextBox x:Name="EmbeddingDimensionTextBox"
+                                                                 Grid.Column="1"
+                                                                 Style="{StaticResource SettingTextBoxStyle}"
+                                                                 TextChanged="OnSettingChanged"/>
+                                                </Grid>
+
+                                                <Grid Margin="0,5">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="150"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
                                                         <TextBlock Text="APIキー:"
                                                                    Style="{StaticResource SettingLabelStyle}"/>
-                                                        <TextBox x:Name="EmbeddingApiKeyTextBox"
-                                                                 Grid.Column="1"
-                                                                 Foreground="#FF0078D7"
-                                                                 Padding="2"
-                                                                 Width="50"
-                                                                 HorizontalAlignment="Left"
-                                                                 TextChanged="OnSettingChanged"/>
+                                                        <StackPanel Grid.Column="1"
+                                                                    Orientation="Horizontal"
+                                                                    VerticalAlignment="Center">
+                                                                <TextBox x:Name="EmbeddingApiKeyTextBox"
+                                                                         Foreground="#FF0078D7"
+                                                                         Padding="2"
+                                                                         Width="50"
+                                                                         HorizontalAlignment="Left"
+                                                                         TextChanged="OnSettingChanged"/>
+                                                                <Button Content="コピー"
+                                                                        Margin="10,0,0,0"
+                                                                        Padding="10,0,10,0"
+                                                                        Click="EmbeddingApiKeyCopyButton_Click"
+                                                                        ToolTip="クリップボードにコピー"/>
+                                                                <Button Content="上書き貼り付け"
+                                                                        Margin="10,0,0,0"
+                                                                        Padding="10,0,10,0"
+                                                                        Click="EmbeddingApiKeyPasteButton_Click"
+                                                                        ToolTip="クリップボードのテキストで上書き"/>
+                                                                <Button Content="LLMモデルのAPIキーを貼り付け"
+                                                                        Margin="10,0,0,0"
+                                                                        Padding="10,0,10,0"
+                                                                        Click="PasteLlmModelApiKeyButton_Click"/>
+                                                        </StackPanel>
                                                 </Grid>
                                         </StackPanel>
                                 </GroupBox>

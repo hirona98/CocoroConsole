@@ -1,4 +1,5 @@
 using CocoroConsole.Models.OtomeKairoApi;
+using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -110,6 +111,32 @@ namespace CocoroConsole.Controls
             }
 
             return _presets[_currentPresetIndex].ModelPresetId;
+        }
+
+        public string GetPreferredApiKeyForEmbeddingPaste()
+        {
+            SyncCurrentPresetFromUi();
+            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
+            {
+                return string.Empty;
+            }
+
+            var current = _presets[_currentPresetIndex];
+            foreach (var apiKey in new[]
+            {
+                current.ExpressionRole.ApiKey,
+                current.DecisionRole.ApiKey,
+                current.ObservationRole.ApiKey,
+                current.MemoryRole.ApiKey,
+            })
+            {
+                if (!string.IsNullOrWhiteSpace(apiKey))
+                {
+                    return apiKey.Trim();
+                }
+            }
+
+            return string.Empty;
         }
 
         private void AddPresetButton_Click(object sender, RoutedEventArgs e)
@@ -271,6 +298,46 @@ namespace CocoroConsole.Controls
         private void IsUseLLMCheckBox_Changed(object sender, RoutedEventArgs e)
         {
             OnCheckBoxChanged(sender, e);
+        }
+
+        private void ObservationApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(ObservationApiKeyTextBox);
+        }
+
+        private void ObservationApiKeyPasteButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.PasteOverwrite(ObservationApiKeyTextBox);
+        }
+
+        private void DecisionApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(DecisionApiKeyTextBox);
+        }
+
+        private void DecisionApiKeyPasteButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.PasteOverwrite(DecisionApiKeyTextBox);
+        }
+
+        private void ExpressionApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(ExpressionApiKeyTextBox);
+        }
+
+        private void ExpressionApiKeyPasteButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.PasteOverwrite(ExpressionApiKeyTextBox);
+        }
+
+        private void MemoryApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(MemoryApiKeyTextBox);
+        }
+
+        private void MemoryApiKeyPasteButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.PasteOverwrite(MemoryApiKeyTextBox);
         }
 
         private void SyncCurrentPresetFromUi()

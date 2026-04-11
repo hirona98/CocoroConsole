@@ -1,4 +1,5 @@
 using CocoroConsole.Models.OtomeKairoApi;
+using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,7 @@ namespace CocoroConsole.Controls
             "model",
             "api_base",
             "api_key",
+            "embedding_dimension",
         };
 
         private sealed class MemorySetEditorItem
@@ -23,6 +25,7 @@ namespace CocoroConsole.Controls
             public string DisplayName { get; set; } = string.Empty;
             public string EmbeddingModel { get; set; } = string.Empty;
             public string EmbeddingApiBase { get; set; } = string.Empty;
+            public string EmbeddingDimensionText { get; set; } = string.Empty;
             public string EmbeddingApiKey { get; set; } = string.Empty;
             public Dictionary<string, object?> AdditionalEmbeddingFields { get; set; } = new Dictionary<string, object?>();
             public string? ServerBackedMemorySetId { get; set; }
@@ -34,6 +37,7 @@ namespace CocoroConsole.Controls
         private int _currentMemorySetIndex = -1;
 
         public event EventHandler? SettingsChanged;
+        public Func<string?>? ResolveLlmApiKey { get; set; }
 
         public EmbeddingSettingsControl()
         {
@@ -235,6 +239,28 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private void EmbeddingApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(EmbeddingApiKeyTextBox);
+        }
+
+        private void EmbeddingApiKeyPasteButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.PasteOverwrite(EmbeddingApiKeyTextBox);
+        }
+
+        private void PasteLlmModelApiKeyButton_Click(object sender, RoutedEventArgs e)
+        {
+            var apiKey = ResolveLlmApiKey?.Invoke()?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                MessageBox.Show("貼り付け元の LLM モデル API キーが空です。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            EmbeddingApiKeyTextBox.Text = apiKey;
+        }
+
         private void SyncCurrentMemorySetFromUi()
         {
             if (_currentMemorySetIndex < 0 || _currentMemorySetIndex >= _memorySets.Count)
@@ -246,6 +272,7 @@ namespace CocoroConsole.Controls
             current.DisplayName = MemorySetDisplayNameTextBox.Text;
             current.EmbeddingModel = EmbeddingModelTextBox.Text;
             current.EmbeddingApiBase = EmbeddingApiBaseTextBox.Text;
+            current.EmbeddingDimensionText = EmbeddingDimensionTextBox.Text;
             current.EmbeddingApiKey = EmbeddingApiKeyTextBox.Text;
         }
 
@@ -254,6 +281,7 @@ namespace CocoroConsole.Controls
             MemorySetDisplayNameTextBox.Text = item.DisplayName;
             EmbeddingModelTextBox.Text = item.EmbeddingModel;
             EmbeddingApiBaseTextBox.Text = item.EmbeddingApiBase;
+            EmbeddingDimensionTextBox.Text = item.EmbeddingDimensionText;
             EmbeddingApiKeyTextBox.Text = item.EmbeddingApiKey;
         }
 
@@ -262,6 +290,7 @@ namespace CocoroConsole.Controls
             MemorySetDisplayNameTextBox.Text = string.Empty;
             EmbeddingModelTextBox.Text = string.Empty;
             EmbeddingApiBaseTextBox.Text = string.Empty;
+            EmbeddingDimensionTextBox.Text = string.Empty;
             EmbeddingApiKeyTextBox.Text = string.Empty;
         }
 
@@ -286,6 +315,7 @@ namespace CocoroConsole.Controls
                 DisplayName = memorySet.DisplayName,
                 EmbeddingModel = ReadString(memorySet.Embedding, "model") ?? string.Empty,
                 EmbeddingApiBase = ReadString(memorySet.Embedding, "api_base") ?? string.Empty,
+                EmbeddingDimensionText = ReadInt(memorySet.Embedding, "embedding_dimension"),
                 EmbeddingApiKey = ReadString(memorySet.Embedding, "api_key") ?? string.Empty,
                 AdditionalEmbeddingFields = CopyAdditionalFields(memorySet.Embedding, EmbeddingFieldKeys),
                 ServerBackedMemorySetId = memorySet.MemorySetId,
@@ -298,6 +328,7 @@ namespace CocoroConsole.Controls
             var embedding = new Dictionary<string, object?>(item.AdditionalEmbeddingFields, StringComparer.OrdinalIgnoreCase)
             {
                 ["model"] = item.EmbeddingModel?.Trim() ?? string.Empty,
+                ["embedding_dimension"] = ParseRequiredPositiveIntOrZero(item.EmbeddingDimensionText),
                 ["api_key"] = item.EmbeddingApiKey ?? string.Empty,
             };
 
@@ -323,6 +354,7 @@ namespace CocoroConsole.Controls
         {
             return new MemorySetEditorItem
             {
+                EmbeddingDimensionText = string.Empty,
                 EmbeddingApiBase = string.Empty,
                 EmbeddingApiKey = string.Empty,
             };
@@ -336,6 +368,7 @@ namespace CocoroConsole.Controls
                 DisplayName = item.DisplayName,
                 EmbeddingModel = item.EmbeddingModel,
                 EmbeddingApiBase = item.EmbeddingApiBase,
+                EmbeddingDimensionText = item.EmbeddingDimensionText,
                 EmbeddingApiKey = item.EmbeddingApiKey,
                 AdditionalEmbeddingFields = new Dictionary<string, object?>(item.AdditionalEmbeddingFields),
                 ServerBackedMemorySetId = item.ServerBackedMemorySetId,
@@ -376,6 +409,41 @@ namespace CocoroConsole.Controls
             }
 
             return value.ToString();
+        }
+
+        private static string ReadInt(IDictionary<string, object?> values, string key)
+        {
+            if (!values.TryGetValue(key, out var value) || value == null)
+            {
+                return string.Empty;
+            }
+
+            if (value is int intValue)
+            {
+                return intValue.ToString();
+            }
+
+            if (value is JsonElement element)
+            {
+                if (element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var jsonInt))
+                {
+                    return jsonInt.ToString();
+                }
+
+                return element.ToString();
+            }
+
+            return value.ToString() ?? string.Empty;
+        }
+
+        private static int ParseRequiredPositiveIntOrZero(string value)
+        {
+            if (int.TryParse(value?.Trim(), out var parsed) && parsed > 0)
+            {
+                return parsed;
+            }
+
+            return 0;
         }
 
         private static int ResolveActiveIndex(IReadOnlyList<string?> ids, string? activeId)

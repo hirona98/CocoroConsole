@@ -44,6 +44,7 @@ namespace CocoroConsole.Controls
         public SettingWindow(ICommunicationService? communicationService)
         {
             InitializeComponent();
+            EmbeddingSettingsControl.ResolveLlmApiKey = () => LlmSettingsControl.GetPreferredApiKeyForEmbeddingPaste();
 
             _communicationService = communicationService;
 
