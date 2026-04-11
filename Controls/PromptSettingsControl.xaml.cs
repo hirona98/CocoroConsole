@@ -34,9 +34,7 @@ namespace CocoroConsole.Controls
         {
             public string PersonaId { get; set; } = string.Empty;
             public string DisplayName { get; set; } = string.Empty;
-            public string PersonaText { get; set; } = string.Empty;
-            public string SecondPersonLabel { get; set; } = string.Empty;
-            public string AddonText { get; set; } = string.Empty;
+            public string ExpressionAddon { get; set; } = string.Empty;
             public string SelfImage { get; set; } = string.Empty;
             public string CoreValuesText { get; set; } = string.Empty;
             public string JudgementTendenciesText { get; set; } = string.Empty;
@@ -118,7 +116,6 @@ namespace CocoroConsole.Controls
             {
                 PersonaId = $"persona:{Guid.NewGuid():N}",
                 DisplayName = GenerateUniqueName(_personas.Select(p => p.DisplayName), "新規人格設定"),
-                SecondPersonLabel = "あなた",
                 SelfImage = "long-term companion",
                 Tone = "gentle",
             };
@@ -154,9 +151,7 @@ namespace CocoroConsole.Controls
             {
                 PersonaId = $"persona:{Guid.NewGuid():N}",
                 DisplayName = GenerateUniqueName(_personas.Select(p => p.DisplayName), $"{source.DisplayName} (コピー)"),
-                PersonaText = source.PersonaText,
-                SecondPersonLabel = source.SecondPersonLabel,
-                AddonText = source.AddonText,
+                ExpressionAddon = source.ExpressionAddon,
                 SelfImage = source.SelfImage,
                 CoreValuesText = source.CoreValuesText,
                 JudgementTendenciesText = source.JudgementTendenciesText,
@@ -274,9 +269,7 @@ namespace CocoroConsole.Controls
 
             var current = _personas[_currentPersonaIndex];
             current.DisplayName = DisplayNameTextBox.Text;
-            current.SecondPersonLabel = SecondPersonLabelTextBox.Text;
-            current.PersonaText = PersonaTextBox.Text;
-            current.AddonText = AddonTextBox.Text;
+            current.ExpressionAddon = ExpressionAddonTextBox.Text;
             current.SelfImage = SelfImageTextBox.Text;
             current.CoreValuesText = CoreValuesTextBox.Text;
             current.JudgementTendenciesText = JudgementTendenciesTextBox.Text;
@@ -293,9 +286,7 @@ namespace CocoroConsole.Controls
         private void LoadPersonaToUi(PersonaEditorItem item)
         {
             DisplayNameTextBox.Text = item.DisplayName;
-            SecondPersonLabelTextBox.Text = item.SecondPersonLabel;
-            PersonaTextBox.Text = item.PersonaText;
-            AddonTextBox.Text = item.AddonText;
+            ExpressionAddonTextBox.Text = item.ExpressionAddon;
             SelfImageTextBox.Text = item.SelfImage;
             CoreValuesTextBox.Text = item.CoreValuesText;
             JudgementTendenciesTextBox.Text = item.JudgementTendenciesText;
@@ -312,9 +303,7 @@ namespace CocoroConsole.Controls
         private void ClearPersonaUi()
         {
             DisplayNameTextBox.Text = string.Empty;
-            SecondPersonLabelTextBox.Text = string.Empty;
-            PersonaTextBox.Text = string.Empty;
-            AddonTextBox.Text = string.Empty;
+            ExpressionAddonTextBox.Text = string.Empty;
             SelfImageTextBox.Text = string.Empty;
             CoreValuesTextBox.Text = string.Empty;
             JudgementTendenciesTextBox.Text = string.Empty;
@@ -350,9 +339,7 @@ namespace CocoroConsole.Controls
             {
                 PersonaId = persona.PersonaId,
                 DisplayName = persona.DisplayName,
-                PersonaText = persona.PersonaText ?? string.Empty,
-                SecondPersonLabel = persona.SecondPersonLabel ?? string.Empty,
-                AddonText = persona.AddonText ?? string.Empty,
+                ExpressionAddon = persona.ExpressionAddon ?? string.Empty,
                 SelfImage = ReadString(corePersona, "self_image") ?? string.Empty,
                 CoreValuesText = JoinLines(ReadStringList(corePersona, "core_values")),
                 JudgementTendenciesText = JoinLines(
@@ -393,9 +380,7 @@ namespace CocoroConsole.Controls
             {
                 PersonaId = item.PersonaId,
                 DisplayName = item.DisplayName,
-                PersonaText = item.PersonaText,
-                SecondPersonLabel = item.SecondPersonLabel,
-                AddonText = item.AddonText,
+                ExpressionAddon = item.ExpressionAddon,
                 CorePersona = corePersona,
                 ExpressionStyle = expressionStyle,
             };

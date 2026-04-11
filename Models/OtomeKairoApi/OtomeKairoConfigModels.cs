@@ -73,15 +73,8 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("display_name")]
         public string DisplayName { get; set; } = string.Empty;
 
-        // EditableText
-        [JsonPropertyName("persona_text")]
-        public string PersonaText { get; set; } = string.Empty;
-
-        [JsonPropertyName("second_person_label")]
-        public string SecondPersonLabel { get; set; } = string.Empty;
-
-        [JsonPropertyName("addon_text")]
-        public string AddonText { get; set; } = string.Empty;
+        [JsonPropertyName("expression_addon")]
+        public string ExpressionAddon { get; set; } = string.Empty;
 
         // PersonaCore
         [JsonPropertyName("core_persona")]

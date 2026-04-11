@@ -104,12 +104,12 @@
 
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666">
-                            人格設定は基本テキスト、判断の中核、表出スタイルをフォームで編集します。
+                            人格設定は表示名、判断の中核、表出スタイル、表現補助をフォームで編集します。
                         </TextBlock>
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="基本テキスト"
+                <GroupBox Header="基本情報"
                           Style="{StaticResource PromptGroupBoxStyle}">
                     <StackPanel Margin="10">
                         <Grid Margin="0,5">
@@ -125,36 +125,13 @@
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
 
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="ユーザーの呼び方:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="SecondPersonLabelTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-
-                        <TextBlock Text="人格テキスト"
+                        <TextBlock Text="表現補助"
                                    Margin="0,10,0,5"
                                    Foreground="#4873CF"/>
-                        <TextBox x:Name="PersonaTextBox"
-                                 AcceptsReturn="True"
-                                 TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 Height="180"
-                                 Foreground="#FF0078D7"
-                                 BorderBrush="#CCCCCC"
-                                 BorderThickness="1"
-                                 TextChanged="OnSettingChanged"/>
-
-                        <TextBlock Text="追加テキスト"
-                                   Margin="0,10,0,5"
-                                   Foreground="#4873CF"/>
-                        <TextBox x:Name="AddonTextBox"
+                        <TextBlock Text="会話時の表現生成でだけ使う補助指示を入れます。表情指定や出力補助に使えます。"
+                                   Foreground="#666666"
+                                   Margin="0,0,0,5"/>
+                        <TextBox x:Name="ExpressionAddonTextBox"
                                  AcceptsReturn="True"
                                  TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
