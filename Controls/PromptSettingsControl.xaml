@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="1100"
+             d:DesignHeight="900"
              d:DesignWidth="800">
 
     <UserControl.Resources>
@@ -104,7 +104,7 @@
 
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666">
-                            人格設定は表示名、判断の中核、表出スタイル、表現補助をフォームで編集します。
+                            人格設定は自由文の人格本文と、会話出力専用の表現補助だけを編集します。
                         </TextBlock>
                     </StackPanel>
                 </GroupBox>
@@ -125,6 +125,22 @@
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
 
+                        <TextBlock Text="人格本文"
+                                   Margin="0,10,0,5"
+                                   Foreground="#4873CF"/>
+                        <TextBlock Text="役割、距離感、価値観、話し方、強い原則を自由文でまとめて書きます。"
+                                   Foreground="#666666"
+                                   Margin="0,0,0,5"/>
+                        <TextBox x:Name="PersonaPromptTextBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Height="320"
+                                 Foreground="#FF0078D7"
+                                 BorderBrush="#CCCCCC"
+                                 BorderThickness="1"
+                                 TextChanged="OnSettingChanged"/>
+
                         <TextBlock Text="表現補助"
                                    Margin="0,10,0,5"
                                    Foreground="#4873CF"/>
@@ -135,170 +151,11 @@
                                  AcceptsReturn="True"
                                  TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
-                                 Height="120"
+                                 Height="160"
                                  Foreground="#FF0078D7"
                                  BorderBrush="#CCCCCC"
                                  BorderThickness="1"
                                  TextChanged="OnSettingChanged"/>
-                    </StackPanel>
-                </GroupBox>
-
-                <GroupBox Header="判断の中核"
-                          Style="{StaticResource PromptGroupBoxStyle}">
-                    <StackPanel Margin="10">
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="自己像:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="SelfImageTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-
-                        <TextBlock Text="大事にすること"
-                                   Margin="0,10,0,5"
-                                   Foreground="#4873CF"/>
-                        <TextBlock Text="1行に1項目ずつ入力します。"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,5"/>
-                        <TextBox x:Name="CoreValuesTextBox"
-                                 AcceptsReturn="True"
-                                 TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 Height="100"
-                                 Foreground="#FF0078D7"
-                                 BorderBrush="#CCCCCC"
-                                 BorderThickness="1"
-                                 TextChanged="OnSettingChanged"/>
-
-                        <TextBlock Text="判断の傾向"
-                                   Margin="0,10,0,5"
-                                   Foreground="#4873CF"/>
-                        <TextBlock Text="1行に1項目ずつ入力します。"
-                                   Foreground="#666666"
-                                   Margin="0,0,0,5"/>
-                        <TextBox x:Name="JudgementTendenciesTextBox"
-                                 AcceptsReturn="True"
-                                 TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 Height="100"
-                                 Foreground="#FF0078D7"
-                                 BorderBrush="#CCCCCC"
-                                 BorderThickness="1"
-                                 TextChanged="OnSettingChanged"/>
-
-                        <Grid Margin="0,10,0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="対人の基本姿勢:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="RelationBaselineTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="自発性の基準:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="InitiativeBaselineTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                    </StackPanel>
-                </GroupBox>
-
-                <GroupBox Header="表出スタイル"
-                          Style="{StaticResource PromptGroupBoxStyle}">
-                    <StackPanel Margin="10">
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="口調:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="ToneTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="文の長さ:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="SentenceLengthTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="感情の出し方:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="EmotionalExpressivenessTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="率直さ:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="DirectnessTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="テンポ:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="CadenceTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="自発的な言い出し方:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="InitiativeExpressionTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>
