@@ -31,7 +31,6 @@ namespace CocoroConsole.Controls
 
         // OtomeKairo の editor-state を保持
         private OtomeKairoEditorState? _loadedOtomeKairoEditorState;
-        private bool _isSyncingEmbeddingRole;
 
         // CocoroCore再起動が必要な設定の前回値を保存
         private ConfigSettings _previousCocoroCoreSettings;
@@ -155,9 +154,7 @@ namespace CocoroConsole.Controls
 
                 EmbeddingSettingsControl.LoadSettings(
                     CloneMemorySets(_loadedOtomeKairoEditorState.MemorySets),
-                    _loadedOtomeKairoEditorState.Current.SelectedMemorySetId,
-                    _loadedOtomeKairoEditorState.Current.MemoryEnabled,
-                    LlmSettingsControl.GetActiveEmbeddingRole()
+                    _loadedOtomeKairoEditorState.Current.SelectedMemorySetId
                 );
 
                 PromptSettingsControl.LoadSettings(
@@ -168,12 +165,7 @@ namespace CocoroConsole.Controls
                 SystemSettingsControl.ApplyOtomeKairoCurrentSettings(_loadedOtomeKairoEditorState.Current);
 
                 LlmSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
-                LlmSettingsControl.ActivePresetChanged += (sender, args) => SyncEmbeddingRoleEditorFromModelPreset();
-                EmbeddingSettingsControl.SettingsChanged += (sender, args) =>
-                {
-                    SyncEmbeddingRoleIntoModelPreset();
-                    MarkSettingsChanged();
-                };
+                EmbeddingSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 PromptSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
             }
             catch (Exception ex)
@@ -468,9 +460,7 @@ namespace CocoroConsole.Controls
 
                 EmbeddingSettingsControl.LoadSettings(
                     CloneMemorySets(updated.MemorySets),
-                    updated.Current.SelectedMemorySetId,
-                    updated.Current.MemoryEnabled,
-                    LlmSettingsControl.GetActiveEmbeddingRole()
+                    updated.Current.SelectedMemorySetId
                 );
 
                 PromptSettingsControl.LoadSettings(
@@ -574,8 +564,7 @@ namespace CocoroConsole.Controls
                 await _apiClient.CloneMemorySetAsync(
                     pendingClone.SourceMemorySetId,
                     pendingClone.Definition.MemorySetId,
-                    pendingClone.Definition.DisplayName,
-                    pendingClone.Definition.Description);
+                    pendingClone.Definition.DisplayName);
             }
 
             foreach (var memorySet in memorySets.Where(memorySet =>
@@ -617,7 +606,6 @@ namespace CocoroConsole.Controls
 
         private OtomeKairoEditorState BuildEditorStateFromUi()
         {
-            SyncEmbeddingRoleIntoModelPreset();
             var personas = PromptSettingsControl.GetAllPersonas();
             var memorySets = EmbeddingSettingsControl.GetAllMemorySets();
             var modelPresets = LlmSettingsControl.GetAllPresets();
@@ -644,7 +632,6 @@ namespace CocoroConsole.Controls
                     SelectedPersonaId = activePersonaId,
                     SelectedMemorySetId = activeMemorySetId,
                     SelectedModelPresetId = activeModelPresetId,
-                    MemoryEnabled = EmbeddingSettingsControl.IsMemoryEnabled,
                     DesktopWatch = new OtomeKairoDesktopWatchSettings
                     {
                         Enabled = SystemSettingsControl.GetDesktopWatchEnabled(),
@@ -689,48 +676,21 @@ namespace CocoroConsole.Controls
             OtomeKairoMemorySetDefinition updated)
         {
             return !string.Equals(current.DisplayName, updated.DisplayName, StringComparison.Ordinal)
-                || !string.Equals(current.Description ?? string.Empty, updated.Description ?? string.Empty, StringComparison.Ordinal);
+                || !EmbeddingDefinitionChanged(current.Embedding, updated.Embedding);
+        }
+
+        private static bool EmbeddingDefinitionChanged(
+            Dictionary<string, object?>? current,
+            Dictionary<string, object?>? updated)
+        {
+            var currentJson = JsonSerializer.Serialize(current ?? new Dictionary<string, object?>());
+            var updatedJson = JsonSerializer.Serialize(updated ?? new Dictionary<string, object?>());
+            return !string.Equals(currentJson, updatedJson, StringComparison.Ordinal);
         }
 
         private static OtomeKairoModelPresetDefinition CloneModelPreset(OtomeKairoModelPresetDefinition modelPreset)
         {
             return DeepClone(modelPreset);
-        }
-
-        private void SyncEmbeddingRoleEditorFromModelPreset()
-        {
-            if (_isSyncingEmbeddingRole)
-            {
-                return;
-            }
-
-            _isSyncingEmbeddingRole = true;
-            try
-            {
-                EmbeddingSettingsControl.SetEmbeddingRole(LlmSettingsControl.GetActiveEmbeddingRole());
-            }
-            finally
-            {
-                _isSyncingEmbeddingRole = false;
-            }
-        }
-
-        private void SyncEmbeddingRoleIntoModelPreset()
-        {
-            if (_isSyncingEmbeddingRole)
-            {
-                return;
-            }
-
-            _isSyncingEmbeddingRole = true;
-            try
-            {
-                LlmSettingsControl.SetActiveEmbeddingRole(EmbeddingSettingsControl.GetEmbeddingRole());
-            }
-            finally
-            {
-                _isSyncingEmbeddingRole = false;
-            }
         }
 
         private static T DeepClone<T>(T value)

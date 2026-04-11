@@ -110,7 +110,6 @@ namespace CocoroConsole.Services
             string sourceMemorySetId,
             string targetMemorySetId,
             string displayName,
-            string? description,
             CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -122,7 +121,6 @@ namespace CocoroConsole.Services
                     source_memory_set_id = sourceMemorySetId,
                     memory_set_id = targetMemorySetId,
                     display_name = displayName,
-                    description = description,
                 },
                 cancellationToken);
         }
@@ -357,10 +355,6 @@ namespace CocoroConsole.Services
         [JsonPropertyName("selected_model_preset_id")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? SelectedModelPresetId { get; set; }
-
-        [JsonPropertyName("memory_enabled")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public bool? MemoryEnabled { get; set; }
 
         [JsonPropertyName("desktop_watch")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

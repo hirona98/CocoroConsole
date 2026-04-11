@@ -125,18 +125,6 @@
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="プロバイダ:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="ObservationProviderTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
                             <TextBlock Text="モデル:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="ObservationModelTextBox"
@@ -149,9 +137,9 @@
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="エンドポイント参照:"
+                            <TextBlock Text="エンドポイントURL（任意）:"
                                        Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="ObservationEndpointRefTextBox"
+                            <TextBox x:Name="ObservationApiBaseTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
@@ -192,18 +180,6 @@
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="プロバイダ:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="DecisionProviderTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
                             <TextBlock Text="モデル:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="DecisionModelTextBox"
@@ -216,9 +192,9 @@
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="エンドポイント参照:"
+                            <TextBlock Text="エンドポイントURL（任意）:"
                                        Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="DecisionEndpointRefTextBox"
+                            <TextBox x:Name="DecisionApiBaseTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
@@ -259,18 +235,6 @@
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="プロバイダ:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="ExpressionProviderTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
                             <TextBlock Text="モデル:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="ExpressionModelTextBox"
@@ -283,9 +247,9 @@
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="エンドポイント参照:"
+                            <TextBlock Text="エンドポイントURL（任意）:"
                                        Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="ExpressionEndpointRefTextBox"
+                            <TextBox x:Name="ExpressionApiBaseTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
@@ -326,18 +290,6 @@
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="プロバイダ:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="MemoryProviderTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
                             <TextBlock Text="モデル:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="MemoryModelTextBox"
@@ -350,9 +302,9 @@
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="エンドポイント参照:"
+                            <TextBlock Text="エンドポイントURL（任意）:"
                                        Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="MemoryEndpointRefTextBox"
+                            <TextBox x:Name="MemoryApiBaseTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>

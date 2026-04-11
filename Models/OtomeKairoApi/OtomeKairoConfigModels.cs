@@ -38,10 +38,6 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("selected_model_preset_id")]
         public string SelectedModelPresetId { get; set; } = string.Empty;
 
-        // RuntimeToggles
-        [JsonPropertyName("memory_enabled")]
-        public bool MemoryEnabled { get; set; }
-
         [JsonPropertyName("desktop_watch")]
         public OtomeKairoDesktopWatchSettings DesktopWatch { get; set; } = new OtomeKairoDesktopWatchSettings();
 
@@ -107,8 +103,8 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("display_name")]
         public string DisplayName { get; set; } = string.Empty;
 
-        [JsonPropertyName("description")]
-        public string? Description { get; set; }
+        [JsonPropertyName("embedding")]
+        public Dictionary<string, object?> Embedding { get; set; } = new Dictionary<string, object?>();
     }
 
     /// <summary>

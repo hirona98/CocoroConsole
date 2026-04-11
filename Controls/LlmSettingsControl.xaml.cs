@@ -12,20 +12,16 @@ namespace CocoroConsole.Controls
     {
         private static readonly string[] RoleFieldKeys =
         {
-            "kind",
-            "provider",
             "model",
-            "endpoint_ref",
+            "api_base",
             "api_key",
             "reasoning_effort",
         };
 
         private sealed class RoleEditorItem
         {
-            public string Kind { get; set; } = string.Empty;
-            public string Provider { get; set; } = string.Empty;
             public string Model { get; set; } = string.Empty;
-            public string EndpointRef { get; set; } = string.Empty;
+            public string ApiBase { get; set; } = string.Empty;
             public string ApiKey { get; set; } = string.Empty;
             public string ReasoningEffort { get; set; } = string.Empty;
             public Dictionary<string, object?> AdditionalFields { get; set; } = new Dictionary<string, object?>();
@@ -39,7 +35,6 @@ namespace CocoroConsole.Controls
             public RoleEditorItem DecisionRole { get; set; } = new RoleEditorItem();
             public RoleEditorItem ExpressionRole { get; set; } = new RoleEditorItem();
             public RoleEditorItem MemoryRole { get; set; } = new RoleEditorItem();
-            public RoleEditorItem EmbeddingRole { get; set; } = new RoleEditorItem();
         }
 
         private readonly List<ModelPresetEditorItem> _presets = new();
@@ -47,7 +42,6 @@ namespace CocoroConsole.Controls
         private int _currentPresetIndex = -1;
 
         public event EventHandler? SettingsChanged;
-        public event EventHandler? ActivePresetChanged;
 
         public LlmSettingsControl()
         {
@@ -129,28 +123,6 @@ namespace CocoroConsole.Controls
             return _presets[_currentPresetIndex].ExpressionRole.ApiKey;
         }
 
-        public Dictionary<string, object?> GetActiveEmbeddingRole()
-        {
-            SyncCurrentPresetFromUi();
-            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
-            {
-                return CreateEmbeddingRoleTemplateDefinition();
-            }
-
-            return ToRoleDefinition(_presets[_currentPresetIndex].EmbeddingRole, includeReasoningEffort: false);
-        }
-
-        public void SetActiveEmbeddingRole(Dictionary<string, object?> roleDefinition)
-        {
-            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
-            {
-                return;
-            }
-
-            _presets[_currentPresetIndex].EmbeddingRole = ToRoleEditorItem(roleDefinition, "embedding", string.Empty);
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
         private void AddPresetButton_Click(object sender, RoutedEventArgs e)
         {
             SyncCurrentPresetFromUi();
@@ -163,7 +135,6 @@ namespace CocoroConsole.Controls
                 DecisionRole = CreateGenerationRoleTemplate(includeReasoningEffort: false),
                 ExpressionRole = CreateGenerationRoleTemplate(includeReasoningEffort: false),
                 MemoryRole = CreateGenerationRoleTemplate(includeReasoningEffort: false),
-                EmbeddingRole = CreateEmbeddingRoleTemplate(),
             };
 
             _isInitializing = true;
@@ -181,7 +152,6 @@ namespace CocoroConsole.Controls
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
-            ActivePresetChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void DuplicatePresetButton_Click(object sender, RoutedEventArgs e)
@@ -202,7 +172,6 @@ namespace CocoroConsole.Controls
                 DecisionRole = CloneRole(source.DecisionRole),
                 ExpressionRole = CloneRole(source.ExpressionRole),
                 MemoryRole = CloneRole(source.MemoryRole),
-                EmbeddingRole = CloneRole(source.EmbeddingRole),
             };
 
             _isInitializing = true;
@@ -220,7 +189,6 @@ namespace CocoroConsole.Controls
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
-            ActivePresetChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void DeletePresetButton_Click(object sender, RoutedEventArgs e)
@@ -252,7 +220,6 @@ namespace CocoroConsole.Controls
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
-            ActivePresetChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void PresetSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -282,7 +249,6 @@ namespace CocoroConsole.Controls
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
-            ActivePresetChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void OnSettingChanged(object sender, TextChangedEventArgs e)
@@ -332,30 +298,26 @@ namespace CocoroConsole.Controls
             current.DisplayName = PresetNameTextBox.Text;
             SyncRoleFromUi(
                 current.ObservationRole,
-                ObservationProviderTextBox,
                 ObservationModelTextBox,
-                ObservationEndpointRefTextBox,
+                ObservationApiBaseTextBox,
                 ObservationApiKeyPasswordBox,
                 ObservationReasoningEffortTextBox);
             SyncRoleFromUi(
                 current.DecisionRole,
-                DecisionProviderTextBox,
                 DecisionModelTextBox,
-                DecisionEndpointRefTextBox,
+                DecisionApiBaseTextBox,
                 DecisionApiKeyPasswordBox,
                 DecisionReasoningEffortTextBox);
             SyncRoleFromUi(
                 current.ExpressionRole,
-                ExpressionProviderTextBox,
                 ExpressionModelTextBox,
-                ExpressionEndpointRefTextBox,
+                ExpressionApiBaseTextBox,
                 ExpressionApiKeyPasswordBox,
                 ExpressionReasoningEffortTextBox);
             SyncRoleFromUi(
                 current.MemoryRole,
-                MemoryProviderTextBox,
                 MemoryModelTextBox,
-                MemoryEndpointRefTextBox,
+                MemoryApiBaseTextBox,
                 MemoryApiKeyPasswordBox,
                 MemoryReasoningEffortTextBox);
         }
@@ -365,30 +327,26 @@ namespace CocoroConsole.Controls
             PresetNameTextBox.Text = item.DisplayName;
             LoadRoleToUi(
                 item.ObservationRole,
-                ObservationProviderTextBox,
                 ObservationModelTextBox,
-                ObservationEndpointRefTextBox,
+                ObservationApiBaseTextBox,
                 ObservationApiKeyPasswordBox,
                 ObservationReasoningEffortTextBox);
             LoadRoleToUi(
                 item.DecisionRole,
-                DecisionProviderTextBox,
                 DecisionModelTextBox,
-                DecisionEndpointRefTextBox,
+                DecisionApiBaseTextBox,
                 DecisionApiKeyPasswordBox,
                 DecisionReasoningEffortTextBox);
             LoadRoleToUi(
                 item.ExpressionRole,
-                ExpressionProviderTextBox,
                 ExpressionModelTextBox,
-                ExpressionEndpointRefTextBox,
+                ExpressionApiBaseTextBox,
                 ExpressionApiKeyPasswordBox,
                 ExpressionReasoningEffortTextBox);
             LoadRoleToUi(
                 item.MemoryRole,
-                MemoryProviderTextBox,
                 MemoryModelTextBox,
-                MemoryEndpointRefTextBox,
+                MemoryApiBaseTextBox,
                 MemoryApiKeyPasswordBox,
                 MemoryReasoningEffortTextBox);
         }
@@ -396,28 +354,28 @@ namespace CocoroConsole.Controls
         private void ClearUi()
         {
             PresetNameTextBox.Text = string.Empty;
-            LoadRoleToUi(CreateGenerationRoleTemplate(includeReasoningEffort: true),
-                ObservationProviderTextBox,
+            LoadRoleToUi(
+                CreateGenerationRoleTemplate(includeReasoningEffort: true),
                 ObservationModelTextBox,
-                ObservationEndpointRefTextBox,
+                ObservationApiBaseTextBox,
                 ObservationApiKeyPasswordBox,
                 ObservationReasoningEffortTextBox);
-            LoadRoleToUi(CreateGenerationRoleTemplate(includeReasoningEffort: false),
-                DecisionProviderTextBox,
+            LoadRoleToUi(
+                CreateGenerationRoleTemplate(includeReasoningEffort: false),
                 DecisionModelTextBox,
-                DecisionEndpointRefTextBox,
+                DecisionApiBaseTextBox,
                 DecisionApiKeyPasswordBox,
                 DecisionReasoningEffortTextBox);
-            LoadRoleToUi(CreateGenerationRoleTemplate(includeReasoningEffort: false),
-                ExpressionProviderTextBox,
+            LoadRoleToUi(
+                CreateGenerationRoleTemplate(includeReasoningEffort: false),
                 ExpressionModelTextBox,
-                ExpressionEndpointRefTextBox,
+                ExpressionApiBaseTextBox,
                 ExpressionApiKeyPasswordBox,
                 ExpressionReasoningEffortTextBox);
-            LoadRoleToUi(CreateGenerationRoleTemplate(includeReasoningEffort: false),
-                MemoryProviderTextBox,
+            LoadRoleToUi(
+                CreateGenerationRoleTemplate(includeReasoningEffort: false),
                 MemoryModelTextBox,
-                MemoryEndpointRefTextBox,
+                MemoryApiBaseTextBox,
                 MemoryApiKeyPasswordBox,
                 MemoryReasoningEffortTextBox);
         }
@@ -441,11 +399,10 @@ namespace CocoroConsole.Controls
             {
                 ModelPresetId = preset.ModelPresetId,
                 DisplayName = preset.DisplayName,
-                ObservationRole = ToRoleEditorItem(GetRole(preset, "observation_interpretation"), "generation", "low"),
-                DecisionRole = ToRoleEditorItem(GetRole(preset, "decision_generation"), "generation", string.Empty),
-                ExpressionRole = ToRoleEditorItem(GetRole(preset, "expression_generation"), "generation", string.Empty),
-                MemoryRole = ToRoleEditorItem(GetRole(preset, "memory_interpretation"), "generation", string.Empty),
-                EmbeddingRole = ToRoleEditorItem(GetRole(preset, "embedding"), "embedding", string.Empty),
+                ObservationRole = ToRoleEditorItem(GetRole(preset, "observation_interpretation"), "low"),
+                DecisionRole = ToRoleEditorItem(GetRole(preset, "decision_generation"), string.Empty),
+                ExpressionRole = ToRoleEditorItem(GetRole(preset, "expression_generation"), string.Empty),
+                MemoryRole = ToRoleEditorItem(GetRole(preset, "memory_interpretation"), string.Empty),
             };
         }
 
@@ -461,22 +418,18 @@ namespace CocoroConsole.Controls
                     ["decision_generation"] = ToRoleDefinition(item.DecisionRole, includeReasoningEffort: true),
                     ["expression_generation"] = ToRoleDefinition(item.ExpressionRole, includeReasoningEffort: true),
                     ["memory_interpretation"] = ToRoleDefinition(item.MemoryRole, includeReasoningEffort: true),
-                    ["embedding"] = ToRoleDefinition(item.EmbeddingRole, includeReasoningEffort: false),
                 },
             };
         }
 
         private static RoleEditorItem ToRoleEditorItem(
             Dictionary<string, object?> role,
-            string defaultKind,
             string defaultReasoningEffort)
         {
             return new RoleEditorItem
             {
-                Kind = ReadString(role, "kind") ?? defaultKind,
-                Provider = ReadString(role, "provider") ?? string.Empty,
                 Model = ReadString(role, "model") ?? string.Empty,
-                EndpointRef = ReadString(role, "endpoint_ref") ?? string.Empty,
+                ApiBase = ReadString(role, "api_base") ?? string.Empty,
                 ApiKey = ReadString(role, "api_key") ?? string.Empty,
                 ReasoningEffort = ReadString(role, "reasoning_effort") ?? defaultReasoningEffort,
                 AdditionalFields = CopyAdditionalFields(role, RoleFieldKeys),
@@ -487,12 +440,19 @@ namespace CocoroConsole.Controls
         {
             var definition = new Dictionary<string, object?>(item.AdditionalFields, StringComparer.OrdinalIgnoreCase)
             {
-                ["kind"] = item.Kind,
-                ["provider"] = item.Provider?.Trim() ?? string.Empty,
                 ["model"] = item.Model?.Trim() ?? string.Empty,
-                ["endpoint_ref"] = item.EndpointRef?.Trim() ?? string.Empty,
                 ["api_key"] = item.ApiKey ?? string.Empty,
             };
+
+            var apiBase = item.ApiBase?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(apiBase))
+            {
+                definition.Remove("api_base");
+            }
+            else
+            {
+                definition["api_base"] = apiBase;
+            }
 
             if (includeReasoningEffort)
             {
@@ -521,37 +481,31 @@ namespace CocoroConsole.Controls
                 return role;
             }
 
-            return roleName == "embedding"
-                ? CreateEmbeddingRoleTemplateDefinition()
-                : CreateGenerationRoleTemplateDefinition(includeReasoningEffort: roleName == "observation_interpretation");
+            return CreateGenerationRoleTemplateDefinition(includeReasoningEffort: roleName == "observation_interpretation");
         }
 
         private static void SyncRoleFromUi(
             RoleEditorItem role,
-            TextBox providerTextBox,
             TextBox modelTextBox,
-            TextBox endpointRefTextBox,
+            TextBox apiBaseTextBox,
             PasswordBox apiKeyPasswordBox,
             TextBox reasoningEffortTextBox)
         {
-            role.Provider = providerTextBox.Text;
             role.Model = modelTextBox.Text;
-            role.EndpointRef = endpointRefTextBox.Text;
+            role.ApiBase = apiBaseTextBox.Text;
             role.ApiKey = apiKeyPasswordBox.Password;
             role.ReasoningEffort = reasoningEffortTextBox.Text;
         }
 
         private static void LoadRoleToUi(
             RoleEditorItem role,
-            TextBox providerTextBox,
             TextBox modelTextBox,
-            TextBox endpointRefTextBox,
+            TextBox apiBaseTextBox,
             PasswordBox apiKeyPasswordBox,
             TextBox reasoningEffortTextBox)
         {
-            providerTextBox.Text = role.Provider;
             modelTextBox.Text = role.Model;
-            endpointRefTextBox.Text = role.EndpointRef;
+            apiBaseTextBox.Text = role.ApiBase;
             apiKeyPasswordBox.Password = role.ApiKey;
             reasoningEffortTextBox.Text = role.ReasoningEffort;
         }
@@ -560,10 +514,8 @@ namespace CocoroConsole.Controls
         {
             return new RoleEditorItem
             {
-                Kind = role.Kind,
-                Provider = role.Provider,
                 Model = role.Model,
-                EndpointRef = role.EndpointRef,
+                ApiBase = role.ApiBase,
                 ApiKey = role.ApiKey,
                 ReasoningEffort = role.ReasoningEffort,
                 AdditionalFields = new Dictionary<string, object?>(role.AdditionalFields),
@@ -609,26 +561,14 @@ namespace CocoroConsole.Controls
         {
             return ToRoleEditorItem(
                 CreateGenerationRoleTemplateDefinition(includeReasoningEffort),
-                "generation",
                 includeReasoningEffort ? "low" : string.Empty);
-        }
-
-        private static RoleEditorItem CreateEmbeddingRoleTemplate()
-        {
-            return ToRoleEditorItem(
-                CreateEmbeddingRoleTemplateDefinition(),
-                "embedding",
-                string.Empty);
         }
 
         private static Dictionary<string, object?> CreateGenerationRoleTemplateDefinition(bool includeReasoningEffort)
         {
             var role = new Dictionary<string, object?>
             {
-                ["kind"] = "generation",
-                ["provider"] = "openrouter",
                 ["model"] = "openrouter/google/gemini-3.1-flash-lite-preview",
-                ["endpoint_ref"] = "endpoint:openrouter_primary",
                 ["api_key"] = "",
             };
             if (includeReasoningEffort)
@@ -636,18 +576,6 @@ namespace CocoroConsole.Controls
                 role["reasoning_effort"] = "low";
             }
             return role;
-        }
-
-        private static Dictionary<string, object?> CreateEmbeddingRoleTemplateDefinition()
-        {
-            return new Dictionary<string, object?>
-            {
-                ["kind"] = "embedding",
-                ["provider"] = "openrouter",
-                ["model"] = "openrouter/google/gemini-embedding-001",
-                ["endpoint_ref"] = "endpoint:openrouter_primary",
-                ["api_key"] = "",
-            };
         }
 
         private static int ResolveActiveIndex(IReadOnlyList<string?> ids, string? activeId)
