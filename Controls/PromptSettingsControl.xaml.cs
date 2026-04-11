@@ -10,6 +10,29 @@ namespace CocoroConsole.Controls
 {
     public partial class PromptSettingsControl : UserControl
     {
+        private const string DefaultPersonaDisplayName = "標準人格設定";
+        private const string DefaultSelfImage = "長く寄り添う相手";
+        private const string DefaultTone = "やわらかく穏やか";
+        private const string DefaultCoreValues = "相手の様子をよく見る\n急いで断定しない\n安心して話せる空気を保つ";
+        private const string DefaultJudgementTendencies = "まず状況を整理する\n曖昧な点は確認する\n強すぎる断定を避ける";
+        private const string DefaultRelationBaseline = "穏やかに寄り添い、必要なときは支える";
+        private const string DefaultInitiativeBaseline = "必要なときは前に出るが、不要な介入は控えめにする";
+        private const string DefaultSentenceLength = "短すぎず、必要なら少し丁寧に補う";
+        private const string DefaultEmotionalExpressiveness = "感情は控えめににじませる";
+        private const string DefaultDirectness = "率直だが言い方はやわらかくする";
+        private const string DefaultCadence = "落ち着いたテンポで区切って話す";
+        private const string DefaultInitiativeExpression = "提案するときは押しつけず、選べる形で言う";
+        private static readonly string DefaultExpressionAddon =
+            "## 感情タグ（任意）\n"
+            + "特定の感情を表現したい場合は [face:Joy] のように文頭に入れる\n"
+            + "- 形式: [face:Joy]\n"
+            + "- 種類: Joy | Angry | Sorrow | Fun\n"
+            + "例:\n"
+            + "[face:Joy]今日は調子がいいかもしれません。\n"
+            + "[face:Angry]違うと言っているじゃないですか！\n"
+            + "[face:Sorrow]やめてください。\n"
+            + "[face:Fun]最高に素敵です。";
+
         private static readonly string[] CorePersonaKeys =
         {
             "self_image",
@@ -34,13 +57,13 @@ namespace CocoroConsole.Controls
         {
             public string PersonaId { get; set; } = string.Empty;
             public string DisplayName { get; set; } = string.Empty;
-            public string ExpressionAddon { get; set; } = string.Empty;
+            public string ExpressionAddon { get; set; } = DefaultExpressionAddon;
             public string SelfImage { get; set; } = string.Empty;
             public string CoreValuesText { get; set; } = string.Empty;
             public string JudgementTendenciesText { get; set; } = string.Empty;
             public string RelationBaseline { get; set; } = string.Empty;
             public string InitiativeBaseline { get; set; } = string.Empty;
-            public string Tone { get; set; } = "gentle";
+            public string Tone { get; set; } = DefaultTone;
             public string SentenceLength { get; set; } = string.Empty;
             public string EmotionalExpressiveness { get; set; } = string.Empty;
             public string Directness { get; set; } = string.Empty;
@@ -116,8 +139,18 @@ namespace CocoroConsole.Controls
             {
                 PersonaId = $"persona:{Guid.NewGuid():N}",
                 DisplayName = GenerateUniqueName(_personas.Select(p => p.DisplayName), "新規人格設定"),
-                SelfImage = "long-term companion",
-                Tone = "gentle",
+                ExpressionAddon = DefaultExpressionAddon,
+                SelfImage = DefaultSelfImage,
+                CoreValuesText = DefaultCoreValues,
+                JudgementTendenciesText = DefaultJudgementTendencies,
+                RelationBaseline = DefaultRelationBaseline,
+                InitiativeBaseline = DefaultInitiativeBaseline,
+                Tone = DefaultTone,
+                SentenceLength = DefaultSentenceLength,
+                EmotionalExpressiveness = DefaultEmotionalExpressiveness,
+                Directness = DefaultDirectness,
+                Cadence = DefaultCadence,
+                InitiativeExpression = DefaultInitiativeExpression,
             };
 
             _isInitializing = true;
@@ -309,7 +342,7 @@ namespace CocoroConsole.Controls
             JudgementTendenciesTextBox.Text = string.Empty;
             RelationBaselineTextBox.Text = string.Empty;
             InitiativeBaselineTextBox.Text = string.Empty;
-            ToneTextBox.Text = "gentle";
+            ToneTextBox.Text = DefaultTone;
             SentenceLengthTextBox.Text = string.Empty;
             EmotionalExpressivenessTextBox.Text = string.Empty;
             DirectnessTextBox.Text = string.Empty;
@@ -339,14 +372,14 @@ namespace CocoroConsole.Controls
             {
                 PersonaId = persona.PersonaId,
                 DisplayName = persona.DisplayName,
-                ExpressionAddon = persona.ExpressionAddon ?? string.Empty,
+                ExpressionAddon = persona.ExpressionAddon ?? DefaultExpressionAddon,
                 SelfImage = ReadString(corePersona, "self_image") ?? string.Empty,
                 CoreValuesText = JoinLines(ReadStringList(corePersona, "core_values")),
                 JudgementTendenciesText = JoinLines(
                     ReadStringList(corePersona, "judgement_tendencies", "judgement_style")),
                 RelationBaseline = ReadString(corePersona, "relation_baseline") ?? string.Empty,
                 InitiativeBaseline = ReadString(corePersona, "initiative_baseline") ?? string.Empty,
-                Tone = ReadString(expressionStyle, "tone") ?? "gentle",
+                Tone = ReadString(expressionStyle, "tone") ?? DefaultTone,
                 SentenceLength = ReadString(expressionStyle, "sentence_length") ?? string.Empty,
                 EmotionalExpressiveness = ReadString(expressionStyle, "emotional_expressiveness") ?? string.Empty,
                 Directness = ReadString(expressionStyle, "directness") ?? string.Empty,
