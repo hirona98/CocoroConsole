@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="1250"
+             d:DesignHeight="1450"
              d:DesignWidth="800">
 
     <UserControl.Resources>
@@ -15,21 +15,10 @@
             <Setter Property="Margin"
                     Value="0,0,10,0"/>
             <Setter Property="Width"
-                    Value="150"/>
+                    Value="180"/>
         </Style>
         <Style x:Key="SettingTextBoxStyle"
                TargetType="TextBox">
-            <Setter Property="Foreground"
-                    Value="#FF0078D7"/>
-            <Setter Property="Padding"
-                    Value="2"/>
-            <Setter Property="BorderBrush"
-                    Value="#CCCCCC"/>
-            <Setter Property="BorderThickness"
-                    Value="1"/>
-        </Style>
-        <Style x:Key="SettingPasswordBoxStyle"
-               TargetType="PasswordBox">
             <Setter Property="Foreground"
                     Value="#FF0078D7"/>
             <Setter Property="Padding"
@@ -103,12 +92,43 @@
 
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="表示名:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="PresetNameTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="使用する会話履歴"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="件数:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="RecentTurnLimitTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="時間（分）:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="RecentTurnMinutesTextBox"
                                      Grid.Column="1"
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
@@ -122,7 +142,7 @@
                     <StackPanel>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="モデル:"
@@ -134,10 +154,10 @@
                         </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="エンドポイントURL（任意）:"
+                            <TextBlock Text="エンドポイントURL:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="ObservationApiBaseTextBox"
                                      Grid.Column="1"
@@ -146,19 +166,22 @@
                         </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="APIキー:"
                                        Style="{StaticResource SettingLabelStyle}"/>
-                            <PasswordBox x:Name="ObservationApiKeyPasswordBox"
+                            <TextBox x:Name="ObservationApiKeyTextBox"
                                          Grid.Column="1"
-                                         Style="{StaticResource SettingPasswordBoxStyle}"
-                                         PasswordChanged="OnPasswordChanged"/>
+                                         Foreground="#FF0078D7"
+                                         Padding="2"
+                                         Width="50"
+                                         HorizontalAlignment="Left"
+                                         TextChanged="OnSettingChanged"/>
                         </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="推論の深さ:"
@@ -168,6 +191,24 @@
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="最大出力トークン:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="ObservationMaxOutputTokensTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <CheckBox x:Name="ObservationWebSearchCheckBox"
+                                  Content="Web検索を有効にする"
+                                  Foreground="#FF4873CF"
+                                  Margin="0,8,0,0"
+                                  Checked="OnCheckBoxChanged"
+                                  Unchecked="OnCheckBoxChanged"/>
                     </StackPanel>
                 </GroupBox>
 
@@ -177,7 +218,7 @@
                     <StackPanel>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="モデル:"
@@ -189,10 +230,10 @@
                         </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="エンドポイントURL（任意）:"
+                            <TextBlock Text="エンドポイントURL:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="DecisionApiBaseTextBox"
                                      Grid.Column="1"
@@ -201,19 +242,22 @@
                         </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="APIキー:"
                                        Style="{StaticResource SettingLabelStyle}"/>
-                            <PasswordBox x:Name="DecisionApiKeyPasswordBox"
+                            <TextBox x:Name="DecisionApiKeyTextBox"
                                          Grid.Column="1"
-                                         Style="{StaticResource SettingPasswordBoxStyle}"
-                                         PasswordChanged="OnPasswordChanged"/>
+                                         Foreground="#FF0078D7"
+                                         Padding="2"
+                                         Width="50"
+                                         HorizontalAlignment="Left"
+                                         TextChanged="OnSettingChanged"/>
                         </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="推論の深さ:"
@@ -223,6 +267,24 @@
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="最大出力トークン:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="DecisionMaxOutputTokensTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <CheckBox x:Name="DecisionWebSearchCheckBox"
+                                  Content="Web検索を有効にする"
+                                  Foreground="#FF4873CF"
+                                  Margin="0,8,0,0"
+                                  Checked="OnCheckBoxChanged"
+                                  Unchecked="OnCheckBoxChanged"/>
                     </StackPanel>
                 </GroupBox>
 
@@ -232,7 +294,7 @@
                     <StackPanel>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="モデル:"
@@ -244,10 +306,10 @@
                         </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="エンドポイントURL（任意）:"
+                            <TextBlock Text="エンドポイントURL:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="ExpressionApiBaseTextBox"
                                      Grid.Column="1"
@@ -256,19 +318,22 @@
                         </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="APIキー:"
                                        Style="{StaticResource SettingLabelStyle}"/>
-                            <PasswordBox x:Name="ExpressionApiKeyPasswordBox"
+                            <TextBox x:Name="ExpressionApiKeyTextBox"
                                          Grid.Column="1"
-                                         Style="{StaticResource SettingPasswordBoxStyle}"
-                                         PasswordChanged="OnPasswordChanged"/>
+                                         Foreground="#FF0078D7"
+                                         Padding="2"
+                                         Width="50"
+                                         HorizontalAlignment="Left"
+                                         TextChanged="OnSettingChanged"/>
                         </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="推論の深さ:"
@@ -278,6 +343,24 @@
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="最大出力トークン:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="ExpressionMaxOutputTokensTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <CheckBox x:Name="ExpressionWebSearchCheckBox"
+                                  Content="Web検索を有効にする"
+                                  Foreground="#FF4873CF"
+                                  Margin="0,8,0,0"
+                                  Checked="OnCheckBoxChanged"
+                                  Unchecked="OnCheckBoxChanged"/>
                     </StackPanel>
                 </GroupBox>
 
@@ -287,7 +370,7 @@
                     <StackPanel>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="モデル:"
@@ -299,10 +382,10 @@
                         </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="エンドポイントURL（任意）:"
+                            <TextBlock Text="エンドポイントURL:"
                                        Style="{StaticResource SettingLabelStyle}"/>
                             <TextBox x:Name="MemoryApiBaseTextBox"
                                      Grid.Column="1"
@@ -311,19 +394,22 @@
                         </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="APIキー:"
                                        Style="{StaticResource SettingLabelStyle}"/>
-                            <PasswordBox x:Name="MemoryApiKeyPasswordBox"
+                            <TextBox x:Name="MemoryApiKeyTextBox"
                                          Grid.Column="1"
-                                         Style="{StaticResource SettingPasswordBoxStyle}"
-                                         PasswordChanged="OnPasswordChanged"/>
+                                         Foreground="#FF0078D7"
+                                         Padding="2"
+                                         Width="50"
+                                         HorizontalAlignment="Left"
+                                         TextChanged="OnSettingChanged"/>
                         </Grid>
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="180"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="推論の深さ:"
@@ -333,6 +419,24 @@
                                      Style="{StaticResource SettingTextBoxStyle}"
                                      TextChanged="OnSettingChanged"/>
                         </Grid>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="最大出力トークン:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="MemoryMaxOutputTokensTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
+                        <CheckBox x:Name="MemoryWebSearchCheckBox"
+                                  Content="Web検索を有効にする"
+                                  Foreground="#FF4873CF"
+                                  Margin="0,8,0,0"
+                                  Checked="OnCheckBoxChanged"
+                                  Unchecked="OnCheckBoxChanged"/>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

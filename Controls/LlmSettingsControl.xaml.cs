@@ -10,13 +10,11 @@ namespace CocoroConsole.Controls
 {
     public partial class LlmSettingsControl : UserControl
     {
-        private static readonly string[] RoleFieldKeys =
+        private sealed class PromptWindowEditorItem
         {
-            "model",
-            "api_base",
-            "api_key",
-            "reasoning_effort",
-        };
+            public string RecentTurnLimitText { get; set; } = string.Empty;
+            public string RecentTurnMinutesText { get; set; } = string.Empty;
+        }
 
         private sealed class RoleEditorItem
         {
@@ -24,13 +22,15 @@ namespace CocoroConsole.Controls
             public string ApiBase { get; set; } = string.Empty;
             public string ApiKey { get; set; } = string.Empty;
             public string ReasoningEffort { get; set; } = string.Empty;
-            public Dictionary<string, object?> AdditionalFields { get; set; } = new Dictionary<string, object?>();
+            public string MaxOutputTokensText { get; set; } = string.Empty;
+            public bool WebSearchEnabled { get; set; }
         }
 
         private sealed class ModelPresetEditorItem
         {
             public string ModelPresetId { get; set; } = string.Empty;
             public string DisplayName { get; set; } = string.Empty;
+            public PromptWindowEditorItem PromptWindow { get; set; } = new PromptWindowEditorItem();
             public RoleEditorItem ObservationRole { get; set; } = new RoleEditorItem();
             public RoleEditorItem DecisionRole { get; set; } = new RoleEditorItem();
             public RoleEditorItem ExpressionRole { get; set; } = new RoleEditorItem();
@@ -112,17 +112,6 @@ namespace CocoroConsole.Controls
             return _presets[_currentPresetIndex].ModelPresetId;
         }
 
-        public string GetCurrentLlmApiKey()
-        {
-            SyncCurrentPresetFromUi();
-            if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
-            {
-                return string.Empty;
-            }
-
-            return _presets[_currentPresetIndex].ExpressionRole.ApiKey;
-        }
-
         private void AddPresetButton_Click(object sender, RoutedEventArgs e)
         {
             SyncCurrentPresetFromUi();
@@ -131,10 +120,11 @@ namespace CocoroConsole.Controls
             {
                 ModelPresetId = $"model_preset:{Guid.NewGuid():N}",
                 DisplayName = GenerateUniqueName(_presets.Select(p => p.DisplayName), "新規モデルプリセット"),
-                ObservationRole = CreateGenerationRoleTemplate(includeReasoningEffort: true),
-                DecisionRole = CreateGenerationRoleTemplate(includeReasoningEffort: false),
-                ExpressionRole = CreateGenerationRoleTemplate(includeReasoningEffort: false),
-                MemoryRole = CreateGenerationRoleTemplate(includeReasoningEffort: false),
+                PromptWindow = new PromptWindowEditorItem(),
+                ObservationRole = CreateBlankRole(),
+                DecisionRole = CreateBlankRole(),
+                ExpressionRole = CreateBlankRole(),
+                MemoryRole = CreateBlankRole(),
             };
 
             _isInitializing = true;
@@ -168,6 +158,7 @@ namespace CocoroConsole.Controls
             {
                 ModelPresetId = $"model_preset:{Guid.NewGuid():N}",
                 DisplayName = GenerateUniqueName(_presets.Select(p => p.DisplayName), $"{source.DisplayName} (コピー)"),
+                PromptWindow = ClonePromptWindow(source.PromptWindow),
                 ObservationRole = CloneRole(source.ObservationRole),
                 DecisionRole = CloneRole(source.DecisionRole),
                 ExpressionRole = CloneRole(source.ExpressionRole),
@@ -267,7 +258,7 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void OnPasswordChanged(object sender, RoutedEventArgs e)
+        private void OnCheckBoxChanged(object sender, RoutedEventArgs e)
         {
             if (_isInitializing)
             {
@@ -279,12 +270,7 @@ namespace CocoroConsole.Controls
 
         private void IsUseLLMCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            if (_isInitializing)
-            {
-                return;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
+            OnCheckBoxChanged(sender, e);
         }
 
         private void SyncCurrentPresetFromUi()
@@ -296,88 +282,118 @@ namespace CocoroConsole.Controls
 
             var current = _presets[_currentPresetIndex];
             current.DisplayName = PresetNameTextBox.Text;
+            current.PromptWindow.RecentTurnLimitText = RecentTurnLimitTextBox.Text;
+            current.PromptWindow.RecentTurnMinutesText = RecentTurnMinutesTextBox.Text;
             SyncRoleFromUi(
                 current.ObservationRole,
                 ObservationModelTextBox,
                 ObservationApiBaseTextBox,
-                ObservationApiKeyPasswordBox,
-                ObservationReasoningEffortTextBox);
+                ObservationApiKeyTextBox,
+                ObservationReasoningEffortTextBox,
+                ObservationMaxOutputTokensTextBox,
+                ObservationWebSearchCheckBox);
             SyncRoleFromUi(
                 current.DecisionRole,
                 DecisionModelTextBox,
                 DecisionApiBaseTextBox,
-                DecisionApiKeyPasswordBox,
-                DecisionReasoningEffortTextBox);
+                DecisionApiKeyTextBox,
+                DecisionReasoningEffortTextBox,
+                DecisionMaxOutputTokensTextBox,
+                DecisionWebSearchCheckBox);
             SyncRoleFromUi(
                 current.ExpressionRole,
                 ExpressionModelTextBox,
                 ExpressionApiBaseTextBox,
-                ExpressionApiKeyPasswordBox,
-                ExpressionReasoningEffortTextBox);
+                ExpressionApiKeyTextBox,
+                ExpressionReasoningEffortTextBox,
+                ExpressionMaxOutputTokensTextBox,
+                ExpressionWebSearchCheckBox);
             SyncRoleFromUi(
                 current.MemoryRole,
                 MemoryModelTextBox,
                 MemoryApiBaseTextBox,
-                MemoryApiKeyPasswordBox,
-                MemoryReasoningEffortTextBox);
+                MemoryApiKeyTextBox,
+                MemoryReasoningEffortTextBox,
+                MemoryMaxOutputTokensTextBox,
+                MemoryWebSearchCheckBox);
         }
 
         private void LoadPresetToUi(ModelPresetEditorItem item)
         {
             PresetNameTextBox.Text = item.DisplayName;
+            RecentTurnLimitTextBox.Text = item.PromptWindow.RecentTurnLimitText;
+            RecentTurnMinutesTextBox.Text = item.PromptWindow.RecentTurnMinutesText;
             LoadRoleToUi(
                 item.ObservationRole,
                 ObservationModelTextBox,
                 ObservationApiBaseTextBox,
-                ObservationApiKeyPasswordBox,
-                ObservationReasoningEffortTextBox);
+                ObservationApiKeyTextBox,
+                ObservationReasoningEffortTextBox,
+                ObservationMaxOutputTokensTextBox,
+                ObservationWebSearchCheckBox);
             LoadRoleToUi(
                 item.DecisionRole,
                 DecisionModelTextBox,
                 DecisionApiBaseTextBox,
-                DecisionApiKeyPasswordBox,
-                DecisionReasoningEffortTextBox);
+                DecisionApiKeyTextBox,
+                DecisionReasoningEffortTextBox,
+                DecisionMaxOutputTokensTextBox,
+                DecisionWebSearchCheckBox);
             LoadRoleToUi(
                 item.ExpressionRole,
                 ExpressionModelTextBox,
                 ExpressionApiBaseTextBox,
-                ExpressionApiKeyPasswordBox,
-                ExpressionReasoningEffortTextBox);
+                ExpressionApiKeyTextBox,
+                ExpressionReasoningEffortTextBox,
+                ExpressionMaxOutputTokensTextBox,
+                ExpressionWebSearchCheckBox);
             LoadRoleToUi(
                 item.MemoryRole,
                 MemoryModelTextBox,
                 MemoryApiBaseTextBox,
-                MemoryApiKeyPasswordBox,
-                MemoryReasoningEffortTextBox);
+                MemoryApiKeyTextBox,
+                MemoryReasoningEffortTextBox,
+                MemoryMaxOutputTokensTextBox,
+                MemoryWebSearchCheckBox);
         }
 
         private void ClearUi()
         {
             PresetNameTextBox.Text = string.Empty;
+            RecentTurnLimitTextBox.Text = string.Empty;
+            RecentTurnMinutesTextBox.Text = string.Empty;
             LoadRoleToUi(
-                CreateGenerationRoleTemplate(includeReasoningEffort: true),
+                CreateBlankRole(),
                 ObservationModelTextBox,
                 ObservationApiBaseTextBox,
-                ObservationApiKeyPasswordBox,
-                ObservationReasoningEffortTextBox);
+                ObservationApiKeyTextBox,
+                ObservationReasoningEffortTextBox,
+                ObservationMaxOutputTokensTextBox,
+                ObservationWebSearchCheckBox);
             LoadRoleToUi(
-                CreateGenerationRoleTemplate(includeReasoningEffort: false),
+                CreateBlankRole(),
                 DecisionModelTextBox,
                 DecisionApiBaseTextBox,
-                DecisionApiKeyPasswordBox,
-                DecisionReasoningEffortTextBox);
+                DecisionApiKeyTextBox,
+                DecisionReasoningEffortTextBox,
+                DecisionMaxOutputTokensTextBox,
+                DecisionWebSearchCheckBox);
             LoadRoleToUi(
-                CreateGenerationRoleTemplate(includeReasoningEffort: false),
+                CreateBlankRole(),
                 ExpressionModelTextBox,
                 ExpressionApiBaseTextBox,
-                ExpressionApiKeyPasswordBox,
-                ExpressionReasoningEffortTextBox);
+                ExpressionApiKeyTextBox,
+                ExpressionReasoningEffortTextBox,
+                ExpressionMaxOutputTokensTextBox,
+                ExpressionWebSearchCheckBox);
             LoadRoleToUi(
-                CreateGenerationRoleTemplate(includeReasoningEffort: false),
+                CreateBlankRole(),
                 MemoryModelTextBox,
                 MemoryApiBaseTextBox,
-                MemoryApiKeyPasswordBox,
-                MemoryReasoningEffortTextBox);
+                MemoryApiKeyTextBox,
+                MemoryReasoningEffortTextBox,
+                MemoryMaxOutputTokensTextBox,
+                MemoryWebSearchCheckBox);
         }
 
         private void RefreshComboBoxItems()
@@ -399,10 +415,15 @@ namespace CocoroConsole.Controls
             {
                 ModelPresetId = preset.ModelPresetId,
                 DisplayName = preset.DisplayName,
-                ObservationRole = ToRoleEditorItem(GetRole(preset, "observation_interpretation"), "low"),
-                DecisionRole = ToRoleEditorItem(GetRole(preset, "decision_generation"), string.Empty),
-                ExpressionRole = ToRoleEditorItem(GetRole(preset, "expression_generation"), string.Empty),
-                MemoryRole = ToRoleEditorItem(GetRole(preset, "memory_interpretation"), string.Empty),
+                PromptWindow = new PromptWindowEditorItem
+                {
+                    RecentTurnLimitText = preset.PromptWindow.RecentTurnLimit > 0 ? preset.PromptWindow.RecentTurnLimit.ToString() : string.Empty,
+                    RecentTurnMinutesText = preset.PromptWindow.RecentTurnMinutes > 0 ? preset.PromptWindow.RecentTurnMinutes.ToString() : string.Empty,
+                },
+                ObservationRole = ToRoleEditorItem(GetRole(preset, "observation_interpretation")),
+                DecisionRole = ToRoleEditorItem(GetRole(preset, "decision_generation")),
+                ExpressionRole = ToRoleEditorItem(GetRole(preset, "expression_generation")),
+                MemoryRole = ToRoleEditorItem(GetRole(preset, "memory_interpretation")),
             };
         }
 
@@ -412,63 +433,59 @@ namespace CocoroConsole.Controls
             {
                 ModelPresetId = item.ModelPresetId,
                 DisplayName = item.DisplayName,
+                PromptWindow = new OtomeKairoPromptWindowDefinition
+                {
+                    RecentTurnLimit = ParseRequiredPositiveIntOrZero(item.PromptWindow.RecentTurnLimitText),
+                    RecentTurnMinutes = ParseRequiredPositiveIntOrZero(item.PromptWindow.RecentTurnMinutesText),
+                },
                 Roles = new Dictionary<string, Dictionary<string, object?>>
                 {
-                    ["observation_interpretation"] = ToRoleDefinition(item.ObservationRole, includeReasoningEffort: true),
-                    ["decision_generation"] = ToRoleDefinition(item.DecisionRole, includeReasoningEffort: true),
-                    ["expression_generation"] = ToRoleDefinition(item.ExpressionRole, includeReasoningEffort: true),
-                    ["memory_interpretation"] = ToRoleDefinition(item.MemoryRole, includeReasoningEffort: true),
+                    ["observation_interpretation"] = ToRoleDefinition(item.ObservationRole),
+                    ["decision_generation"] = ToRoleDefinition(item.DecisionRole),
+                    ["expression_generation"] = ToRoleDefinition(item.ExpressionRole),
+                    ["memory_interpretation"] = ToRoleDefinition(item.MemoryRole),
                 },
             };
         }
 
-        private static RoleEditorItem ToRoleEditorItem(
-            Dictionary<string, object?> role,
-            string defaultReasoningEffort)
+        private static RoleEditorItem ToRoleEditorItem(Dictionary<string, object?> role)
         {
             return new RoleEditorItem
             {
                 Model = ReadString(role, "model") ?? string.Empty,
                 ApiBase = ReadString(role, "api_base") ?? string.Empty,
                 ApiKey = ReadString(role, "api_key") ?? string.Empty,
-                ReasoningEffort = ReadString(role, "reasoning_effort") ?? defaultReasoningEffort,
-                AdditionalFields = CopyAdditionalFields(role, RoleFieldKeys),
+                ReasoningEffort = ReadString(role, "reasoning_effort") ?? string.Empty,
+                MaxOutputTokensText = ReadInt(role, "max_output_tokens"),
+                WebSearchEnabled = ReadBool(role, "web_search_enabled"),
             };
         }
 
-        private static Dictionary<string, object?> ToRoleDefinition(RoleEditorItem item, bool includeReasoningEffort)
+        private static Dictionary<string, object?> ToRoleDefinition(RoleEditorItem item)
         {
-            var definition = new Dictionary<string, object?>(item.AdditionalFields, StringComparer.OrdinalIgnoreCase)
+            var definition = new Dictionary<string, object?>
             {
                 ["model"] = item.Model?.Trim() ?? string.Empty,
                 ["api_key"] = item.ApiKey ?? string.Empty,
+                ["web_search_enabled"] = item.WebSearchEnabled,
             };
 
             var apiBase = item.ApiBase?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(apiBase))
-            {
-                definition.Remove("api_base");
-            }
-            else
+            if (!string.IsNullOrWhiteSpace(apiBase))
             {
                 definition["api_base"] = apiBase;
             }
 
-            if (includeReasoningEffort)
+            var reasoningEffort = item.ReasoningEffort?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(reasoningEffort))
             {
-                var reasoningEffort = item.ReasoningEffort?.Trim() ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(reasoningEffort))
-                {
-                    definition.Remove("reasoning_effort");
-                }
-                else
-                {
-                    definition["reasoning_effort"] = reasoningEffort;
-                }
+                definition["reasoning_effort"] = reasoningEffort;
             }
-            else
+
+            var maxOutputTokens = ParseOptionalPositiveInt(item.MaxOutputTokensText);
+            if (maxOutputTokens.HasValue)
             {
-                definition.Remove("reasoning_effort");
+                definition["max_output_tokens"] = maxOutputTokens.Value;
             }
 
             return definition;
@@ -481,33 +498,50 @@ namespace CocoroConsole.Controls
                 return role;
             }
 
-            return CreateGenerationRoleTemplateDefinition(includeReasoningEffort: roleName == "observation_interpretation");
+            return new Dictionary<string, object?>();
         }
 
         private static void SyncRoleFromUi(
             RoleEditorItem role,
             TextBox modelTextBox,
             TextBox apiBaseTextBox,
-            PasswordBox apiKeyPasswordBox,
-            TextBox reasoningEffortTextBox)
+            TextBox apiKeyTextBox,
+            TextBox reasoningEffortTextBox,
+            TextBox maxOutputTokensTextBox,
+            CheckBox webSearchCheckBox)
         {
             role.Model = modelTextBox.Text;
             role.ApiBase = apiBaseTextBox.Text;
-            role.ApiKey = apiKeyPasswordBox.Password;
+            role.ApiKey = apiKeyTextBox.Text;
             role.ReasoningEffort = reasoningEffortTextBox.Text;
+            role.MaxOutputTokensText = maxOutputTokensTextBox.Text;
+            role.WebSearchEnabled = webSearchCheckBox.IsChecked ?? false;
         }
 
         private static void LoadRoleToUi(
             RoleEditorItem role,
             TextBox modelTextBox,
             TextBox apiBaseTextBox,
-            PasswordBox apiKeyPasswordBox,
-            TextBox reasoningEffortTextBox)
+            TextBox apiKeyTextBox,
+            TextBox reasoningEffortTextBox,
+            TextBox maxOutputTokensTextBox,
+            CheckBox webSearchCheckBox)
         {
             modelTextBox.Text = role.Model;
             apiBaseTextBox.Text = role.ApiBase;
-            apiKeyPasswordBox.Password = role.ApiKey;
+            apiKeyTextBox.Text = role.ApiKey;
             reasoningEffortTextBox.Text = role.ReasoningEffort;
+            maxOutputTokensTextBox.Text = role.MaxOutputTokensText;
+            webSearchCheckBox.IsChecked = role.WebSearchEnabled;
+        }
+
+        private static PromptWindowEditorItem ClonePromptWindow(PromptWindowEditorItem promptWindow)
+        {
+            return new PromptWindowEditorItem
+            {
+                RecentTurnLimitText = promptWindow.RecentTurnLimitText,
+                RecentTurnMinutesText = promptWindow.RecentTurnMinutesText,
+            };
         }
 
         private static RoleEditorItem CloneRole(RoleEditorItem role)
@@ -518,18 +552,14 @@ namespace CocoroConsole.Controls
                 ApiBase = role.ApiBase,
                 ApiKey = role.ApiKey,
                 ReasoningEffort = role.ReasoningEffort,
-                AdditionalFields = new Dictionary<string, object?>(role.AdditionalFields),
+                MaxOutputTokensText = role.MaxOutputTokensText,
+                WebSearchEnabled = role.WebSearchEnabled,
             };
         }
 
-        private static Dictionary<string, object?> CopyAdditionalFields(
-            IDictionary<string, object?> values,
-            IEnumerable<string> excludedKeys)
+        private static RoleEditorItem CreateBlankRole()
         {
-            var excluded = new HashSet<string>(excludedKeys, StringComparer.OrdinalIgnoreCase);
-            return values
-                .Where(pair => !excluded.Contains(pair.Key))
-                .ToDictionary(pair => pair.Key, pair => pair.Value);
+            return new RoleEditorItem();
         }
 
         private static string? ReadString(IDictionary<string, object?> values, string key)
@@ -557,25 +587,78 @@ namespace CocoroConsole.Controls
             return value.ToString();
         }
 
-        private static RoleEditorItem CreateGenerationRoleTemplate(bool includeReasoningEffort)
+        private static string ReadInt(IDictionary<string, object?> values, string key)
         {
-            return ToRoleEditorItem(
-                CreateGenerationRoleTemplateDefinition(includeReasoningEffort),
-                includeReasoningEffort ? "low" : string.Empty);
+            if (!values.TryGetValue(key, out var value) || value == null)
+            {
+                return string.Empty;
+            }
+
+            if (value is int intValue)
+            {
+                return intValue.ToString();
+            }
+
+            if (value is JsonElement element)
+            {
+                if (element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var jsonInt))
+                {
+                    return jsonInt.ToString();
+                }
+
+                return element.ToString();
+            }
+
+            return value.ToString() ?? string.Empty;
         }
 
-        private static Dictionary<string, object?> CreateGenerationRoleTemplateDefinition(bool includeReasoningEffort)
+        private static bool ReadBool(IDictionary<string, object?> values, string key)
         {
-            var role = new Dictionary<string, object?>
+            if (!values.TryGetValue(key, out var value) || value == null)
             {
-                ["model"] = "openrouter/google/gemini-3.1-flash-lite-preview",
-                ["api_key"] = "",
-            };
-            if (includeReasoningEffort)
-            {
-                role["reasoning_effort"] = "low";
+                return false;
             }
-            return role;
+
+            if (value is bool boolValue)
+            {
+                return boolValue;
+            }
+
+            if (value is JsonElement element)
+            {
+                if (element.ValueKind == JsonValueKind.True || element.ValueKind == JsonValueKind.False)
+                {
+                    return element.GetBoolean();
+                }
+            }
+
+            return false;
+        }
+
+        private static int ParseRequiredPositiveIntOrZero(string value)
+        {
+            if (int.TryParse(value?.Trim(), out var parsed) && parsed >= 1)
+            {
+                return parsed;
+            }
+
+            return 0;
+        }
+
+        private static int? ParseOptionalPositiveInt(string value)
+        {
+            var trimmed = value?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                return null;
+            }
+
+            if (int.TryParse(trimmed, out var parsed) && parsed >= 1)
+            {
+                return parsed;
+            }
+
+            return 0;
         }
 
         private static int ResolveActiveIndex(IReadOnlyList<string?> ids, string? activeId)

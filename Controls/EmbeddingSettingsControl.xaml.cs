@@ -235,16 +235,6 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void OnPasswordChanged(object sender, RoutedEventArgs e)
-        {
-            if (_isInitializing)
-            {
-                return;
-            }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
         private void SyncCurrentMemorySetFromUi()
         {
             if (_currentMemorySetIndex < 0 || _currentMemorySetIndex >= _memorySets.Count)
@@ -256,7 +246,7 @@ namespace CocoroConsole.Controls
             current.DisplayName = MemorySetDisplayNameTextBox.Text;
             current.EmbeddingModel = EmbeddingModelTextBox.Text;
             current.EmbeddingApiBase = EmbeddingApiBaseTextBox.Text;
-            current.EmbeddingApiKey = EmbeddingApiKeyPasswordBox.Password;
+            current.EmbeddingApiKey = EmbeddingApiKeyTextBox.Text;
         }
 
         private void LoadMemorySetToUi(MemorySetEditorItem item)
@@ -264,7 +254,7 @@ namespace CocoroConsole.Controls
             MemorySetDisplayNameTextBox.Text = item.DisplayName;
             EmbeddingModelTextBox.Text = item.EmbeddingModel;
             EmbeddingApiBaseTextBox.Text = item.EmbeddingApiBase;
-            EmbeddingApiKeyPasswordBox.Password = item.EmbeddingApiKey;
+            EmbeddingApiKeyTextBox.Text = item.EmbeddingApiKey;
         }
 
         private void ClearMemorySetUi()
@@ -272,7 +262,7 @@ namespace CocoroConsole.Controls
             MemorySetDisplayNameTextBox.Text = string.Empty;
             EmbeddingModelTextBox.Text = string.Empty;
             EmbeddingApiBaseTextBox.Text = string.Empty;
-            EmbeddingApiKeyPasswordBox.Password = string.Empty;
+            EmbeddingApiKeyTextBox.Text = string.Empty;
         }
 
         private void RefreshComboBoxItems()
@@ -333,7 +323,6 @@ namespace CocoroConsole.Controls
         {
             return new MemorySetEditorItem
             {
-                EmbeddingModel = "openrouter/google/gemini-embedding-001",
                 EmbeddingApiBase = string.Empty,
                 EmbeddingApiKey = string.Empty,
             };

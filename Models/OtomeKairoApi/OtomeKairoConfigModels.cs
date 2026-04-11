@@ -108,7 +108,19 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("display_name")]
         public string DisplayName { get; set; } = string.Empty;
 
+        [JsonPropertyName("prompt_window")]
+        public OtomeKairoPromptWindowDefinition PromptWindow { get; set; } = new OtomeKairoPromptWindowDefinition();
+
         [JsonPropertyName("roles")]
         public Dictionary<string, Dictionary<string, object?>> Roles { get; set; } = new Dictionary<string, Dictionary<string, object?>>();
+    }
+
+    public class OtomeKairoPromptWindowDefinition
+    {
+        [JsonPropertyName("recent_turn_limit")]
+        public int RecentTurnLimit { get; set; }
+
+        [JsonPropertyName("recent_turn_minutes")]
+        public int RecentTurnMinutes { get; set; }
     }
 }
