@@ -610,7 +610,7 @@ namespace CocoroConsole.Services
                         };
 
                         ChatMessageReceived?.Invoke(this, chatReply);
-                        ForwardMessageToShellAsync(replyText, GetStoredCharacterSetting());
+                        await ForwardMessageToShellAsync(replyText, GetStoredCharacterSetting()).ConfigureAwait(false);
                     }
 
                     _statusPollingService.SetNormalStatus();
@@ -810,9 +810,9 @@ namespace CocoroConsole.Services
         /// </summary>
         /// <param name="content">転送するメッセージ内容</param>
         /// <param name="currentCharacter">現在のキャラクター設定</param>
-        private async void ForwardMessageToShellAsync(string content, CharacterSettings? currentCharacter)
+        private async Task ForwardMessageToShellAsync(string content, CharacterSettings? currentCharacter)
         {
-            await _forwardMessageSemaphore.WaitAsync();
+            await _forwardMessageSemaphore.WaitAsync().ConfigureAwait(false);
             try
             {
                 if (string.IsNullOrEmpty(content))
@@ -833,7 +833,7 @@ namespace CocoroConsole.Services
                     characterName = currentCharacter?.modelName
                 };
 
-                await _shellClient.SendChatMessageAsync(shellRequest);
+                await _shellClient.SendChatMessageAsync(shellRequest).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -1199,7 +1199,7 @@ namespace CocoroConsole.Services
             ChatMessageReceived?.Invoke(this, chatReply);
 
             var currentCharacter = GetStoredCharacterSetting();
-            ForwardMessageToShellAsync(partnerMessage, currentCharacter);
+            _ = ForwardMessageToShellAsync(partnerMessage, currentCharacter);
         }
 
         private static string? TryExtractBracketedSourceSystem(string text)

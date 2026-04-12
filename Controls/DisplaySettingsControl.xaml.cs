@@ -390,7 +390,7 @@ namespace CocoroConsole.Controls
                 RestoreWindowPositionCheckBox.IsChecked = false;
                 appSettings.SaveAppSettings();
 #if !DEBUG
-                ProcessHelper.LaunchExternalApplication("CocoroShell.exe", "CocoroShell", ProcessOperation.RestartIfRunning);
+                CocoroShellProcessManager.Apply(appSettings, ProcessOperation.RestartIfRunning);
 #endif
             }
             catch (Exception ex)

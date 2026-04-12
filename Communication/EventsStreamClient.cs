@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -14,178 +13,39 @@ namespace CocoroConsole.Communication
     /// <summary>
     /// otomekairo の /api/events/stream に接続してイベント(notification/meta-request/desktop_watch + vision command)を受信するクライアント
     /// </summary>
-    public sealed class EventsStreamClient : IDisposable
+    public sealed class EventsStreamClient : ResilientWebSocketClientBase
     {
-        private static readonly TimeSpan[] ReconnectDelays =
-        {
-            TimeSpan.FromSeconds(1),
-            TimeSpan.FromSeconds(2),
-            TimeSpan.FromSeconds(5),
-            TimeSpan.FromSeconds(10),
-            TimeSpan.FromSeconds(30),
-            TimeSpan.FromSeconds(60),
-        };
-
-        private readonly Uri _webSocketUri;
-        private readonly string _bearerToken;
         private readonly string? _clientId;
         private readonly IReadOnlyList<string>? _caps;
-        private ClientWebSocket? _webSocket;
-        private CancellationTokenSource? _connectionTokenSource;
-        private CancellationTokenSource? _supervisorTokenSource;
-        private Task? _supervisorTask;
-        private bool _isConnected;
-        private int _reconnectAttempt;
-        private bool _reconnectDisabled;
-        private bool _disposed;
 
         public event EventHandler<OtomeKairoEvent>? EventReceived;
         public event EventHandler<bool>? ConnectionStateChanged;
         public event EventHandler<string>? ErrorOccurred;
 
         public EventsStreamClient(Uri webSocketUri, string bearerToken, string? clientId = null, IReadOnlyList<string>? caps = null)
+            : base(webSocketUri, bearerToken)
         {
-            _webSocketUri = webSocketUri ?? throw new ArgumentNullException(nameof(webSocketUri));
-            _bearerToken = bearerToken ?? throw new ArgumentNullException(nameof(bearerToken));
             _clientId = string.IsNullOrWhiteSpace(clientId) ? null : clientId.Trim();
             _caps = caps;
         }
 
-        public async Task StartAsync()
+        protected override string ConnectFailureLabel => "イベントストリーム接続失敗";
+        protected override string ReceiveFailureLabel => "イベントストリーム受信エラー";
+        protected override string AuthenticationFailureMessage => "イベントストリーム認証エラーのため再接続を停止しました。";
+
+        protected override void RaiseConnectionStateChanged(bool isConnected)
         {
-            ThrowIfDisposed();
-
-            if (_supervisorTask != null && !_supervisorTask.IsCompleted)
-            {
-                return;
-            }
-
-            _reconnectDisabled = false;
-            _supervisorTokenSource = new CancellationTokenSource();
-            _supervisorTask = Task.Run(() => SupervisorLoopAsync(_supervisorTokenSource.Token));
-            await Task.CompletedTask;
+            ConnectionStateChanged?.Invoke(this, isConnected);
         }
 
-        public async Task StopAsync()
+        protected override void RaiseError(string message)
         {
-            if (_supervisorTask == null && _connectionTokenSource == null && _webSocket == null)
-            {
-                return;
-            }
-
-            try
-            {
-                _supervisorTokenSource?.Cancel();
-
-                if (_supervisorTask != null)
-                {
-                    try
-                    {
-                        // UIスレッドの同期呼び出し（Disposeなど）でもデッドロックしないようにコンテキストを捕捉しない
-                        await Task
-                            .WhenAny(_supervisorTask, Task.Delay(TimeSpan.FromSeconds(3)))
-                            .ConfigureAwait(false);
-                    }
-                    catch
-                    {
-                        // キャンセル時の例外は無視
-                    }
-                }
-            }
-            finally
-            {
-                // UIスレッドの同期呼び出し（Disposeなど）でもデッドロックしないようにコンテキストを捕捉しない
-                await CloseAndCleanupAsync().ConfigureAwait(false);
-                _supervisorTokenSource?.Dispose();
-                _supervisorTokenSource = null;
-                _supervisorTask = null;
-                _reconnectAttempt = 0;
-                _reconnectDisabled = false;
-                SetConnectionState(false);
-            }
+            ErrorOccurred?.Invoke(this, message);
         }
 
-        private async Task SupervisorLoopAsync(CancellationToken supervisorToken)
+        protected override async Task OnConnectedAsync(CancellationToken cancellationToken)
         {
-            try
-            {
-                while (!supervisorToken.IsCancellationRequested && !_reconnectDisabled)
-                {
-                    var connected = false;
-                    try
-                    {
-                        // ライブラリ側ではUIコンテキストを捕捉しない
-                        await ConnectAsync(supervisorToken).ConfigureAwait(false);
-                        connected = true;
-                        SetConnectionState(true);
-                        _reconnectAttempt = 0;
-
-                        // ライブラリ側ではUIコンテキストを捕捉しない
-                        var closeStatus = await ReceiveLoopAsync(supervisorToken).ConfigureAwait(false);
-                        if (closeStatus == WebSocketCloseStatus.PolicyViolation)
-                        {
-                            _reconnectDisabled = true;
-                            ErrorOccurred?.Invoke(this, "イベントストリーム認証エラーのため再接続を停止しました。");
-                        }
-                    }
-                    catch (OperationCanceledException) when (supervisorToken.IsCancellationRequested)
-                    {
-                        break;
-                    }
-                    catch (Exception ex)
-                    {
-                        var label = connected ? "イベントストリーム受信エラー" : "イベントストリーム接続失敗";
-                        ErrorOccurred?.Invoke(this, $"{label}: {ex.Message}");
-                    }
-                    finally
-                    {
-                        // ライブラリ側ではUIコンテキストを捕捉しない
-                        await CloseAndCleanupAsync().ConfigureAwait(false);
-                        if (connected)
-                        {
-                            SetConnectionState(false);
-                        }
-                    }
-
-                    if (supervisorToken.IsCancellationRequested || _reconnectDisabled)
-                    {
-                        break;
-                    }
-
-                    var delay = GetReconnectDelay(_reconnectAttempt++);
-                    // ライブラリ側ではUIコンテキストを捕捉しない
-                    await Task.Delay(delay, supervisorToken).ConfigureAwait(false);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // 停止要求なので無視
-            }
-        }
-
-        private async Task ConnectAsync(CancellationToken supervisorToken)
-        {
-            // ライブラリ側ではUIコンテキストを捕捉しない
-            await CloseAndCleanupAsync().ConfigureAwait(false);
-
-            _connectionTokenSource = CancellationTokenSource.CreateLinkedTokenSource(supervisorToken);
-            _webSocket = new ClientWebSocket();
-            // --- OtomeKairo は自己署名HTTPS（wss）を前提とする ---
-            // CocoroConsole はローカル接続のみの前提で、証明書のホスト検証は行わない。
-            _webSocket.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
-            _webSocket.Options.SetRequestHeader("Authorization", $"Bearer {_bearerToken}");
-            _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
-            // ライブラリ側ではUIコンテキストを捕捉しない
-            await _webSocket.ConnectAsync(_webSocketUri, _connectionTokenSource.Token).ConfigureAwait(false);
-
-            // ライブラリ側ではUIコンテキストを捕捉しない
-            await SendHelloIfNeededAsync(_connectionTokenSource.Token).ConfigureAwait(false);
-        }
-
-        private async Task SendHelloIfNeededAsync(CancellationToken cancellationToken)
-        {
-            var ws = _webSocket;
-            if (ws == null || ws.State != WebSocketState.Open)
+            if (WebSocket == null)
             {
                 return;
             }
@@ -205,11 +65,7 @@ namespace CocoroConsole.Communication
                 };
 
                 var json = JsonSerializer.Serialize(payload);
-                var bytes = Encoding.UTF8.GetBytes(json);
-                // ライブラリ側ではUIコンテキストを捕捉しない
-                await ws
-                    .SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, cancellationToken)
-                    .ConfigureAwait(false);
+                await SendTextAsync(json, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -217,95 +73,9 @@ namespace CocoroConsole.Communication
             }
         }
 
-        private async Task<WebSocketCloseStatus?> ReceiveLoopAsync(CancellationToken supervisorToken)
+        protected override void HandleTextMessage(string json)
         {
-            var ws = _webSocket;
-            if (ws == null)
-            {
-                return null;
-            }
-
-            var token = _connectionTokenSource?.Token ?? supervisorToken;
-            var buffer = new byte[8192];
-
-            while (ws.State == WebSocketState.Open && !token.IsCancellationRequested)
-            {
-                var messageBuffer = new List<byte>();
-                WebSocketReceiveResult result;
-
-                do
-                {
-                    // ライブラリ側ではUIコンテキストを捕捉しない
-                    result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), token).ConfigureAwait(false);
-
-                    if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        return result.CloseStatus;
-                    }
-
-                    if (result.MessageType == WebSocketMessageType.Text)
-                    {
-                        messageBuffer.AddRange(buffer.Take(result.Count));
-                    }
-                } while (!result.EndOfMessage);
-
-                if (messageBuffer.Count == 0)
-                {
-                    continue;
-                }
-
-                var json = Encoding.UTF8.GetString(messageBuffer.ToArray());
-                HandleMessage(json);
-            }
-
-            return null;
-        }
-
-        private async Task CloseAndCleanupAsync()
-        {
-            _connectionTokenSource?.Cancel();
-
-            if (_webSocket?.State == WebSocketState.Open || _webSocket?.State == WebSocketState.CloseReceived)
-            {
-                try
-                {
-                    // --- Close ハンドシェイクが無期限に詰まるケース対策 ---
-                    // サーバーが落ちた直後などで CloseAsync が戻らないと、終了処理で UI スレッドが固まる。
-                    // ライブラリ側ではUIコンテキストを捕捉しない
-                    await _webSocket
-                        .CloseAsync(WebSocketCloseStatus.NormalClosure, "停止", CancellationToken.None)
-                        .WaitAsync(TimeSpan.FromSeconds(1))
-                        .ConfigureAwait(false);
-                }
-                catch
-                {
-                    // Close失敗は無視
-                }
-            }
-
-            _webSocket?.Dispose();
-            _webSocket = null;
-
-            _connectionTokenSource?.Dispose();
-            _connectionTokenSource = null;
-        }
-
-        private static TimeSpan GetReconnectDelay(int attempt)
-        {
-            var index = Math.Min(attempt, ReconnectDelays.Length - 1);
-            var jitterMs = Random.Shared.Next(0, 250);
-            return ReconnectDelays[index] + TimeSpan.FromMilliseconds(jitterMs);
-        }
-
-        private void SetConnectionState(bool isConnected)
-        {
-            if (_isConnected == isConnected)
-            {
-                return;
-            }
-
-            _isConnected = isConnected;
-            ConnectionStateChanged?.Invoke(this, isConnected);
+            HandleMessage(json);
         }
 
         private void HandleMessage(string json)
@@ -424,27 +194,6 @@ namespace CocoroConsole.Communication
             }
         }
 
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(EventsStreamClient));
-            }
-        }
-
-        public void Dispose()
-        {
-            if (_disposed) return;
-            _disposed = true;
-            try
-            {
-                StopAsync().GetAwaiter().GetResult();
-            }
-            catch
-            {
-                // Disposeでは握りつぶす
-            }
-        }
     }
 
     public sealed class OtomeKairoEvent

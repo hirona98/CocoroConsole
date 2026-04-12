@@ -35,9 +35,12 @@ namespace CocoroConsole
         private bool _skipNextAssistantMessage;
         private string? _skipNextAssistantMessageContent;
         private bool _isLogStreamHandlersAttached;
+        private CancellationTokenSource? _otomeKairoStartupMonitorCts;
+        private Task? _otomeKairoStartupMonitorTask;
         private const string MainWindowPlacementKey = "MainWindow";
         private const string SettingWindowPlacementKey = "SettingWindow";
         private const string LogViewerWindowPlacementKey = "LogViewerWindow";
+        private static readonly TimeSpan OtomeKairoStartupTimeout = TimeSpan.FromMinutes(2);
 
         // --- OtomeKairo の最新ステータス（ステータスバー復帰先） ---
         // ログ表示で一時的に上書きしても、指定時間後「その時点の最新状態」に戻すために保持する。
@@ -874,6 +877,8 @@ namespace CocoroConsole
         {
             try
             {
+                CancelOtomeKairoStartupMonitor();
+
                 // イベントハンドラの購読解除
                 AppSettings.SettingsSaved -= OnSettingsSaved;
 
@@ -1075,21 +1080,7 @@ namespace CocoroConsole
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
         private void LaunchCocoroShell(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
-#if !DEBUG
-            if (_appSettings.CharacterList.Count > 0 &&
-               _appSettings.CurrentCharacterIndex < _appSettings.CharacterList.Count)
-            {
-                var currentCharacter = _appSettings.CharacterList[_appSettings.CurrentCharacterIndex];
-                if (!string.IsNullOrWhiteSpace(currentCharacter.vrmFilePath) || currentCharacter.isReadOnly == true)
-                {
-                    ProcessHelper.LaunchExternalApplication("CocoroShell.exe", "CocoroShell", operation, true);
-                    return;
-                }
-            }
-
-            // VRM未指定時は停止させる
-            ProcessHelper.LaunchExternalApplication("CocoroShell.exe", "CocoroShell", ProcessOperation.Terminate, true);
-#endif
+            CocoroShellProcessManager.Apply(_appSettings, operation);
         }
 
         /// <summary>
@@ -1101,6 +1092,7 @@ namespace CocoroConsole
             // --- リモート接続時はローカルプロセスを起動/終了しない ---
             if (!_appSettings.IsOtomeKairoLocal())
             {
+                CancelOtomeKairoStartupMonitor();
                 Debug.WriteLine("[CocoroConsole] OtomeKairo はリモート接続設定のため、ローカルプロセス操作をスキップします。");
                 return;
             }
@@ -1111,14 +1103,11 @@ namespace CocoroConsole
                 // プロセス起動
                 ProcessHelper.LaunchExternalApplication("OtomeKairo.exe", "OtomeKairo", operation, false);
 #endif
-                // 非同期でAPI通信による起動完了を監視（無限ループ）
-                _ = Task.Run(async () =>
-                {
-                    await WaitForOtomeKairoStartupAsync();
-                });
+                StartOtomeKairoStartupMonitor();
             }
             else
             {
+                CancelOtomeKairoStartupMonitor();
                 ProcessHelper.LaunchExternalApplication("OtomeKairo.exe", "OtomeKairo", operation, false);
             }
         }
@@ -1132,6 +1121,7 @@ namespace CocoroConsole
             // --- リモート接続時はローカルプロセスを起動/終了しない ---
             if (!_appSettings.IsOtomeKairoLocal())
             {
+                CancelOtomeKairoStartupMonitor();
                 Debug.WriteLine("[CocoroConsole] OtomeKairo はリモート接続設定のため、ローカルプロセス操作をスキップします。");
                 return;
             }
@@ -1142,15 +1132,78 @@ namespace CocoroConsole
                 // プロセス起動（非同期）
                 await ProcessHelper.LaunchExternalApplicationAsync("OtomeKairo.exe", "OtomeKairo", operation, false);
 #endif
-                // 非同期でAPI通信による起動完了を監視（無限ループ）
-                _ = Task.Run(async () =>
-                {
-                    await WaitForOtomeKairoStartupAsync();
-                });
+                StartOtomeKairoStartupMonitor();
             }
             else
             {
+                CancelOtomeKairoStartupMonitor();
                 await ProcessHelper.LaunchExternalApplicationAsync("OtomeKairo.exe", "OtomeKairo", operation, false);
+            }
+        }
+
+        private void StartOtomeKairoStartupMonitor()
+        {
+            if (_communicationService == null)
+            {
+                return;
+            }
+
+            CancelOtomeKairoStartupMonitor();
+
+            var monitorCts = new CancellationTokenSource();
+            _otomeKairoStartupMonitorCts = monitorCts;
+            _otomeKairoStartupMonitorTask = MonitorOtomeKairoStartupAsync(monitorCts);
+        }
+
+        private async Task MonitorOtomeKairoStartupAsync(CancellationTokenSource monitorCts)
+        {
+            try
+            {
+                await WaitForOtomeKairoStartupAsync(monitorCts.Token).ConfigureAwait(false);
+                Debug.WriteLine("[CocoroConsole] OtomeKairo起動完了");
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.WriteLine("[CocoroConsole] OtomeKairo起動監視をキャンセルしました。");
+            }
+            catch (TimeoutException ex)
+            {
+                Debug.WriteLine($"[CocoroConsole] {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CocoroConsole] OtomeKairo起動監視エラー: {ex.Message}");
+            }
+            finally
+            {
+                if (ReferenceEquals(_otomeKairoStartupMonitorCts, monitorCts))
+                {
+                    _otomeKairoStartupMonitorTask = null;
+                    _otomeKairoStartupMonitorCts = null;
+                }
+
+                monitorCts.Dispose();
+            }
+        }
+
+        private void CancelOtomeKairoStartupMonitor()
+        {
+            var monitorCts = _otomeKairoStartupMonitorCts;
+            _otomeKairoStartupMonitorCts = null;
+            _otomeKairoStartupMonitorTask = null;
+
+            if (monitorCts == null)
+            {
+                return;
+            }
+
+            try
+            {
+                monitorCts.Cancel();
+            }
+            finally
+            {
+                monitorCts.Dispose();
             }
         }
 
@@ -1248,7 +1301,7 @@ namespace CocoroConsole
                 ChatControlInstance.AddVoiceMessage(text);
 
                 // OtomeKairoに送信
-                SendMessageToOtomeKairo(text, null);
+                _ = SendMessageToOtomeKairoAsync(text, null);
             });
         }
 
@@ -1301,7 +1354,7 @@ namespace CocoroConsole
         /// <summary>
         /// OtomeKairoにメッセージを送信
         /// </summary>
-        private async void SendMessageToOtomeKairo(string message, string? imageData)
+        private async Task SendMessageToOtomeKairoAsync(string message, string? imageData)
         {
             try
             {
@@ -1321,35 +1374,18 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// OtomeKairoのAPI起動完了を監視（無限ループ）
+        /// OtomeKairoのAPI起動完了を監視
         /// </summary>
-        private async Task WaitForOtomeKairoStartupAsync()
+        private async Task WaitForOtomeKairoStartupAsync(CancellationToken cancellationToken)
         {
-            var delay = TimeSpan.FromSeconds(1); // 1秒間隔でチェック
-
-            while (true)
+            if (_communicationService == null)
             {
-                try
-                {
-                    if (_communicationService != null)
-                    {
-                        // StatusPollingServiceのステータスで起動状態を確認
-                        if (_communicationService.CurrentStatus == OtomeKairoStatus.Normal ||
-                            _communicationService.CurrentStatus == OtomeKairoStatus.ProcessingMessage ||
-                            _communicationService.CurrentStatus == OtomeKairoStatus.ProcessingImage)
-                        {
-                            // 起動成功時はログ出力のみ
-                            Debug.WriteLine("[CocoroConsole] OtomeKairo起動完了");
-                            return; // 起動完了で監視終了
-                        }
-                    }
-                }
-                catch
-                {
-                    // API未応答時は継続してチェック
-                }
-                await Task.Delay(delay);
+                return;
             }
+
+            await OtomeKairoStatusAwaiter
+                .WaitUntilReadyAsync(_communicationService, OtomeKairoStartupTimeout, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         /// <summary>
@@ -1460,6 +1496,8 @@ namespace CocoroConsole
                     Debug.WriteLine("[CocoroConsole] シャットダウンは既に進行中です。");
                     return;
                 }
+
+                CancelOtomeKairoStartupMonitor();
 
                 // ウィンドウを最前面に表示
                 this.Show();

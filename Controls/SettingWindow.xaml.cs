@@ -993,72 +993,14 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task WaitForOtomeKairoRestartAsync()
         {
-            // 最大待機時間
-            var timeout = TimeSpan.FromSeconds(120);
-
             // 通信サービスがない場合は待機できない
             if (_communicationService == null)
             {
                 return;
             }
 
-            // 既に起動完了状態なら即終了
-            if (IsOtomeKairoReadyStatus(_communicationService.CurrentStatus))
-            {
-                return;
-            }
-
-            // ステータス変更を待つためのTCS
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            // ステータス変更イベント
-            void OnStatusChanged(object? sender, OtomeKairoStatus status)
-            {
-                // 起動完了状態に戻ったら終了
-                if (IsOtomeKairoReadyStatus(status))
-                {
-                    tcs.TrySetResult(true);
-                }
-            }
-
-            // ステータス変更イベントを購読
-            _communicationService.StatusChanged += OnStatusChanged;
-
-            try
-            {
-                // 購読後に再確認（取りこぼし防止）
-                if (IsOtomeKairoReadyStatus(_communicationService.CurrentStatus))
-                {
-                    return;
-                }
-
-                // タイムアウト付きで待機
-                var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
-                if (completed != tcs.Task)
-                {
-                    throw new TimeoutException("OtomeKairoの再起動がタイムアウトしました");
-                }
-
-                await tcs.Task;
-            }
-            finally
-            {
-                // ステータス変更イベントを解除
-                _communicationService.StatusChanged -= OnStatusChanged;
-            }
-        }
-
-        /// <summary>
-        /// OtomeKairoが起動完了状態かどうかを判定する
-        /// </summary>
-        /// <param name="status">OtomeKairoのステータス</param>
-        /// <returns>起動完了状態の場合true</returns>
-        private static bool IsOtomeKairoReadyStatus(OtomeKairoStatus status)
-        {
-            // Normal / Processing は起動完了扱い
-            return status == OtomeKairoStatus.Normal ||
-                   status == OtomeKairoStatus.ProcessingMessage ||
-                   status == OtomeKairoStatus.ProcessingImage;
+            await OtomeKairoStatusAwaiter
+                .WaitUntilReadyAsync(_communicationService, TimeSpan.FromSeconds(120));
         }
 
         /// <summary>
@@ -1122,21 +1064,8 @@ namespace CocoroConsole.Controls
         {
             try
             {
-                // MainWindowのインスタンスを取得
-                var mainWindow = Application.Current.MainWindow as MainWindow;
-                if (mainWindow != null)
-                {
-                    // MainWindowのLaunchCocoroShellメソッドを呼び出してCocoroShellを再起動
-                    var launchMethod = mainWindow.GetType().GetMethod("LaunchCocoroShell",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-                    if (launchMethod != null)
-                    {
-                        // ProcessOperation.RestartIfRunning を指定してCocoroShellを再起動
-                        launchMethod.Invoke(mainWindow, [ProcessOperation.RestartIfRunning]);
-                        Debug.WriteLine("CocoroShellを再起動しました");
-                    }
-                }
+                CocoroShellProcessManager.Apply(AppSettings.Instance, ProcessOperation.RestartIfRunning);
+                Debug.WriteLine("CocoroShellを再起動しました");
             }
             catch (Exception ex)
             {

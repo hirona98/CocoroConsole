@@ -229,7 +229,7 @@ namespace CocoroConsole.Services
         /// <returns>ConfigSettings オブジェクト</returns>
         public ConfigSettings GetConfigSettings()
         {
-            return new ConfigSettings
+            var snapshot = new ConfigSettings
             {
                 CocoroConsolePort = CocoroConsolePort,
                 cocoroCorePort = OtomeKairoPort,
@@ -263,6 +263,8 @@ namespace CocoroConsole.Services
                 currentCharacterIndex = CurrentCharacterIndex,
                 characterList = new List<CharacterSettings>(CharacterList)
             };
+
+            return snapshot.DeepCopy();
         }
 
         /// <summary>
