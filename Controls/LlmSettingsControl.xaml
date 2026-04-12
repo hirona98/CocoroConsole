@@ -136,185 +136,7 @@
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="観測解釈"
-                          Margin="0,0,20,20"
-                          Padding="10">
-                    <StackPanel>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="モデル:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="ObservationModelTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="エンドポイントURL:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="ObservationApiBaseTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="APIキー:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <StackPanel Grid.Column="1"
-                                        Orientation="Horizontal"
-                                        VerticalAlignment="Center">
-                                <TextBox x:Name="ObservationApiKeyTextBox"
-                                         Foreground="#FF0078D7"
-                                         Padding="2"
-                                         Width="50"
-                                         HorizontalAlignment="Left"
-                                         TextChanged="OnSettingChanged"/>
-                                <Button Content="コピー"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="ObservationApiKeyCopyButton_Click"
-                                        ToolTip="クリップボードにコピー"/>
-                                <Button Content="上書き貼り付け"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="ObservationApiKeyPasteButton_Click"
-                                        ToolTip="クリップボードのテキストで上書き"/>
-                            </StackPanel>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="推論の深さ:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="ObservationReasoningEffortTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="最大出力トークン:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="ObservationMaxOutputTokensTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <CheckBox x:Name="ObservationWebSearchCheckBox"
-                                  Content="Web検索を有効にする"
-                                  Foreground="#FF4873CF"
-                                  Margin="0,8,0,0"
-                                  Checked="OnCheckBoxChanged"
-                                  Unchecked="OnCheckBoxChanged"/>
-                    </StackPanel>
-                </GroupBox>
-
-                <GroupBox Header="意図判断"
-                          Margin="0,0,20,20"
-                          Padding="10">
-                    <StackPanel>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="モデル:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="DecisionModelTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="エンドポイントURL:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="DecisionApiBaseTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="APIキー:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <StackPanel Grid.Column="1"
-                                        Orientation="Horizontal"
-                                        VerticalAlignment="Center">
-                                <TextBox x:Name="DecisionApiKeyTextBox"
-                                         Foreground="#FF0078D7"
-                                         Padding="2"
-                                         Width="50"
-                                         HorizontalAlignment="Left"
-                                         TextChanged="OnSettingChanged"/>
-                                <Button Content="コピー"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="DecisionApiKeyCopyButton_Click"
-                                        ToolTip="クリップボードにコピー"/>
-                                <Button Content="上書き貼り付け"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="DecisionApiKeyPasteButton_Click"
-                                        ToolTip="クリップボードのテキストで上書き"/>
-                            </StackPanel>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="推論の深さ:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="DecisionReasoningEffortTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="最大出力トークン:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="DecisionMaxOutputTokensTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <CheckBox x:Name="DecisionWebSearchCheckBox"
-                                  Content="Web検索を有効にする"
-                                  Foreground="#FF4873CF"
-                                  Margin="0,8,0,0"
-                                  Checked="OnCheckBoxChanged"
-                                  Unchecked="OnCheckBoxChanged"/>
-                    </StackPanel>
-                </GroupBox>
-
-                <GroupBox Header="表現生成"
+                <GroupBox Header="表現生成（会話）"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
@@ -403,92 +225,689 @@
                     </StackPanel>
                 </GroupBox>
 
+                <GroupBox Header="観測解釈"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <CheckBox x:Name="ObservationUseExpressionModelCheckBox"
+                                  Content="表現生成と同じモデルを使用する"
+                                  Foreground="#FF4873CF"
+                                  Margin="0,0,0,8"
+                                  IsChecked="True"
+                                  Checked="UseExpressionModelCheckBox_Changed"
+                                  Unchecked="UseExpressionModelCheckBox_Changed"/>
+                        <StackPanel x:Name="ObservationSettingsPanel">
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="モデル:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="ObservationModelTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="エンドポイントURL:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="ObservationApiBaseTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="APIキー:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBox x:Name="ObservationApiKeyTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"
+                                             Width="50"
+                                             HorizontalAlignment="Left"
+                                             TextChanged="OnSettingChanged"/>
+                                    <Button Content="コピー"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="ObservationApiKeyCopyButton_Click"
+                                            ToolTip="クリップボードにコピー"/>
+                                    <Button Content="上書き貼り付け"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="ObservationApiKeyPasteButton_Click"
+                                            ToolTip="クリップボードのテキストで上書き"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="推論の深さ:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="ObservationReasoningEffortTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="最大出力トークン:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="ObservationMaxOutputTokensTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <CheckBox x:Name="ObservationWebSearchCheckBox"
+                                      Content="Web検索を有効にする"
+                                      Foreground="#FF4873CF"
+                                      Margin="0,8,0,0"
+                                      Checked="OnCheckBoxChanged"
+                                      Unchecked="OnCheckBoxChanged"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="意図判断"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <CheckBox x:Name="DecisionUseExpressionModelCheckBox"
+                                  Content="表現生成と同じモデルを使用する"
+                                  Foreground="#FF4873CF"
+                                  Margin="0,0,0,8"
+                                  IsChecked="True"
+                                  Checked="UseExpressionModelCheckBox_Changed"
+                                  Unchecked="UseExpressionModelCheckBox_Changed"/>
+                        <StackPanel x:Name="DecisionSettingsPanel">
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="モデル:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="DecisionModelTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="エンドポイントURL:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="DecisionApiBaseTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="APIキー:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBox x:Name="DecisionApiKeyTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"
+                                             Width="50"
+                                             HorizontalAlignment="Left"
+                                             TextChanged="OnSettingChanged"/>
+                                    <Button Content="コピー"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="DecisionApiKeyCopyButton_Click"
+                                            ToolTip="クリップボードにコピー"/>
+                                    <Button Content="上書き貼り付け"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="DecisionApiKeyPasteButton_Click"
+                                            ToolTip="クリップボードのテキストで上書き"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="推論の深さ:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="DecisionReasoningEffortTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="最大出力トークン:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="DecisionMaxOutputTokensTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <CheckBox x:Name="DecisionWebSearchCheckBox"
+                                      Content="Web検索を有効にする"
+                                      Foreground="#FF4873CF"
+                                      Margin="0,8,0,0"
+                                      Checked="OnCheckBoxChanged"
+                                      Unchecked="OnCheckBoxChanged"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
                 <GroupBox Header="記憶解釈"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="モデル:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="MemoryModelTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="エンドポイントURL:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="MemoryApiBaseTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="APIキー:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <StackPanel Grid.Column="1"
-                                        Orientation="Horizontal"
-                                        VerticalAlignment="Center">
-                                <TextBox x:Name="MemoryApiKeyTextBox"
-                                         Foreground="#FF0078D7"
-                                         Padding="2"
-                                         Width="50"
-                                         HorizontalAlignment="Left"
-                                         TextChanged="OnSettingChanged"/>
-                                <Button Content="コピー"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="MemoryApiKeyCopyButton_Click"
-                                        ToolTip="クリップボードにコピー"/>
-                                <Button Content="上書き貼り付け"
-                                        Margin="10,0,0,0"
-                                        Padding="10,0,10,0"
-                                        Click="MemoryApiKeyPasteButton_Click"
-                                        ToolTip="クリップボードのテキストで上書き"/>
-                            </StackPanel>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="推論の深さ:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="MemoryReasoningEffortTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="最大出力トークン:"
-                                       Style="{StaticResource SettingLabelStyle}"/>
-                            <TextBox x:Name="MemoryMaxOutputTokensTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource SettingTextBoxStyle}"
-                                     TextChanged="OnSettingChanged"/>
-                        </Grid>
-                        <CheckBox x:Name="MemoryWebSearchCheckBox"
-                                  Content="Web検索を有効にする"
+                        <CheckBox x:Name="MemoryUseExpressionModelCheckBox"
+                                  Content="表現生成と同じモデルを使用する"
                                   Foreground="#FF4873CF"
-                                  Margin="0,8,0,0"
-                                  Checked="OnCheckBoxChanged"
-                                  Unchecked="OnCheckBoxChanged"/>
+                                  Margin="0,0,0,8"
+                                  IsChecked="True"
+                                  Checked="UseExpressionModelCheckBox_Changed"
+                                  Unchecked="UseExpressionModelCheckBox_Changed"/>
+                        <StackPanel x:Name="MemorySettingsPanel">
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="モデル:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="MemoryModelTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="エンドポイントURL:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="MemoryApiBaseTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="APIキー:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBox x:Name="MemoryApiKeyTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"
+                                             Width="50"
+                                             HorizontalAlignment="Left"
+                                             TextChanged="OnSettingChanged"/>
+                                    <Button Content="コピー"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="MemoryApiKeyCopyButton_Click"
+                                            ToolTip="クリップボードにコピー"/>
+                                    <Button Content="上書き貼り付け"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="MemoryApiKeyPasteButton_Click"
+                                            ToolTip="クリップボードのテキストで上書き"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="推論の深さ:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="MemoryReasoningEffortTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="最大出力トークン:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="MemoryMaxOutputTokensTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <CheckBox x:Name="MemoryWebSearchCheckBox"
+                                      Content="Web検索を有効にする"
+                                      Foreground="#FF4873CF"
+                                      Margin="0,8,0,0"
+                                      Checked="OnCheckBoxChanged"
+                                      Unchecked="OnCheckBoxChanged"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="内省要約"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <CheckBox x:Name="ReflectionSummaryUseExpressionModelCheckBox"
+                                  Content="表現生成と同じモデルを使用する"
+                                  Foreground="#FF4873CF"
+                                  Margin="0,0,0,8"
+                                  IsChecked="True"
+                                  Checked="UseExpressionModelCheckBox_Changed"
+                                  Unchecked="UseExpressionModelCheckBox_Changed"/>
+                        <StackPanel x:Name="ReflectionSummarySettingsPanel">
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="モデル:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="ReflectionSummaryModelTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="エンドポイントURL:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="ReflectionSummaryApiBaseTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="APIキー:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBox x:Name="ReflectionSummaryApiKeyTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"
+                                             Width="50"
+                                             HorizontalAlignment="Left"
+                                             TextChanged="OnSettingChanged"/>
+                                    <Button Content="コピー"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="ReflectionSummaryApiKeyCopyButton_Click"
+                                            ToolTip="クリップボードにコピー"/>
+                                    <Button Content="上書き貼り付け"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="ReflectionSummaryApiKeyPasteButton_Click"
+                                            ToolTip="クリップボードのテキストで上書き"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="推論の深さ:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="ReflectionSummaryReasoningEffortTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="最大出力トークン:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="ReflectionSummaryMaxOutputTokensTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <CheckBox x:Name="ReflectionSummaryWebSearchCheckBox"
+                                      Content="Web検索を有効にする"
+                                      Foreground="#FF4873CF"
+                                      Margin="0,8,0,0"
+                                      Checked="OnCheckBoxChanged"
+                                      Unchecked="OnCheckBoxChanged"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="想起根拠圧縮"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <CheckBox x:Name="EventEvidenceUseExpressionModelCheckBox"
+                                  Content="表現生成と同じモデルを使用する"
+                                  Foreground="#FF4873CF"
+                                  Margin="0,0,0,8"
+                                  IsChecked="True"
+                                  Checked="UseExpressionModelCheckBox_Changed"
+                                  Unchecked="UseExpressionModelCheckBox_Changed"/>
+                        <StackPanel x:Name="EventEvidenceSettingsPanel">
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="モデル:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="EventEvidenceModelTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="エンドポイントURL:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="EventEvidenceApiBaseTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="APIキー:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBox x:Name="EventEvidenceApiKeyTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"
+                                             Width="50"
+                                             HorizontalAlignment="Left"
+                                             TextChanged="OnSettingChanged"/>
+                                    <Button Content="コピー"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="EventEvidenceApiKeyCopyButton_Click"
+                                            ToolTip="クリップボードにコピー"/>
+                                    <Button Content="上書き貼り付け"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="EventEvidenceApiKeyPasteButton_Click"
+                                            ToolTip="クリップボードのテキストで上書き"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="推論の深さ:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="EventEvidenceReasoningEffortTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="最大出力トークン:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="EventEvidenceMaxOutputTokensTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <CheckBox x:Name="EventEvidenceWebSearchCheckBox"
+                                      Content="Web検索を有効にする"
+                                      Foreground="#FF4873CF"
+                                      Margin="0,8,0,0"
+                                      Checked="OnCheckBoxChanged"
+                                      Unchecked="OnCheckBoxChanged"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="想起選別"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <CheckBox x:Name="RecallSelectionUseExpressionModelCheckBox"
+                                  Content="表現生成と同じモデルを使用する"
+                                  Foreground="#FF4873CF"
+                                  Margin="0,0,0,8"
+                                  IsChecked="True"
+                                  Checked="UseExpressionModelCheckBox_Changed"
+                                  Unchecked="UseExpressionModelCheckBox_Changed"/>
+                        <StackPanel x:Name="RecallSelectionSettingsPanel">
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="モデル:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="RecallSelectionModelTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="エンドポイントURL:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="RecallSelectionApiBaseTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="APIキー:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBox x:Name="RecallSelectionApiKeyTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"
+                                             Width="50"
+                                             HorizontalAlignment="Left"
+                                             TextChanged="OnSettingChanged"/>
+                                    <Button Content="コピー"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="RecallSelectionApiKeyCopyButton_Click"
+                                            ToolTip="クリップボードにコピー"/>
+                                    <Button Content="上書き貼り付け"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="RecallSelectionApiKeyPasteButton_Click"
+                                            ToolTip="クリップボードのテキストで上書き"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="推論の深さ:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="RecallSelectionReasoningEffortTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="最大出力トークン:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="RecallSelectionMaxOutputTokensTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <CheckBox x:Name="RecallSelectionWebSearchCheckBox"
+                                      Content="Web検索を有効にする"
+                                      Foreground="#FF4873CF"
+                                      Margin="0,8,0,0"
+                                      Checked="OnCheckBoxChanged"
+                                      Unchecked="OnCheckBoxChanged"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="保留候補選別"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <CheckBox x:Name="PendingIntentUseExpressionModelCheckBox"
+                                  Content="表現生成と同じモデルを使用する"
+                                  Foreground="#FF4873CF"
+                                  Margin="0,0,0,8"
+                                  IsChecked="True"
+                                  Checked="UseExpressionModelCheckBox_Changed"
+                                  Unchecked="UseExpressionModelCheckBox_Changed"/>
+                        <StackPanel x:Name="PendingIntentSettingsPanel">
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="モデル:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="PendingIntentModelTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="エンドポイントURL:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="PendingIntentApiBaseTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="APIキー:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBox x:Name="PendingIntentApiKeyTextBox"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"
+                                             Width="50"
+                                             HorizontalAlignment="Left"
+                                             TextChanged="OnSettingChanged"/>
+                                    <Button Content="コピー"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="PendingIntentApiKeyCopyButton_Click"
+                                            ToolTip="クリップボードにコピー"/>
+                                    <Button Content="上書き貼り付け"
+                                            Margin="10,0,0,0"
+                                            Padding="10,0,10,0"
+                                            Click="PendingIntentApiKeyPasteButton_Click"
+                                            ToolTip="クリップボードのテキストで上書き"/>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="推論の深さ:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="PendingIntentReasoningEffortTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="最大出力トークン:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="PendingIntentMaxOutputTokensTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnSettingChanged"/>
+                            </Grid>
+                            <CheckBox x:Name="PendingIntentWebSearchCheckBox"
+                                      Content="Web検索を有効にする"
+                                      Foreground="#FF4873CF"
+                                      Margin="0,8,0,0"
+                                      Checked="OnCheckBoxChanged"
+                                      Unchecked="OnCheckBoxChanged"/>
+                        </StackPanel>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>
