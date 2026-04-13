@@ -105,7 +105,7 @@
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="使用する会話履歴"
+                <GroupBox Header="会話履歴の取り込み範囲"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
@@ -136,7 +136,7 @@
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="表現生成（会話）"
+                <GroupBox Header="会話の返答生成"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
@@ -225,7 +225,7 @@
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="観測解釈"
+                <GroupBox Header="観測内容の整理"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
@@ -323,7 +323,7 @@
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="意図判断"
+                <GroupBox Header="何をするかの判断"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
@@ -421,7 +421,7 @@
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="記憶解釈"
+                <GroupBox Header="記憶更新の整理"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
@@ -519,7 +519,7 @@
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="内省要約"
+                <GroupBox Header="内省結果の要約"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
@@ -617,7 +617,7 @@
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="想起根拠圧縮"
+                <GroupBox Header="想起根拠の要約"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
@@ -715,7 +715,7 @@
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="想起選別"
+                <GroupBox Header="想起候補の選別"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
@@ -813,7 +813,7 @@
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="保留候補選別"
+                <GroupBox Header="保留候補の選別"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
