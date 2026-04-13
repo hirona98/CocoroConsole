@@ -101,7 +101,7 @@ namespace CocoroConsole.Services
             ThrowIfDisposed();
             return SendNoContentAsync(
                 HttpMethod.Put,
-                $"/api/config/memory-sets/{Uri.EscapeDataString(request.MemorySetId)}",
+                BuildConfigResourcePath("/api/config/memory-sets", request.MemorySetId),
                 request,
                 cancellationToken);
         }
@@ -130,7 +130,7 @@ namespace CocoroConsole.Services
             ThrowIfDisposed();
             return SendNoContentAsync(
                 HttpMethod.Delete,
-                $"/api/config/memory-sets/{Uri.EscapeDataString(memorySetId)}",
+                BuildConfigResourcePath("/api/config/memory-sets", memorySetId),
                 null,
                 cancellationToken);
         }
@@ -238,6 +238,13 @@ namespace CocoroConsole.Services
         private string BuildUrl(string path)
         {
             return $"{_baseUrl}/{path.TrimStart('/')}";
+        }
+
+        private static string BuildConfigResourcePath(string collectionPath, string resourceId)
+        {
+            // OtomeKairo の設定 ID は `memory_set:default` のように `:` を含み、
+            // サーバーは最終 path segment をそのまま比較するためここでは URL エンコードしない。
+            return $"{collectionPath}/{resourceId}";
         }
 
         public void Dispose()

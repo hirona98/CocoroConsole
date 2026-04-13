@@ -33,6 +33,18 @@ namespace CocoroConsole.Controls
             "web_search_enabled",
         };
 
+        private const string DefaultGenerationModel = "openrouter/google/gemini-3.1-flash-lite-preview";
+        private const int DefaultRecentTurnLimit = 30;
+        private const int DefaultRecentTurnMinutes = 3;
+        private const int DefaultObservationMaxOutputTokens = 3000;
+        private const int DefaultDecisionMaxOutputTokens = 3000;
+        private const int DefaultExpressionMaxOutputTokens = 4000;
+        private const int DefaultMemoryMaxOutputTokens = 3000;
+        private const int DefaultReflectionSummaryMaxOutputTokens = 2000;
+        private const int DefaultEventEvidenceMaxOutputTokens = 1500;
+        private const int DefaultRecallSelectionMaxOutputTokens = 2000;
+        private const int DefaultPendingIntentMaxOutputTokens = 1000;
+
         private sealed class PromptWindowEditorItem
         {
             public string RecentTurnLimitText { get; set; } = string.Empty;
@@ -88,7 +100,7 @@ namespace CocoroConsole.Controls
                 // XAML の読み込み中に共有モデル用チェックボックスのイベントが先に飛ぶため、
                 // すべてのコントロール生成後にまとめて状態を反映する。
                 InitializeComponent();
-                ApplyExpressionModelUsageToUi(null, refreshAllModelTexts: true);
+                ApplyExpressionModelUsageToUi(null, refreshAllSharedTexts: true);
             }
             finally
             {
@@ -194,20 +206,9 @@ namespace CocoroConsole.Controls
         {
             SyncCurrentPresetFromUi();
 
-            var item = new ModelPresetEditorItem
-            {
-                ModelPresetId = $"model_preset:{Guid.NewGuid():N}",
-                DisplayName = GenerateUniqueName(_presets.Select(p => p.DisplayName), "新規モデルプリセット"),
-                PromptWindow = new PromptWindowEditorItem(),
-                ObservationRole = CreateBlankRole(),
-                DecisionRole = CreateBlankRole(),
-                ExpressionRole = CreateBlankRole(),
-                MemoryRole = CreateBlankRole(),
-                ReflectionSummaryRole = CreateBlankRole(),
-                EventEvidenceRole = CreateBlankRole(),
-                RecallSelectionRole = CreateBlankRole(),
-                PendingIntentRole = CreateBlankRole(),
-            };
+            var item = CreateDefaultPreset(
+                $"model_preset:{Guid.NewGuid():N}",
+                GenerateUniqueName(_presets.Select(p => p.DisplayName), "新規モデルプリセット"));
 
             _isInitializing = true;
             try
@@ -346,7 +347,7 @@ namespace CocoroConsole.Controls
             var current = GetCurrentPreset();
             if (current != null)
             {
-                SyncEditedModelTextToCurrentItem(current, sender);
+                SyncEditedLinkedFieldToCurrentItem(current, sender);
             }
 
             if (sender == PresetNameTextBox && current != null)
@@ -383,13 +384,13 @@ namespace CocoroConsole.Controls
             var current = GetCurrentPreset();
             if (current != null)
             {
-                PreserveCustomModelTextBeforeLinking(current, sender);
+                PreserveCustomSharedFieldsBeforeLinking(current, sender);
                 UpdateExpressionModelUsageFromUi(current);
-                ApplyExpressionModelUsageToUi(current, refreshAllModelTexts: true);
+                ApplyExpressionModelUsageToUi(current, refreshAllSharedTexts: true);
             }
             else
             {
-                ApplyExpressionModelUsageToUi(null, refreshAllModelTexts: true);
+                ApplyExpressionModelUsageToUi(null, refreshAllSharedTexts: true);
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
@@ -503,7 +504,7 @@ namespace CocoroConsole.Controls
                 ObservationReasoningEffortTextBox,
                 ObservationMaxOutputTokensTextBox,
                 ObservationWebSearchCheckBox,
-                syncModelFromUi: !current.ObservationUsesExpressionModel);
+                syncSharedFieldsFromUi: !current.ObservationUsesExpressionModel);
             SyncRoleFromUi(
                 current.DecisionRole,
                 DecisionModelTextBox,
@@ -512,7 +513,7 @@ namespace CocoroConsole.Controls
                 DecisionReasoningEffortTextBox,
                 DecisionMaxOutputTokensTextBox,
                 DecisionWebSearchCheckBox,
-                syncModelFromUi: !current.DecisionUsesExpressionModel);
+                syncSharedFieldsFromUi: !current.DecisionUsesExpressionModel);
             SyncRoleFromUi(
                 current.MemoryRole,
                 MemoryModelTextBox,
@@ -521,7 +522,7 @@ namespace CocoroConsole.Controls
                 MemoryReasoningEffortTextBox,
                 MemoryMaxOutputTokensTextBox,
                 MemoryWebSearchCheckBox,
-                syncModelFromUi: !current.MemoryUsesExpressionModel);
+                syncSharedFieldsFromUi: !current.MemoryUsesExpressionModel);
             SyncRoleFromUi(
                 current.ReflectionSummaryRole,
                 ReflectionSummaryModelTextBox,
@@ -530,7 +531,7 @@ namespace CocoroConsole.Controls
                 ReflectionSummaryReasoningEffortTextBox,
                 ReflectionSummaryMaxOutputTokensTextBox,
                 ReflectionSummaryWebSearchCheckBox,
-                syncModelFromUi: !current.ReflectionSummaryUsesExpressionModel);
+                syncSharedFieldsFromUi: !current.ReflectionSummaryUsesExpressionModel);
             SyncRoleFromUi(
                 current.EventEvidenceRole,
                 EventEvidenceModelTextBox,
@@ -539,7 +540,7 @@ namespace CocoroConsole.Controls
                 EventEvidenceReasoningEffortTextBox,
                 EventEvidenceMaxOutputTokensTextBox,
                 EventEvidenceWebSearchCheckBox,
-                syncModelFromUi: !current.EventEvidenceUsesExpressionModel);
+                syncSharedFieldsFromUi: !current.EventEvidenceUsesExpressionModel);
             SyncRoleFromUi(
                 current.RecallSelectionRole,
                 RecallSelectionModelTextBox,
@@ -548,7 +549,7 @@ namespace CocoroConsole.Controls
                 RecallSelectionReasoningEffortTextBox,
                 RecallSelectionMaxOutputTokensTextBox,
                 RecallSelectionWebSearchCheckBox,
-                syncModelFromUi: !current.RecallSelectionUsesExpressionModel);
+                syncSharedFieldsFromUi: !current.RecallSelectionUsesExpressionModel);
             SyncRoleFromUi(
                 current.PendingIntentRole,
                 PendingIntentModelTextBox,
@@ -557,7 +558,7 @@ namespace CocoroConsole.Controls
                 PendingIntentReasoningEffortTextBox,
                 PendingIntentMaxOutputTokensTextBox,
                 PendingIntentWebSearchCheckBox,
-                syncModelFromUi: !current.PendingIntentUsesExpressionModel);
+                syncSharedFieldsFromUi: !current.PendingIntentUsesExpressionModel);
         }
 
         private void LoadPresetToUi(ModelPresetEditorItem item)
@@ -630,7 +631,7 @@ namespace CocoroConsole.Controls
                 PendingIntentMaxOutputTokensTextBox,
                 PendingIntentWebSearchCheckBox);
             LoadExpressionModelUsageToUi(item);
-            ApplyExpressionModelUsageToUi(item, refreshAllModelTexts: true);
+            ApplyExpressionModelUsageToUi(item, refreshAllSharedTexts: true);
         }
 
         private void ClearUi()
@@ -709,7 +710,7 @@ namespace CocoroConsole.Controls
             EventEvidenceUseExpressionModelCheckBox.IsChecked = true;
             RecallSelectionUseExpressionModelCheckBox.IsChecked = true;
             PendingIntentUseExpressionModelCheckBox.IsChecked = true;
-            ApplyExpressionModelUsageToUi(null, refreshAllModelTexts: true);
+            ApplyExpressionModelUsageToUi(null, refreshAllSharedTexts: true);
         }
 
         private void RefreshComboBoxItems()
@@ -768,13 +769,13 @@ namespace CocoroConsole.Controls
         {
             var roles = CloneRoleDefinitions(item.AdditionalRoles);
             roles["expression_generation"] = ToRoleDefinition(item.ExpressionRole);
-            roles["observation_interpretation"] = ToRoleDefinition(item.ObservationRole, item.ObservationUsesExpressionModel ? item.ExpressionRole.Model : null);
-            roles["decision_generation"] = ToRoleDefinition(item.DecisionRole, item.DecisionUsesExpressionModel ? item.ExpressionRole.Model : null);
-            roles["memory_interpretation"] = ToRoleDefinition(item.MemoryRole, item.MemoryUsesExpressionModel ? item.ExpressionRole.Model : null);
-            roles["memory_reflection_summary"] = ToRoleDefinition(item.ReflectionSummaryRole, item.ReflectionSummaryUsesExpressionModel ? item.ExpressionRole.Model : null);
-            roles["event_evidence_generation"] = ToRoleDefinition(item.EventEvidenceRole, item.EventEvidenceUsesExpressionModel ? item.ExpressionRole.Model : null);
-            roles["recall_pack_selection"] = ToRoleDefinition(item.RecallSelectionRole, item.RecallSelectionUsesExpressionModel ? item.ExpressionRole.Model : null);
-            roles["pending_intent_selection"] = ToRoleDefinition(item.PendingIntentRole, item.PendingIntentUsesExpressionModel ? item.ExpressionRole.Model : null);
+            roles["observation_interpretation"] = ToRoleDefinition(item.ObservationRole, item.ObservationUsesExpressionModel ? item.ExpressionRole : null);
+            roles["decision_generation"] = ToRoleDefinition(item.DecisionRole, item.DecisionUsesExpressionModel ? item.ExpressionRole : null);
+            roles["memory_interpretation"] = ToRoleDefinition(item.MemoryRole, item.MemoryUsesExpressionModel ? item.ExpressionRole : null);
+            roles["memory_reflection_summary"] = ToRoleDefinition(item.ReflectionSummaryRole, item.ReflectionSummaryUsesExpressionModel ? item.ExpressionRole : null);
+            roles["event_evidence_generation"] = ToRoleDefinition(item.EventEvidenceRole, item.EventEvidenceUsesExpressionModel ? item.ExpressionRole : null);
+            roles["recall_pack_selection"] = ToRoleDefinition(item.RecallSelectionRole, item.RecallSelectionUsesExpressionModel ? item.ExpressionRole : null);
+            roles["pending_intent_selection"] = ToRoleDefinition(item.PendingIntentRole, item.PendingIntentUsesExpressionModel ? item.ExpressionRole : null);
 
             return new OtomeKairoModelPresetDefinition
             {
@@ -803,19 +804,21 @@ namespace CocoroConsole.Controls
             };
         }
 
-        private static Dictionary<string, object?> ToRoleDefinition(RoleEditorItem item, string? modelOverride = null)
+        private static Dictionary<string, object?> ToRoleDefinition(RoleEditorItem item, RoleEditorItem? sharedRole = null)
         {
+            var effectiveModel = NormalizeComparableField(sharedRole?.Model ?? item.Model);
+            var effectiveApiBase = NormalizeComparableField(sharedRole?.ApiBase ?? item.ApiBase);
+            var effectiveApiKey = sharedRole?.ApiKey ?? item.ApiKey ?? string.Empty;
             var definition = new Dictionary<string, object?>(item.AdditionalFields, StringComparer.OrdinalIgnoreCase)
             {
-                ["model"] = (modelOverride ?? item.Model)?.Trim() ?? string.Empty,
-                ["api_key"] = item.ApiKey ?? string.Empty,
+                ["model"] = effectiveModel,
+                ["api_key"] = effectiveApiKey,
                 ["web_search_enabled"] = item.WebSearchEnabled,
             };
 
-            var apiBase = item.ApiBase?.Trim() ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(apiBase))
+            if (!string.IsNullOrWhiteSpace(effectiveApiBase))
             {
-                definition["api_base"] = apiBase;
+                definition["api_base"] = effectiveApiBase;
             }
             else
             {
@@ -863,14 +866,14 @@ namespace CocoroConsole.Controls
             TextBox reasoningEffortTextBox,
             TextBox maxOutputTokensTextBox,
             CheckBox webSearchCheckBox,
-            bool syncModelFromUi = true)
+            bool syncSharedFieldsFromUi = true)
         {
-            if (syncModelFromUi)
+            if (syncSharedFieldsFromUi)
             {
                 role.Model = modelTextBox.Text;
+                role.ApiBase = apiBaseTextBox.Text;
+                role.ApiKey = apiKeyTextBox.Text;
             }
-            role.ApiBase = apiBaseTextBox.Text;
-            role.ApiKey = apiKeyTextBox.Text;
             role.ReasoningEffort = reasoningEffortTextBox.Text;
             role.MaxOutputTokensText = maxOutputTokensTextBox.Text;
             role.WebSearchEnabled = webSearchCheckBox.IsChecked ?? false;
@@ -921,6 +924,47 @@ namespace CocoroConsole.Controls
             return new RoleEditorItem();
         }
 
+        private static ModelPresetEditorItem CreateDefaultPreset(string modelPresetId, string displayName)
+        {
+            // OtomeKairo の既定モデルプリセットと同じ初期値で、新規追加直後でも保存可能な状態を作る。
+            return new ModelPresetEditorItem
+            {
+                ModelPresetId = modelPresetId,
+                DisplayName = displayName,
+                PromptWindow = CreateDefaultPromptWindow(),
+                ObservationRole = CreateDefaultRole(DefaultObservationMaxOutputTokens, reasoningEffort: "low"),
+                DecisionRole = CreateDefaultRole(DefaultDecisionMaxOutputTokens),
+                ExpressionRole = CreateDefaultRole(DefaultExpressionMaxOutputTokens),
+                MemoryRole = CreateDefaultRole(DefaultMemoryMaxOutputTokens),
+                ReflectionSummaryRole = CreateDefaultRole(DefaultReflectionSummaryMaxOutputTokens),
+                EventEvidenceRole = CreateDefaultRole(DefaultEventEvidenceMaxOutputTokens),
+                RecallSelectionRole = CreateDefaultRole(DefaultRecallSelectionMaxOutputTokens),
+                PendingIntentRole = CreateDefaultRole(DefaultPendingIntentMaxOutputTokens),
+            };
+        }
+
+        private static PromptWindowEditorItem CreateDefaultPromptWindow()
+        {
+            return new PromptWindowEditorItem
+            {
+                RecentTurnLimitText = DefaultRecentTurnLimit.ToString(),
+                RecentTurnMinutesText = DefaultRecentTurnMinutes.ToString(),
+            };
+        }
+
+        private static RoleEditorItem CreateDefaultRole(int maxOutputTokens, string reasoningEffort = "")
+        {
+            return new RoleEditorItem
+            {
+                Model = DefaultGenerationModel,
+                ApiBase = string.Empty,
+                ApiKey = string.Empty,
+                ReasoningEffort = reasoningEffort,
+                MaxOutputTokensText = maxOutputTokens.ToString(),
+                WebSearchEnabled = false,
+            };
+        }
+
         private ModelPresetEditorItem? GetCurrentPreset()
         {
             if (_currentPresetIndex < 0 || _currentPresetIndex >= _presets.Count)
@@ -931,99 +975,179 @@ namespace CocoroConsole.Controls
             return _presets[_currentPresetIndex];
         }
 
-        private void SyncEditedModelTextToCurrentItem(ModelPresetEditorItem current, object sender)
+        private void SyncEditedLinkedFieldToCurrentItem(ModelPresetEditorItem current, object sender)
         {
             if (sender == ExpressionModelTextBox)
             {
                 current.ExpressionRole.Model = ExpressionModelTextBox.Text;
-                ApplyExpressionModelUsageToUi(current, refreshAllModelTexts: false);
+                ApplyExpressionModelUsageToUi(current, refreshAllSharedTexts: false);
                 return;
             }
 
-            if (sender == ObservationModelTextBox && !current.ObservationUsesExpressionModel)
+            if (sender == ExpressionApiBaseTextBox)
             {
-                current.ObservationRole.Model = ObservationModelTextBox.Text;
+                current.ExpressionRole.ApiBase = ExpressionApiBaseTextBox.Text;
+                ApplyExpressionModelUsageToUi(current, refreshAllSharedTexts: false);
                 return;
             }
 
-            if (sender == DecisionModelTextBox && !current.DecisionUsesExpressionModel)
+            if (sender == ExpressionApiKeyTextBox)
             {
-                current.DecisionRole.Model = DecisionModelTextBox.Text;
+                current.ExpressionRole.ApiKey = ExpressionApiKeyTextBox.Text;
+                ApplyExpressionModelUsageToUi(current, refreshAllSharedTexts: false);
                 return;
             }
 
-            if (sender == MemoryModelTextBox && !current.MemoryUsesExpressionModel)
+            if (TrySyncLinkedRoleField(
+                sender,
+                current.ObservationRole,
+                current.ObservationUsesExpressionModel,
+                ObservationModelTextBox,
+                ObservationApiBaseTextBox,
+                ObservationApiKeyTextBox))
             {
-                current.MemoryRole.Model = MemoryModelTextBox.Text;
                 return;
             }
 
-            if (sender == ReflectionSummaryModelTextBox && !current.ReflectionSummaryUsesExpressionModel)
+            if (TrySyncLinkedRoleField(
+                sender,
+                current.DecisionRole,
+                current.DecisionUsesExpressionModel,
+                DecisionModelTextBox,
+                DecisionApiBaseTextBox,
+                DecisionApiKeyTextBox))
             {
-                current.ReflectionSummaryRole.Model = ReflectionSummaryModelTextBox.Text;
                 return;
             }
 
-            if (sender == EventEvidenceModelTextBox && !current.EventEvidenceUsesExpressionModel)
+            if (TrySyncLinkedRoleField(
+                sender,
+                current.MemoryRole,
+                current.MemoryUsesExpressionModel,
+                MemoryModelTextBox,
+                MemoryApiBaseTextBox,
+                MemoryApiKeyTextBox))
             {
-                current.EventEvidenceRole.Model = EventEvidenceModelTextBox.Text;
                 return;
             }
 
-            if (sender == RecallSelectionModelTextBox && !current.RecallSelectionUsesExpressionModel)
+            if (TrySyncLinkedRoleField(
+                sender,
+                current.ReflectionSummaryRole,
+                current.ReflectionSummaryUsesExpressionModel,
+                ReflectionSummaryModelTextBox,
+                ReflectionSummaryApiBaseTextBox,
+                ReflectionSummaryApiKeyTextBox))
             {
-                current.RecallSelectionRole.Model = RecallSelectionModelTextBox.Text;
                 return;
             }
 
-            if (sender == PendingIntentModelTextBox && !current.PendingIntentUsesExpressionModel)
+            if (TrySyncLinkedRoleField(
+                sender,
+                current.EventEvidenceRole,
+                current.EventEvidenceUsesExpressionModel,
+                EventEvidenceModelTextBox,
+                EventEvidenceApiBaseTextBox,
+                EventEvidenceApiKeyTextBox))
             {
-                current.PendingIntentRole.Model = PendingIntentModelTextBox.Text;
+                return;
             }
+
+            if (TrySyncLinkedRoleField(
+                sender,
+                current.RecallSelectionRole,
+                current.RecallSelectionUsesExpressionModel,
+                RecallSelectionModelTextBox,
+                RecallSelectionApiBaseTextBox,
+                RecallSelectionApiKeyTextBox))
+            {
+                return;
+            }
+
+            TrySyncLinkedRoleField(
+                sender,
+                current.PendingIntentRole,
+                current.PendingIntentUsesExpressionModel,
+                PendingIntentModelTextBox,
+                PendingIntentApiBaseTextBox,
+                PendingIntentApiKeyTextBox);
         }
 
-        private void PreserveCustomModelTextBeforeLinking(ModelPresetEditorItem current, object sender)
+        private void PreserveCustomSharedFieldsBeforeLinking(ModelPresetEditorItem current, object sender)
         {
-            if (sender == ObservationUseExpressionModelCheckBox && (ObservationUseExpressionModelCheckBox.IsChecked ?? false))
+            if (TryPreserveCustomSharedFieldsBeforeLinking(
+                sender,
+                current.ObservationRole,
+                ObservationUseExpressionModelCheckBox,
+                ObservationModelTextBox,
+                ObservationApiBaseTextBox,
+                ObservationApiKeyTextBox))
             {
-                current.ObservationRole.Model = ObservationModelTextBox.Text;
                 return;
             }
 
-            if (sender == DecisionUseExpressionModelCheckBox && (DecisionUseExpressionModelCheckBox.IsChecked ?? false))
+            if (TryPreserveCustomSharedFieldsBeforeLinking(
+                sender,
+                current.DecisionRole,
+                DecisionUseExpressionModelCheckBox,
+                DecisionModelTextBox,
+                DecisionApiBaseTextBox,
+                DecisionApiKeyTextBox))
             {
-                current.DecisionRole.Model = DecisionModelTextBox.Text;
                 return;
             }
 
-            if (sender == MemoryUseExpressionModelCheckBox && (MemoryUseExpressionModelCheckBox.IsChecked ?? false))
+            if (TryPreserveCustomSharedFieldsBeforeLinking(
+                sender,
+                current.MemoryRole,
+                MemoryUseExpressionModelCheckBox,
+                MemoryModelTextBox,
+                MemoryApiBaseTextBox,
+                MemoryApiKeyTextBox))
             {
-                current.MemoryRole.Model = MemoryModelTextBox.Text;
                 return;
             }
 
-            if (sender == ReflectionSummaryUseExpressionModelCheckBox && (ReflectionSummaryUseExpressionModelCheckBox.IsChecked ?? false))
+            if (TryPreserveCustomSharedFieldsBeforeLinking(
+                sender,
+                current.ReflectionSummaryRole,
+                ReflectionSummaryUseExpressionModelCheckBox,
+                ReflectionSummaryModelTextBox,
+                ReflectionSummaryApiBaseTextBox,
+                ReflectionSummaryApiKeyTextBox))
             {
-                current.ReflectionSummaryRole.Model = ReflectionSummaryModelTextBox.Text;
                 return;
             }
 
-            if (sender == EventEvidenceUseExpressionModelCheckBox && (EventEvidenceUseExpressionModelCheckBox.IsChecked ?? false))
+            if (TryPreserveCustomSharedFieldsBeforeLinking(
+                sender,
+                current.EventEvidenceRole,
+                EventEvidenceUseExpressionModelCheckBox,
+                EventEvidenceModelTextBox,
+                EventEvidenceApiBaseTextBox,
+                EventEvidenceApiKeyTextBox))
             {
-                current.EventEvidenceRole.Model = EventEvidenceModelTextBox.Text;
                 return;
             }
 
-            if (sender == RecallSelectionUseExpressionModelCheckBox && (RecallSelectionUseExpressionModelCheckBox.IsChecked ?? false))
+            if (TryPreserveCustomSharedFieldsBeforeLinking(
+                sender,
+                current.RecallSelectionRole,
+                RecallSelectionUseExpressionModelCheckBox,
+                RecallSelectionModelTextBox,
+                RecallSelectionApiBaseTextBox,
+                RecallSelectionApiKeyTextBox))
             {
-                current.RecallSelectionRole.Model = RecallSelectionModelTextBox.Text;
                 return;
             }
 
-            if (sender == PendingIntentUseExpressionModelCheckBox && (PendingIntentUseExpressionModelCheckBox.IsChecked ?? false))
-            {
-                current.PendingIntentRole.Model = PendingIntentModelTextBox.Text;
-            }
+            TryPreserveCustomSharedFieldsBeforeLinking(
+                sender,
+                current.PendingIntentRole,
+                PendingIntentUseExpressionModelCheckBox,
+                PendingIntentModelTextBox,
+                PendingIntentApiBaseTextBox,
+                PendingIntentApiKeyTextBox);
         }
 
         private void LoadExpressionModelUsageToUi(ModelPresetEditorItem item)
@@ -1048,7 +1172,7 @@ namespace CocoroConsole.Controls
             item.PendingIntentUsesExpressionModel = PendingIntentUseExpressionModelCheckBox.IsChecked ?? true;
         }
 
-        private void ApplyExpressionModelUsageToUi(ModelPresetEditorItem? item, bool refreshAllModelTexts)
+        private void ApplyExpressionModelUsageToUi(ModelPresetEditorItem? item, bool refreshAllSharedTexts)
         {
             if (!AreExpressionModelControlsReady())
             {
@@ -1056,59 +1180,96 @@ namespace CocoroConsole.Controls
             }
 
             var expressionModel = ExpressionModelTextBox.Text;
+            var expressionApiBase = ExpressionApiBaseTextBox.Text;
+            var expressionApiKey = ExpressionApiKeyTextBox.Text;
             var wasInitializing = _isInitializing;
             _isInitializing = true;
             try
             {
                 ApplyRoleModelUsageToUi(
-                    ObservationSettingsPanel,
                     ObservationModelTextBox,
+                    ObservationApiBaseTextBox,
+                    ObservationApiKeyTextBox,
                     item?.ObservationRole.Model ?? string.Empty,
+                    item?.ObservationRole.ApiBase ?? string.Empty,
+                    item?.ObservationRole.ApiKey ?? string.Empty,
                     expressionModel,
+                    expressionApiBase,
+                    expressionApiKey,
                     item?.ObservationUsesExpressionModel ?? (ObservationUseExpressionModelCheckBox.IsChecked ?? true),
-                    refreshAllModelTexts);
+                    refreshAllSharedTexts);
                 ApplyRoleModelUsageToUi(
-                    DecisionSettingsPanel,
                     DecisionModelTextBox,
+                    DecisionApiBaseTextBox,
+                    DecisionApiKeyTextBox,
                     item?.DecisionRole.Model ?? string.Empty,
+                    item?.DecisionRole.ApiBase ?? string.Empty,
+                    item?.DecisionRole.ApiKey ?? string.Empty,
                     expressionModel,
+                    expressionApiBase,
+                    expressionApiKey,
                     item?.DecisionUsesExpressionModel ?? (DecisionUseExpressionModelCheckBox.IsChecked ?? true),
-                    refreshAllModelTexts);
+                    refreshAllSharedTexts);
                 ApplyRoleModelUsageToUi(
-                    MemorySettingsPanel,
                     MemoryModelTextBox,
+                    MemoryApiBaseTextBox,
+                    MemoryApiKeyTextBox,
                     item?.MemoryRole.Model ?? string.Empty,
+                    item?.MemoryRole.ApiBase ?? string.Empty,
+                    item?.MemoryRole.ApiKey ?? string.Empty,
                     expressionModel,
+                    expressionApiBase,
+                    expressionApiKey,
                     item?.MemoryUsesExpressionModel ?? (MemoryUseExpressionModelCheckBox.IsChecked ?? true),
-                    refreshAllModelTexts);
+                    refreshAllSharedTexts);
                 ApplyRoleModelUsageToUi(
-                    ReflectionSummarySettingsPanel,
                     ReflectionSummaryModelTextBox,
+                    ReflectionSummaryApiBaseTextBox,
+                    ReflectionSummaryApiKeyTextBox,
                     item?.ReflectionSummaryRole.Model ?? string.Empty,
+                    item?.ReflectionSummaryRole.ApiBase ?? string.Empty,
+                    item?.ReflectionSummaryRole.ApiKey ?? string.Empty,
                     expressionModel,
+                    expressionApiBase,
+                    expressionApiKey,
                     item?.ReflectionSummaryUsesExpressionModel ?? (ReflectionSummaryUseExpressionModelCheckBox.IsChecked ?? true),
-                    refreshAllModelTexts);
+                    refreshAllSharedTexts);
                 ApplyRoleModelUsageToUi(
-                    EventEvidenceSettingsPanel,
                     EventEvidenceModelTextBox,
+                    EventEvidenceApiBaseTextBox,
+                    EventEvidenceApiKeyTextBox,
                     item?.EventEvidenceRole.Model ?? string.Empty,
+                    item?.EventEvidenceRole.ApiBase ?? string.Empty,
+                    item?.EventEvidenceRole.ApiKey ?? string.Empty,
                     expressionModel,
+                    expressionApiBase,
+                    expressionApiKey,
                     item?.EventEvidenceUsesExpressionModel ?? (EventEvidenceUseExpressionModelCheckBox.IsChecked ?? true),
-                    refreshAllModelTexts);
+                    refreshAllSharedTexts);
                 ApplyRoleModelUsageToUi(
-                    RecallSelectionSettingsPanel,
                     RecallSelectionModelTextBox,
+                    RecallSelectionApiBaseTextBox,
+                    RecallSelectionApiKeyTextBox,
                     item?.RecallSelectionRole.Model ?? string.Empty,
+                    item?.RecallSelectionRole.ApiBase ?? string.Empty,
+                    item?.RecallSelectionRole.ApiKey ?? string.Empty,
                     expressionModel,
+                    expressionApiBase,
+                    expressionApiKey,
                     item?.RecallSelectionUsesExpressionModel ?? (RecallSelectionUseExpressionModelCheckBox.IsChecked ?? true),
-                    refreshAllModelTexts);
+                    refreshAllSharedTexts);
                 ApplyRoleModelUsageToUi(
-                    PendingIntentSettingsPanel,
                     PendingIntentModelTextBox,
+                    PendingIntentApiBaseTextBox,
+                    PendingIntentApiKeyTextBox,
                     item?.PendingIntentRole.Model ?? string.Empty,
+                    item?.PendingIntentRole.ApiBase ?? string.Empty,
+                    item?.PendingIntentRole.ApiKey ?? string.Empty,
                     expressionModel,
+                    expressionApiBase,
+                    expressionApiKey,
                     item?.PendingIntentUsesExpressionModel ?? (PendingIntentUseExpressionModelCheckBox.IsChecked ?? true),
-                    refreshAllModelTexts);
+                    refreshAllSharedTexts);
             }
             finally
             {
@@ -1119,54 +1280,145 @@ namespace CocoroConsole.Controls
         private bool AreExpressionModelControlsReady()
         {
             return ExpressionModelTextBox != null &&
+                ExpressionApiBaseTextBox != null &&
+                ExpressionApiKeyTextBox != null &&
                 ObservationModelTextBox != null &&
+                ObservationApiBaseTextBox != null &&
+                ObservationApiKeyTextBox != null &&
                 DecisionModelTextBox != null &&
+                DecisionApiBaseTextBox != null &&
+                DecisionApiKeyTextBox != null &&
                 MemoryModelTextBox != null &&
+                MemoryApiBaseTextBox != null &&
+                MemoryApiKeyTextBox != null &&
                 ReflectionSummaryModelTextBox != null &&
+                ReflectionSummaryApiBaseTextBox != null &&
+                ReflectionSummaryApiKeyTextBox != null &&
                 EventEvidenceModelTextBox != null &&
+                EventEvidenceApiBaseTextBox != null &&
+                EventEvidenceApiKeyTextBox != null &&
                 RecallSelectionModelTextBox != null &&
+                RecallSelectionApiBaseTextBox != null &&
+                RecallSelectionApiKeyTextBox != null &&
                 PendingIntentModelTextBox != null &&
+                PendingIntentApiBaseTextBox != null &&
+                PendingIntentApiKeyTextBox != null &&
                 ObservationUseExpressionModelCheckBox != null &&
                 DecisionUseExpressionModelCheckBox != null &&
                 MemoryUseExpressionModelCheckBox != null &&
                 ReflectionSummaryUseExpressionModelCheckBox != null &&
                 EventEvidenceUseExpressionModelCheckBox != null &&
                 RecallSelectionUseExpressionModelCheckBox != null &&
-                PendingIntentUseExpressionModelCheckBox != null &&
-                ObservationSettingsPanel != null &&
-                DecisionSettingsPanel != null &&
-                MemorySettingsPanel != null &&
-                ReflectionSummarySettingsPanel != null &&
-                EventEvidenceSettingsPanel != null &&
-                RecallSelectionSettingsPanel != null &&
-                PendingIntentSettingsPanel != null;
+                PendingIntentUseExpressionModelCheckBox != null;
         }
 
         private static void ApplyRoleModelUsageToUi(
-            Panel settingsPanel,
             TextBox modelTextBox,
+            TextBox apiBaseTextBox,
+            TextBox apiKeyTextBox,
             string customModel,
+            string customApiBase,
+            string customApiKey,
             string expressionModel,
+            string expressionApiBase,
+            string expressionApiKey,
             bool useExpressionModel,
-            bool refreshAllModelTexts)
+            bool refreshAllSharedTexts)
         {
-            settingsPanel.IsEnabled = !useExpressionModel;
+            modelTextBox.IsEnabled = !useExpressionModel;
+            apiBaseTextBox.IsEnabled = !useExpressionModel;
+            apiKeyTextBox.IsEnabled = !useExpressionModel;
+            if (apiKeyTextBox.Parent is UIElement apiKeyContainer)
+            {
+                apiKeyContainer.IsEnabled = !useExpressionModel;
+            }
+
             if (useExpressionModel)
             {
                 modelTextBox.Text = expressionModel;
+                apiBaseTextBox.Text = expressionApiBase;
+                apiKeyTextBox.Text = expressionApiKey;
             }
-            else if (refreshAllModelTexts)
+            else if (refreshAllSharedTexts)
             {
                 modelTextBox.Text = customModel;
+                apiBaseTextBox.Text = customApiBase;
+                apiKeyTextBox.Text = customApiKey;
             }
         }
 
         private static bool ShouldUseExpressionModel(RoleEditorItem role, RoleEditorItem expressionRole)
         {
             return string.Equals(
-                role.Model?.Trim() ?? string.Empty,
-                expressionRole.Model?.Trim() ?? string.Empty,
-                StringComparison.Ordinal);
+                NormalizeComparableField(role.Model),
+                NormalizeComparableField(expressionRole.Model),
+                StringComparison.Ordinal) &&
+                string.Equals(
+                    NormalizeComparableField(role.ApiBase),
+                    NormalizeComparableField(expressionRole.ApiBase),
+                    StringComparison.Ordinal) &&
+                string.Equals(
+                    role.ApiKey ?? string.Empty,
+                    expressionRole.ApiKey ?? string.Empty,
+                    StringComparison.Ordinal);
+        }
+
+        private static bool TrySyncLinkedRoleField(
+            object sender,
+            RoleEditorItem role,
+            bool usesExpressionModel,
+            TextBox modelTextBox,
+            TextBox apiBaseTextBox,
+            TextBox apiKeyTextBox)
+        {
+            if (usesExpressionModel)
+            {
+                return false;
+            }
+
+            if (sender == modelTextBox)
+            {
+                role.Model = modelTextBox.Text;
+                return true;
+            }
+
+            if (sender == apiBaseTextBox)
+            {
+                role.ApiBase = apiBaseTextBox.Text;
+                return true;
+            }
+
+            if (sender == apiKeyTextBox)
+            {
+                role.ApiKey = apiKeyTextBox.Text;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryPreserveCustomSharedFieldsBeforeLinking(
+            object sender,
+            RoleEditorItem role,
+            CheckBox useExpressionModelCheckBox,
+            TextBox modelTextBox,
+            TextBox apiBaseTextBox,
+            TextBox apiKeyTextBox)
+        {
+            if (sender != useExpressionModelCheckBox || !(useExpressionModelCheckBox.IsChecked ?? false))
+            {
+                return false;
+            }
+
+            role.Model = modelTextBox.Text;
+            role.ApiBase = apiBaseTextBox.Text;
+            role.ApiKey = apiKeyTextBox.Text;
+            return true;
+        }
+
+        private static string NormalizeComparableField(string? value)
+        {
+            return value?.Trim() ?? string.Empty;
         }
 
         private static Dictionary<string, object?> CopyAdditionalFields(
