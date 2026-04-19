@@ -13,7 +13,7 @@ namespace CocoroConsole.Controls
     {
         private static readonly string[] KnownRoleNames =
         {
-            "observation_interpretation",
+            "input_interpretation",
             "decision_generation",
             "expression_generation",
             "memory_interpretation",
@@ -729,7 +729,7 @@ namespace CocoroConsole.Controls
         private static ModelPresetEditorItem ToEditorItem(OtomeKairoModelPresetDefinition preset)
         {
             var expressionRole = ToRoleEditorItem(GetRole(preset, "expression_generation"));
-            var observationRole = ToRoleEditorItem(GetRole(preset, "observation_interpretation"));
+            var observationRole = ToRoleEditorItem(GetRole(preset, "input_interpretation"));
             var decisionRole = ToRoleEditorItem(GetRole(preset, "decision_generation"));
             var memoryRole = ToRoleEditorItem(GetRole(preset, "memory_interpretation"));
             var reflectionSummaryRole = ToRoleEditorItem(GetRole(preset, "memory_reflection_summary"));
@@ -769,7 +769,7 @@ namespace CocoroConsole.Controls
         {
             var roles = CloneRoleDefinitions(item.AdditionalRoles);
             roles["expression_generation"] = ToRoleDefinition(item.ExpressionRole);
-            roles["observation_interpretation"] = ToRoleDefinition(item.ObservationRole, item.ObservationUsesExpressionModel ? item.ExpressionRole : null);
+            roles["input_interpretation"] = ToRoleDefinition(item.ObservationRole, item.ObservationUsesExpressionModel ? item.ExpressionRole : null);
             roles["decision_generation"] = ToRoleDefinition(item.DecisionRole, item.DecisionUsesExpressionModel ? item.ExpressionRole : null);
             roles["memory_interpretation"] = ToRoleDefinition(item.MemoryRole, item.MemoryUsesExpressionModel ? item.ExpressionRole : null);
             roles["memory_reflection_summary"] = ToRoleDefinition(item.ReflectionSummaryRole, item.ReflectionSummaryUsesExpressionModel ? item.ExpressionRole : null);

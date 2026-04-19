@@ -23,7 +23,7 @@ namespace CocoroConsole.Services
     /// - CocoroConsole API サーバーの起動/停止（外部からの chat/control/status 更新を受ける）
     /// - CocoroShell への送信（発話/表示の連携）
     /// - OtomeKairo の状態ポーリングと、状態変化イベントの転送
-    /// - otomekairo HTTP API（Bearer 認証）を用いた現在設定取得と会話観測送信
+    /// - otomekairo HTTP API（Bearer 認証）を用いた現在設定取得と会話入力送信
     /// - ログ/イベントのストリーミング接続の管理
     /// </summary>
     public class CommunicationService : ICommunicationService
@@ -580,8 +580,8 @@ namespace CocoroConsole.Services
                 _statusPollingService.SetProcessingStatus(OtomeKairoStatus.ProcessingMessage);
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット送信開始"));
 
-                // --- OtomeKairo の会話観測 API を呼ぶ ---
-                var response = await _otomeKairoApiClient.ObserveConversationAsync(new OtomeKairoConversationRequest
+                // --- OtomeKairo の会話入力 API を呼ぶ ---
+                var response = await _otomeKairoApiClient.SendConversationAsync(new OtomeKairoConversationRequest
                 {
                     Text = message,
                     ClientContext = BuildOtomeKairoClientContext()

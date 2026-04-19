@@ -72,10 +72,10 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoStatusResponse>(HttpMethod.Get, "/api/status", null, cancellationToken);
         }
 
-        public Task<OtomeKairoConversationResponse> ObserveConversationAsync(OtomeKairoConversationRequest request, CancellationToken cancellationToken = default)
+        public Task<OtomeKairoConversationResponse> SendConversationAsync(OtomeKairoConversationRequest request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendOtomeKairoAsync<OtomeKairoConversationResponse>(HttpMethod.Post, "/api/observations/conversation", request, cancellationToken);
+            return SendOtomeKairoAsync<OtomeKairoConversationResponse>(HttpMethod.Post, "/api/conversation", request, cancellationToken);
         }
 
         public Task<OtomeKairoConfigResponse> GetOtomeKairoConfigAsync(CancellationToken cancellationToken = default)
