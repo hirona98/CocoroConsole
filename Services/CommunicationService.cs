@@ -72,12 +72,6 @@ namespace CocoroConsole.Services
         // 起動後、otomekairo が Normal になったタイミングで一度だけ設定取得するためのフラグ
         private bool _initialSettingsFetched = false;
 
-        // desktop_watch 用: 直近のデスクトップキャプチャ（vision.capture_request）を一時キャッシュして
-        // desktop_watch イベントの通知表示に画像を添付する。
-        private readonly object _desktopWatchCaptureLock = new object();
-        private (DateTime TimestampUtc, List<BitmapSource> Images, string? WindowTitle)? _lastDesktopWatchCapture;
-        private static readonly TimeSpan DesktopWatchCaptureMaxAge = TimeSpan.FromSeconds(30);
-
         private static bool IsVrmDisplayEnabled(CharacterSettings? currentCharacter)
         {
             // MainWindow.LaunchCocoroShell と同じ判定: パスがあれば有効 / readOnlyキャラは常に有効
@@ -188,26 +182,32 @@ namespace CocoroConsole.Services
                     }
                     catch (OtomeKairoApiException ex) when (ex.ErrorCode == "invalid_token" || ex.ErrorCode == "bootstrap_required")
                     {
-                        _appSettings.OtomeKairoBearerToken = string.Empty;
-                        _appSettings.SaveAppSettings();
+                        StoreOtomeKairoBearerToken(string.Empty);
                     }
                 }
 
                 // --- 未発行状態のときだけ最初のトークンを自動取得する ---
                 var probe = await _otomeKairoApiClient.ProbeBootstrapAsync().ConfigureAwait(false);
-                if (!string.Equals(probe.BootstrapState, "ready_for_first_console", StringComparison.Ordinal))
+                if (!string.Equals(probe.BootstrapState, "unregistered", StringComparison.Ordinal))
                 {
                     return;
                 }
 
                 var registered = await _otomeKairoApiClient.RegisterFirstConsoleAsync().ConfigureAwait(false);
-                _appSettings.OtomeKairoBearerToken = registered.ConsoleAccessToken;
-                _appSettings.SaveAppSettings();
+                StoreOtomeKairoBearerToken(registered.ConsoleAccessToken);
             }
             finally
             {
                 _otomeKairoBootstrapSemaphore.Release();
             }
+        }
+
+        private void StoreOtomeKairoBearerToken(string bearerToken)
+        {
+            _appSettings.OtomeKairoBearerToken = bearerToken;
+            _otomeKairoApiClient?.SetBearerToken(bearerToken);
+            _appSettings.SaveAppSettings();
+            _otomeKairoApiClient?.SetBearerToken(bearerToken);
         }
 
         private void SetChatBusy(bool isBusy)
@@ -460,6 +460,7 @@ namespace CocoroConsole.Services
 
                 var configResponse = await _otomeKairoApiClient.GetOtomeKairoConfigAsync().ConfigureAwait(false);
                 OtomeKairoCurrentSettingsUpdated?.Invoke(this, configResponse.SettingsSnapshot);
+                await StartEventsStreamAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -576,6 +577,9 @@ namespace CocoroConsole.Services
                     return;
                 }
 
+                // --- 能力実行要求を配送できるよう、会話送信前に events stream を接続する ---
+                await StartEventsStreamAsync().ConfigureAwait(false);
+
                 // --- 送信中ステータスを反映する ---
                 _statusPollingService.SetProcessingStatus(OtomeKairoStatus.ProcessingMessage);
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット送信開始"));
@@ -622,6 +626,14 @@ namespace CocoroConsole.Services
                 {
                     _statusPollingService.SetNormalStatus();
                     StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "今回は応答しませんでした"));
+                    return;
+                }
+
+                if (string.Equals(response.ResultKind, "capability_request", StringComparison.Ordinal))
+                {
+                    _statusPollingService.SetNormalStatus();
+                    var capabilityId = response.CapabilityRequest?.CapabilityId ?? "能力";
+                    StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, $"{capabilityId} の実行要求を受信しました"));
                     return;
                 }
 
@@ -981,6 +993,7 @@ namespace CocoroConsole.Services
         {
             if (_eventsStreamClient != null)
             {
+                await WaitForEventsStreamConnectionAsync(_eventsStreamClient).ConfigureAwait(false);
                 return;
             }
 
@@ -998,7 +1011,7 @@ namespace CocoroConsole.Services
                 eventsStreamUri,
                 bearerToken,
                 _appSettings.ClientId,
-                new[] { "vision.desktop", "vision.camera" }
+                new[] { new OtomeKairoCapabilityOffer("vision.capture", "1") }
             );
             _eventsStreamClient.EventReceived += OnEventsStreamEventReceived;
             _eventsStreamClient.ConnectionStateChanged += OnEventsStreamConnectionStateChanged;
@@ -1007,11 +1020,21 @@ namespace CocoroConsole.Services
             try
             {
                 await _eventsStreamClient.StartAsync();
+                await WaitForEventsStreamConnectionAsync(_eventsStreamClient).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"イベントストリーム接続に失敗しました: {ex.Message}");
                 await StopEventsStreamAsync();
+            }
+        }
+
+        private static async Task WaitForEventsStreamConnectionAsync(EventsStreamClient client)
+        {
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+            while (!client.IsConnected && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(50).ConfigureAwait(false);
             }
         }
 
@@ -1048,61 +1071,6 @@ namespace CocoroConsole.Services
         {
             try
             {
-                if (string.Equals(ev.Type, "reminder", StringComparison.OrdinalIgnoreCase))
-                {
-                    var message = ev.Data.Message;
-                    if (!string.IsNullOrWhiteSpace(message))
-                    {
-                        HandlePartnerMessageFromEvent(ev, message);
-                    }
-                    return;
-                }
-
-                if (string.Equals(ev.Type, "notification", StringComparison.OrdinalIgnoreCase))
-                {
-                    var systemText = BuildNotificationDisplayText(ev.Data.SystemText);
-                    if (!string.IsNullOrWhiteSpace(systemText))
-                    {
-                        var extractedSourceSystem = TryExtractBracketedSourceSystem(systemText);
-                        var from = extractedSourceSystem ?? "notification";
-                        var displayText = systemText;
-                        if (!string.IsNullOrWhiteSpace(extractedSourceSystem))
-                        {
-                            var prefix = $"[{extractedSourceSystem}]";
-                            if (displayText.StartsWith(prefix, StringComparison.Ordinal))
-                            {
-                                displayText = displayText.Substring(prefix.Length).TrimStart();
-                            }
-                        }
-                        NotificationMessageReceived?.Invoke(new ChatMessagePayload
-                        {
-                            from = from,
-                            sessionId = ev.EventId.ToString(CultureInfo.InvariantCulture),
-                            message = displayText
-                        }, TryDecodeBitmapSourcesFromDataUris(ev.Data.Images));
-                    }
-
-                    // /api/v2/notification は AI 人格のセリフ（data.message）を生成し、/api/events/stream へ配信する
-                    var partnerMessage = ev.Data.Message;
-                    if (!string.IsNullOrWhiteSpace(partnerMessage))
-                    {
-                        HandlePartnerMessageFromEvent(ev, partnerMessage);
-                    }
-                    return;
-                }
-
-                if (string.Equals(ev.Type, "meta-request", StringComparison.OrdinalIgnoreCase))
-                {
-                    // /api/v2/meta-request の結果は events stream の data.message で届く
-                    var message = ev.Data.Message;
-                    if (string.IsNullOrWhiteSpace(message))
-                    {
-                        return;
-                    }
-                    HandlePartnerMessageFromEvent(ev, message);
-                    return;
-                }
-
                 if (string.Equals(ev.Type, "desktop_watch", StringComparison.OrdinalIgnoreCase))
                 {
                     var systemText = BuildNotificationDisplayText(ev.Data.SystemText);
@@ -1124,21 +1092,7 @@ namespace CocoroConsole.Services
                             }
                         }
 
-                        // desktop_watch の通知は system_text が "[desktop_watch]" のみになることがあるため、
-                        // 直前の vision.capture_request(目的: desktop_watch) の画像があれば添付して表示する。
                         var images = TryDecodeBitmapSourcesFromDataUris(ev.Data.Images);
-                        var windowTitle = (string?)null;
-
-                        // events stream に画像が無い場合は、直近のローカルキャプチャを添付する
-                        if (images == null)
-                        {
-                            (images, windowTitle) = TryConsumeDesktopWatchCapture();
-                        }
-                        if (string.IsNullOrWhiteSpace(displayText) && !string.IsNullOrWhiteSpace(windowTitle))
-                        {
-                            displayText = windowTitle;
-                        }
-
                         NotificationMessageReceived?.Invoke(new ChatMessagePayload
                         {
                             from = from,
@@ -1158,13 +1112,6 @@ namespace CocoroConsole.Services
                 if (string.Equals(ev.Type, "vision.capture_request", StringComparison.OrdinalIgnoreCase))
                 {
                     _ = Task.Run(() => HandleVisionCaptureRequestAsync(ev));
-                    return;
-                }
-
-                // Fallback: unknown type but has persona message (e.g. desktop_watch proactive)
-                if (!string.IsNullOrWhiteSpace(ev.Data.Message))
-                {
-                    HandlePartnerMessageFromEvent(ev, ev.Data.Message);
                     return;
                 }
             }
@@ -1254,8 +1201,6 @@ namespace CocoroConsole.Services
             try
             {
                 var source = ev.Data.Source?.Trim().ToLowerInvariant();
-                var purpose = ev.Data.Purpose?.Trim();
-                var isDesktopWatchPurpose = string.Equals(purpose, "desktop_watch", StringComparison.OrdinalIgnoreCase);
                 if (string.Equals(source, "desktop", StringComparison.Ordinal))
                 {
                     _statusPollingService.SetProcessingStatus(OtomeKairoStatus.ProcessingImage);
@@ -1269,21 +1214,11 @@ namespace CocoroConsole.Services
                     if (!string.IsNullOrWhiteSpace(dataUri))
                     {
                         response.Images.Add(dataUri);
-
-                        if (isDesktopWatchPurpose)
-                        {
-                            CacheDesktopWatchCapture(dataUri, windowTitle);
-                        }
                     }
                     else
                     {
                         // スキップ時は理由を返す（画像なしで応答する）
                         response.Error = captureError ?? "capture skipped";
-
-                        if (isDesktopWatchPurpose)
-                        {
-                            ClearDesktopWatchCapture();
-                        }
                     }
                 }
                 else
@@ -1333,49 +1268,6 @@ namespace CocoroConsole.Services
 
             var dataUri = $"data:image/png;base64,{screenshot.ImageBase64}";
             return (dataUri, screenshot.WindowTitle, null);
-        }
-
-        private void CacheDesktopWatchCapture(string dataUri, string? windowTitle)
-        {
-            var bitmap = TryDecodeBitmapSourceFromDataUri(dataUri);
-            if (bitmap == null)
-            {
-                return;
-            }
-
-            lock (_desktopWatchCaptureLock)
-            {
-                _lastDesktopWatchCapture = (DateTime.UtcNow, new List<BitmapSource> { bitmap }, windowTitle);
-            }
-        }
-
-        private void ClearDesktopWatchCapture()
-        {
-            lock (_desktopWatchCaptureLock)
-            {
-                _lastDesktopWatchCapture = null;
-            }
-        }
-
-        private (List<BitmapSource>? Images, string? WindowTitle) TryConsumeDesktopWatchCapture()
-        {
-            lock (_desktopWatchCaptureLock)
-            {
-                if (_lastDesktopWatchCapture == null)
-                {
-                    return (null, null);
-                }
-
-                var (timestampUtc, images, windowTitle) = _lastDesktopWatchCapture.Value;
-                if (DateTime.UtcNow - timestampUtc > DesktopWatchCaptureMaxAge)
-                {
-                    _lastDesktopWatchCapture = null;
-                    return (null, null);
-                }
-
-                _lastDesktopWatchCapture = null;
-                return (images, windowTitle);
-            }
         }
 
         private static BitmapSource? TryDecodeBitmapSourceFromDataUri(string dataUri)

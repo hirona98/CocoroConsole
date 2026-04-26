@@ -13,6 +13,7 @@ namespace CocoroConsole.Controls
         {
             public string PersonaId { get; set; } = string.Empty;
             public string DisplayName { get; set; } = string.Empty;
+            public string InitiativeBaseline { get; set; } = "medium";
             public string PersonaPrompt { get; set; } = string.Empty;
             public string ExpressionAddon { get; set; } = string.Empty;
         }
@@ -83,6 +84,7 @@ namespace CocoroConsole.Controls
             {
                 PersonaId = $"persona:{Guid.NewGuid():N}",
                 DisplayName = GenerateUniqueName(_personas.Select(p => p.DisplayName), "新規人格設定"),
+                InitiativeBaseline = "medium",
                 PersonaPrompt = string.Empty,
                 ExpressionAddon = string.Empty,
             };
@@ -118,6 +120,7 @@ namespace CocoroConsole.Controls
             {
                 PersonaId = $"persona:{Guid.NewGuid():N}",
                 DisplayName = GenerateUniqueName(_personas.Select(p => p.DisplayName), $"{source.DisplayName} (コピー)"),
+                InitiativeBaseline = source.InitiativeBaseline,
                 PersonaPrompt = source.PersonaPrompt,
                 ExpressionAddon = source.ExpressionAddon,
             };
@@ -261,6 +264,7 @@ namespace CocoroConsole.Controls
             {
                 PersonaId = persona.PersonaId,
                 DisplayName = persona.DisplayName,
+                InitiativeBaseline = string.IsNullOrWhiteSpace(persona.InitiativeBaseline) ? "medium" : persona.InitiativeBaseline,
                 PersonaPrompt = persona.PersonaPrompt ?? string.Empty,
                 ExpressionAddon = persona.ExpressionAddon ?? string.Empty,
             };
@@ -272,6 +276,7 @@ namespace CocoroConsole.Controls
             {
                 PersonaId = item.PersonaId,
                 DisplayName = item.DisplayName,
+                InitiativeBaseline = string.IsNullOrWhiteSpace(item.InitiativeBaseline) ? "medium" : item.InitiativeBaseline,
                 PersonaPrompt = item.PersonaPrompt,
                 ExpressionAddon = item.ExpressionAddon,
             };

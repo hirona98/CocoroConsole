@@ -36,6 +36,8 @@ namespace CocoroConsole.Communication
             _bearerToken = bearerToken ?? throw new ArgumentNullException(nameof(bearerToken));
         }
 
+        public bool IsConnected => _isConnected;
+
         protected ClientWebSocket? WebSocket => _webSocket;
 
         protected abstract string ConnectFailureLabel { get; }

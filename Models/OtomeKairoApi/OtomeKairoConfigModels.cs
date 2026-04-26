@@ -70,6 +70,9 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("display_name")]
         public string DisplayName { get; set; } = string.Empty;
 
+        [JsonPropertyName("initiative_baseline")]
+        public string InitiativeBaseline { get; set; } = "medium";
+
         [JsonPropertyName("persona_prompt")]
         public string PersonaPrompt { get; set; } = string.Empty;
 

@@ -154,11 +154,7 @@ namespace CocoroConsole.Services
             {
                 ClientId = $"console-{Guid.NewGuid()}";
             }
-            // --- 旧既定値のプレースホルダートークンは未設定として扱う ---
-            var otomeKairoBearerToken = config.otomeKairoBearerToken ?? string.Empty;
-            OtomeKairoBearerToken = string.Equals(otomeKairoBearerToken, "cocoro_token", StringComparison.Ordinal)
-                ? string.Empty
-                : otomeKairoBearerToken;
+            OtomeKairoBearerToken = config.otomeKairoBearerToken ?? string.Empty;
             IsUseLLM = config.isUseLLM;
             IsRestoreWindowPosition = config.isRestoreWindowPosition;
             IsTopmost = config.isTopmost;

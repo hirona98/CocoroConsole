@@ -54,6 +54,15 @@ namespace CocoroConsole.Services
             };
         }
 
+        public void SetBearerToken(string bearerToken)
+        {
+            ThrowIfDisposed();
+
+            _httpClient.DefaultRequestHeaders.Authorization = string.IsNullOrWhiteSpace(bearerToken)
+                ? null
+                : new AuthenticationHeaderValue("Bearer", bearerToken.Trim());
+        }
+
         public Task<OtomeKairoBootstrapProbeResponse> ProbeBootstrapAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -99,7 +108,7 @@ namespace CocoroConsole.Services
         public Task ReplaceMemorySetAsync(OtomeKairoMemorySetDefinition request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendNoContentAsync(
+            return SendOkAsync(
                 HttpMethod.Put,
                 BuildConfigResourcePath("/api/config/memory-sets", request.MemorySetId),
                 request,
@@ -113,7 +122,7 @@ namespace CocoroConsole.Services
             CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendNoContentAsync(
+            return SendOkAsync(
                 HttpMethod.Post,
                 "/api/config/memory-sets/clone",
                 new
@@ -128,7 +137,7 @@ namespace CocoroConsole.Services
         public Task DeleteMemorySetAsync(string memorySetId, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendNoContentAsync(
+            return SendOkAsync(
                 HttpMethod.Delete,
                 BuildConfigResourcePath("/api/config/memory-sets", memorySetId),
                 null,
@@ -144,7 +153,7 @@ namespace CocoroConsole.Services
         public Task SendVisionCaptureResponseAsync(VisionCaptureResponseRequest request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendNoContentAsync(HttpMethod.Post, "/api/v2/vision/capture-response", request, cancellationToken);
+            return SendOkAsync(HttpMethod.Post, "/api/vision/capture-response", request, cancellationToken);
         }
 
         private async Task<T> SendOtomeKairoAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
@@ -196,7 +205,7 @@ namespace CocoroConsole.Services
             }
         }
 
-        private async Task SendNoContentAsync(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
+        private async Task SendOkAsync(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
         {
             var url = BuildUrl(path);
             using var request = new HttpRequestMessage(method, url);
@@ -212,20 +221,34 @@ namespace CocoroConsole.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new HttpRequestException($"otomekairo APIエラー: {(int)response.StatusCode} {response.ReasonPhrase} {responseBody}");
+                    var errorEnvelope = JsonSerializer.Deserialize<OtomeKairoErrorEnvelope>(responseBody, _serializerOptions);
+                    var errorCode = errorEnvelope?.Error?.Code;
+                    var errorMessage = errorEnvelope?.Error?.Message
+                        ?? $"OtomeKairo APIエラー: {(int)response.StatusCode} {response.ReasonPhrase}";
+                    throw new OtomeKairoApiException((int)response.StatusCode, errorCode, errorMessage);
+                }
+
+                var successEnvelope = JsonSerializer.Deserialize<OtomeKairoSuccessEnvelope<JsonElement>>(responseBody, _serializerOptions);
+                if (successEnvelope == null || !successEnvelope.Ok)
+                {
+                    throw new InvalidOperationException("OtomeKairo APIレスポンスの解析に失敗しました");
                 }
             }
             catch (TaskCanceledException ex)
             {
-                throw new TimeoutException("otomekairo APIリクエストがタイムアウトしました", ex);
+                throw new TimeoutException("OtomeKairo APIリクエストがタイムアウトしました", ex);
             }
-            catch (HttpRequestException)
+            catch (OtomeKairoApiException)
             {
                 throw;
             }
+            catch (HttpRequestException ex)
+            {
+                throw new InvalidOperationException($"OtomeKairo API通信に失敗しました: {ex.Message}", ex);
+            }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"otomekairo API通信に失敗しました: {ex.Message}", ex);
+                throw new InvalidOperationException($"OtomeKairo API通信に失敗しました: {ex.Message}", ex);
             }
         }
 
@@ -391,12 +414,30 @@ namespace CocoroConsole.Services
 
         [JsonPropertyName("reply")]
         public OtomeKairoConversationReply? Reply { get; set; }
+
+        [JsonPropertyName("capability_request")]
+        public OtomeKairoCapabilityRequestSummary? CapabilityRequest { get; set; }
     }
 
     public class OtomeKairoConversationReply
     {
         [JsonPropertyName("text")]
         public string Text { get; set; } = string.Empty;
+    }
+
+    public class OtomeKairoCapabilityRequestSummary
+    {
+        [JsonPropertyName("request_id")]
+        public string RequestId { get; set; } = string.Empty;
+
+        [JsonPropertyName("capability_id")]
+        public string CapabilityId { get; set; } = string.Empty;
+
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = string.Empty;
+
+        [JsonPropertyName("timeout_ms")]
+        public int TimeoutMs { get; set; }
     }
 
     public class VisionClientContext

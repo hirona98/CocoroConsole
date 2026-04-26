@@ -11,18 +11,18 @@ using System.Threading.Tasks;
 namespace CocoroConsole.Communication
 {
     /// <summary>
-    /// otomekairo の /api/events/stream に接続してイベント(notification/meta-request/desktop_watch + vision command)を受信するクライアント
+    /// OtomeKairo の /api/events/stream に接続してサーバー駆動のイベントと制御要求を受信するクライアント。
     /// </summary>
     public sealed class EventsStreamClient : ResilientWebSocketClientBase
     {
         private readonly string? _clientId;
-        private readonly IReadOnlyList<string>? _caps;
+        private readonly IReadOnlyList<OtomeKairoCapabilityOffer>? _caps;
 
         public event EventHandler<OtomeKairoEvent>? EventReceived;
         public event EventHandler<bool>? ConnectionStateChanged;
         public event EventHandler<string>? ErrorOccurred;
 
-        public EventsStreamClient(Uri webSocketUri, string bearerToken, string? clientId = null, IReadOnlyList<string>? caps = null)
+        public EventsStreamClient(Uri webSocketUri, string bearerToken, string? clientId = null, IReadOnlyList<OtomeKairoCapabilityOffer>? caps = null)
             : base(webSocketUri, bearerToken)
         {
             _clientId = string.IsNullOrWhiteSpace(clientId) ? null : clientId.Trim();
@@ -61,7 +61,7 @@ namespace CocoroConsole.Communication
                 {
                     Type = "hello",
                     ClientId = _clientId!,
-                    Caps = _caps?.ToArray() ?? new[] { "vision.desktop", "vision.camera" }
+                    Caps = _caps?.ToArray() ?? new[] { new OtomeKairoCapabilityOffer("vision.capture", "1") }
                 };
 
                 var json = JsonSerializer.Serialize(payload);
@@ -139,11 +139,11 @@ namespace CocoroConsole.Communication
                 var data = new OtomeKairoEventData();
                 if (element.TryGetProperty("data", out var dataElement) && dataElement.ValueKind == JsonValueKind.Object)
                 {
-                    // --- 通常イベント（notification/meta-request/desktop_watch/reminder） ---
+                    // --- desktop_watch ---
                     data.SystemText = dataElement.TryGetProperty("system_text", out var systemText) ? systemText.GetString() : null;
                     data.Message = dataElement.TryGetProperty("message", out var message) ? message.GetString() : null;
 
-                    // --- 添付画像（notification等） ---
+                    // --- desktop_watch の添付画像 ---
                     if (dataElement.TryGetProperty("images", out var imagesElement) && imagesElement.ValueKind == JsonValueKind.Array)
                     {
                         var images = new List<string>();
@@ -171,9 +171,9 @@ namespace CocoroConsole.Communication
 
                     // --- vision.capture_request ---
                     data.RequestId = dataElement.TryGetProperty("request_id", out var requestId) ? requestId.GetString() : null;
+                    data.CapabilityId = dataElement.TryGetProperty("capability_id", out var capabilityId) ? capabilityId.GetString() : null;
                     data.Source = dataElement.TryGetProperty("source", out var source) ? source.GetString() : null;
                     data.Mode = dataElement.TryGetProperty("mode", out var mode) ? mode.GetString() : null;
-                    data.Purpose = dataElement.TryGetProperty("purpose", out var purpose) ? purpose.GetString() : null;
                     data.TimeoutMs = dataElement.TryGetProperty("timeout_ms", out var timeoutMs) && timeoutMs.TryGetInt32(out var timeoutValue)
                         ? timeoutValue
                         : null;
@@ -209,16 +209,31 @@ namespace CocoroConsole.Communication
         public string? Message { get; set; }
 
         /// <summary>
-        /// 通知などで添付された画像（Data URI）一覧。
+        /// イベントに添付された画像（Data URI）一覧。
         /// </summary>
         public List<string>? Images { get; set; }
 
-        // Vision command
+        // vision.capture_request のデータ
         public string? RequestId { get; set; }
+        public string? CapabilityId { get; set; }
         public string? Source { get; set; }
         public string? Mode { get; set; }
-        public string? Purpose { get; set; }
         public int? TimeoutMs { get; set; }
+    }
+
+    public sealed class OtomeKairoCapabilityOffer
+    {
+        public OtomeKairoCapabilityOffer(string id, string version)
+        {
+            Id = id;
+            Version = version;
+        }
+
+        [JsonPropertyName("id")]
+        public string Id { get; }
+
+        [JsonPropertyName("version")]
+        public string Version { get; }
     }
 
     internal sealed class HelloMessage
@@ -230,6 +245,6 @@ namespace CocoroConsole.Communication
         public string ClientId { get; set; } = string.Empty;
 
         [JsonPropertyName("caps")]
-        public string[] Caps { get; set; } = Array.Empty<string>();
+        public OtomeKairoCapabilityOffer[] Caps { get; set; } = Array.Empty<OtomeKairoCapabilityOffer>();
     }
 }

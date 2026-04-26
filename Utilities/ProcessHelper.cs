@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using CocoroConsole.Services;
@@ -28,14 +27,7 @@ namespace CocoroConsole.Utilities
     /// </summary>
     public static class ProcessHelper
     {
-        // --- OtomeKairo は自己署名HTTPSを前提とする ---
-        // LAN公開（Web UI含む）に寄せるため HTTPS 必須の設計になっている。
-        // CocoroConsole からのローカル制御（/api/control）は証明書のホスト検証を行わない。
-        private static readonly HttpClient httpClient = new HttpClient(
-            new HttpClientHandler
-            {
-                ServerCertificateCustomValidationCallback = (_, _, _, _) => true
-            })
+        private static readonly HttpClient httpClient = new HttpClient()
         {
             Timeout = TimeSpan.FromSeconds(5)
         };
@@ -232,11 +224,16 @@ namespace CocoroConsole.Utilities
         {
             try
             {
+                if (processName.Equals("OtomeKairo", StringComparison.OrdinalIgnoreCase))
+                {
+                    Debug.WriteLine("OtomeKairo の現行 API には /api/control がないため、REST API 経由の終了要求は送信しません。");
+                    return false;
+                }
+
                 // 設定から各プロセスのポート番号を取得
                 var settings = AppSettings.Instance;
                 int? port = processName.ToLower() switch
                 {
-                    "otomekairo" => settings.OtomeKairoPort,
                     "cocoroshell" => settings.CocoroShellPort,
                     _ => null
                 };
@@ -247,36 +244,7 @@ namespace CocoroConsole.Utilities
                     return false;
                 }
 
-                // --- OtomeKairo がリモート設定の場合、ローカル制御は行わない ---
-                if (processName.Equals("OtomeKairo", StringComparison.OrdinalIgnoreCase) &&
-                    !settings.IsOtomeKairoLocal())
-                {
-                    Debug.WriteLine("OtomeKairo がリモート設定のため、ローカルの終了要求は送信しません。");
-                    return false;
-                }
-
-                // --- OtomeKairo は Release ビルドのみ REST API で止める（デバッグ時は送信しない） ---
-                string? bearerToken = null;
-
-#if !DEBUG
-                if (processName.Equals("OtomeKairo", StringComparison.OrdinalIgnoreCase))
-                {
-                    bearerToken = (settings.OtomeKairoBearerToken ?? string.Empty).Trim();
-                    if (string.IsNullOrWhiteSpace(bearerToken))
-                    {
-                        Debug.WriteLine("otomekairo の Bearer トークンが未設定のため、REST API 経由の終了はできません。");
-                        return false;
-                    }
-                }
-#else
-                if (processName.Equals("OtomeKairo", StringComparison.OrdinalIgnoreCase))
-                {
-                    Debug.WriteLine("Debugビルドのため、otomekairo へ /api/control を送信しません。");
-                    return false;
-                }
-#endif
-
-                // --- shutdown コマンドを JSON で作成（OtomeKairo: docs/api.md の /api/control） ---
+                // --- shutdown コマンドを JSON で作成 ---
                 var shutdownRequest = new
                 {
                     action = "shutdown",
@@ -285,21 +253,15 @@ namespace CocoroConsole.Utilities
                 var json = System.Text.Json.JsonSerializer.Serialize(shutdownRequest);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // --- API URL を組み立てる（OtomeKairoは設定された接続先、CocoroShellはローカル固定） ---
-                var apiUrl = processName.Equals("OtomeKairo", StringComparison.OrdinalIgnoreCase)
-                    ? $"{settings.GetOtomeKairoBaseUrl()}/api/control"
-                    : $"http://127.0.0.1:{port}/api/control";
+                // --- CocoroShell のローカル API URL を組み立てる ---
+                var apiUrl = $"http://127.0.0.1:{port}/api/control";
 
-                // --- /api/control エンドポイントに POST で送信（必要なら Authorization を付与） ---
+                // --- /api/control エンドポイントに POST で送信 ---
                 // ConfigureAwait(false) を使用してデッドロックを回避
                 using var requestMessage = new HttpRequestMessage(HttpMethod.Post, apiUrl)
                 {
                     Content = content
                 };
-                if (!string.IsNullOrWhiteSpace(bearerToken))
-                {
-                    requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
-                }
                 var response = await httpClient.SendAsync(requestMessage).ConfigureAwait(false);
 
                 if (response.IsSuccessStatusCode)

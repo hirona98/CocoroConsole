@@ -68,7 +68,7 @@ namespace CocoroConsole.Controls
             var wakePolicy = current?.WakePolicy ?? new Dictionary<string, object?>();
             var mode = ReadString(wakePolicy, "mode");
             WakePolicyEnabledCheckBox.IsChecked = string.Equals(mode, "interval", StringComparison.OrdinalIgnoreCase);
-            WakeIntervalMinutesTextBox.Text = ReadInt(wakePolicy, "interval_minutes", 5).ToString(CultureInfo.InvariantCulture);
+            WakeIntervalSecondsTextBox.Text = ReadInt(wakePolicy, "interval_seconds", 300).ToString(CultureInfo.InvariantCulture);
         }
 
         private void ApplyDefaultRemoteSettings()
@@ -76,7 +76,7 @@ namespace CocoroConsole.Controls
             DesktopWatchEnabledCheckBox.IsChecked = false;
             DesktopWatchIntervalSecondsTextBox.Text = "300";
             WakePolicyEnabledCheckBox.IsChecked = false;
-            WakeIntervalMinutesTextBox.Text = "5";
+            WakeIntervalSecondsTextBox.Text = "300";
         }
 
         private void SetupEventHandlers()
@@ -88,7 +88,7 @@ namespace CocoroConsole.Controls
             ExcludeWindowTitlePatternsTextBox.TextChanged += OnSettingsChanged;
             WakePolicyEnabledCheckBox.Checked += OnSettingsChanged;
             WakePolicyEnabledCheckBox.Unchecked += OnSettingsChanged;
-            WakeIntervalMinutesTextBox.TextChanged += OnSettingsChanged;
+            WakeIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
             MicThresholdSlider.ValueChanged += OnSettingsChanged;
         }
 
@@ -121,16 +121,16 @@ namespace CocoroConsole.Controls
         {
             if (WakePolicyEnabledCheckBox.IsChecked ?? false)
             {
-                var intervalMinutes = 5;
-                if (int.TryParse(WakeIntervalMinutesTextBox.Text, out var parsed) && parsed > 0)
+                var intervalSeconds = 300;
+                if (int.TryParse(WakeIntervalSecondsTextBox.Text, out var parsed) && parsed > 0)
                 {
-                    intervalMinutes = parsed;
+                    intervalSeconds = parsed;
                 }
 
                 return new Dictionary<string, object?>
                 {
                     ["mode"] = "interval",
-                    ["interval_minutes"] = intervalMinutes,
+                    ["interval_seconds"] = intervalSeconds,
                 };
             }
 
