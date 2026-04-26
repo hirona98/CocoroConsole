@@ -1,6 +1,5 @@
 using CocoroConsole.Communication;
 using CocoroConsole.Models;
-using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;

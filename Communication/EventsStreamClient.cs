@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -171,9 +170,7 @@ namespace CocoroConsole.Communication
 
                     // --- vision.capture_request ---
                     data.RequestId = dataElement.TryGetProperty("request_id", out var requestId) ? requestId.GetString() : null;
-                    data.CapabilityId = dataElement.TryGetProperty("capability_id", out var capabilityId) ? capabilityId.GetString() : null;
                     data.Source = dataElement.TryGetProperty("source", out var source) ? source.GetString() : null;
-                    data.Mode = dataElement.TryGetProperty("mode", out var mode) ? mode.GetString() : null;
                     data.TimeoutMs = dataElement.TryGetProperty("timeout_ms", out var timeoutMs) && timeoutMs.TryGetInt32(out var timeoutValue)
                         ? timeoutValue
                         : null;
@@ -215,9 +212,7 @@ namespace CocoroConsole.Communication
 
         // vision.capture_request のデータ
         public string? RequestId { get; set; }
-        public string? CapabilityId { get; set; }
         public string? Source { get; set; }
-        public string? Mode { get; set; }
         public int? TimeoutMs { get; set; }
     }
 

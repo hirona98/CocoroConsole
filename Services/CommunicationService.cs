@@ -857,18 +857,6 @@ namespace CocoroConsole.Services
             }
         }
 
-
-        /// <summary>
-        /// 通知メッセージ受信イベントを発火（内部使用）
-        /// </summary>
-        /// <param name="notification">通知メッセージペイロード</param>
-        /// <param name="imageSources">画像データリスト（オプション）</param>
-        public void RaiseNotificationMessageReceived(ChatMessagePayload notification, List<System.Windows.Media.Imaging.BitmapSource>? imageSources = null)
-        {
-            NotificationMessageReceived?.Invoke(notification, imageSources);
-        }
-
-
         /// <summary>
         /// CocoroShellにTTS状態を送信
         /// </summary>
@@ -1073,7 +1061,7 @@ namespace CocoroConsole.Services
             {
                 if (string.Equals(ev.Type, "desktop_watch", StringComparison.OrdinalIgnoreCase))
                 {
-                    var systemText = BuildNotificationDisplayText(ev.Data.SystemText);
+                    var systemText = ev.Data.SystemText?.Trim() ?? string.Empty;
                     if (!string.IsNullOrWhiteSpace(systemText))
                     {
                         var extractedSourceSystem = TryExtractBracketedSourceSystem(systemText);
@@ -1119,17 +1107,6 @@ namespace CocoroConsole.Services
             {
                 Debug.WriteLine($"イベント処理エラー: {ex.Message}");
             }
-        }
-
-        private static string BuildNotificationDisplayText(string? systemText)
-        {
-            var systemTextTrimmed = systemText?.Trim();
-            if (!string.IsNullOrEmpty(systemTextTrimmed))
-            {
-                return systemTextTrimmed;
-            }
-
-            return string.Empty;
         }
 
         private void HandlePartnerMessageFromEvent(OtomeKairoEvent ev, string partnerMessage)

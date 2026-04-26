@@ -1,5 +1,4 @@
 using CocoroConsole.Communication;
-using CocoroConsole.Models.OtomeKairoApi;
 using System.Collections.Generic;
 
 namespace CocoroConsole.Services
