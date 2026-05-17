@@ -325,7 +325,7 @@ namespace CocoroConsole.Windows
                 return "（なし）";
             }
 
-            return $"快不快={GetString(element, "valence")} 覚醒={GetString(element, "arousal")} 支配={GetString(element, "dominance")}";
+            return $"快不快={GetString(element, "v")} 覚醒={GetString(element, "a")} 支配={GetString(element, "d")}";
         }
     }
 }
