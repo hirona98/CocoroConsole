@@ -16,6 +16,7 @@ namespace CocoroConsole.Services
     /// </summary>
     public class OtomeKairoApiClient : IDisposable
     {
+        private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(3);
         private readonly HttpClient _httpClient;
         private readonly string _baseUrl;
         private readonly JsonSerializerOptions _serializerOptions;
@@ -39,7 +40,7 @@ namespace CocoroConsole.Services
 
             _httpClient = new HttpClient(handler)
             {
-                Timeout = TimeSpan.FromSeconds(30),
+                Timeout = Timeout.InfiniteTimeSpan,
             };
             if (!string.IsNullOrWhiteSpace(bearerToken))
             {
@@ -156,7 +157,38 @@ namespace CocoroConsole.Services
             return SendOkAsync(HttpMethod.Post, "/api/vision/capture-response", request, cancellationToken);
         }
 
-        private async Task<T> SendOtomeKairoAsync<T>(HttpMethod method, string path, object? payload, CancellationToken cancellationToken)
+        public Task<OtomeKairoCycleSummariesResponse> GetCycleSummariesAsync(int limit = 50, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            var normalizedLimit = limit > 0 ? limit : 50;
+            return SendOtomeKairoAsync<OtomeKairoCycleSummariesResponse>(
+                HttpMethod.Get,
+                $"/api/inspection/cycle-summaries?limit={normalizedLimit}",
+                null,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoCycleTrace> GetCycleTraceAsync(string cycleId, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            if (string.IsNullOrWhiteSpace(cycleId))
+            {
+                throw new ArgumentException("cycleIdを指定してください", nameof(cycleId));
+            }
+
+            return SendOtomeKairoAsync<OtomeKairoCycleTrace>(
+                HttpMethod.Get,
+                $"/api/inspection/cycles/{cycleId.Trim()}",
+                null,
+                cancellationToken);
+        }
+
+        private async Task<T> SendOtomeKairoAsync<T>(
+            HttpMethod method,
+            string path,
+            object? payload,
+            CancellationToken cancellationToken,
+            TimeSpan? requestTimeout = null)
         {
             var url = BuildUrl(path);
             using var request = new HttpRequestMessage(method, url);
@@ -164,11 +196,13 @@ namespace CocoroConsole.Services
             {
                 request.Content = CreateJsonContent(payload);
             }
+            using var timeoutCts = new CancellationTokenSource(requestTimeout ?? DefaultRequestTimeout);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
             try
             {
-                using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                using var response = await _httpClient.SendAsync(request, linkedCts.Token).ConfigureAwait(false);
+                var responseBody = await response.Content.ReadAsStringAsync(linkedCts.Token).ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -189,6 +223,10 @@ namespace CocoroConsole.Services
             }
             catch (TaskCanceledException ex)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException("OtomeKairo APIリクエストがキャンセルされました", ex, cancellationToken);
+                }
                 throw new TimeoutException("OtomeKairo APIリクエストがタイムアウトしました", ex);
             }
             catch (OtomeKairoApiException)
@@ -213,11 +251,13 @@ namespace CocoroConsole.Services
             {
                 request.Content = CreateJsonContent(payload);
             }
+            using var timeoutCts = new CancellationTokenSource(DefaultRequestTimeout);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
             try
             {
-                using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                using var response = await _httpClient.SendAsync(request, linkedCts.Token).ConfigureAwait(false);
+                var responseBody = await response.Content.ReadAsStringAsync(linkedCts.Token).ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -236,6 +276,10 @@ namespace CocoroConsole.Services
             }
             catch (TaskCanceledException ex)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException("OtomeKairo APIリクエストがキャンセルされました", ex, cancellationToken);
+                }
                 throw new TimeoutException("OtomeKairo APIリクエストがタイムアウトしました", ex);
             }
             catch (OtomeKairoApiException)

@@ -30,6 +30,7 @@ namespace CocoroConsole
         private RealtimeVoiceRecognitionService? _voiceRecognitionService;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
+        private FactResolutionViewerWindow? _factResolutionViewerWindow;
         private DebugTraceListener? _debugTraceListener;
         private bool _isStreamingChatActive;
         private bool _skipNextAssistantMessage;
@@ -40,6 +41,7 @@ namespace CocoroConsole
         private const string MainWindowPlacementKey = "MainWindow";
         private const string SettingWindowPlacementKey = "SettingWindow";
         private const string LogViewerWindowPlacementKey = "LogViewerWindow";
+        private const string FactResolutionViewerWindowPlacementKey = "FactResolutionViewerWindow";
         private static readonly TimeSpan OtomeKairoStartupTimeout = TimeSpan.FromMinutes(2);
 
         // --- OtomeKairo の最新ステータス（ステータスバー復帰先） ---
@@ -86,6 +88,11 @@ namespace CocoroConsole
         private void LogViewerMenuItem_Click(object sender, RoutedEventArgs e)
         {
             OpenLogViewer();
+        }
+
+        private void FactResolutionViewerMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFactResolutionViewer();
         }
 
 
@@ -666,6 +673,34 @@ namespace CocoroConsole
             }
 
             _logViewerWindow.Show();
+        }
+
+        public void OpenFactResolutionViewer()
+        {
+            if (_factResolutionViewerWindow != null && !_factResolutionViewerWindow.IsClosed)
+            {
+                _factResolutionViewerWindow.Activate();
+                _factResolutionViewerWindow.WindowState = WindowState.Normal;
+                return;
+            }
+
+            _factResolutionViewerWindow = new FactResolutionViewerWindow();
+            _factResolutionViewerWindow.Owner = this;
+            var isPositionRestored = WindowPlacementManager.AttachAndRestore(
+                _factResolutionViewerWindow,
+                FactResolutionViewerWindowPlacementKey,
+                _appSettings);
+            if (!isPositionRestored)
+            {
+                PositionWindowNearMain(_factResolutionViewerWindow);
+            }
+
+            _factResolutionViewerWindow.Closed += (sender, args) =>
+            {
+                _factResolutionViewerWindow = null;
+            };
+
+            _factResolutionViewerWindow.Show();
         }
 
 

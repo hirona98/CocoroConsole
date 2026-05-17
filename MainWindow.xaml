@@ -41,6 +41,9 @@
                                                    FontWeight="SemiBold">
                                                 <TextBlock.ContextMenu>
                                                         <ContextMenu>
+                                                                <MenuItem Header="根拠トレース表示"
+                                                                          Click="FactResolutionViewerMenuItem_Click"/>
+                                                                <Separator/>
                                                                 <MenuItem Header="ログ表示"
                                                                           Click="LogViewerMenuItem_Click"/>
                                                         </ContextMenu>
