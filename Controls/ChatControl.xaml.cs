@@ -24,10 +24,10 @@ namespace CocoroConsole.Controls
     {
         public event EventHandler<string>? MessageSent;
 
-        // 添付画像データ（Base64形式のdata URL、最大5枚）
+        // 添付画像データ（Base64形式のdata URL、API仕様に合わせて最大1枚）
         private List<string> _attachedImageDataUrls = new List<string>();
         private List<BitmapSource> _attachedImageSources = new List<BitmapSource>();
-        private const int MaxImageCount = 5;
+        private const int MaxImageCount = 1;
 
         // バブル内の時刻表示識別子（右クリックコピー等の既存ロジックと干渉しないためTagで判別）
         private const string TimestampTag = "CocoroConsole.ChatBubble.Timestamp";

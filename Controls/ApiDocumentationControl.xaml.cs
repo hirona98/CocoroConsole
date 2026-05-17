@@ -49,6 +49,7 @@ namespace CocoroConsole.Controls
             sb.AppendLine("リクエストボディ (JSON):");
             sb.AppendLine("{");
             sb.AppendLine("  \"text\": \"こんにちは\",");
+            sb.AppendLine("  \"images\": [\"data:image/png;base64,...\"],");
             sb.AppendLine("  \"client_context\": {");
             sb.AppendLine("    \"source\": \"CocoroConsole\",");
             sb.AppendLine("    \"client_id\": \"console-...\",");
@@ -57,6 +58,7 @@ namespace CocoroConsole.Controls
             sb.AppendLine("    \"locale\": \"ja-JP\"");
             sb.AppendLine("  }");
             sb.AppendLine("}");
+            sb.AppendLine("- images は省略可能、指定時は Data URI を最大1件送る");
             sb.AppendLine();
 
             sb.AppendLine("レスポンス:");
@@ -74,7 +76,7 @@ namespace CocoroConsole.Controls
             sb.AppendLine($"curl.exe -k -X POST {baseUrl}/api/conversation \\");
             sb.AppendLine("  -H \"Authorization: Bearer <TOKEN>\" \\");
             sb.AppendLine("  -H \"Content-Type: application/json\" \\");
-            sb.AppendLine("  -d '{\"text\":\"こんにちは\",\"client_context\":{\"source\":\"CocoroConsole\",\"client_id\":\"console-...\",\"locale\":\"ja-JP\"}}'");
+            sb.AppendLine("  -d '{\"text\":\"こんにちは\",\"images\":[\"data:image/png;base64,...\"],\"client_context\":{\"source\":\"CocoroConsole\",\"client_id\":\"console-...\",\"locale\":\"ja-JP\"}}'");
             sb.AppendLine();
 
             sb.AppendLine("使用例 (PowerShell):");
@@ -83,7 +85,7 @@ namespace CocoroConsole.Controls
             sb.AppendLine($"  -Uri \"{baseUrl}/api/conversation\" `");
             sb.AppendLine("  -Headers @{ Authorization = \"Bearer <TOKEN>\" } `");
             sb.AppendLine("  -ContentType \"application/json; charset=utf-8\" `");
-            sb.AppendLine("  -Body '{\"text\":\"こんにちは\",\"client_context\":{\"source\":\"CocoroConsole\",\"client_id\":\"console-...\",\"locale\":\"ja-JP\"}}'");
+            sb.AppendLine("  -Body '{\"text\":\"こんにちは\",\"images\":[\"data:image/png;base64,...\"],\"client_context\":{\"source\":\"CocoroConsole\",\"client_id\":\"console-...\",\"locale\":\"ja-JP\"}}'");
             return sb.ToString();
         }
 

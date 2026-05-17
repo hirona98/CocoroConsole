@@ -546,21 +546,6 @@ namespace CocoroConsole.Services
                     return;
                 }
 
-                // --- 現在の OtomeKairo API は画像付き会話に未対応 ---
-                if (imageDataUrls != null && imageDataUrls.Any(url => !string.IsNullOrWhiteSpace(url)))
-                {
-                    var errorMessage = "現在の OtomeKairo API では画像付き会話は未対応です";
-                    StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
-                    {
-                        Content = string.Empty,
-                        IsFinished = true,
-                        IsError = true,
-                        ErrorMessage = errorMessage
-                    });
-                    StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, errorMessage));
-                    return;
-                }
-
                 // --- 送信前に bootstrap と認証状態を整える ---
                 await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
                 if (_otomeKairoApiClient == null || string.IsNullOrWhiteSpace(_appSettings.OtomeKairoBearerToken))
@@ -584,10 +569,20 @@ namespace CocoroConsole.Services
                 _statusPollingService.SetProcessingStatus(OtomeKairoStatus.ProcessingMessage);
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット送信開始"));
 
+                var normalizedImages = imageDataUrls?
+                    .Where(url => !string.IsNullOrWhiteSpace(url))
+                    .Select(url => url.Trim())
+                    .ToList();
+                if (normalizedImages != null && normalizedImages.Count == 0)
+                {
+                    normalizedImages = null;
+                }
+
                 // --- OtomeKairo の会話入力 API を呼ぶ ---
                 var response = await _otomeKairoApiClient.SendConversationAsync(new OtomeKairoConversationRequest
                 {
                     Text = message,
+                    Images = normalizedImages,
                     ClientContext = BuildOtomeKairoClientContext()
                 }).ConfigureAwait(false);
 
@@ -654,6 +649,7 @@ namespace CocoroConsole.Services
                 {
                     "invalid_token" => "OtomeKairo の認証に失敗しました。接続設定を確認してください。",
                     "bootstrap_required" => "OtomeKairo の初回登録がまだ完了していません。",
+                    "invalid_images" => "添付画像は Data URI 1枚まで送信できます。",
                     _ => ex.Message,
                 };
                 Debug.WriteLine($"OtomeKairo APIエラー: {errorMessage}");

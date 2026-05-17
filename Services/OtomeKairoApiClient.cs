@@ -454,6 +454,10 @@ namespace CocoroConsole.Services
         [JsonPropertyName("text")]
         public string Text { get; set; } = string.Empty;
 
+        [JsonPropertyName("images")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<string>? Images { get; set; }
+
         [JsonPropertyName("client_context")]
         public Dictionary<string, object?>? ClientContext { get; set; }
     }
