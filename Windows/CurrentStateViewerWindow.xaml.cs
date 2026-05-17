@@ -146,112 +146,112 @@ namespace CocoroConsole.Windows
         private string BuildOverview(OtomeKairoCurrentStateSnapshot snapshot)
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"generated_at: {snapshot.GeneratedAt}");
-            builder.AppendLine($"selected_persona_id: {GetString(snapshot.SettingsSnapshot, "selected_persona_id")}");
-            builder.AppendLine($"selected_memory_set_id: {GetString(snapshot.SettingsSnapshot, "selected_memory_set_id")}");
-            builder.AppendLine($"selected_model_preset_id: {GetString(snapshot.SettingsSnapshot, "selected_model_preset_id")}");
-            builder.AppendLine($"wake_mode: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "wake_policy"), "mode")}");
-            builder.AppendLine($"desktop_watch_enabled: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "desktop_watch"), "enabled")}");
+            builder.AppendLine($"生成時刻: {snapshot.GeneratedAt}");
+            builder.AppendLine($"選択中人格ID: {GetString(snapshot.SettingsSnapshot, "selected_persona_id")}");
+            builder.AppendLine($"選択中記憶セットID: {GetString(snapshot.SettingsSnapshot, "selected_memory_set_id")}");
+            builder.AppendLine($"選択中モデルプリセットID: {GetString(snapshot.SettingsSnapshot, "selected_model_preset_id")}");
+            builder.AppendLine($"起床モード: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "wake_policy"), "mode")}");
+            builder.AppendLine($"デスクトップ監視有効: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "desktop_watch"), "enabled")}");
             builder.AppendLine();
 
-            builder.AppendLine("runtime_summary:");
-            builder.AppendLine($"  connection_state={GetString(snapshot.RuntimeSummary, "connection_state")}");
-            builder.AppendLine($"  wake_scheduler_active={GetString(snapshot.RuntimeSummary, "wake_scheduler_active")}");
-            builder.AppendLine($"  ongoing_action_exists={GetString(snapshot.RuntimeSummary, "ongoing_action_exists")}");
-            builder.AppendLine($"  memory_job_worker_active={GetString(snapshot.RuntimeSummary, "memory_job_worker_active")}");
-            builder.AppendLine($"  pending_memory_job_count={GetString(snapshot.RuntimeSummary, "pending_memory_job_count")}");
-            builder.AppendLine($"  memory_job_in_progress={GetString(snapshot.RuntimeSummary, "memory_job_in_progress")}");
+            builder.AppendLine("実行要約:");
+            builder.AppendLine($"  接続状態={GetString(snapshot.RuntimeSummary, "connection_state")}");
+            builder.AppendLine($"  起床スケジューラ稼働={GetString(snapshot.RuntimeSummary, "wake_scheduler_active")}");
+            builder.AppendLine($"  進行中アクションあり={GetString(snapshot.RuntimeSummary, "ongoing_action_exists")}");
+            builder.AppendLine($"  記憶ジョブワーカー稼働={GetString(snapshot.RuntimeSummary, "memory_job_worker_active")}");
+            builder.AppendLine($"  保留中記憶ジョブ数={GetString(snapshot.RuntimeSummary, "pending_memory_job_count")}");
+            builder.AppendLine($"  記憶ジョブ実行中={GetString(snapshot.RuntimeSummary, "memory_job_in_progress")}");
             builder.AppendLine();
 
-            builder.AppendLine("runtime_detail:");
+            builder.AppendLine("実行詳細:");
             builder.AppendLine(
-                $"  wake last_wake_at={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_wake_at")} " +
-                $"last_spontaneous_at={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_spontaneous_at")} " +
-                $"cooldown_until={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "cooldown_until")}"
+                $"  起床状態 最終起床={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_wake_at")} " +
+                $"最終自発発話={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_spontaneous_at")} " +
+                $"クールダウン終了={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "cooldown_until")}"
             );
             builder.AppendLine(
-                $"  desktop_watch last_watch_at={GetString(TryGetProperty(snapshot.RuntimeDetail, "desktop_watch_runtime_state"), "last_watch_at")}"
+                $"  デスクトップ監視 最終監視={GetString(TryGetProperty(snapshot.RuntimeDetail, "desktop_watch_runtime_state"), "last_watch_at")}"
             );
             builder.AppendLine(
-                $"  memory_postprocess current_cycle_id={GetString(TryGetProperty(snapshot.RuntimeDetail, "memory_postprocess_runtime_state"), "current_cycle_id")}"
+                $"  記憶後処理 現在サイクルID={GetString(TryGetProperty(snapshot.RuntimeDetail, "memory_postprocess_runtime_state"), "current_cycle_id")}"
             );
             builder.AppendLine(
-                $"  pending_capability_request_count={GetArrayLength(TryGetProperty(snapshot.RuntimeDetail, "pending_capability_requests"))}"
+                $"  保留中機能要求数={GetArrayLength(TryGetProperty(snapshot.RuntimeDetail, "pending_capability_requests"))}"
             );
             builder.AppendLine();
 
             var currentState = snapshot.CurrentState;
             var ongoingAction = TryGetProperty(currentState, "ongoing_action");
-            builder.AppendLine("ongoing_action:");
+            builder.AppendLine("進行中アクション:");
             if (ongoingAction.ValueKind != JsonValueKind.Object)
             {
-                builder.AppendLine("  (none)");
+                builder.AppendLine("  （なし）");
             }
             else
             {
                 builder.AppendLine(
-                    $"  action_id={GetString(ongoingAction, "action_id")} status={GetString(ongoingAction, "status")} " +
-                    $"last_capability_id={GetString(ongoingAction, "last_capability_id")}"
+                    $"  アクションID={GetString(ongoingAction, "action_id")} 状態={GetString(ongoingAction, "status")} " +
+                    $"最終機能ID={GetString(ongoingAction, "last_capability_id")}"
                 );
-                builder.AppendLine($"  goal={GetString(ongoingAction, "goal_summary")}");
-                builder.AppendLine($"  step={GetString(ongoingAction, "step_summary")}");
+                builder.AppendLine($"  目標={GetString(ongoingAction, "goal_summary")}");
+                builder.AppendLine($"  ステップ={GetString(ongoingAction, "step_summary")}");
             }
             builder.AppendLine();
 
-            builder.AppendLine("mood_state:");
-            builder.AppendLine($"  confidence={GetString(TryGetProperty(currentState, "mood_state"), "confidence")}");
-            builder.AppendLine($"  current_vad={BuildVadLine(TryGetProperty(TryGetProperty(currentState, "mood_state"), "current_vad"))}");
+            builder.AppendLine("気分状態:");
+            builder.AppendLine($"  信頼度={GetString(TryGetProperty(currentState, "mood_state"), "confidence")}");
+            builder.AppendLine($"  現在VAD={BuildVadLine(TryGetProperty(TryGetProperty(currentState, "mood_state"), "current_vad"))}");
             builder.AppendLine();
 
             AppendArraySection(
                 builder,
-                "foreground_world_states",
+                "前景ワールド状態",
                 TryGetProperty(currentState, "foreground_world_states"),
                 element =>
-                    $"{GetString(element, "state_type")} {GetString(element, "scope_type")}:{GetString(element, "scope_key")} " +
-                    $"salience={GetString(element, "salience")} {GetString(element, "summary_text")}"
+                    $"種別={GetString(element, "state_type")} 対象={GetString(element, "scope_type")}:{GetString(element, "scope_key")} " +
+                    $"顕著度={GetString(element, "salience")} 要約={GetString(element, "summary_text")}"
             );
             AppendArraySection(
                 builder,
-                "drive_states",
+                "ドライブ状態",
                 TryGetProperty(currentState, "drive_states"),
                 element =>
-                    $"{GetString(element, "drive_kind")} salience={GetString(element, "salience")} " +
-                    $"{GetString(element, "summary_text")}"
+                    $"種別={GetString(element, "drive_kind")} 顕著度={GetString(element, "salience")} " +
+                    $"要約={GetString(element, "summary_text")}"
             );
             AppendArraySection(
                 builder,
-                "pending_intent_candidates",
+                "保留意図候補",
                 TryGetProperty(currentState, "pending_intent_candidates"),
                 element =>
-                    $"{GetString(element, "intent_kind")} not_before={GetString(element, "not_before")} " +
-                    $"expires_at={GetString(element, "expires_at")} {GetString(element, "intent_summary")}"
+                    $"種別={GetString(element, "intent_kind")} 実行開始以降={GetString(element, "not_before")} " +
+                    $"失効時刻={GetString(element, "expires_at")} 要約={GetString(element, "intent_summary")}"
             );
             AppendArraySection(
                 builder,
-                "pending_capability_requests",
+                "保留中機能要求",
                 TryGetProperty(snapshot.RuntimeDetail, "pending_capability_requests"),
                 element =>
-                    $"{GetString(element, "capability_id")} request_id={GetString(element, "request_id")} " +
-                    $"target={GetString(element, "target_client_id")} expires_at={GetString(element, "expires_at")}"
+                    $"機能ID={GetString(element, "capability_id")} 要求ID={GetString(element, "request_id")} " +
+                    $"対象={GetString(element, "target_client_id")} 失効時刻={GetString(element, "expires_at")}"
             );
             AppendArraySection(
                 builder,
-                "affect_states",
+                "感情状態",
                 TryGetProperty(currentState, "affect_states"),
                 element =>
-                    $"{GetString(element, "affect_label")} intensity={GetString(element, "intensity")} " +
-                    $"{GetString(element, "target_scope_type")}:{GetString(element, "target_scope_key")} " +
-                    $"{GetString(element, "summary_text")}"
+                    $"ラベル={GetString(element, "affect_label")} 強度={GetString(element, "intensity")} " +
+                    $"対象={GetString(element, "target_scope_type")}:{GetString(element, "target_scope_key")} " +
+                    $"要約={GetString(element, "summary_text")}"
             );
             AppendArraySection(
                 builder,
-                "capabilities",
+                "機能一覧",
                 TryGetProperty(snapshot.CapabilityInspection, "capabilities"),
                 element =>
-                    $"{GetString(element, "capability_id")} available={GetString(element, "available")} " +
-                    $"reason={GetString(element, "unavailable_reason")} busy={GetString(TryGetProperty(element, "state"), "busy")} " +
-                    $"paused={GetString(TryGetProperty(element, "state"), "paused")}"
+                    $"機能ID={GetString(element, "capability_id")} 利用可能={GetString(element, "available")} " +
+                    $"理由={GetString(element, "unavailable_reason")} 実行中={GetString(TryGetProperty(element, "state"), "busy")} " +
+                    $"一時停止={GetString(TryGetProperty(element, "state"), "paused")}"
             );
 
             return builder.ToString();
@@ -262,7 +262,7 @@ namespace CocoroConsole.Windows
             builder.AppendLine($"{title}:");
             if (array.ValueKind != JsonValueKind.Array || array.GetArrayLength() == 0)
             {
-                builder.AppendLine("  (none)");
+                builder.AppendLine("  （なし）");
                 builder.AppendLine();
                 return;
             }
@@ -322,10 +322,10 @@ namespace CocoroConsole.Windows
         {
             if (element.ValueKind != JsonValueKind.Object)
             {
-                return "(none)";
+                return "（なし）";
             }
 
-            return $"valence={GetString(element, "valence")} arousal={GetString(element, "arousal")} dominance={GetString(element, "dominance")}";
+            return $"快不快={GetString(element, "valence")} 覚醒={GetString(element, "arousal")} 支配={GetString(element, "dominance")}";
         }
     }
 }

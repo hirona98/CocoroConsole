@@ -229,64 +229,64 @@ namespace CocoroConsole.Windows
             var triggerKind = GetString(cycleSummary, "trigger_kind");
             var resultKind = GetString(cycleSummary, "result_kind");
             var failed = GetString(cycleSummary, "failed");
-            return $"started_at={startedAt} / trigger={triggerKind} / result={resultKind} / failed={failed}";
+            return $"開始時刻={startedAt} / トリガー={triggerKind} / 結果={resultKind} / 失敗={failed}";
         }
 
         private string BuildOverview(OtomeKairoCycleTrace trace, JsonElement factTrace)
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"cycle_id: {trace.CycleId}");
-            builder.AppendLine($"started_at: {GetString(trace.CycleSummary, "started_at")}");
-            builder.AppendLine($"trigger_kind: {GetString(trace.CycleSummary, "trigger_kind")}");
-            builder.AppendLine($"result_kind: {GetString(trace.CycleSummary, "result_kind")}");
+            builder.AppendLine($"サイクルID: {trace.CycleId}");
+            builder.AppendLine($"開始時刻: {GetString(trace.CycleSummary, "started_at")}");
+            builder.AppendLine($"トリガー種別: {GetString(trace.CycleSummary, "trigger_kind")}");
+            builder.AppendLine($"結果種別: {GetString(trace.CycleSummary, "result_kind")}");
             builder.AppendLine();
 
             if (factTrace.ValueKind != JsonValueKind.Object)
             {
-                builder.AppendLine("fact_resolution_trace: (なし)");
+                builder.AppendLine("根拠解決トレース: （なし）");
                 return builder.ToString();
             }
 
             var query = TryGetProperty(factTrace, "query");
-            builder.AppendLine($"resolver_path: {GetString(factTrace, "resolver_path")}");
-            builder.AppendLine($"result_status: {GetString(factTrace, "result_status")}");
-            builder.AppendLine($"contract: {GetString(query, "contract")}");
-            builder.AppendLine($"boundary: {GetString(query, "boundary")}");
-            builder.AppendLine($"target_actor: {GetString(query, "target_actor")}");
-            builder.AppendLine($"reason_codes: {JoinArrayValues(query, "reason_codes")}");
-            builder.AppendLine($"query_terms: {JoinArrayValues(query, "query_terms")}");
-            builder.AppendLine($"missing_reason: {GetString(factTrace, "missing_reason")}");
-            builder.AppendLine($"reply_guidance: {GetString(factTrace, "reply_guidance")}");
-            builder.AppendLine($"input_text: {GetString(query, "input_text")}");
+            builder.AppendLine($"解決経路: {GetString(factTrace, "resolver_path")}");
+            builder.AppendLine($"結果状態: {GetString(factTrace, "result_status")}");
+            builder.AppendLine($"契約: {GetString(query, "contract")}");
+            builder.AppendLine($"境界: {GetString(query, "boundary")}");
+            builder.AppendLine($"対象話者: {GetString(query, "target_actor")}");
+            builder.AppendLine($"理由コード: {JoinArrayValues(query, "reason_codes")}");
+            builder.AppendLine($"クエリ語: {JoinArrayValues(query, "query_terms")}");
+            builder.AppendLine($"未解決理由: {GetString(factTrace, "missing_reason")}");
+            builder.AppendLine($"返信ガイダンス: {GetString(factTrace, "reply_guidance")}");
+            builder.AppendLine($"入力文: {GetString(query, "input_text")}");
             builder.AppendLine();
 
             AppendArraySection(
                 builder,
-                "boundary_event_candidates",
+                "境界候補イベント",
                 TryGetProperty(factTrace, "boundary_event_candidates"),
                 element => $"{GetString(element, "recorded_date")} {GetString(element, "event_id")} {GetString(element, "text")}"
             );
             AppendArraySection(
                 builder,
-                "cycle_event_candidates",
+                "サイクル候補イベント",
                 TryGetProperty(factTrace, "cycle_event_candidates"),
                 element => $"{GetString(element, "recorded_date")} {GetString(element, "event_id")} {GetString(element, "text")}"
             );
             AppendArraySection(
                 builder,
-                "statement_event_candidates",
+                "発話候補イベント",
                 TryGetProperty(factTrace, "statement_event_candidates"),
                 element => $"{GetString(element, "recorded_date")} {GetString(element, "event_id")} {GetString(element, "text")}"
             );
             AppendArraySection(
                 builder,
-                "conflict_candidates",
+                "矛盾候補",
                 TryGetProperty(factTrace, "conflict_candidates"),
                 element => $"{GetString(element, "source_id")} {GetString(element, "text")}"
             );
             AppendArraySection(
                 builder,
-                "adopted_evidence_items",
+                "採用根拠",
                 TryGetProperty(factTrace, "adopted_evidence_items"),
                 element => $"{GetString(element, "recorded_date")} {GetString(element, "event_id")} {GetString(element, "source_id")} {GetString(element, "text")}"
             );
@@ -298,10 +298,10 @@ namespace CocoroConsole.Windows
 
         private void AppendConsistencyChecks(StringBuilder builder, JsonElement checks)
         {
-            builder.AppendLine("consistency_checks:");
+            builder.AppendLine("整合性チェック:");
             if (checks.ValueKind != JsonValueKind.Array || checks.GetArrayLength() == 0)
             {
-                builder.AppendLine("  (none)");
+                builder.AppendLine("  （なし）");
                 builder.AppendLine();
                 return;
             }
@@ -309,7 +309,7 @@ namespace CocoroConsole.Windows
             foreach (var check in checks.EnumerateArray())
             {
                 builder.AppendLine(
-                    $"  - {GetString(check, "check_type")} status={GetString(check, "status")} canonical={GetString(check, "canonical_recorded_date")}"
+                    $"  - 種別={GetString(check, "check_type")} 状態={GetString(check, "status")} 正準日付={GetString(check, "canonical_recorded_date")}"
                 );
                 var claims = TryGetProperty(check, "claims");
                 if (claims.ValueKind != JsonValueKind.Array)
@@ -320,7 +320,7 @@ namespace CocoroConsole.Windows
                 foreach (var claim in claims.EnumerateArray())
                 {
                     builder.AppendLine(
-                        $"      * {GetString(claim, "section")} {GetString(claim, "source_id")} {GetString(claim, "claim_kind")}={GetString(claim, "claim_value")} {GetString(claim, "summary_text")}"
+                        $"      * セクション={GetString(claim, "section")} ソースID={GetString(claim, "source_id")} {GetString(claim, "claim_kind")}={GetString(claim, "claim_value")} {GetString(claim, "summary_text")}"
                     );
                 }
             }
@@ -329,10 +329,10 @@ namespace CocoroConsole.Windows
 
         private void AppendSelectedRecallSections(StringBuilder builder, JsonElement sections)
         {
-            builder.AppendLine("selected_recall_sections:");
+            builder.AppendLine("選択された参照セクション:");
             if (sections.ValueKind != JsonValueKind.Object)
             {
-                builder.AppendLine("  (none)");
+                builder.AppendLine("  （なし）");
                 return;
             }
 
@@ -341,7 +341,7 @@ namespace CocoroConsole.Windows
                 builder.AppendLine($"  {property.Name}:");
                 if (property.Value.ValueKind != JsonValueKind.Array || property.Value.GetArrayLength() == 0)
                 {
-                    builder.AppendLine("    (none)");
+                    builder.AppendLine("    （なし）");
                     continue;
                 }
 
@@ -357,7 +357,7 @@ namespace CocoroConsole.Windows
             builder.AppendLine($"{title}:");
             if (array.ValueKind != JsonValueKind.Array || array.GetArrayLength() == 0)
             {
-                builder.AppendLine("  (none)");
+                builder.AppendLine("  （なし）");
                 builder.AppendLine();
                 return;
             }
@@ -394,19 +394,19 @@ namespace CocoroConsole.Windows
             }
             if (!string.IsNullOrWhiteSpace(predicate))
             {
-                parts.Add($"predicate={predicate}");
+                parts.Add($"述語={predicate}");
             }
             if (!string.IsNullOrWhiteSpace(objectValue))
             {
-                parts.Add($"value={objectValue}");
+                parts.Add($"値={objectValue}");
             }
             if (!string.IsNullOrWhiteSpace(formedAt))
             {
-                parts.Add($"formed_at={formedAt}");
+                parts.Add($"形成時刻={formedAt}");
             }
             if (!string.IsNullOrWhiteSpace(recordedDate))
             {
-                parts.Add($"recorded_date={recordedDate}");
+                parts.Add($"記録日={recordedDate}");
             }
             if (!string.IsNullOrWhiteSpace(summary))
             {
