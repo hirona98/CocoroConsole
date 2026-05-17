@@ -168,6 +168,16 @@ namespace CocoroConsole.Services
                 cancellationToken);
         }
 
+        public Task<OtomeKairoCurrentStateSnapshot> GetCurrentStateInspectionAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoCurrentStateSnapshot>(
+                HttpMethod.Get,
+                "/api/inspection/current-state",
+                null,
+                cancellationToken);
+        }
+
         public Task<OtomeKairoCycleTrace> GetCycleTraceAsync(string cycleId, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();

@@ -60,4 +60,25 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("memory_trace")]
         public JsonElement MemoryTrace { get; set; }
     }
+
+    public class OtomeKairoCurrentStateSnapshot
+    {
+        [JsonPropertyName("generated_at")]
+        public string GeneratedAt { get; set; } = string.Empty;
+
+        [JsonPropertyName("settings_snapshot")]
+        public JsonElement SettingsSnapshot { get; set; }
+
+        [JsonPropertyName("runtime_summary")]
+        public JsonElement RuntimeSummary { get; set; }
+
+        [JsonPropertyName("runtime_detail")]
+        public JsonElement RuntimeDetail { get; set; }
+
+        [JsonPropertyName("current_state")]
+        public JsonElement CurrentState { get; set; }
+
+        [JsonPropertyName("capability_inspection")]
+        public JsonElement CapabilityInspection { get; set; }
+    }
 }
