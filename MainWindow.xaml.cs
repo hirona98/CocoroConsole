@@ -31,6 +31,7 @@ namespace CocoroConsole
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
         private FactResolutionViewerWindow? _factResolutionViewerWindow;
+        private CurrentStateViewerWindow? _currentStateViewerWindow;
         private DebugTraceListener? _debugTraceListener;
         private bool _isStreamingChatActive;
         private bool _skipNextAssistantMessage;
@@ -42,6 +43,7 @@ namespace CocoroConsole
         private const string SettingWindowPlacementKey = "SettingWindow";
         private const string LogViewerWindowPlacementKey = "LogViewerWindow";
         private const string FactResolutionViewerWindowPlacementKey = "FactResolutionViewerWindow";
+        private const string CurrentStateViewerWindowPlacementKey = "CurrentStateViewerWindow";
         private static readonly TimeSpan OtomeKairoStartupTimeout = TimeSpan.FromMinutes(2);
 
         // --- OtomeKairo の最新ステータス（ステータスバー復帰先） ---
@@ -93,6 +95,11 @@ namespace CocoroConsole
         private void FactResolutionViewerMenuItem_Click(object sender, RoutedEventArgs e)
         {
             OpenFactResolutionViewer();
+        }
+
+        private void CurrentStateViewerMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            OpenCurrentStateViewer();
         }
 
 
@@ -701,6 +708,34 @@ namespace CocoroConsole
             };
 
             _factResolutionViewerWindow.Show();
+        }
+
+        public void OpenCurrentStateViewer()
+        {
+            if (_currentStateViewerWindow != null && !_currentStateViewerWindow.IsClosed)
+            {
+                _currentStateViewerWindow.Activate();
+                _currentStateViewerWindow.WindowState = WindowState.Normal;
+                return;
+            }
+
+            _currentStateViewerWindow = new CurrentStateViewerWindow();
+            _currentStateViewerWindow.Owner = this;
+            var isPositionRestored = WindowPlacementManager.AttachAndRestore(
+                _currentStateViewerWindow,
+                CurrentStateViewerWindowPlacementKey,
+                _appSettings);
+            if (!isPositionRestored)
+            {
+                PositionWindowNearMain(_currentStateViewerWindow);
+            }
+
+            _currentStateViewerWindow.Closed += (sender, args) =>
+            {
+                _currentStateViewerWindow = null;
+            };
+
+            _currentStateViewerWindow.Show();
         }
 
 

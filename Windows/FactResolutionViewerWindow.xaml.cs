@@ -26,10 +26,8 @@ namespace CocoroConsole.Windows
 
         private OtomeKairoApiClient? _apiClient;
         private CancellationTokenSource? _traceLoadCts;
-        private CancellationTokenSource? _currentStateLoadCts;
         private bool _isLoadingCycles;
         private bool _isLoadingTrace;
-        private bool _isLoadingCurrentState;
 
         public bool IsClosed { get; private set; }
 
@@ -43,7 +41,6 @@ namespace CocoroConsole.Windows
         private async void FactResolutionViewerWindow_Loaded(object sender, RoutedEventArgs e)
         {
             await LoadCycleSummariesAsync(preserveSelection: false);
-            await LoadCurrentStateAsync();
         }
 
         private void FactResolutionViewerWindow_Closed(object? sender, EventArgs e)
@@ -52,9 +49,6 @@ namespace CocoroConsole.Windows
             _traceLoadCts?.Cancel();
             _traceLoadCts?.Dispose();
             _traceLoadCts = null;
-            _currentStateLoadCts?.Cancel();
-            _currentStateLoadCts?.Dispose();
-            _currentStateLoadCts = null;
             _apiClient?.Dispose();
             _apiClient = null;
         }
@@ -73,11 +67,6 @@ namespace CocoroConsole.Windows
             }
 
             await LoadCycleTraceAsync(selected.CycleId);
-        }
-
-        private async void RefreshCurrentStateButton_Click(object sender, RoutedEventArgs e)
-        {
-            await LoadCurrentStateAsync();
         }
 
         private async void CycleListDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -200,63 +189,6 @@ namespace CocoroConsole.Windows
             }
         }
 
-        private async Task LoadCurrentStateAsync()
-        {
-            if (_isLoadingCurrentState)
-            {
-                return;
-            }
-
-            _isLoadingCurrentState = true;
-            RefreshCurrentStateButton.IsEnabled = false;
-
-            try
-            {
-                var client = EnsureApiClient();
-                if (client == null)
-                {
-                    ClearCurrentStateView("OtomeKairo の token または base URL が未設定です。");
-                    return;
-                }
-
-                _currentStateLoadCts?.Cancel();
-                _currentStateLoadCts?.Dispose();
-                _currentStateLoadCts = new CancellationTokenSource();
-
-                UpdateStatus("現在状態 snapshot を読み込み中...");
-                var snapshot = await client.GetCurrentStateInspectionAsync(_currentStateLoadCts.Token).ConfigureAwait(true);
-
-                CurrentStateOverviewTextBox.Text = BuildCurrentStateOverview(snapshot);
-                CurrentStateSnapshotTextBox.Text = PrettyJson(snapshot.CurrentState);
-                CurrentRuntimeTextBox.Text = JsonSerializer.Serialize(
-                    new
-                    {
-                        generated_at = snapshot.GeneratedAt,
-                        settings_snapshot = snapshot.SettingsSnapshot,
-                        runtime_summary = snapshot.RuntimeSummary,
-                        runtime_detail = snapshot.RuntimeDetail,
-                    },
-                    _jsonSerializerOptions);
-                CurrentCapabilityTextBox.Text = PrettyJson(snapshot.CapabilityInspection);
-
-                UpdateStatus($"現在状態 snapshot を表示中: {snapshot.GeneratedAt}");
-            }
-            catch (OperationCanceledException)
-            {
-                UpdateStatus("現在状態 snapshot の読み込みをキャンセルしました。");
-            }
-            catch (Exception ex)
-            {
-                UpdateStatus($"現在状態 snapshot の読み込みに失敗しました: {ex.Message}");
-                ClearCurrentStateView("現在状態 snapshot の読み込みに失敗しました。");
-            }
-            finally
-            {
-                _isLoadingCurrentState = false;
-                RefreshCurrentStateButton.IsEnabled = true;
-            }
-        }
-
         private OtomeKairoApiClient? EnsureApiClient()
         {
             if (_apiClient != null)
@@ -284,14 +216,6 @@ namespace CocoroConsole.Windows
             FactResolutionTraceTextBox.Text = message;
             RecallTraceTextBox.Text = string.Empty;
             CycleTraceTextBox.Text = string.Empty;
-        }
-
-        private void ClearCurrentStateView(string message)
-        {
-            CurrentStateOverviewTextBox.Text = message;
-            CurrentStateSnapshotTextBox.Text = string.Empty;
-            CurrentRuntimeTextBox.Text = string.Empty;
-            CurrentCapabilityTextBox.Text = string.Empty;
         }
 
         private void UpdateStatus(string message)
@@ -368,120 +292,6 @@ namespace CocoroConsole.Windows
             );
             AppendConsistencyChecks(builder, TryGetProperty(factTrace, "consistency_checks"));
             AppendSelectedRecallSections(builder, TryGetProperty(factTrace, "selected_recall_sections"));
-
-            return builder.ToString();
-        }
-
-        private string BuildCurrentStateOverview(OtomeKairoCurrentStateSnapshot snapshot)
-        {
-            var builder = new StringBuilder();
-            builder.AppendLine($"generated_at: {snapshot.GeneratedAt}");
-            builder.AppendLine($"selected_persona_id: {GetString(snapshot.SettingsSnapshot, "selected_persona_id")}");
-            builder.AppendLine($"selected_memory_set_id: {GetString(snapshot.SettingsSnapshot, "selected_memory_set_id")}");
-            builder.AppendLine($"selected_model_preset_id: {GetString(snapshot.SettingsSnapshot, "selected_model_preset_id")}");
-            builder.AppendLine($"wake_mode: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "wake_policy"), "mode")}");
-            builder.AppendLine($"desktop_watch_enabled: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "desktop_watch"), "enabled")}");
-            builder.AppendLine();
-
-            builder.AppendLine("runtime_summary:");
-            builder.AppendLine($"  connection_state={GetString(snapshot.RuntimeSummary, "connection_state")}");
-            builder.AppendLine($"  wake_scheduler_active={GetString(snapshot.RuntimeSummary, "wake_scheduler_active")}");
-            builder.AppendLine($"  ongoing_action_exists={GetString(snapshot.RuntimeSummary, "ongoing_action_exists")}");
-            builder.AppendLine($"  memory_job_worker_active={GetString(snapshot.RuntimeSummary, "memory_job_worker_active")}");
-            builder.AppendLine($"  pending_memory_job_count={GetString(snapshot.RuntimeSummary, "pending_memory_job_count")}");
-            builder.AppendLine($"  memory_job_in_progress={GetString(snapshot.RuntimeSummary, "memory_job_in_progress")}");
-            builder.AppendLine();
-
-            builder.AppendLine("runtime_detail:");
-            builder.AppendLine(
-                $"  wake last_wake_at={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_wake_at")} " +
-                $"last_spontaneous_at={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_spontaneous_at")} " +
-                $"cooldown_until={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "cooldown_until")}"
-            );
-            builder.AppendLine(
-                $"  desktop_watch last_watch_at={GetString(TryGetProperty(snapshot.RuntimeDetail, "desktop_watch_runtime_state"), "last_watch_at")}"
-            );
-            builder.AppendLine(
-                $"  memory_postprocess current_cycle_id={GetString(TryGetProperty(snapshot.RuntimeDetail, "memory_postprocess_runtime_state"), "current_cycle_id")}"
-            );
-            builder.AppendLine(
-                $"  pending_capability_request_count={GetArrayLength(TryGetProperty(snapshot.RuntimeDetail, "pending_capability_requests"))}"
-            );
-            builder.AppendLine();
-
-            var currentState = snapshot.CurrentState;
-            var ongoingAction = TryGetProperty(currentState, "ongoing_action");
-            builder.AppendLine("ongoing_action:");
-            if (ongoingAction.ValueKind != JsonValueKind.Object)
-            {
-                builder.AppendLine("  (none)");
-            }
-            else
-            {
-                builder.AppendLine(
-                    $"  action_id={GetString(ongoingAction, "action_id")} status={GetString(ongoingAction, "status")} " +
-                    $"last_capability_id={GetString(ongoingAction, "last_capability_id")}"
-                );
-                builder.AppendLine($"  goal={GetString(ongoingAction, "goal_summary")}");
-                builder.AppendLine($"  step={GetString(ongoingAction, "step_summary")}");
-            }
-            builder.AppendLine();
-
-            builder.AppendLine("mood_state:");
-            builder.AppendLine($"  confidence={GetString(TryGetProperty(currentState, "mood_state"), "confidence")}");
-            builder.AppendLine($"  current_vad={BuildVadLine(TryGetProperty(TryGetProperty(currentState, "mood_state"), "current_vad"))}");
-            builder.AppendLine();
-
-            AppendArraySection(
-                builder,
-                "foreground_world_states",
-                TryGetProperty(currentState, "foreground_world_states"),
-                element =>
-                    $"{GetString(element, "state_type")} {GetString(element, "scope_type")}:{GetString(element, "scope_key")} " +
-                    $"salience={GetString(element, "salience")} {GetString(element, "summary_text")}"
-            );
-            AppendArraySection(
-                builder,
-                "drive_states",
-                TryGetProperty(currentState, "drive_states"),
-                element =>
-                    $"{GetString(element, "drive_kind")} salience={GetString(element, "salience")} " +
-                    $"{GetString(element, "summary_text")}"
-            );
-            AppendArraySection(
-                builder,
-                "pending_intent_candidates",
-                TryGetProperty(currentState, "pending_intent_candidates"),
-                element =>
-                    $"{GetString(element, "intent_kind")} not_before={GetString(element, "not_before")} " +
-                    $"expires_at={GetString(element, "expires_at")} {GetString(element, "intent_summary")}"
-            );
-            AppendArraySection(
-                builder,
-                "pending_capability_requests",
-                TryGetProperty(snapshot.RuntimeDetail, "pending_capability_requests"),
-                element =>
-                    $"{GetString(element, "capability_id")} request_id={GetString(element, "request_id")} " +
-                    $"target={GetString(element, "target_client_id")} expires_at={GetString(element, "expires_at")}"
-            );
-            AppendArraySection(
-                builder,
-                "affect_states",
-                TryGetProperty(currentState, "affect_states"),
-                element =>
-                    $"{GetString(element, "affect_label")} intensity={GetString(element, "intensity")} " +
-                    $"{GetString(element, "target_scope_type")}:{GetString(element, "target_scope_key")} " +
-                    $"{GetString(element, "summary_text")}"
-            );
-            AppendArraySection(
-                builder,
-                "capabilities",
-                TryGetProperty(snapshot.CapabilityInspection, "capabilities"),
-                element =>
-                    $"{GetString(element, "capability_id")} available={GetString(element, "available")} " +
-                    $"reason={GetString(element, "unavailable_reason")} busy={GetString(TryGetProperty(element, "state"), "busy")} " +
-                    $"paused={GetString(TryGetProperty(element, "state"), "paused")}"
-            );
 
             return builder.ToString();
         }
@@ -653,21 +463,6 @@ namespace CocoroConsole.Windows
             }
 
             return string.Join(", ", values.EnumerateArray().Select(GetElementString));
-        }
-
-        private static int GetArrayLength(JsonElement element)
-        {
-            return element.ValueKind == JsonValueKind.Array ? element.GetArrayLength() : 0;
-        }
-
-        private static string BuildVadLine(JsonElement element)
-        {
-            if (element.ValueKind != JsonValueKind.Object)
-            {
-                return "(none)";
-            }
-
-            return $"valence={GetString(element, "valence")} arousal={GetString(element, "arousal")} dominance={GetString(element, "dominance")}";
         }
 
         private static string FirstNonEmpty(params string[] values)
