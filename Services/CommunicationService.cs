@@ -1258,11 +1258,10 @@ namespace CocoroConsole.Services
             var aliases = useActiveWindow
                 ? new[] { "画面", "デスクトップ", "アクティブウィンドウ", "前景ウィンドウ" }
                 : new[] { "画面", "デスクトップ", "メイン画面", "フルスクリーン" };
-            var sourceIdSuffix = useActiveWindow ? "active-window" : "main-display";
             return new[]
             {
                 new OtomeKairoVisionSourceOffer(
-                    $"vision_source:{NormalizeVisionSourceToken(_appSettings.ClientId)}:{sourceIdSuffix}",
+                    $"vision_source:{NormalizeVisionSourceToken(_appSettings.ClientId)}:desktop",
                     "vision.capture",
                     "desktop",
                     label,
