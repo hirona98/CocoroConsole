@@ -247,8 +247,8 @@ namespace CocoroConsole.Controls
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
             dict["WindowTitleExcludePatterns"] = SystemSettingsControl.GetWindowTitleExcludePatterns();
 
-            // デスクトップウォッチ（アイドルタイムアウト / ローカル設定）
-            dict["DesktopWatchIdleTimeoutMinutes"] = SystemSettingsControl.GetDesktopWatchIdleTimeoutMinutes();
+            // 視覚キャプチャ（アイドルタイムアウト / ローカル設定）
+            dict["VisualCaptureIdleTimeoutMinutes"] = SystemSettingsControl.GetVisualCaptureIdleTimeoutMinutes();
 
             return dict;
         }
@@ -633,11 +633,6 @@ namespace CocoroConsole.Controls
                     SelectedPersonaId = activePersonaId,
                     SelectedMemorySetId = activeMemorySetId,
                     SelectedModelPresetId = activeModelPresetId,
-                    DesktopWatch = new OtomeKairoDesktopWatchSettings
-                    {
-                        Enabled = SystemSettingsControl.GetDesktopWatchEnabled(),
-                        IntervalSeconds = SystemSettingsControl.GetDesktopWatchIntervalSeconds(),
-                    },
                     WakePolicy = SystemSettingsControl.GetWakePolicy(),
                 },
                 Personas = ClonePersonas(personas),
@@ -829,8 +824,8 @@ namespace CocoroConsole.Controls
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
             appSettings.ScreenshotSettings.excludePatterns = (List<string>)snapshot["WindowTitleExcludePatterns"];
 
-            // デスクトップウォッチ（アイドルタイムアウト / ローカル設定）
-            appSettings.ScreenshotSettings.idleTimeoutMinutes = (int)snapshot["DesktopWatchIdleTimeoutMinutes"];
+            // 視覚キャプチャ（アイドルタイムアウト / ローカル設定）
+            appSettings.ScreenshotSettings.idleTimeoutMinutes = (int)snapshot["VisualCaptureIdleTimeoutMinutes"];
         }
 
         /// <summary>

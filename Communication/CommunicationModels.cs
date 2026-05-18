@@ -197,9 +197,6 @@ namespace CocoroConsole.Communication
         // スクリーンショット機能の有効/無効
         public bool enabled { get; set; } = false;
 
-        // 取得間隔（分）
-        public int intervalMinutes { get; set; } = 10;
-
         // アクティブウィンドウのみキャプチャするか
         public bool captureActiveWindowOnly { get; set; } = true;
 
@@ -361,7 +358,6 @@ namespace CocoroConsole.Communication
                 screenshotSettings = new ScreenshotSettings
                 {
                     enabled = this.screenshotSettings.enabled,
-                    intervalMinutes = this.screenshotSettings.intervalMinutes,
                     captureActiveWindowOnly = this.screenshotSettings.captureActiveWindowOnly,
                     idleTimeoutMinutes = this.screenshotSettings.idleTimeoutMinutes,
                     excludePatterns = new List<string>(this.screenshotSettings.excludePatterns)

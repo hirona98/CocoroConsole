@@ -581,10 +581,10 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// デスクトップモニタリング画像を表示
+        /// 視覚キャプチャ画像を表示
         /// </summary>
         /// <param name="imageBase64">Base64エンコードされた画像データ</param>
-        public void AddDesktopMonitoringImage(string imageBase64)
+        public void AddVisualCaptureImage(string imageBase64)
         {
             try
             {
@@ -604,7 +604,7 @@ namespace CocoroConsole.Controls
                 var titleText = new TextBox
                 {
                     Style = (Style)Resources["SystemMessageTextStyle"],
-                    Text = "[デスクトップウォッチ画像]",
+                    Text = "[視覚キャプチャ画像]",
                     Margin = new Thickness(0, 0, 0, 5)
                 };
                 messageContent.Children.Add(titleText);

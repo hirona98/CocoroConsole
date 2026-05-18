@@ -25,7 +25,6 @@
   "windowPositionY": 0,
   "screenshotSettings": {
     "enabled": false,
-    "intervalMinutes": 10,
     "captureActiveWindowOnly": true,
     "idleTimeoutMinutes": 10,
     "excludePatterns": [

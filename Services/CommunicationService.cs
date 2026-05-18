@@ -89,12 +89,10 @@ namespace CocoroConsole.Services
         public event EventHandler<ChatRequest>? ChatMessageReceived;
         public event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
         public event EventHandler<bool>? ChatBusyChanged;
-        public event Action<ChatMessagePayload, List<System.Windows.Media.Imaging.BitmapSource>?>? NotificationMessageReceived;
         public event EventHandler<ControlRequest>? ControlCommandReceived;
         public event EventHandler<string>? ErrorOccurred;
         public event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
         public event EventHandler<OtomeKairoStatus>? StatusChanged;
-        public event EventHandler<OtomeKairoCurrentSettings>? OtomeKairoCurrentSettingsUpdated;
         public event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
         public event EventHandler<bool>? LogStreamConnectionChanged;
         public event EventHandler<string>? LogStreamError;
@@ -148,7 +146,7 @@ namespace CocoroConsole.Services
         /// ClientId が未設定の場合に生成して永続化する。
         /// 
         /// - /api/events/stream の hello で client_id を送るために必要
-        /// - desktop_watch などの「端末識別」にも使う
+        /// - vision source id を安定化するためにも使う
         /// </summary>
         private void EnsureClientIdInitialized()
         {
@@ -458,9 +456,9 @@ namespace CocoroConsole.Services
                 await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
                 Debug.WriteLine("[CommunicationService] OtomeKairo への接続初期化を完了しました");
 
-                var configResponse = await _otomeKairoApiClient.GetOtomeKairoConfigAsync().ConfigureAwait(false);
-                OtomeKairoCurrentSettingsUpdated?.Invoke(this, configResponse.SettingsSnapshot);
+                await _otomeKairoApiClient.GetOtomeKairoConfigAsync().ConfigureAwait(false);
                 await StartEventsStreamAsync().ConfigureAwait(false);
+                await SyncDesktopWatchCapabilityStateAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -730,7 +728,6 @@ namespace CocoroConsole.Services
             };
         }
 
-
         public async Task SetDesktopWatchEnabledAsync(bool enabled)
         {
             if (_otomeKairoApiClient == null)
@@ -742,20 +739,13 @@ namespace CocoroConsole.Services
             try
             {
                 await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
+                await StartEventsStreamAsync().ConfigureAwait(false);
+                await _otomeKairoApiClient
+                    .PatchCapabilityStateAsync("vision.capture", paused: !enabled)
+                    .ConfigureAwait(false);
 
-                var configResponse = await _otomeKairoApiClient.GetOtomeKairoConfigAsync().ConfigureAwait(false);
-                var current = configResponse.SettingsSnapshot ?? new OtomeKairoCurrentSettings();
-                var desktopWatch = current.DesktopWatch ?? new OtomeKairoDesktopWatchSettings();
-                var updated = await _otomeKairoApiClient.PatchCurrentConfigAsync(new OtomeKairoCurrentSettingsPatch
-                {
-                    DesktopWatch = new OtomeKairoDesktopWatchSettings
-                    {
-                        Enabled = enabled,
-                        IntervalSeconds = desktopWatch.IntervalSeconds > 0 ? desktopWatch.IntervalSeconds : 300,
-                    },
-                }).ConfigureAwait(false);
-
-                OtomeKairoCurrentSettingsUpdated?.Invoke(this, updated.SettingsSnapshot);
+                _appSettings.ScreenshotSettings.enabled = enabled;
+                _appSettings.SaveAppSettings();
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, enabled ? "デスクトップウォッチを有効にしました" : "デスクトップウォッチを無効にしました"));
             }
             catch (Exception ex)
@@ -995,7 +985,8 @@ namespace CocoroConsole.Services
                 eventsStreamUri,
                 bearerToken,
                 _appSettings.ClientId,
-                new[] { new OtomeKairoCapabilityOffer("vision.capture", "1") }
+                new[] { new OtomeKairoCapabilityOffer("vision.capture", "1") },
+                BuildVisionSources()
             );
             _eventsStreamClient.EventReceived += OnEventsStreamEventReceived;
             _eventsStreamClient.ConnectionStateChanged += OnEventsStreamConnectionStateChanged;
@@ -1055,36 +1046,8 @@ namespace CocoroConsole.Services
         {
             try
             {
-                if (string.Equals(ev.Type, "desktop_watch", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(ev.Type, "capability_result", StringComparison.OrdinalIgnoreCase))
                 {
-                    var systemText = ev.Data.SystemText?.Trim() ?? string.Empty;
-                    if (!string.IsNullOrWhiteSpace(systemText))
-                    {
-                        var extractedSourceSystem = TryExtractBracketedSourceSystem(systemText);
-                        var from = extractedSourceSystem ?? "desktop_watch";
-                        if (string.Equals(from, "desktop_watch", StringComparison.OrdinalIgnoreCase))
-                        {
-                            from = "Desktop Watch";
-                        }
-                        var displayText = systemText;
-                        if (!string.IsNullOrWhiteSpace(extractedSourceSystem))
-                        {
-                            var prefix = $"[{extractedSourceSystem}]";
-                            if (displayText.StartsWith(prefix, StringComparison.Ordinal))
-                            {
-                                displayText = displayText.Substring(prefix.Length).TrimStart();
-                            }
-                        }
-
-                        var images = TryDecodeBitmapSourcesFromDataUris(ev.Data.Images);
-                        NotificationMessageReceived?.Invoke(new ChatMessagePayload
-                        {
-                            from = from,
-                            sessionId = ev.EventId.ToString(CultureInfo.InvariantCulture),
-                            message = displayText
-                        }, images);
-                    }
-
                     var partnerMessage = ev.Data.Message;
                     if (!string.IsNullOrWhiteSpace(partnerMessage))
                     {
@@ -1122,24 +1085,6 @@ namespace CocoroConsole.Services
             _ = ForwardMessageToShellAsync(partnerMessage, currentCharacter);
         }
 
-        private static string? TryExtractBracketedSourceSystem(string text)
-        {
-            // system_text format example: "[gmail] ...", extract gmail for display if possible
-            if (string.IsNullOrWhiteSpace(text) || text[0] != '[')
-            {
-                return null;
-            }
-
-            var closeIndex = text.IndexOf(']');
-            if (closeIndex <= 1)
-            {
-                return null;
-            }
-
-            var extracted = text.Substring(1, closeIndex - 1).Trim();
-            return string.IsNullOrEmpty(extracted) ? null : extracted;
-        }
-
         private async Task HandleVisionCaptureRequestAsync(OtomeKairoEvent ev)
         {
             if (_otomeKairoApiClient == null)
@@ -1161,47 +1106,61 @@ namespace CocoroConsole.Services
 
             using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeoutMs));
 
-            var clientContext = GetClientContextSnapshot();
-            var response = new VisionCaptureResponseRequest
+            var expectedSource = BuildPrimaryVisionSource();
+            var response = new OtomeKairoCapabilityResultRequest
             {
                 RequestId = requestId!,
                 ClientId = _appSettings.ClientId,
-                ClientContext = clientContext,
-                Images = new List<string>(),
-                Error = null
+                CapabilityId = string.IsNullOrWhiteSpace(ev.Data.CapabilityId) ? "vision.capture" : ev.Data.CapabilityId.Trim(),
+                Result = new VisionCaptureCapabilityResult
+                {
+                    ClientContext = BuildVisionCaptureClientContext(ev.Data, expectedSource),
+                    Images = new List<string>(),
+                    Error = null,
+                },
             };
 
             try
             {
-                var source = ev.Data.Source?.Trim().ToLowerInvariant();
-                if (string.Equals(source, "desktop", StringComparison.Ordinal))
+                if (!string.Equals(response.CapabilityId, "vision.capture", StringComparison.Ordinal))
+                {
+                    response.Result.Error = $"unsupported capability: {response.CapabilityId}";
+                }
+                else if (!string.Equals(ev.Data.Mode, "still", StringComparison.OrdinalIgnoreCase))
+                {
+                    response.Result.Error = $"unsupported mode: {ev.Data.Mode}";
+                }
+                else if (!string.Equals(ev.Data.SourceKind, expectedSource.Kind, StringComparison.OrdinalIgnoreCase))
+                {
+                    response.Result.Error = $"unsupported source_kind: {ev.Data.SourceKind}";
+                }
+                else if (!string.Equals(ev.Data.VisionSourceId, expectedSource.VisionSourceId, StringComparison.Ordinal))
+                {
+                    response.Result.Error = $"unsupported vision_source_id: {ev.Data.VisionSourceId}";
+                }
+                else
                 {
                     _statusPollingService.SetProcessingStatus(OtomeKairoStatus.ProcessingImage);
                     var (dataUri, windowTitle, captureError) = await CaptureDesktopStillAsync(cts.Token);
 
-                    if (clientContext != null && !string.IsNullOrWhiteSpace(windowTitle))
+                    if (!string.IsNullOrWhiteSpace(windowTitle))
                     {
-                        clientContext.WindowTitle = windowTitle;
+                        response.Result.ClientContext.WindowTitle = windowTitle;
                     }
 
                     if (!string.IsNullOrWhiteSpace(dataUri))
                     {
-                        response.Images.Add(dataUri);
+                        response.Result.Images.Add(dataUri);
                     }
                     else
                     {
-                        // スキップ時は理由を返す（画像なしで応答する）
-                        response.Error = captureError ?? "capture skipped";
+                        response.Result.Error = captureError ?? "capture skipped";
                     }
-                }
-                else
-                {
-                    response.Error = $"unsupported source: {ev.Data.Source}";
                 }
             }
             catch (Exception ex)
             {
-                response.Error = ex.Message;
+                response.Result.Error = ex.Message;
             }
             finally
             {
@@ -1210,27 +1169,29 @@ namespace CocoroConsole.Services
 
             try
             {
-                await _otomeKairoApiClient.SendVisionCaptureResponseAsync(response, cts.Token);
+                await _otomeKairoApiClient.SendCapabilityResultAsync(response, cts.Token);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[Vision] capture-response送信失敗: {ex.Message}");
+                Debug.WriteLine($"[Vision] capability-result送信失敗: {ex.Message}");
             }
         }
 
         private async Task<(string? DataUri, string? WindowTitle, string? Error)> CaptureDesktopStillAsync(CancellationToken cancellationToken)
         {
-            using var service = new ScreenshotService(intervalMinutes: 1);
+            using var service = new ScreenshotService();
+            service.CaptureActiveWindowOnly = _appSettings.ScreenshotSettings.captureActiveWindowOnly;
 
-            // デスクトップウォッチのアイドルタイムアウト（分）を反映（0 は無効）
+            // 視覚キャプチャのアイドルタイムアウト（分）を反映（0 は無効）
             service.IdleTimeoutMinutes = _appSettings.ScreenshotSettings.idleTimeoutMinutes;
 
             // スクショ除外（ウィンドウタイトル正規表現）を反映
             service.SetExcludePatterns(_appSettings.ScreenshotSettings.excludePatterns);
-            var screenshot = await service.CaptureActiveWindowAsync().WaitAsync(cancellationToken);
+            ScreenshotData? screenshot = service.CaptureActiveWindowOnly
+                ? await service.CaptureActiveWindowAsync().WaitAsync(cancellationToken)
+                : await service.CaptureFullScreenAsync().WaitAsync(cancellationToken);
             if (screenshot == null)
             {
-                // スキップ理由に応じてエラー文字列を返す（呼び出し元で response.Error に入れる）
                 return service.LastSkipReason switch
                 {
                     ScreenshotSkipReason.Idle => (null, null, "capture skipped (idle)"),
@@ -1243,131 +1204,6 @@ namespace CocoroConsole.Services
             return (dataUri, screenshot.WindowTitle, null);
         }
 
-        private static BitmapSource? TryDecodeBitmapSourceFromDataUri(string dataUri)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(dataUri))
-                {
-                    return null;
-                }
-
-                // data:image/*;base64,... の形式を想定
-                if (!dataUri.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
-                {
-                    return null;
-                }
-
-                const string marker = "base64,";
-                var markerIndex = dataUri.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-                if (markerIndex < 0)
-                {
-                    return null;
-                }
-
-                // MIME を抽出（例: data:image/png;base64,... → image/png）
-                var header = dataUri.Substring("data:".Length, markerIndex - "data:".Length);
-                var semicolonIndex = header.IndexOf(';');
-                var mimeType = (semicolonIndex >= 0 ? header.Substring(0, semicolonIndex) : header).Trim();
-
-                // 通知/チャットで許可される MIME のみを表示対象にする
-                if (!IsAllowedImageMimeType(mimeType))
-                {
-                    return null;
-                }
-
-                var base64 = dataUri.Substring(markerIndex + marker.Length);
-                if (string.IsNullOrWhiteSpace(base64))
-                {
-                    return null;
-                }
-
-                // base64 部は改行等の空白を含み得るため除去してからデコードする
-                var normalizedBase64 = RemoveWhitespace(base64);
-                var bytes = Convert.FromBase64String(normalizedBase64);
-                using var ms = new MemoryStream(bytes);
-
-                var image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.StreamSource = ms;
-                image.EndInit();
-                image.Freeze();
-                return image;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Data URI 文字列リストを BitmapSource リストへ変換する（変換できない画像は無視）。
-        /// </summary>
-        private static List<BitmapSource>? TryDecodeBitmapSourcesFromDataUris(IReadOnlyList<string>? dataUris)
-        {
-            if (dataUris == null || dataUris.Count == 0)
-            {
-                return null;
-            }
-
-            // UI 用に BitmapSource へ変換（Freeze 済みで返る）
-            var images = new List<BitmapSource>(capacity: dataUris.Count);
-            foreach (var dataUri in dataUris)
-            {
-                var bitmap = TryDecodeBitmapSourceFromDataUri(dataUri);
-                if (bitmap == null)
-                {
-                    continue;
-                }
-
-                images.Add(bitmap);
-            }
-
-            return images.Count > 0 ? images : null;
-        }
-
-        /// <summary>
-        /// 通知/チャットで許可する画像 MIME か判定する。
-        /// </summary>
-        private static bool IsAllowedImageMimeType(string mimeType)
-        {
-            if (string.IsNullOrWhiteSpace(mimeType))
-            {
-                return false;
-            }
-
-            // Ghost 側仕様に合わせる（image/png / image/jpeg / image/webp）
-            return string.Equals(mimeType, "image/png", StringComparison.OrdinalIgnoreCase)
-                   || string.Equals(mimeType, "image/jpeg", StringComparison.OrdinalIgnoreCase)
-                   || string.Equals(mimeType, "image/webp", StringComparison.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// 文字列中の空白（改行/タブ含む）を除去する。
-        /// </summary>
-        private static string RemoveWhitespace(string value)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                return value;
-            }
-
-            // base64 の正規化（空白除去）
-            var builder = new StringBuilder(value.Length);
-            foreach (var ch in value)
-            {
-                if (char.IsWhiteSpace(ch))
-                {
-                    continue;
-                }
-
-                builder.Append(ch);
-            }
-
-            return builder.ToString();
-        }
-
         private VisionClientContext GetClientContextSnapshot()
         {
             var (windowTitle, activeApp) = TryGetActiveWindowContext();
@@ -1377,6 +1213,87 @@ namespace CocoroConsole.Services
                 WindowTitle = windowTitle,
                 Locale = CultureInfo.CurrentUICulture.Name
             };
+        }
+
+        private async Task SyncDesktopWatchCapabilityStateAsync()
+        {
+            if (_otomeKairoApiClient == null)
+            {
+                return;
+            }
+
+            try
+            {
+                await _otomeKairoApiClient
+                    .PatchCapabilityStateAsync("vision.capture", paused: !_appSettings.ScreenshotSettings.enabled)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[DesktopWatch] 初期同期失敗: {ex.Message}");
+            }
+        }
+
+        private VisionClientContext BuildVisionCaptureClientContext(
+            OtomeKairoEventData eventData,
+            OtomeKairoVisionSourceOffer sourceOffer)
+        {
+            var snapshot = GetClientContextSnapshot();
+            snapshot.VisionSourceId = string.IsNullOrWhiteSpace(eventData.VisionSourceId)
+                ? sourceOffer.VisionSourceId
+                : eventData.VisionSourceId.Trim();
+            snapshot.SourceKind = string.IsNullOrWhiteSpace(eventData.SourceKind)
+                ? sourceOffer.Kind
+                : eventData.SourceKind.Trim();
+            snapshot.SourceLabel = string.IsNullOrWhiteSpace(eventData.SourceLabel)
+                ? sourceOffer.Label
+                : eventData.SourceLabel.Trim();
+            return snapshot;
+        }
+
+        private IReadOnlyList<OtomeKairoVisionSourceOffer> BuildVisionSources()
+        {
+            var useActiveWindow = _appSettings.ScreenshotSettings.captureActiveWindowOnly;
+            var label = useActiveWindow ? "アクティブウィンドウ" : "メイン画面";
+            var aliases = useActiveWindow
+                ? new[] { "画面", "デスクトップ", "アクティブウィンドウ", "前景ウィンドウ" }
+                : new[] { "画面", "デスクトップ", "メイン画面", "フルスクリーン" };
+            var sourceIdSuffix = useActiveWindow ? "active-window" : "main-display";
+            return new[]
+            {
+                new OtomeKairoVisionSourceOffer(
+                    $"vision_source:{NormalizeVisionSourceToken(_appSettings.ClientId)}:{sourceIdSuffix}",
+                    "vision.capture",
+                    "desktop",
+                    label,
+                    aliases,
+                    new[] { "visual", "desktop" },
+                    new[] { "observe_desktop" })
+            };
+        }
+
+        private OtomeKairoVisionSourceOffer BuildPrimaryVisionSource()
+        {
+            return BuildVisionSources().First();
+        }
+
+        private static string NormalizeVisionSourceToken(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "console";
+            }
+
+            var builder = new StringBuilder(value.Length);
+            foreach (var ch in value.Trim())
+            {
+                if (char.IsLetterOrDigit(ch) || ch == '-' || ch == '_')
+                {
+                    builder.Append(ch);
+                }
+            }
+
+            return builder.Length == 0 ? "console" : builder.ToString();
         }
 
         [DllImport("user32.dll")]

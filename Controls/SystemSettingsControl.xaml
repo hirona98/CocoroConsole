@@ -27,7 +27,7 @@
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <GroupBox Header="デスクトップウォッチ"
+                <GroupBox Header="視覚キャプチャ"
                           Margin="0,0,20,20"
                           Style="{StaticResource SettingsGroupBoxStyle}">
                     <Border Background="White"
@@ -36,34 +36,9 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                                デスクトップの画面を定期的に取得し内容に応じたコメントをします。
+                                OtomeKairo から `vision.capture_request` を受けたときのローカルキャプチャ条件を設定します。
                             </TextBlock>
 
-                            <CheckBox x:Name="DesktopWatchEnabledCheckBox"
-                                      Content="デスクトップウォッチを有効にする"
-                                      Margin="0,5,0,10"
-                                      Foreground="#FF4873CF"/>
-
-                            <Grid Margin="0,0,0,5">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="28"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0"
-                                           Text="ウォッチ間隔:"
-                                           VerticalAlignment="Center"/>
-                                <TextBox Grid.Column="1"
-                                         x:Name="DesktopWatchIntervalSecondsTextBox"
-                                         Foreground="#FF0078D7"
-                                         Padding="2"
-                                         Width="60"
-                                         Margin="10,0,10,0"/>
-                                <TextBlock Grid.Column="2"
-                                           Text="秒"
-                                           VerticalAlignment="Center"/>
-                            </Grid>
-
                             <Grid Margin="0,0,0,5">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="140"/>
@@ -71,10 +46,10 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0"
-                                           Text="アイドル:"
+                                           Text="アイドル時スキップ:"
                                            VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="1"
-                                         x:Name="DesktopWatchIdleTimeoutMinutesTextBox"
+                                         x:Name="VisualCaptureIdleTimeoutMinutesTextBox"
                                          Foreground="#FF0078D7"
                                          Padding="2"
                                          Width="60"
@@ -92,7 +67,7 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                                接続中の CocoroConsole が 1 台だけの前提で、自動的にその端末を対象にします。
+                                観測対象の `vision_source_id` と visual watch 相当の判定は OtomeKairo 側で管理します。
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap"

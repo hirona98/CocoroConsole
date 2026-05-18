@@ -38,24 +38,8 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("selected_model_preset_id")]
         public string SelectedModelPresetId { get; set; } = string.Empty;
 
-        [JsonPropertyName("desktop_watch")]
-        public OtomeKairoDesktopWatchSettings DesktopWatch { get; set; } = new OtomeKairoDesktopWatchSettings();
-
         [JsonPropertyName("wake_policy")]
         public Dictionary<string, object?> WakePolicy { get; set; } = new Dictionary<string, object?>();
-    }
-
-    /// <summary>
-    /// デスクトップウォッチ設定を表します。
-    /// </summary>
-    public class OtomeKairoDesktopWatchSettings
-    {
-        // Fields
-        [JsonPropertyName("enabled")]
-        public bool Enabled { get; set; }
-
-        [JsonPropertyName("interval_seconds")]
-        public int IntervalSeconds { get; set; }
     }
 
     /// <summary>

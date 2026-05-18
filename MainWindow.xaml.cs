@@ -22,12 +22,12 @@ namespace CocoroConsole
     /// <summary>
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
-    public partial class MainWindow : Window
-    {
-        private ICommunicationService? _communicationService;
-        private readonly IAppSettings _appSettings;
-        private bool _isDesktopWatchEnabled = false;
-        private RealtimeVoiceRecognitionService? _voiceRecognitionService;
+        public partial class MainWindow : Window
+        {
+            private ICommunicationService? _communicationService;
+            private readonly IAppSettings _appSettings;
+            private bool _isDesktopWatchEnabled;
+            private RealtimeVoiceRecognitionService? _voiceRecognitionService;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
         private FactResolutionViewerWindow? _factResolutionViewerWindow;
@@ -211,7 +211,7 @@ namespace CocoroConsole
         /// </summary>
         private void InitializeButtonStates()
         {
-            // デスクトップウォッチの状態を反映（otomekairo current 設定由来）
+            _isDesktopWatchEnabled = _appSettings.ScreenshotSettings.enabled;
             UpdateDesktopWatchButtonState();
 
             // 現在のキャラクターの設定を反映
@@ -294,11 +294,9 @@ namespace CocoroConsole
             _communicationService.ChatMessageReceived += OnChatMessageReceived;
             _communicationService.StreamingChatReceived += OnStreamingChatReceived;
             _communicationService.ChatBusyChanged += OnChatBusyChanged;
-            _communicationService.NotificationMessageReceived += OnNotificationMessageReceived;
             _communicationService.ControlCommandReceived += OnControlCommandReceived;
             _communicationService.ErrorOccurred += OnErrorOccurred;
             _communicationService.StatusChanged += OnOtomeKairoStatusChanged;
-            _communicationService.OtomeKairoCurrentSettingsUpdated += OnOtomeKairoCurrentSettingsUpdated;
         }
 
         /// <summary>
@@ -561,19 +559,6 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// 通知メッセージ受信時のハンドラ
-        /// </summary>
-        private void OnNotificationMessageReceived(ChatMessagePayload notification, List<System.Windows.Media.Imaging.BitmapSource>? imageSources)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                // 通知メッセージをチャットウィンドウに表示（複数画像付き）
-                ChatControlInstance.AddNotificationMessage(notification.from, notification.message, imageSources);
-            });
-        }
-
-
-        /// <summary>
         /// 制御コマンド受信時のハンドラ（CocoroConsole APIから）
         /// </summary>
         private void OnControlCommandReceived(object? sender, ControlRequest request)
@@ -620,15 +605,6 @@ namespace CocoroConsole
             UIHelper.RunOnUIThread(() =>
             {
                 UpdateOtomeKairoStatusDisplay(status);
-            });
-        }
-
-        private void OnOtomeKairoCurrentSettingsUpdated(object? sender, OtomeKairoCurrentSettings current)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                _isDesktopWatchEnabled = current.DesktopWatch?.Enabled ?? false;
-                UpdateDesktopWatchButtonState();
             });
         }
 
@@ -1031,19 +1007,6 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// デスクトップウォッチ（otomekairo側）の有効/無効切替
-        /// </summary>
-        private async void PauseScreenshotButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_communicationService == null)
-            {
-                return;
-            }
-
-            await _communicationService.SetDesktopWatchEnabledAsync(!_isDesktopWatchEnabled);
-        }
-
-        /// <summary>
         /// マイクボタンクリック時のイベントハンドラ
         /// </summary>
         private void MicButton_Click(object sender, RoutedEventArgs e)
@@ -1088,6 +1051,21 @@ namespace CocoroConsole
                 return config.characterList[config.currentCharacterIndex];
             }
             return null;
+        }
+
+        /// <summary>
+        /// デスクトップウォッチボタンクリック時のイベントハンドラ
+        /// </summary>
+        private async void PauseScreenshotButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_communicationService == null)
+            {
+                return;
+            }
+
+            await _communicationService.SetDesktopWatchEnabledAsync(!_isDesktopWatchEnabled);
+            _isDesktopWatchEnabled = _appSettings.ScreenshotSettings.enabled;
+            UpdateDesktopWatchButtonState();
         }
 
         /// <summary>

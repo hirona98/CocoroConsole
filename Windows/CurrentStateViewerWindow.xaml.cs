@@ -151,7 +151,9 @@ namespace CocoroConsole.Windows
             builder.AppendLine($"選択中記憶セットID: {GetString(snapshot.SettingsSnapshot, "selected_memory_set_id")}");
             builder.AppendLine($"選択中モデルプリセットID: {GetString(snapshot.SettingsSnapshot, "selected_model_preset_id")}");
             builder.AppendLine($"起床モード: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "wake_policy"), "mode")}");
-            builder.AppendLine($"デスクトップ監視有効: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "desktop_watch"), "enabled")}");
+            var visionCaptureCapability = FindCapability(snapshot.CapabilityInspection, "vision.capture");
+            builder.AppendLine($"視覚機能利用可: {GetString(visionCaptureCapability, "available")}");
+            builder.AppendLine($"視覚source数: {GetArrayLength(TryGetProperty(visionCaptureCapability, "vision_sources"))}");
             builder.AppendLine();
 
             builder.AppendLine("実行要約:");
@@ -168,9 +170,6 @@ namespace CocoroConsole.Windows
                 $"  起床状態 最終起床={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_wake_at")} " +
                 $"最終自発発話={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_spontaneous_at")} " +
                 $"クールダウン終了={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "cooldown_until")}"
-            );
-            builder.AppendLine(
-                $"  デスクトップ監視 最終監視={GetString(TryGetProperty(snapshot.RuntimeDetail, "desktop_watch_runtime_state"), "last_watch_at")}"
             );
             builder.AppendLine(
                 $"  記憶後処理 現在サイクルID={GetString(TryGetProperty(snapshot.RuntimeDetail, "memory_postprocess_runtime_state"), "current_cycle_id")}"
@@ -289,6 +288,25 @@ namespace CocoroConsole.Windows
             if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty(propertyName, out var value))
             {
                 return value;
+            }
+
+            return default;
+        }
+
+        private static JsonElement FindCapability(JsonElement capabilityInspection, string capabilityId)
+        {
+            var capabilities = TryGetProperty(capabilityInspection, "capabilities");
+            if (capabilities.ValueKind != JsonValueKind.Array)
+            {
+                return default;
+            }
+
+            foreach (var capability in capabilities.EnumerateArray())
+            {
+                if (string.Equals(GetString(capability, "capability_id"), capabilityId, StringComparison.Ordinal))
+                {
+                    return capability;
+                }
             }
 
             return default;

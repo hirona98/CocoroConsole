@@ -16,16 +16,23 @@ namespace CocoroConsole.Communication
     {
         private readonly string? _clientId;
         private readonly IReadOnlyList<OtomeKairoCapabilityOffer>? _caps;
+        private readonly IReadOnlyList<OtomeKairoVisionSourceOffer>? _visionSources;
 
         public event EventHandler<OtomeKairoEvent>? EventReceived;
         public event EventHandler<bool>? ConnectionStateChanged;
         public event EventHandler<string>? ErrorOccurred;
 
-        public EventsStreamClient(Uri webSocketUri, string bearerToken, string? clientId = null, IReadOnlyList<OtomeKairoCapabilityOffer>? caps = null)
+        public EventsStreamClient(
+            Uri webSocketUri,
+            string bearerToken,
+            string? clientId = null,
+            IReadOnlyList<OtomeKairoCapabilityOffer>? caps = null,
+            IReadOnlyList<OtomeKairoVisionSourceOffer>? visionSources = null)
             : base(webSocketUri, bearerToken)
         {
             _clientId = string.IsNullOrWhiteSpace(clientId) ? null : clientId.Trim();
             _caps = caps;
+            _visionSources = visionSources;
         }
 
         protected override string ConnectFailureLabel => "イベントストリーム接続失敗";
@@ -60,7 +67,8 @@ namespace CocoroConsole.Communication
                 {
                     Type = "hello",
                     ClientId = _clientId!,
-                    Caps = _caps?.ToArray() ?? new[] { new OtomeKairoCapabilityOffer("vision.capture", "1") }
+                    Caps = _caps?.ToArray() ?? new[] { new OtomeKairoCapabilityOffer("vision.capture", "1") },
+                    VisionSources = _visionSources?.ToArray() ?? Array.Empty<OtomeKairoVisionSourceOffer>(),
                 };
 
                 var json = JsonSerializer.Serialize(payload);
@@ -138,11 +146,9 @@ namespace CocoroConsole.Communication
                 var data = new OtomeKairoEventData();
                 if (element.TryGetProperty("data", out var dataElement) && dataElement.ValueKind == JsonValueKind.Object)
                 {
-                    // --- desktop_watch ---
                     data.SystemText = dataElement.TryGetProperty("system_text", out var systemText) ? systemText.GetString() : null;
                     data.Message = dataElement.TryGetProperty("message", out var message) ? message.GetString() : null;
 
-                    // --- desktop_watch の添付画像 ---
                     if (dataElement.TryGetProperty("images", out var imagesElement) && imagesElement.ValueKind == JsonValueKind.Array)
                     {
                         var images = new List<string>();
@@ -168,9 +174,12 @@ namespace CocoroConsole.Communication
                         }
                     }
 
-                    // --- vision.capture_request ---
                     data.RequestId = dataElement.TryGetProperty("request_id", out var requestId) ? requestId.GetString() : null;
-                    data.Source = dataElement.TryGetProperty("source", out var source) ? source.GetString() : null;
+                    data.CapabilityId = dataElement.TryGetProperty("capability_id", out var capabilityId) ? capabilityId.GetString() : null;
+                    data.VisionSourceId = dataElement.TryGetProperty("vision_source_id", out var visionSourceId) ? visionSourceId.GetString() : null;
+                    data.SourceKind = dataElement.TryGetProperty("source_kind", out var sourceKind) ? sourceKind.GetString() : null;
+                    data.SourceLabel = dataElement.TryGetProperty("source_label", out var sourceLabel) ? sourceLabel.GetString() : null;
+                    data.Mode = dataElement.TryGetProperty("mode", out var mode) ? mode.GetString() : null;
                     data.TimeoutMs = dataElement.TryGetProperty("timeout_ms", out var timeoutMs) && timeoutMs.TryGetInt32(out var timeoutValue)
                         ? timeoutValue
                         : null;
@@ -210,9 +219,12 @@ namespace CocoroConsole.Communication
         /// </summary>
         public List<string>? Images { get; set; }
 
-        // vision.capture_request のデータ
+        public string? CapabilityId { get; set; }
         public string? RequestId { get; set; }
-        public string? Source { get; set; }
+        public string? VisionSourceId { get; set; }
+        public string? SourceKind { get; set; }
+        public string? SourceLabel { get; set; }
+        public string? Mode { get; set; }
         public int? TimeoutMs { get; set; }
     }
 
@@ -231,6 +243,48 @@ namespace CocoroConsole.Communication
         public string Version { get; }
     }
 
+    public sealed class OtomeKairoVisionSourceOffer
+    {
+        public OtomeKairoVisionSourceOffer(
+            string visionSourceId,
+            string capabilityId,
+            string kind,
+            string label,
+            IReadOnlyList<string> aliases,
+            IReadOnlyList<string> defaultFor,
+            IReadOnlyList<string> requiredPermissions)
+        {
+            VisionSourceId = visionSourceId;
+            CapabilityId = capabilityId;
+            Kind = kind;
+            Label = label;
+            Aliases = aliases.ToArray();
+            DefaultFor = defaultFor.ToArray();
+            RequiredPermissions = requiredPermissions.ToArray();
+        }
+
+        [JsonPropertyName("vision_source_id")]
+        public string VisionSourceId { get; }
+
+        [JsonPropertyName("capability_id")]
+        public string CapabilityId { get; }
+
+        [JsonPropertyName("kind")]
+        public string Kind { get; }
+
+        [JsonPropertyName("label")]
+        public string Label { get; }
+
+        [JsonPropertyName("aliases")]
+        public string[] Aliases { get; }
+
+        [JsonPropertyName("default_for")]
+        public string[] DefaultFor { get; }
+
+        [JsonPropertyName("required_permissions")]
+        public string[] RequiredPermissions { get; }
+    }
+
     internal sealed class HelloMessage
     {
         [JsonPropertyName("type")]
@@ -241,5 +295,8 @@ namespace CocoroConsole.Communication
 
         [JsonPropertyName("caps")]
         public OtomeKairoCapabilityOffer[] Caps { get; set; } = Array.Empty<OtomeKairoCapabilityOffer>();
+
+        [JsonPropertyName("vision_sources")]
+        public OtomeKairoVisionSourceOffer[] VisionSources { get; set; } = Array.Empty<OtomeKairoVisionSourceOffer>();
     }
 }

@@ -38,7 +38,7 @@ namespace CocoroConsole.Controls
                 {
                     idleTimeoutMinutes = 10;
                 }
-                DesktopWatchIdleTimeoutMinutesTextBox.Text = idleTimeoutMinutes.ToString(CultureInfo.InvariantCulture);
+                VisualCaptureIdleTimeoutMinutesTextBox.Text = idleTimeoutMinutes.ToString(CultureInfo.InvariantCulture);
 
                 MicThresholdSlider.Value = appSettings.MicrophoneSettings.inputThreshold;
 
@@ -60,11 +60,6 @@ namespace CocoroConsole.Controls
 
         public void ApplyOtomeKairoCurrentSettings(OtomeKairoCurrentSettings current)
         {
-            var desktopWatch = current?.DesktopWatch ?? new OtomeKairoDesktopWatchSettings();
-            DesktopWatchEnabledCheckBox.IsChecked = desktopWatch.Enabled;
-            DesktopWatchIntervalSecondsTextBox.Text = (desktopWatch.IntervalSeconds > 0 ? desktopWatch.IntervalSeconds : 300)
-                .ToString(CultureInfo.InvariantCulture);
-
             var wakePolicy = current?.WakePolicy ?? new Dictionary<string, object?>();
             var mode = ReadString(wakePolicy, "mode");
             WakePolicyEnabledCheckBox.IsChecked = string.Equals(mode, "interval", StringComparison.OrdinalIgnoreCase);
@@ -73,18 +68,13 @@ namespace CocoroConsole.Controls
 
         private void ApplyDefaultRemoteSettings()
         {
-            DesktopWatchEnabledCheckBox.IsChecked = false;
-            DesktopWatchIntervalSecondsTextBox.Text = "300";
             WakePolicyEnabledCheckBox.IsChecked = false;
             WakeIntervalSecondsTextBox.Text = "300";
         }
 
         private void SetupEventHandlers()
         {
-            DesktopWatchEnabledCheckBox.Checked += OnSettingsChanged;
-            DesktopWatchEnabledCheckBox.Unchecked += OnSettingsChanged;
-            DesktopWatchIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
-            DesktopWatchIdleTimeoutMinutesTextBox.TextChanged += OnSettingsChanged;
+            VisualCaptureIdleTimeoutMinutesTextBox.TextChanged += OnSettingsChanged;
             ExcludeWindowTitlePatternsTextBox.TextChanged += OnSettingsChanged;
             WakePolicyEnabledCheckBox.Checked += OnSettingsChanged;
             WakePolicyEnabledCheckBox.Unchecked += OnSettingsChanged;
@@ -100,21 +90,6 @@ namespace CocoroConsole.Controls
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        public bool GetDesktopWatchEnabled()
-        {
-            return DesktopWatchEnabledCheckBox.IsChecked ?? false;
-        }
-
-        public int GetDesktopWatchIntervalSeconds()
-        {
-            if (int.TryParse(DesktopWatchIntervalSecondsTextBox.Text, out var seconds) && seconds > 0)
-            {
-                return seconds;
-            }
-
-            return 300;
         }
 
         public Dictionary<string, object?> GetWakePolicy()
@@ -140,9 +115,9 @@ namespace CocoroConsole.Controls
             };
         }
 
-        public int GetDesktopWatchIdleTimeoutMinutes()
+        public int GetVisualCaptureIdleTimeoutMinutes()
         {
-            if (!int.TryParse(DesktopWatchIdleTimeoutMinutesTextBox.Text, out var minutes))
+            if (!int.TryParse(VisualCaptureIdleTimeoutMinutesTextBox.Text, out var minutes))
             {
                 return 10;
             }

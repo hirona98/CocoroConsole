@@ -151,10 +151,26 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoConfigResponse>(new HttpMethod("PATCH"), "/api/config/current", request, cancellationToken);
         }
 
-        public Task SendVisionCaptureResponseAsync(VisionCaptureResponseRequest request, CancellationToken cancellationToken = default)
+        public Task PatchCapabilityStateAsync(string capabilityId, bool paused, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendOkAsync(HttpMethod.Post, "/api/vision/capture-response", request, cancellationToken);
+            if (string.IsNullOrWhiteSpace(capabilityId))
+            {
+                throw new ArgumentException("capabilityIdを指定してください", nameof(capabilityId));
+            }
+
+            var normalizedCapabilityId = Uri.EscapeDataString(capabilityId.Trim());
+            return SendOkAsync(
+                new HttpMethod("PATCH"),
+                $"/api/capabilities/{normalizedCapabilityId}/state",
+                new { paused },
+                cancellationToken);
+        }
+
+        public Task SendCapabilityResultAsync(OtomeKairoCapabilityResultRequest request, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOkAsync(HttpMethod.Post, "/api/capability/result", request, cancellationToken);
         }
 
         public Task<OtomeKairoCycleSummariesResponse> GetCycleSummariesAsync(int limit = 50, CancellationToken cancellationToken = default)
@@ -440,10 +456,6 @@ namespace CocoroConsole.Services
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? SelectedModelPresetId { get; set; }
 
-        [JsonPropertyName("desktop_watch")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public OtomeKairoDesktopWatchSettings? DesktopWatch { get; set; }
-
         [JsonPropertyName("wake_policy")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, object?>? WakePolicy { get; set; }
@@ -500,6 +512,15 @@ namespace CocoroConsole.Services
 
     public class VisionClientContext
     {
+        [JsonPropertyName("vision_source_id")]
+        public string? VisionSourceId { get; set; }
+
+        [JsonPropertyName("source_kind")]
+        public string? SourceKind { get; set; }
+
+        [JsonPropertyName("source_label")]
+        public string? SourceLabel { get; set; }
+
         [JsonPropertyName("active_app")]
         public string? ActiveApp { get; set; }
 
@@ -510,7 +531,19 @@ namespace CocoroConsole.Services
         public string? Locale { get; set; }
     }
 
-    public class VisionCaptureResponseRequest
+    public class VisionCaptureCapabilityResult
+    {
+        [JsonPropertyName("images")]
+        public List<string> Images { get; set; } = new List<string>();
+
+        [JsonPropertyName("client_context")]
+        public VisionClientContext ClientContext { get; set; } = new VisionClientContext();
+
+        [JsonPropertyName("error")]
+        public string? Error { get; set; }
+    }
+
+    public class OtomeKairoCapabilityResultRequest
     {
         [JsonPropertyName("request_id")]
         public string RequestId { get; set; } = string.Empty;
@@ -518,13 +551,10 @@ namespace CocoroConsole.Services
         [JsonPropertyName("client_id")]
         public string ClientId { get; set; } = string.Empty;
 
-        [JsonPropertyName("images")]
-        public List<string> Images { get; set; } = new List<string>();
+        [JsonPropertyName("capability_id")]
+        public string CapabilityId { get; set; } = string.Empty;
 
-        [JsonPropertyName("client_context")]
-        public VisionClientContext? ClientContext { get; set; }
-
-        [JsonPropertyName("error")]
-        public string? Error { get; set; }
+        [JsonPropertyName("result")]
+        public VisionCaptureCapabilityResult Result { get; set; } = new VisionCaptureCapabilityResult();
     }
 }

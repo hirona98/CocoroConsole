@@ -28,14 +28,12 @@ namespace CocoroConsole.Services
     public interface ICommunicationService : IDisposable
     {
         event EventHandler<ChatRequest>? ChatMessageReceived;
-        event Action<ChatMessagePayload, List<System.Windows.Media.Imaging.BitmapSource>?>? NotificationMessageReceived;
         event EventHandler<ControlRequest>? ControlCommandReceived;
         event EventHandler<string>? ErrorOccurred;
         event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
         event EventHandler<bool>? ChatBusyChanged;
         event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
         event EventHandler<OtomeKairoStatus>? StatusChanged;
-        event EventHandler<OtomeKairoCurrentSettings>? OtomeKairoCurrentSettingsUpdated;
         event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
         event EventHandler<bool>? LogStreamConnectionChanged;
         event EventHandler<string>? LogStreamError;
