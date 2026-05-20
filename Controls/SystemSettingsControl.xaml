@@ -67,7 +67,7 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                                観測対象の `vision_source_id` と visual watch 相当の判定は OtomeKairo 側で管理します。
+                                観測対象の `vision_source_id` と定期観測設定は OtomeKairo 側の `wake_policy.observations` で管理します。
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap"

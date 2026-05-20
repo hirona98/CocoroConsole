@@ -236,6 +236,16 @@ namespace CocoroConsole.Windows
             );
             AppendArraySection(
                 builder,
+                "定期観測",
+                TryGetProperty(snapshot.RuntimeDetail, "wake_policy_observations"),
+                element =>
+                    $"観測ID={GetString(element, "observation_id")} 有効={GetString(element, "enabled")} " +
+                    $"間隔={GetString(element, "interval_seconds")}秒 最終状態={GetString(element, "last_status")} " +
+                    $"最終実行={GetString(element, "last_run_at")} source={GetString(element, "last_vision_source_id")} " +
+                    $"画像数={GetString(element, "last_image_count")} 要約={GetString(element, "last_summary")}"
+            );
+            AppendArraySection(
+                builder,
                 "感情状態",
                 TryGetProperty(currentState, "affect_states"),
                 element =>

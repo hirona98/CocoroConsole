@@ -15,6 +15,7 @@ namespace CocoroConsole.Controls
         public event EventHandler? SettingsChanged;
 
         private bool _isInitialized;
+        private Dictionary<string, object?> _wakePolicy = new Dictionary<string, object?>();
 
         public SystemSettingsControl()
         {
@@ -61,6 +62,7 @@ namespace CocoroConsole.Controls
         public void ApplyOtomeKairoCurrentSettings(OtomeKairoCurrentSettings current)
         {
             var wakePolicy = current?.WakePolicy ?? new Dictionary<string, object?>();
+            _wakePolicy = new Dictionary<string, object?>(wakePolicy);
             var mode = ReadString(wakePolicy, "mode");
             WakePolicyEnabledCheckBox.IsChecked = string.Equals(mode, "interval", StringComparison.OrdinalIgnoreCase);
             WakeIntervalSecondsTextBox.Text = ReadInt(wakePolicy, "interval_seconds", 300).ToString(CultureInfo.InvariantCulture);
@@ -68,6 +70,10 @@ namespace CocoroConsole.Controls
 
         private void ApplyDefaultRemoteSettings()
         {
+            _wakePolicy = new Dictionary<string, object?>
+            {
+                ["mode"] = "disabled",
+            };
             WakePolicyEnabledCheckBox.IsChecked = false;
             WakeIntervalSecondsTextBox.Text = "300";
         }
@@ -94,6 +100,7 @@ namespace CocoroConsole.Controls
 
         public Dictionary<string, object?> GetWakePolicy()
         {
+            var wakePolicy = new Dictionary<string, object?>(_wakePolicy);
             if (WakePolicyEnabledCheckBox.IsChecked ?? false)
             {
                 var intervalSeconds = 300;
@@ -102,17 +109,13 @@ namespace CocoroConsole.Controls
                     intervalSeconds = parsed;
                 }
 
-                return new Dictionary<string, object?>
-                {
-                    ["mode"] = "interval",
-                    ["interval_seconds"] = intervalSeconds,
-                };
+                wakePolicy["mode"] = "interval";
+                wakePolicy["interval_seconds"] = intervalSeconds;
+                return wakePolicy;
             }
 
-            return new Dictionary<string, object?>
-            {
-                ["mode"] = "disabled",
-            };
+            wakePolicy["mode"] = "disabled";
+            return wakePolicy;
         }
 
         public int GetVisualCaptureIdleTimeoutMinutes()
