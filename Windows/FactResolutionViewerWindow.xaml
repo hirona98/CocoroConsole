@@ -26,21 +26,21 @@
                                         Height="28"
                                         Margin="0,0,10,0"
                                         Click="RefreshButton_Click"/>
-                                 <Button x:Name="ReloadTraceButton"
-                                         Content="選択中を再読込"
-                                         Width="120"
-                                         Height="28"
-                                         Margin="0,0,16,0"
-                                         Click="ReloadTraceButton_Click"/>
-                                 <TextBlock Text="cycle trace を inspection API から表示します。"
-                                            VerticalAlignment="Center"
-                                            Foreground="#444444"/>
+                                <Button x:Name="ReloadTraceButton"
+                                        Content="選択中を再読込"
+                                        Width="120"
+                                        Height="28"
+                                        Margin="0,0,16,0"
+                                        Click="ReloadTraceButton_Click"/>
+                                <TextBlock Text="cycle trace を inspection API から表示します。"
+                                           VerticalAlignment="Center"
+                                           Foreground="#444444"/>
                         </StackPanel>
                 </Border>
 
                 <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="360"/>
+                                <ColumnDefinition Width="390"/>
                                 <ColumnDefinition Width="12"/>
                                 <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
@@ -60,16 +60,31 @@
                                         <DataGrid.Columns>
                                                 <DataGridTextColumn Header="開始"
                                                                     Binding="{Binding StartedAtDisplay, Mode=OneWay}"
-                                                                    Width="140"/>
+                                                                    Width="90"/>
                                                 <DataGridTextColumn Header="trigger"
                                                                     Binding="{Binding TriggerKind, Mode=OneWay}"
-                                                                    Width="90"/>
+                                                                    Width="110"/>
                                                 <DataGridTextColumn Header="result"
                                                                     Binding="{Binding ResultKind, Mode=OneWay}"
-                                                                    Width="90"/>
-                                                <DataGridCheckBoxColumn Header="失敗"
-                                                                        Binding="{Binding Failed, Mode=OneWay}"
-                                                                        Width="50"/>
+                                                                    Width="110"/>
+                                                <DataGridTextColumn Header="失敗"
+                                                                    Binding="{Binding FailedDisplay, Mode=OneWay}"
+                                                                    Width="40">
+                                                        <DataGridTextColumn.ElementStyle>
+                                                                <Style TargetType="TextBlock">
+                                                                        <Setter Property="HorizontalAlignment"
+                                                                                Value="Center"/>
+                                                                        <Setter Property="TextAlignment"
+                                                                                Value="Center"/>
+                                                                </Style>
+                                                        </DataGridTextColumn.ElementStyle>
+                                                        <DataGridTextColumn.HeaderStyle>
+                                                                <Style TargetType="DataGridColumnHeader">
+                                                                        <Setter Property="HorizontalContentAlignment"
+                                                                                Value="Center"/>
+                                                                </Style>
+                                                        </DataGridTextColumn.HeaderStyle>
+                                                </DataGridTextColumn>
                                         </DataGrid.Columns>
                                 </DataGrid>
                         </Border>
@@ -129,28 +144,28 @@
                                                                  TextWrapping="NoWrap"/>
                                                 </Grid>
                                         </TabItem>
-                                         <TabItem Header="cycle_trace">
-                                                 <Grid Margin="8">
-                                                         <TextBox x:Name="CycleTraceTextBox"
-                                                                  IsReadOnly="True"
-                                                                  AcceptsReturn="True"
+                                        <TabItem Header="cycle_trace">
+                                                <Grid Margin="8">
+                                                        <TextBox x:Name="CycleTraceTextBox"
+                                                                 IsReadOnly="True"
+                                                                 AcceptsReturn="True"
                                                                  VerticalScrollBarVisibility="Auto"
                                                                  HorizontalScrollBarVisibility="Auto"
                                                                  FontFamily="Consolas"
-                                                                  TextWrapping="NoWrap"/>
-                                                 </Grid>
-                                         </TabItem>
-                                 </TabControl>
-                         </Grid>
-                 </Grid>
+                                                                 TextWrapping="NoWrap"/>
+                                                </Grid>
+                                        </TabItem>
+                                </TabControl>
+                        </Grid>
+                </Grid>
 
-                 <Border Grid.Row="2"
-                         Background="#F5F5F5"
-                         BorderBrush="#E0E0E0"
-                         BorderThickness="0,1,0,0"
-                          Padding="10,6">
-                          <TextBlock x:Name="StatusTextBlock"
-                                     Text="inspection API に接続して cycle trace を読み込みます。"/>
-                  </Border>
-          </Grid>
+                <Border Grid.Row="2"
+                        Background="#F5F5F5"
+                        BorderBrush="#E0E0E0"
+                        BorderThickness="0,1,0,0"
+                        Padding="10,6">
+                        <TextBlock x:Name="StatusTextBlock"
+                                   Text="inspection API に接続して cycle trace を読み込みます。"/>
+                </Border>
+        </Grid>
 </Window>

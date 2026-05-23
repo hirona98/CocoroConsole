@@ -499,6 +499,8 @@ namespace CocoroConsole.Windows
 
             public bool Failed { get; }
 
+            public string FailedDisplay => Failed ? "×" : string.Empty;
+
             private static string TryFormatTimestamp(string value)
             {
                 if (DateTimeOffset.TryParse(value, out var parsed))
