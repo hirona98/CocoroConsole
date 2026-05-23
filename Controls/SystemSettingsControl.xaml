@@ -67,7 +67,7 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                                観測対象の `vision_source_id` と定期観測設定は OtomeKairo 側の `wake_policy.observations` で管理します。
+                                自律起床時のデスクトップ観測は `wake_policy.observations` へ保存します。
                             </TextBlock>
 
                             <TextBlock TextWrapping="Wrap"
@@ -104,6 +104,12 @@
                                       Content="自律起床を有効にする"
                                       Margin="0,5,0,10"
                                       Foreground="#FF4873CF"/>
+
+                            <CheckBox x:Name="WakeDesktopObservationCheckBox"
+                                      Content="自律起床時にデスクトップを観測する"
+                                      Margin="0,0,0,10"
+                                      Foreground="#FF4873CF"
+                                      ToolTip="有効時は wake_policy.observations に vision.capture の desktop observation を保存します。"/>
 
                             <Grid Margin="0,0,0,5">
                                 <Grid.ColumnDefinitions>
