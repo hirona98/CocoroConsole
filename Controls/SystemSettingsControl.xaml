@@ -102,14 +102,8 @@
 
                             <CheckBox x:Name="WakePolicyEnabledCheckBox"
                                       Content="自律起床を有効にする"
-                                      Margin="0,5,0,10"
+                                      Margin="0,5,0,5"
                                       Foreground="#FF4873CF"/>
-
-                            <CheckBox x:Name="WakeDesktopObservationCheckBox"
-                                      Content="自律起床時にデスクトップを観測する"
-                                      Margin="0,0,0,10"
-                                      Foreground="#FF4873CF"
-                                      ToolTip="有効時は wake_policy.observations に vision.capture の desktop observation を保存します。"/>
 
                             <Grid Margin="0,0,0,5">
                                 <Grid.ColumnDefinitions>
@@ -128,6 +122,33 @@
                                          Margin="10,0,10,0"/>
                                 <TextBlock Grid.Column="2"
                                            Text="秒"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                            <CheckBox x:Name="WakeDesktopObservationCheckBox"
+                                      Content="自律起床時にデスクトップを観測する"
+                                      Margin="0,10,0,5"
+                                      Foreground="#FF4873CF"
+                                      ToolTip="有効時は wake_policy.observations に vision.capture の desktop observation を保存します。"/>
+
+
+                            <Grid Margin="0,0,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="50"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="画面類似しきい値:"
+                                           VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1"
+                                         x:Name="DesktopSceneSimilarityThresholdTextBox"
+                                         Foreground="#FF0078D7"
+                                         Padding="2"
+                                         Width="60"
+                                         Margin="10,0,10,0"
+                                         ToolTip="同じ desktop scene と見なす visual_summary_text 類似度しきい値。低いほど同じ画面扱いしやすく、自発発話が減ります。"/>
+                                <TextBlock Grid.Column="2"
+                                           Text="0.0-1.0"
                                            VerticalAlignment="Center"/>
                             </Grid>
                         </StackPanel>

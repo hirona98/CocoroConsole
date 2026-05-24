@@ -15,6 +15,8 @@ namespace CocoroConsole.Controls
     {
         public event EventHandler? SettingsChanged;
 
+        private const double DefaultDesktopSceneSimilarityThreshold = 0.4;
+
         private bool _isInitialized;
         private Dictionary<string, object?> _wakePolicy = new Dictionary<string, object?>();
 
@@ -67,6 +69,10 @@ namespace CocoroConsole.Controls
             var mode = ReadString(wakePolicy, "mode");
             WakePolicyEnabledCheckBox.IsChecked = string.Equals(mode, "interval", StringComparison.OrdinalIgnoreCase);
             WakeIntervalSecondsTextBox.Text = ReadInt(wakePolicy, "interval_seconds", 300).ToString(CultureInfo.InvariantCulture);
+            DesktopSceneSimilarityThresholdTextBox.Text = ReadDouble(
+                wakePolicy,
+                "desktop_scene_similarity_threshold",
+                DefaultDesktopSceneSimilarityThreshold).ToString("0.###", CultureInfo.InvariantCulture);
             WakeDesktopObservationCheckBox.IsChecked = DesktopWakePolicyHelper.HasDesktopWakeObservation(wakePolicy, AppSettings.Instance.ClientId);
         }
 
@@ -89,6 +95,7 @@ namespace CocoroConsole.Controls
             WakePolicyEnabledCheckBox.IsChecked = false;
             WakeDesktopObservationCheckBox.IsChecked = false;
             WakeIntervalSecondsTextBox.Text = "300";
+            DesktopSceneSimilarityThresholdTextBox.Text = DefaultDesktopSceneSimilarityThreshold.ToString("0.###", CultureInfo.InvariantCulture);
         }
 
         private void SetupEventHandlers()
@@ -100,6 +107,7 @@ namespace CocoroConsole.Controls
             WakeDesktopObservationCheckBox.Checked += OnSettingsChanged;
             WakeDesktopObservationCheckBox.Unchecked += OnSettingsChanged;
             WakeIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
+            DesktopSceneSimilarityThresholdTextBox.TextChanged += OnSettingsChanged;
             MicThresholdSlider.ValueChanged += OnSettingsChanged;
         }
 
@@ -116,6 +124,7 @@ namespace CocoroConsole.Controls
         public Dictionary<string, object?> GetWakePolicy()
         {
             var wakePolicy = new Dictionary<string, object?>(_wakePolicy);
+            wakePolicy["desktop_scene_similarity_threshold"] = ReadDesktopSceneSimilarityThreshold();
             if (WakePolicyEnabledCheckBox.IsChecked ?? false)
             {
                 var intervalSeconds = 300;
@@ -137,6 +146,30 @@ namespace CocoroConsole.Controls
                 wakePolicy,
                 AppSettings.Instance.ClientId,
                 WakeDesktopObservationCheckBox.IsChecked ?? false);
+        }
+
+        private double ReadDesktopSceneSimilarityThreshold()
+        {
+            if (!double.TryParse(
+                DesktopSceneSimilarityThresholdTextBox.Text,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var threshold))
+            {
+                return DefaultDesktopSceneSimilarityThreshold;
+            }
+
+            if (threshold < 0)
+            {
+                return 0;
+            }
+
+            if (threshold > 1)
+            {
+                return 1;
+            }
+
+            return threshold;
         }
 
         public int GetVisualCaptureIdleTimeoutMinutes()
@@ -195,6 +228,41 @@ namespace CocoroConsole.Controls
             }
 
             if (int.TryParse(value.ToString(), out var parsed))
+            {
+                return parsed;
+            }
+
+            return fallback;
+        }
+
+        private static double ReadDouble(Dictionary<string, object?> values, string key, double fallback)
+        {
+            if (!values.TryGetValue(key, out var value) || value == null)
+            {
+                return fallback;
+            }
+
+            if (value is double doubleValue)
+            {
+                return doubleValue;
+            }
+
+            if (value is float floatValue)
+            {
+                return floatValue;
+            }
+
+            if (value is decimal decimalValue)
+            {
+                return (double)decimalValue;
+            }
+
+            if (value is int intValue)
+            {
+                return intValue;
+            }
+
+            if (double.TryParse(value.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
             {
                 return parsed;
             }
