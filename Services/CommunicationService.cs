@@ -1046,7 +1046,7 @@ namespace CocoroConsole.Services
         {
             try
             {
-                if (string.Equals(ev.Type, "capability_result", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(ev.Type, "assistant_message", StringComparison.OrdinalIgnoreCase))
                 {
                     var partnerMessage = ev.Data.Message;
                     if (!string.IsNullOrWhiteSpace(partnerMessage))
