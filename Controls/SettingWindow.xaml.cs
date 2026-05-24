@@ -85,6 +85,11 @@ namespace CocoroConsole.Controls
             await SystemSettingsControl.InitializeAsync();
         }
 
+        public void SetWakeDesktopObservationEnabled(bool enabled)
+        {
+            SystemSettingsControl.SetWakeDesktopObservationEnabled(enabled);
+        }
+
         /// <summary>
         /// ウィンドウがロードされた後に呼び出されるイベントハンドラ
         /// </summary>

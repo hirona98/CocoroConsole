@@ -1,6 +1,7 @@
 using CocoroConsole.Communication;
 using CocoroConsole.Models.OtomeKairoApi;
 using CocoroAI.Services;
+using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -740,6 +741,20 @@ namespace CocoroConsole.Services
             {
                 await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
                 await StartEventsStreamAsync().ConfigureAwait(false);
+                var configResponse = await _otomeKairoApiClient
+                    .GetOtomeKairoConfigAsync()
+                    .ConfigureAwait(false);
+                var currentWakePolicy = configResponse.SettingsSnapshot.WakePolicy ?? new Dictionary<string, object?>();
+                var wakePolicy = DesktopWakePolicyHelper.SetDesktopWakeObservationEnabled(
+                    currentWakePolicy,
+                    _appSettings.ClientId,
+                    enabled);
+                await _otomeKairoApiClient
+                    .PatchCurrentConfigAsync(new OtomeKairoCurrentSettingsPatch
+                    {
+                        WakePolicy = wakePolicy,
+                    })
+                    .ConfigureAwait(false);
                 await _otomeKairoApiClient
                     .PatchCapabilityStateAsync("vision.capture", paused: !enabled)
                     .ConfigureAwait(false);
@@ -1261,7 +1276,7 @@ namespace CocoroConsole.Services
             return new[]
             {
                 new OtomeKairoVisionSourceOffer(
-                    $"vision_source:{NormalizeVisionSourceToken(_appSettings.ClientId)}:desktop",
+                    DesktopWakePolicyHelper.BuildDesktopVisionSourceId(_appSettings.ClientId),
                     "vision.capture",
                     "desktop",
                     label,
@@ -1274,25 +1289,6 @@ namespace CocoroConsole.Services
         private OtomeKairoVisionSourceOffer BuildPrimaryVisionSource()
         {
             return BuildVisionSources().First();
-        }
-
-        private static string NormalizeVisionSourceToken(string? value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return "console";
-            }
-
-            var builder = new StringBuilder(value.Length);
-            foreach (var ch in value.Trim())
-            {
-                if (char.IsLetterOrDigit(ch) || ch == '-' || ch == '_')
-                {
-                    builder.Append(ch);
-                }
-            }
-
-            return builder.Length == 0 ? "console" : builder.ToString();
         }
 
         [DllImport("user32.dll")]
