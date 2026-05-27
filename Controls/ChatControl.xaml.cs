@@ -180,11 +180,22 @@ namespace CocoroConsole.Controls
         /// <param name="message">レスポンスメッセージ</param>
         public void AddAiMessage(string message)
         {
+            AddAiMessage(message, forceNewBubble: false);
+        }
+
+        /// <summary>
+        /// AIレスポンスをUIに追加
+        /// </summary>
+        /// <param name="message">レスポンスメッセージ</param>
+        /// <param name="forceNewBubble">直前がAIでも新しい吹き出しを強制するか</param>
+        public void AddAiMessage(string message, bool forceNewBubble)
+        {
             // --- 時刻（バブル表示用） ---
             var timestamp = DateTime.Now;
 
-            // 連続AIメッセージ判定
-            bool isContinuous = ShouldContinueLastMessage(MessageType.AI, hasImage: false);
+            // spontaneous 発話は通常会話と混ざらないように新しい吹き出しに分離する。
+            bool isContinuous = !forceNewBubble
+                && ShouldContinueLastMessage(MessageType.AI, hasImage: false);
 
             if (isContinuous)
             {

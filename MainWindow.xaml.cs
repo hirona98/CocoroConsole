@@ -508,7 +508,7 @@ namespace CocoroConsole
                 else if (request.role == "assistant")
                 {
                     // サーバー側処理済みメッセージをそのまま新規追加
-                    ChatControlInstance.AddAiMessage(request.content);
+                    ChatControlInstance.AddAiMessage(request.content, request.forceNewBubble);
                 }
             });
         }

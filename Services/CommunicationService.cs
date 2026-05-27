@@ -1085,19 +1085,34 @@ namespace CocoroConsole.Services
 
         private void HandlePartnerMessageFromEvent(OtomeKairoEvent ev, string partnerMessage)
         {
+            var sourceKind = ev.Data.SourceKind ?? string.Empty;
             var chatReply = new ChatRequest
             {
                 memoryId = string.Empty,
                 sessionId = ev.EventId.ToString(CultureInfo.InvariantCulture),
                 message = partnerMessage,
                 role = "assistant",
-                content = partnerMessage
+                content = partnerMessage,
+                sourceKind = sourceKind,
+                // spontaneous assistant_message は通常会話と分離して別バブルに出す。
+                forceNewBubble = ShouldForceNewBubbleForAssistantEvent(sourceKind)
             };
 
             ChatMessageReceived?.Invoke(this, chatReply);
 
             var currentCharacter = GetStoredCharacterSetting();
             _ = ForwardMessageToShellAsync(partnerMessage, currentCharacter);
+        }
+
+        private static bool ShouldForceNewBubbleForAssistantEvent(string? sourceKind)
+        {
+            if (string.IsNullOrWhiteSpace(sourceKind))
+            {
+                return false;
+            }
+
+            return string.Equals(sourceKind, "background_wake", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(sourceKind, "capability_result", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task HandleVisionCaptureRequestAsync(OtomeKairoEvent ev)
