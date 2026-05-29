@@ -1232,6 +1232,7 @@ namespace CocoroConsole.Services
                 {
                     ScreenshotSkipReason.Idle => (null, null, "capture skipped (idle)"),
                     ScreenshotSkipReason.ExcludedWindowTitle => (null, null, "capture skipped (excluded window title)"),
+                    ScreenshotSkipReason.InvalidWindowBounds => (null, null, "capture skipped (invalid window bounds)"),
                     _ => (null, null, "capture skipped")
                 };
             }

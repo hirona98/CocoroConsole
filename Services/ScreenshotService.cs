@@ -30,7 +30,12 @@ namespace CocoroAI.Services
         /// <summary>
         /// 除外パターンにマッチしたためスキップ
         /// </summary>
-        ExcludedWindowTitle = 2
+        ExcludedWindowTitle = 2,
+
+        /// <summary>
+        /// ウィンドウ矩形が無効なためスキップ
+        /// </summary>
+        InvalidWindowBounds = 3
     }
 
     /// <summary>
@@ -210,6 +215,12 @@ namespace CocoroAI.Services
                 if (!GetWindowRect(hwnd, out RECT rect))
                 {
                     throw new InvalidOperationException("ウィンドウの情報を取得できません");
+                }
+
+                if (rect.Width <= 0 || rect.Height <= 0)
+                {
+                    LastSkipReason = ScreenshotSkipReason.InvalidWindowBounds;
+                    return null;
                 }
 
                 // スクリーンショットを撮影
