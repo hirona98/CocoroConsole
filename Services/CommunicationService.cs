@@ -70,7 +70,7 @@ namespace CocoroConsole.Services
         // memory_id キャッシュ（チャット返信を UI へ戻す際に付与）
         private string _cachedMemoryId = "memory";
 
-        // 起動後、otomekairo が Normal になったタイミングで一度だけ設定取得するためのフラグ
+        // OtomeKairo が Normal になった後、現在設定と events stream を初期化済みかを表す。
         private bool _initialSettingsFetched = false;
 
         private static bool IsVrmDisplayEnabled(CharacterSettings? currentCharacter)
@@ -426,8 +426,8 @@ namespace CocoroConsole.Services
             // 外部イベントに転送
             StatusChanged?.Invoke(this, status);
 
-            // 初回Normal時に OtomeKairo への接続初期化を行う
-            if (!_initialSettingsFetched && status == OtomeKairoStatus.Normal)
+            // Normal 復帰時は、初回または events stream 未接続なら source 登録まで再初期化する。
+            if (status == OtomeKairoStatus.Normal && (!_initialSettingsFetched || !IsEventsStreamConnected()))
             {
                 _initialSettingsFetched = true;
                 _ = FetchAndApplyCurrentSettingsFromOtomeKairoAsync();
@@ -435,9 +435,15 @@ namespace CocoroConsole.Services
 
             if (status == OtomeKairoStatus.WaitingForStartup)
             {
-                // 起動待ちに戻った場合は旧イベントストリームを停止
+                // 起動待ちに戻った場合は旧イベントストリームを止め、Normal 復帰時に再登録する。
+                _initialSettingsFetched = false;
                 _ = StopEventsStreamAsync();
             }
+        }
+
+        private bool IsEventsStreamConnected()
+        {
+            return _eventsStreamClient?.IsConnected == true;
         }
 
         /// <summary>
