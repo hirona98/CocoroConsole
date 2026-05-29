@@ -12,11 +12,11 @@ namespace CocoroConsole.Communication
         private static readonly TimeSpan[] DefaultReconnectDelays =
         {
             TimeSpan.FromSeconds(1),
-            TimeSpan.FromSeconds(2),
-            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(1),
             TimeSpan.FromSeconds(10),
-            TimeSpan.FromSeconds(30),
-            TimeSpan.FromSeconds(60),
         };
 
         private readonly Uri _webSocketUri;
