@@ -40,6 +40,7 @@ namespace CocoroConsole.Controls
         private const int DefaultDecisionMaxOutputTokens = 3000;
         private const int DefaultExpressionMaxOutputTokens = 4000;
         private const int DefaultMemoryMaxOutputTokens = 3000;
+        private const int DefaultMemoryCorrectionMaxOutputTokens = 1200;
         private const int DefaultReflectionSummaryMaxOutputTokens = 2000;
         private const int DefaultEventEvidenceMaxOutputTokens = 1500;
         private const int DefaultRecallSelectionMaxOutputTokens = 2000;
@@ -772,6 +773,7 @@ namespace CocoroConsole.Controls
             roles["input_interpretation"] = ToRoleDefinition(item.ObservationRole, item.ObservationUsesExpressionModel ? item.ExpressionRole : null);
             roles["decision_generation"] = ToRoleDefinition(item.DecisionRole, item.DecisionUsesExpressionModel ? item.ExpressionRole : null);
             roles["memory_interpretation"] = ToRoleDefinition(item.MemoryRole, item.MemoryUsesExpressionModel ? item.ExpressionRole : null);
+            EnsureMemoryCorrectionRole(roles, item);
             roles["memory_reflection_summary"] = ToRoleDefinition(item.ReflectionSummaryRole, item.ReflectionSummaryUsesExpressionModel ? item.ExpressionRole : null);
             roles["event_evidence_generation"] = ToRoleDefinition(item.EventEvidenceRole, item.EventEvidenceUsesExpressionModel ? item.ExpressionRole : null);
             roles["recall_pack_selection"] = ToRoleDefinition(item.RecallSelectionRole, item.RecallSelectionUsesExpressionModel ? item.ExpressionRole : null);
@@ -846,6 +848,21 @@ namespace CocoroConsole.Controls
             }
 
             return definition;
+        }
+
+        private static void EnsureMemoryCorrectionRole(
+            IDictionary<string, Dictionary<string, object?>> roles,
+            ModelPresetEditorItem item)
+        {
+            if (roles.ContainsKey("memory_correction_reconciliation"))
+            {
+                return;
+            }
+
+            // 古い設定にはこの role が存在しないため、記憶解釈 role と同じ接続先で完全定義を作る。
+            var role = ToRoleDefinition(item.MemoryRole, item.MemoryUsesExpressionModel ? item.ExpressionRole : null);
+            role["max_output_tokens"] = DefaultMemoryCorrectionMaxOutputTokens;
+            roles["memory_correction_reconciliation"] = role;
         }
 
         private static Dictionary<string, object?> GetRole(OtomeKairoModelPresetDefinition preset, string roleName)
