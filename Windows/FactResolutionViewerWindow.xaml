@@ -1,7 +1,7 @@
 <Window x:Class="CocoroConsole.Windows.FactResolutionViewerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="根拠トレースビューアー"
+        Title="判断トレースビューアー"
         Width="1400"
         Height="900"
         WindowStartupLocation="CenterOwner"
@@ -32,7 +32,7 @@
                                         Height="28"
                                         Margin="0,0,16,0"
                                         Click="ReloadTraceButton_Click"/>
-                                <TextBlock Text="cycle trace を inspection API から表示します。"
+                                <TextBlock Text="最近の判断と根拠を inspection API から表示します。"
                                            VerticalAlignment="Center"
                                            Foreground="#444444"/>
                         </StackPanel>
@@ -61,10 +61,10 @@
                                                 <DataGridTextColumn Header="開始"
                                                                     Binding="{Binding StartedAtDisplay, Mode=OneWay}"
                                                                     Width="90"/>
-                                                <DataGridTextColumn Header="trigger"
+                                                <DataGridTextColumn Header="きっかけ"
                                                                     Binding="{Binding TriggerKind, Mode=OneWay}"
                                                                     Width="110"/>
-                                                <DataGridTextColumn Header="result"
+                                                <DataGridTextColumn Header="結果"
                                                                     Binding="{Binding ResultKind, Mode=OneWay}"
                                                                     Width="110"/>
                                                 <DataGridTextColumn Header="失敗"
@@ -111,18 +111,18 @@
                                 </Border>
 
                                 <TabControl Grid.Row="1">
-                                        <TabItem Header="概要">
+                                        <TabItem Header="要点">
                                                 <Grid Margin="8">
                                                         <TextBox x:Name="OverviewTextBox"
                                                                  IsReadOnly="True"
                                                                  AcceptsReturn="True"
                                                                  VerticalScrollBarVisibility="Auto"
                                                                  HorizontalScrollBarVisibility="Auto"
-                                                                 FontFamily="Consolas"
-                                                                 TextWrapping="NoWrap"/>
+                                                                 FontFamily="Meiryo UI"
+                                                                 TextWrapping="Wrap"/>
                                                 </Grid>
                                         </TabItem>
-                                        <TabItem Header="fact_resolution_trace">
+                                        <TabItem Header="根拠の詳細">
                                                 <Grid Margin="8">
                                                         <TextBox x:Name="FactResolutionTraceTextBox"
                                                                  IsReadOnly="True"
@@ -133,7 +133,7 @@
                                                                  TextWrapping="NoWrap"/>
                                                 </Grid>
                                         </TabItem>
-                                        <TabItem Header="recall_trace">
+                                        <TabItem Header="想起の詳細">
                                                 <Grid Margin="8">
                                                         <TextBox x:Name="RecallTraceTextBox"
                                                                  IsReadOnly="True"
@@ -144,7 +144,7 @@
                                                                  TextWrapping="NoWrap"/>
                                                 </Grid>
                                         </TabItem>
-                                        <TabItem Header="cycle_trace">
+                                        <TabItem Header="全データ">
                                                 <Grid Margin="8">
                                                         <TextBox x:Name="CycleTraceTextBox"
                                                                  IsReadOnly="True"

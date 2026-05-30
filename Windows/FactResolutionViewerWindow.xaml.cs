@@ -14,7 +14,7 @@ using System.Windows.Controls;
 namespace CocoroConsole.Windows
 {
     /// <summary>
-    /// fact_resolution_trace を確認する inspection ビューアー。
+    /// 判断サイクルの要点と詳細 trace を確認する inspection ビューアー。
     /// </summary>
     public partial class FactResolutionViewerWindow : Window
     {
@@ -229,190 +229,354 @@ namespace CocoroConsole.Windows
             var triggerKind = GetString(cycleSummary, "trigger_kind");
             var resultKind = GetString(cycleSummary, "result_kind");
             var failed = GetString(cycleSummary, "failed");
-            return $"開始時刻={startedAt} / トリガー={triggerKind} / 結果={resultKind} / 失敗={failed}";
+            return $"開始時刻: {startedAt} / きっかけ: {DescribeTriggerKind(triggerKind)} / 結果: {DescribeResultKind(resultKind)} / 失敗: {DescribeBool(failed)}";
         }
 
         private string BuildOverview(OtomeKairoCycleTrace trace, JsonElement factTrace)
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"サイクルID: {trace.CycleId}");
-            builder.AppendLine($"開始時刻: {GetString(trace.CycleSummary, "started_at")}");
-            builder.AppendLine($"トリガー種別: {GetString(trace.CycleSummary, "trigger_kind")}");
-            builder.AppendLine($"結果種別: {GetString(trace.CycleSummary, "result_kind")}");
+            var compact = TryGetProperty(trace.ResultTrace, "trigger_compact_summary");
+            var entrySummary = TryGetProperty(compact, "entry_summary");
+            var decisionSummary = TryGetProperty(compact, "decision_summary");
+            var resultSummary = TryGetProperty(compact, "result_summary");
+
+            builder.AppendLine("この判断で起きたこと");
+            builder.AppendLine($"  開始: {GetString(trace.CycleSummary, "started_at")}");
+            builder.AppendLine($"  きっかけ: {DescribeTriggerKind(GetString(trace.CycleSummary, "trigger_kind"))}");
+            builder.AppendLine($"  結果: {DescribeResultKind(GetString(trace.CycleSummary, "result_kind"))}");
+            AppendLineIfPresent(builder, "  返信", FirstNonEmpty(GetString(trace.ResultTrace, "reply_summary"), GetString(resultSummary, "reply_summary")));
+            AppendLineIfPresent(builder, "  見送り理由", FirstNonEmpty(GetString(trace.ResultTrace, "noop_reason_summary"), GetString(resultSummary, "noop_reason_summary")));
+            AppendLineIfPresent(builder, "  失敗理由", FirstNonEmpty(GetString(trace.ResultTrace, "internal_failure_summary"), GetString(resultSummary, "internal_failure_summary")));
             builder.AppendLine();
 
-            if (factTrace.ValueKind != JsonValueKind.Object)
-            {
-                builder.AppendLine("根拠解決トレース: （なし）");
-                return builder.ToString();
-            }
-
-            var query = TryGetProperty(factTrace, "query");
-            builder.AppendLine($"解決経路: {GetString(factTrace, "resolver_path")}");
-            builder.AppendLine($"結果状態: {GetString(factTrace, "result_status")}");
-            builder.AppendLine($"契約: {GetString(query, "contract")}");
-            builder.AppendLine($"境界: {GetString(query, "boundary")}");
-            builder.AppendLine($"対象話者: {GetString(query, "target_actor")}");
-            builder.AppendLine($"理由コード: {JoinArrayValues(query, "reason_codes")}");
-            builder.AppendLine($"クエリ語: {JoinArrayValues(query, "query_terms")}");
-            builder.AppendLine($"未解決理由: {GetString(factTrace, "missing_reason")}");
-            builder.AppendLine($"返信ガイダンス: {GetString(factTrace, "reply_guidance")}");
-            builder.AppendLine($"入力文: {GetString(query, "input_text")}");
+            builder.AppendLine("入力と状況");
+            AppendLineIfPresent(builder, "  入力", FirstNonEmpty(
+                GetString(TryGetProperty(compact, "current_input_summary"), "text"),
+                GetString(entrySummary, "input_summary"),
+                GetString(trace.InputTrace, "input_summary"),
+                GetString(trace.DecisionTrace, "current_context_summary")
+            ));
+            AppendLineIfPresent(builder, "  観測", BuildObservationLine(TryGetProperty(entrySummary, "observation_summary")));
+            AppendLineIfPresent(builder, "  追加文脈", FirstNonEmpty(
+                GetString(trace.InputTrace, "input_context_addition_summary"),
+                GetString(trace.DecisionTrace, "input_context_addition_summary")
+            ));
+            AppendLineIfPresent(builder, "  外界状態", BuildWorldStateLine(trace.WorldStateTrace));
+            AppendLineIfPresent(builder, "  継続中の行動", BuildReadableObjectLine(FirstObject(
+                TryGetProperty(trace.InputTrace, "ongoing_action_summary"),
+                TryGetProperty(trace.DecisionTrace, "ongoing_action_summary")
+            )));
             builder.AppendLine();
 
-            AppendArraySection(
-                builder,
-                "境界候補イベント",
-                TryGetProperty(factTrace, "boundary_event_candidates"),
-                element => $"{GetString(element, "recorded_date")} {GetString(element, "event_id")} {GetString(element, "text")}"
-            );
-            AppendArraySection(
-                builder,
-                "サイクル候補イベント",
-                TryGetProperty(factTrace, "cycle_event_candidates"),
-                element => $"{GetString(element, "recorded_date")} {GetString(element, "event_id")} {GetString(element, "text")}"
-            );
-            AppendArraySection(
-                builder,
-                "発話候補イベント",
-                TryGetProperty(factTrace, "statement_event_candidates"),
-                element => $"{GetString(element, "recorded_date")} {GetString(element, "event_id")} {GetString(element, "text")}"
-            );
-            AppendArraySection(
-                builder,
-                "矛盾候補",
-                TryGetProperty(factTrace, "conflict_candidates"),
-                element => $"{GetString(element, "source_id")} {GetString(element, "text")}"
-            );
-            AppendArraySection(
-                builder,
-                "採用根拠",
-                TryGetProperty(factTrace, "adopted_evidence_items"),
-                element => $"{GetString(element, "recorded_date")} {GetString(element, "event_id")} {GetString(element, "source_id")} {GetString(element, "text")}"
-            );
-            AppendConsistencyChecks(builder, TryGetProperty(factTrace, "consistency_checks"));
-            AppendSelectedRecallSections(builder, TryGetProperty(factTrace, "selected_recall_sections"));
+            builder.AppendLine("判断理由");
+            AppendLineIfPresent(builder, "  判断", DescribeResultKind(FirstNonEmpty(
+                GetString(trace.DecisionTrace, "result_kind"),
+                GetString(decisionSummary, "kind")
+            )));
+            AppendLineIfPresent(builder, "  理由", FirstNonEmpty(
+                GetString(trace.DecisionTrace, "reason_summary"),
+                GetString(decisionSummary, "reason_summary")
+            ));
+            AppendLineIfPresent(builder, "  人格", GetString(trace.DecisionTrace, "persona_summary"));
+            AppendLineIfPresent(builder, "  記憶セット", GetString(trace.DecisionTrace, "memory_summary"));
+            AppendLineIfPresent(builder, "  能力要求", BuildCapabilityLine(FirstObject(
+                TryGetProperty(trace.ResultTrace, "capability_dispatch_summary"),
+                TryGetProperty(trace.ResultTrace, "capability_request_summary"),
+                TryGetProperty(trace.DecisionTrace, "capability_request_candidate_summary")
+            )));
+            builder.AppendLine();
+
+            AppendFactResolutionOverview(builder, factTrace);
+            AppendRecallOverview(builder, trace.RecallTrace);
+            AppendWorldStateOverview(builder, trace.WorldStateTrace);
+            AppendMemoryOverview(builder, trace.MemoryTrace);
 
             return builder.ToString();
         }
 
-        private void AppendConsistencyChecks(StringBuilder builder, JsonElement checks)
+        private void AppendFactResolutionOverview(StringBuilder builder, JsonElement factTrace)
         {
-            builder.AppendLine("整合性チェック:");
-            if (checks.ValueKind != JsonValueKind.Array || checks.GetArrayLength() == 0)
+            builder.AppendLine("根拠解決");
+
+            if (factTrace.ValueKind != JsonValueKind.Object)
             {
-                builder.AppendLine("  （なし）");
+                builder.AppendLine("  この判断では個別根拠の解決はありません。");
                 builder.AppendLine();
                 return;
             }
 
-            foreach (var check in checks.EnumerateArray())
-            {
-                builder.AppendLine(
-                    $"  - 種別={GetString(check, "check_type")} 状態={GetString(check, "status")} 正準日付={GetString(check, "canonical_recorded_date")}"
-                );
-                var claims = TryGetProperty(check, "claims");
-                if (claims.ValueKind != JsonValueKind.Array)
-                {
-                    continue;
-                }
-
-                foreach (var claim in claims.EnumerateArray())
-                {
-                    builder.AppendLine(
-                        $"      * セクション={GetString(claim, "section")} ソースID={GetString(claim, "source_id")} {GetString(claim, "claim_kind")}={GetString(claim, "claim_value")} {GetString(claim, "summary_text")}"
-                    );
-                }
-            }
+            var query = TryGetProperty(factTrace, "query");
+            AppendLineIfPresent(builder, "  状態", DescribeStatus(GetString(factTrace, "result_status")));
+            AppendLineIfPresent(builder, "  探したこと", FirstNonEmpty(JoinArrayValues(query, "query_terms"), GetString(query, "input_text")));
+            AppendLineIfPresent(builder, "  対象", BuildTargetLine(query));
+            AppendLineIfPresent(builder, "  未解決理由", GetString(factTrace, "missing_reason"));
+            AppendLineIfPresent(builder, "  返信方針", GetString(factTrace, "reply_guidance"));
+            AppendTopArraySection(
+                builder,
+                "  採用した根拠",
+                TryGetProperty(factTrace, "adopted_evidence_items"),
+                3,
+                BuildEventLine
+            );
+            AppendTopArraySection(builder, "  確認した候補", TryGetProperty(factTrace, "boundary_event_candidates"), 2, BuildEventLine);
+            AppendTopArraySection(builder, "  近いサイクル候補", TryGetProperty(factTrace, "cycle_event_candidates"), 2, BuildEventLine);
+            AppendTopArraySection(builder, "  近い発話候補", TryGetProperty(factTrace, "statement_event_candidates"), 2, BuildEventLine);
+            AppendTopArraySection(builder, "  矛盾候補", TryGetProperty(factTrace, "conflict_candidates"), 2, BuildEventLine);
+            AppendConsistencyOverview(builder, TryGetProperty(factTrace, "consistency_checks"));
             builder.AppendLine();
         }
 
-        private void AppendSelectedRecallSections(StringBuilder builder, JsonElement sections)
+        private void AppendRecallOverview(StringBuilder builder, JsonElement recallTrace)
         {
-            builder.AppendLine("選択された参照セクション:");
-            if (sections.ValueKind != JsonValueKind.Object)
-            {
-                builder.AppendLine("  （なし）");
-                return;
-            }
-
-            foreach (var property in sections.EnumerateObject())
-            {
-                builder.AppendLine($"  {property.Name}:");
-                if (property.Value.ValueKind != JsonValueKind.Array || property.Value.GetArrayLength() == 0)
-                {
-                    builder.AppendLine("    （なし）");
-                    continue;
-                }
-
-                foreach (var item in property.Value.EnumerateArray())
-                {
-                    builder.AppendLine($"    - {BuildRecallSectionLine(item)}");
-                }
-            }
+            builder.AppendLine("想起");
+            AppendLineIfPresent(builder, "  候補数", GetString(recallTrace, "candidate_count"));
+            AppendLineIfPresent(builder, "  採用した記憶", BuildSelectedIdsLine(recallTrace));
+            AppendLineIfPresent(builder, "  採用理由", GetString(recallTrace, "adopted_reason_summary"));
+            AppendLineIfPresent(builder, "  落とした候補", GetString(recallTrace, "rejected_candidate_summary"));
+            AppendLineIfPresent(builder, "  要約", BuildReadableObjectLine(TryGetProperty(recallTrace, "recall_pack_summary")));
+            builder.AppendLine();
         }
 
-        private void AppendArraySection(StringBuilder builder, string title, JsonElement array, Func<JsonElement, string> formatter)
+        private void AppendWorldStateOverview(StringBuilder builder, JsonElement worldStateTrace)
         {
-            builder.AppendLine($"{title}:");
+            builder.AppendLine("外界状態の更新");
+            AppendLineIfPresent(builder, "  状態", DescribeStatus(GetString(worldStateTrace, "result_status")));
+            AppendLineIfPresent(builder, "  更新数", BuildWorldStateCountLine(worldStateTrace));
+            AppendLineIfPresent(builder, "  失敗理由", GetString(worldStateTrace, "failure_reason"));
+            AppendTopArraySection(builder, "  判断に入った状態", TryGetProperty(worldStateTrace, "foreground_world_state"), 3, BuildWorldStateItemLine);
+            builder.AppendLine();
+        }
+
+        private void AppendMemoryOverview(StringBuilder builder, JsonElement memoryTrace)
+        {
+            builder.AppendLine("記憶への反映");
+            AppendLineIfPresent(builder, "  保存", BuildReadableObjectLine(TryGetProperty(memoryTrace, "turn_consolidation")));
+            AppendLineIfPresent(builder, "  ベクトル同期", BuildReadableObjectLine(TryGetProperty(memoryTrace, "vector_index_sync")));
+            AppendLineIfPresent(builder, "  内省整理", BuildReadableObjectLine(TryGetProperty(memoryTrace, "reflective_consolidation")));
+            AppendLineIfPresent(builder, "  失敗理由", GetString(memoryTrace, "failure_reason"));
+            builder.AppendLine();
+        }
+
+        private void AppendTopArraySection(StringBuilder builder, string title, JsonElement array, int maxItems, Func<JsonElement, string> formatter)
+        {
             if (array.ValueKind != JsonValueKind.Array || array.GetArrayLength() == 0)
             {
-                builder.AppendLine("  （なし）");
-                builder.AppendLine();
                 return;
             }
 
+            builder.AppendLine($"{title}:");
+            var shownCount = 0;
             foreach (var item in array.EnumerateArray())
             {
-                builder.AppendLine($"  - {formatter(item)}");
+                if (shownCount >= maxItems)
+                {
+                    break;
+                }
+
+                var line = formatter(item);
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                builder.AppendLine($"    - {line}");
+                shownCount++;
             }
-            builder.AppendLine();
+
+            var remainingCount = array.GetArrayLength() - shownCount;
+            if (remainingCount > 0)
+            {
+                builder.AppendLine($"    他 {remainingCount} 件は詳細タブにあります。");
+            }
         }
 
-        private string BuildRecallSectionLine(JsonElement item)
+        private void AppendConsistencyOverview(StringBuilder builder, JsonElement checks)
         {
-            var primaryId = FirstNonEmpty(
-                GetString(item, "memory_unit_id"),
-                GetString(item, "episode_id"),
-                GetString(item, "event_id"),
-                GetString(item, "source_id")
-            );
-            var summary = FirstNonEmpty(
-                GetString(item, "summary_text"),
-                GetString(item, "text"),
-                GetString(item, "summary")
-            );
-            var predicate = GetString(item, "predicate");
-            var objectValue = GetString(item, "object_ref_or_value");
-            var formedAt = GetString(item, "formed_at");
-            var recordedDate = GetString(item, "recorded_date");
+            if (checks.ValueKind != JsonValueKind.Array || checks.GetArrayLength() == 0)
+            {
+                return;
+            }
 
+            var summaries = checks.EnumerateArray()
+                .Select(check => FirstNonEmpty(DescribeStatus(GetString(check, "status")), GetString(check, "check_type")))
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Take(3)
+                .ToList();
+            if (summaries.Count > 0)
+            {
+                builder.AppendLine($"  整合性: {string.Join(" / ", summaries)}");
+            }
+        }
+
+        private static void AppendLineIfPresent(StringBuilder builder, string label, string value)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                builder.AppendLine($"{label}: {value.Trim()}");
+            }
+        }
+
+        private static string BuildEventLine(JsonElement element)
+        {
+            var text = FirstNonEmpty(
+                GetString(element, "text"),
+                GetString(element, "summary_text"),
+                GetString(element, "claim_value"),
+                GetString(element, "source_id")
+            );
+            var when = FirstNonEmpty(GetString(element, "recorded_date"), GetString(element, "formed_at"));
+            var source = FirstNonEmpty(GetString(element, "event_id"), GetString(element, "source_id"));
+            return string.Join(" / ", new[] { when, source, text }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        private static string BuildWorldStateItemLine(JsonElement element)
+        {
+            return string.Join(" / ", new[]
+            {
+                FirstNonEmpty(GetString(element, "state_type"), GetString(element, "kind")),
+                FirstNonEmpty(GetString(element, "summary_text"), GetString(element, "summary")),
+                FirstNonEmpty(GetString(element, "freshness_hint"), GetString(element, "confidence_hint")),
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        private static string BuildObservationLine(JsonElement observation)
+        {
+            if (observation.ValueKind != JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" / ", new[]
+            {
+                FirstNonEmpty(GetString(observation, "summary_text"), GetString(observation, "visual_summary_text"), GetString(observation, "status")),
+                GetString(observation, "request_id"),
+                GetString(observation, "failure_reason"),
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        private static string BuildCapabilityLine(JsonElement capability)
+        {
+            if (capability.ValueKind != JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" / ", new[]
+            {
+                FirstNonEmpty(GetString(capability, "capability_id"), GetString(capability, "capability_kind")),
+                BuildReadableObjectLine(TryGetProperty(capability, "request_summary")),
+                BuildReadableObjectLine(TryGetProperty(capability, "transition_summary")),
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        private static string BuildSelectedIdsLine(JsonElement recallTrace)
+        {
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(primaryId))
-            {
-                parts.Add(primaryId);
-            }
-            if (!string.IsNullOrWhiteSpace(predicate))
-            {
-                parts.Add($"述語={predicate}");
-            }
-            if (!string.IsNullOrWhiteSpace(objectValue))
-            {
-                parts.Add($"値={objectValue}");
-            }
-            if (!string.IsNullOrWhiteSpace(formedAt))
-            {
-                parts.Add($"形成時刻={formedAt}");
-            }
-            if (!string.IsNullOrWhiteSpace(recordedDate))
-            {
-                parts.Add($"記録日={recordedDate}");
-            }
-            if (!string.IsNullOrWhiteSpace(summary))
-            {
-                parts.Add(summary);
-            }
+            AddCountPart(parts, "記憶", TryGetProperty(recallTrace, "selected_memory_unit_ids"));
+            AddCountPart(parts, "エピソード", TryGetProperty(recallTrace, "selected_episode_ids"));
+            AddCountPart(parts, "イベント", TryGetProperty(recallTrace, "selected_event_ids"));
             return string.Join(" / ", parts);
+        }
+
+        private static void AddCountPart(List<string> parts, string label, JsonElement array)
+        {
+            if (array.ValueKind == JsonValueKind.Array && array.GetArrayLength() > 0)
+            {
+                parts.Add($"{label} {array.GetArrayLength()} 件");
+            }
+        }
+
+        private static string BuildWorldStateLine(JsonElement worldStateTrace)
+        {
+            var count = GetString(worldStateTrace, "input_world_state_count");
+            var status = DescribeStatus(GetString(worldStateTrace, "result_status"));
+            if (string.IsNullOrWhiteSpace(count) && string.IsNullOrWhiteSpace(status))
+            {
+                return string.Empty;
+            }
+
+            var countText = string.IsNullOrWhiteSpace(count) ? string.Empty : $"{count} 件";
+            return string.Join(" / ", new[] { countText, status }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        private static string BuildWorldStateCountLine(JsonElement worldStateTrace)
+        {
+            var parts = new[]
+            {
+                CountPart("候補", GetString(worldStateTrace, "candidate_state_count")),
+                CountPart("更新", GetString(worldStateTrace, "updated_state_count")),
+                CountPart("置換", GetString(worldStateTrace, "replaced_state_count")),
+                CountPart("期限切れ", GetString(worldStateTrace, "expired_state_count")),
+                CountPart("除外", GetString(worldStateTrace, "dropped_state_count")),
+            }.Where(value => !string.IsNullOrWhiteSpace(value));
+            return string.Join(" / ", parts);
+        }
+
+        private static string CountPart(string label, string count)
+        {
+            return string.IsNullOrWhiteSpace(count) ? string.Empty : $"{label} {count}";
+        }
+
+        private static string BuildTargetLine(JsonElement query)
+        {
+            return string.Join(" / ", new[]
+            {
+                GetString(query, "target_actor"),
+                GetString(query, "boundary"),
+                GetString(query, "contract"),
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        private static JsonElement FirstObject(params JsonElement[] elements)
+        {
+            foreach (var element in elements)
+            {
+                if (element.ValueKind == JsonValueKind.Object)
+                {
+                    return element;
+                }
+            }
+
+            return default;
+        }
+
+        private static string BuildReadableObjectLine(JsonElement element)
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            var preferredKeys = new[]
+            {
+                "result_status",
+                "status",
+                "kind",
+                "summary_text",
+                "summary",
+                "reason_summary",
+                "detail_summary",
+                "transition_source",
+                "reason_code",
+                "event_count",
+                "episode_id",
+                "request_id",
+            };
+            var parts = new List<string>();
+            foreach (var key in preferredKeys)
+            {
+                var value = GetString(element, key);
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
+
+                parts.Add(key.EndsWith("_status", StringComparison.Ordinal) || key == "status"
+                    ? DescribeStatus(value)
+                    : value);
+            }
+
+            return string.Join(" / ", parts.Distinct().Take(4));
         }
 
         private string PrettyJson(JsonElement element)
@@ -478,13 +642,69 @@ namespace CocoroConsole.Windows
             return string.Empty;
         }
 
+        private static string DescribeTriggerKind(string value)
+        {
+            return value switch
+            {
+                "user_message" => "ユーザー入力",
+                "capability_result" => "能力の実行結果",
+                "wake" => "自律起床",
+                "background_wake" => "バックグラウンド起床",
+                "" => string.Empty,
+                _ => value,
+            };
+        }
+
+        private static string DescribeResultKind(string value)
+        {
+            return value switch
+            {
+                "reply" => "返信",
+                "noop" => "見送り",
+                "capability_request" => "能力実行",
+                "internal_failure" => "内部失敗",
+                "pending_intent" => "保留",
+                "" => string.Empty,
+                _ => value,
+            };
+        }
+
+        private static string DescribeStatus(string value)
+        {
+            return value switch
+            {
+                "succeeded" => "成功",
+                "failed" => "失敗",
+                "skipped" => "スキップ",
+                "queued" => "待機中",
+                "not_started" => "未開始",
+                "not_requested" => "要求なし",
+                "missing" => "不足",
+                "adopted" => "採用",
+                "rejected" => "不採用",
+                "" => string.Empty,
+                _ => value,
+            };
+        }
+
+        private static string DescribeBool(string value)
+        {
+            return value switch
+            {
+                "true" => "あり",
+                "false" => "なし",
+                "" => string.Empty,
+                _ => value,
+            };
+        }
+
         private sealed class CycleSummaryListItem
         {
             public CycleSummaryListItem(OtomeKairoCycleSummary summary)
             {
                 CycleId = summary.CycleId;
-                TriggerKind = summary.TriggerKind;
-                ResultKind = summary.ResultKind;
+                TriggerKind = DescribeTriggerKind(summary.TriggerKind);
+                ResultKind = DescribeResultKind(summary.ResultKind);
                 Failed = summary.Failed;
                 StartedAtDisplay = TryFormatTimestamp(summary.StartedAt);
             }
