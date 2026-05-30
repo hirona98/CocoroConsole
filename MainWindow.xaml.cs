@@ -1043,14 +1043,7 @@ namespace CocoroConsole
         /// </summary>
         private CharacterSettings? GetStoredCharacterSetting()
         {
-            var config = _appSettings.GetConfigSettings();
-            if (config.characterList != null &&
-                config.currentCharacterIndex >= 0 &&
-                config.currentCharacterIndex < config.characterList.Count)
-            {
-                return config.characterList[config.currentCharacterIndex];
-            }
-            return null;
+            return _appSettings.GetCurrentCharacter();
         }
 
         /// <summary>
