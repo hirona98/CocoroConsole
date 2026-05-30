@@ -98,7 +98,7 @@ namespace CocoroConsole.Communication
                 logMessage = new LogMessage
                 {
                     timestamp = timestamp,
-                    level = level ?? "INFO",
+                    level = NormalizeLogLevel(level),
                     component = logger ?? string.Empty,
                     message = message ?? string.Empty
                 };
@@ -108,6 +108,20 @@ namespace CocoroConsole.Communication
             {
                 return false;
             }
+        }
+
+        private static string NormalizeLogLevel(string? level)
+        {
+            var normalized = (level ?? "INFO").Trim().ToUpperInvariant();
+            return normalized switch
+            {
+                "DEBUG" => "DEBUG",
+                "INFO" => "INFO",
+                "WARN" => "WARNING",
+                "WARNING" => "WARNING",
+                "ERROR" => "ERROR",
+                _ => "INFO"
+            };
         }
 
         private static string CompactJsonWhitespaceInLog(string message)

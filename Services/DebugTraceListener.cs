@@ -12,7 +12,7 @@ namespace CocoroConsole.Services
     public class DebugTraceListener : TraceListener
     {
         private readonly StringBuilder _buffer = new();
-        private static readonly Regex ComponentPattern = new(@"^\[([^\]]+)\]", RegexOptions.Compiled);
+        private static readonly Regex BracketTokenPattern = new(@"^\[([^\]]+)\]", RegexOptions.Compiled);
 
         public event EventHandler<LogMessage>? LogMessageReceived;
 
@@ -49,29 +49,46 @@ namespace CocoroConsole.Services
             var level = "DEBUG";
             var content = message;
 
-            // [ComponentName] パターンを検出
-            var match = ComponentPattern.Match(message);
-            if (match.Success)
+            // [LEVEL] [Component] または [Component] の形式を検出する。
+            var firstToken = BracketTokenPattern.Match(content);
+            if (firstToken.Success)
             {
-                component = match.Groups[1].Value;
-                content = message.Substring(match.Length).TrimStart();
+                var token = firstToken.Groups[1].Value;
+                content = content.Substring(firstToken.Length).TrimStart();
+                if (TryNormalizeLogLevel(token, out var parsedLevel))
+                {
+                    level = parsedLevel;
+                    var componentToken = BracketTokenPattern.Match(content);
+                    if (componentToken.Success)
+                    {
+                        component = componentToken.Groups[1].Value;
+                        content = content.Substring(componentToken.Length).TrimStart();
+                    }
+                }
+                else
+                {
+                    component = token;
+                }
             }
 
             // エラーレベルを推測
-            if (content.StartsWith("ERROR", StringComparison.OrdinalIgnoreCase) ||
+            if (TryReadLeadingLevel(content, out var explicitLevel, out var strippedContent))
+            {
+                level = explicitLevel;
+                content = strippedContent;
+            }
+            else if (level == "DEBUG" && (
+                content.StartsWith("ERROR", StringComparison.OrdinalIgnoreCase) ||
                 content.Contains("エラー") ||
-                content.Contains("失敗"))
+                content.Contains("失敗")))
             {
                 level = "ERROR";
             }
-            else if (content.StartsWith("WARNING", StringComparison.OrdinalIgnoreCase) ||
-                     content.Contains("警告"))
+            else if (level == "DEBUG" && (
+                content.StartsWith("WARNING", StringComparison.OrdinalIgnoreCase) ||
+                content.Contains("警告")))
             {
                 level = "WARNING";
-            }
-            else if (content.StartsWith("INFO", StringComparison.OrdinalIgnoreCase))
-            {
-                level = "INFO";
             }
 
             return new LogMessage
@@ -81,6 +98,35 @@ namespace CocoroConsole.Services
                 component = component,
                 message = content
             };
+        }
+
+        private static bool TryReadLeadingLevel(string content, out string level, out string strippedContent)
+        {
+            level = "";
+            strippedContent = content;
+            var separatorIndex = content.IndexOf(' ');
+            var firstWord = separatorIndex >= 0 ? content[..separatorIndex] : content;
+            if (!TryNormalizeLogLevel(firstWord.TrimEnd(':', '：'), out level))
+            {
+                return false;
+            }
+
+            strippedContent = separatorIndex >= 0 ? content[(separatorIndex + 1)..].TrimStart() : "";
+            return true;
+        }
+
+        private static bool TryNormalizeLogLevel(string value, out string level)
+        {
+            level = value.Trim().ToUpperInvariant() switch
+            {
+                "DEBUG" => "DEBUG",
+                "INFO" => "INFO",
+                "WARN" => "WARNING",
+                "WARNING" => "WARNING",
+                "ERROR" => "ERROR",
+                _ => ""
+            };
+            return level.Length > 0;
         }
 
         /// <summary>
