@@ -28,6 +28,7 @@ namespace CocoroConsole
             private readonly IAppSettings _appSettings;
             private bool _isDesktopWatchEnabled;
             private RealtimeVoiceRecognitionService? _voiceRecognitionService;
+        private VoiceRecognitionSettingsSnapshot? _voiceRecognitionSettingsSnapshot;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
         private FactResolutionViewerWindow? _factResolutionViewerWindow;
@@ -68,6 +69,17 @@ namespace CocoroConsole
         // WPF の Shutdown 中に Closing をキャンセルすると、Dispatcher が Shutdown 開始状態のまま残って
         // UI が固まることがあるため、明示的終了時はキャンセルしない判定に使う。
         private int _isShutdownInProgress;
+
+        private sealed record VoiceRecognitionSettingsSnapshot(
+            int CurrentCharacterIndex,
+            bool IsUseSTT,
+            string SttEngine,
+            string SttWakeWord,
+            string SttProfileId,
+            string SttApiKey,
+            string SttLanguage,
+            int InputThreshold,
+            float SpeakerRecognitionThreshold);
 
 
         public MainWindow()
@@ -180,6 +192,7 @@ namespace CocoroConsole
                 // 音声認識サービスを初期化
                 // 起動時はウェイクワードの有無に応じてVoiceRecognitionStateMachine内で状態が決定される
                 InitializeVoiceRecognitionService(startActive: false);
+                _voiceRecognitionSettingsSnapshot = CreateVoiceRecognitionSettingsSnapshot();
 
                 // UIコントロールのイベントハンドラを登録
                 RegisterEventHandlers();
@@ -438,32 +451,22 @@ namespace CocoroConsole
         /// </summary>
         private void OnSettingsSaved(object? sender, EventArgs e)
         {
-            // 現在の設定に基づいて音声認識サービスを制御
-            var currentCharacter = GetStoredCharacterSetting();
-            bool shouldBeActive = currentCharacter?.isUseSTT ?? false;
+            var previousVoiceSettings = _voiceRecognitionSettingsSnapshot;
+            var currentVoiceSettings = CreateVoiceRecognitionSettingsSnapshot();
+            if (!Equals(previousVoiceSettings, currentVoiceSettings))
+            {
+                var startActive = previousVoiceSettings != null
+                    && !previousVoiceSettings.IsUseSTT
+                    && currentVoiceSettings.IsUseSTT;
 
-            // 既存のサービスを停止
-            if (_voiceRecognitionService != null)
-            {
-                _voiceRecognitionService.StopListening();
-                _voiceRecognitionService.Dispose();
-                _voiceRecognitionService = null;
+                RestartVoiceRecognitionService(currentVoiceSettings, startActive);
             }
-
-            // 設定に応じてサービスを開始
-            if (shouldBeActive)
+            else if (!currentVoiceSettings.IsUseSTT || string.IsNullOrEmpty(currentVoiceSettings.SttApiKey))
             {
-                InitializeVoiceRecognitionService(startActive: true);
-                Debug.WriteLine("[CocoroConsole] 音声認識サービスを開始しました");
-            }
-            else
-            {
-                // 音声レベル表示をリセット
                 UIHelper.RunOnUIThread(() =>
                 {
                     ChatControlInstance.UpdateVoiceLevel(0, false);
                 });
-                Debug.WriteLine("[CocoroConsole] 音声認識サービスを停止しました");
             }
 
             // UI側の設定反映（ボタン状態とLLM表示）
@@ -476,6 +479,49 @@ namespace CocoroConsole
                 var currentStatus = _communicationService?.CurrentStatus ?? OtomeKairoStatus.WaitingForStartup;
                 UpdateOtomeKairoStatusDisplay(currentStatus);
             });
+        }
+
+        private VoiceRecognitionSettingsSnapshot CreateVoiceRecognitionSettingsSnapshot()
+        {
+            var currentCharacter = GetStoredCharacterSetting();
+            var microphoneSettings = _appSettings.MicrophoneSettings;
+
+            return new VoiceRecognitionSettingsSnapshot(
+                _appSettings.CurrentCharacterIndex,
+                currentCharacter?.isUseSTT ?? false,
+                currentCharacter?.sttEngine ?? string.Empty,
+                currentCharacter?.sttWakeWord ?? string.Empty,
+                currentCharacter?.sttProfileId ?? string.Empty,
+                currentCharacter?.sttApiKey ?? string.Empty,
+                currentCharacter?.sttLanguage ?? string.Empty,
+                microphoneSettings?.inputThreshold ?? -45,
+                microphoneSettings?.speakerRecognitionThreshold ?? 0.7f);
+        }
+
+        private void RestartVoiceRecognitionService(VoiceRecognitionSettingsSnapshot currentVoiceSettings, bool startActive)
+        {
+            if (_voiceRecognitionService != null)
+            {
+                _voiceRecognitionService.StopListening();
+                _voiceRecognitionService.Dispose();
+                _voiceRecognitionService = null;
+            }
+
+            if (currentVoiceSettings.IsUseSTT && !string.IsNullOrEmpty(currentVoiceSettings.SttApiKey))
+            {
+                InitializeVoiceRecognitionService(startActive);
+                Debug.WriteLine("[CocoroConsole] 音声認識サービスを開始しました");
+            }
+            else
+            {
+                UIHelper.RunOnUIThread(() =>
+                {
+                    ChatControlInstance.UpdateVoiceLevel(0, false);
+                });
+                Debug.WriteLine("[CocoroConsole] 音声認識サービスを停止しました");
+            }
+
+            _voiceRecognitionSettingsSnapshot = currentVoiceSettings;
         }
 
         #endregion
@@ -754,7 +800,7 @@ namespace CocoroConsole
 
         private void OnDebugLogMessageReceived(object? sender, LogMessage logMessage)
         {
-            if (IsVoiceRelatedLog(logMessage))
+            if (IsVoiceRelatedLog(logMessage) && !IsRoutineVoiceLifecycleLog(logMessage))
             {
                 UpdateStatusFromLog(logMessage);
             }
@@ -815,6 +861,20 @@ namespace CocoroConsole
             }
 
             return false;
+        }
+
+        private static bool IsRoutineVoiceLifecycleLog(LogMessage logMessage)
+        {
+            var message = logMessage.message ?? string.Empty;
+
+            return message.Contains("音声認識サービスを開始しました", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("音声認識サービスを停止しました", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("音声認識機能が無効、またはAPIキーが未設定", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("Initialized with STT:", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("Started listening", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("Stopped listening", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("Started in ACTIVE state", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("Started in SLEEPING state", StringComparison.OrdinalIgnoreCase);
         }
 
         private void UpdateStatusFromLog(LogMessage logMessage)
