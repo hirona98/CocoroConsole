@@ -1,5 +1,4 @@
-﻿using CocoroConsole.Communication;
-using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Communication;
 using System.Collections.Generic;
 
 namespace CocoroConsole.Services
@@ -17,17 +16,17 @@ namespace CocoroConsole.Services
         /// <summary>
         /// CocoroCoreポート
         /// </summary>
-        int CocoroGhostPort { get; set; }
+        int OtomeKairoPort { get; set; }
 
         /// <summary>
-        /// CocoroGhost接続先ホスト
+        /// OtomeKairo接続先ホスト
         /// </summary>
-        string CocoroGhostHost { get; set; }
+        string OtomeKairoHost { get; set; }
 
         /// <summary>
-        /// 外部の CocoroGhost を使用するか
+        /// 外部の OtomeKairo を使用するか
         /// </summary>
-        bool UseExternalCocoroGhost { get; set; }
+        bool UseExternalOtomeKairo { get; set; }
 
         /// <summary>
         /// CocoroShellポート
@@ -40,9 +39,9 @@ namespace CocoroConsole.Services
         string ClientId { get; set; }
 
         /// <summary>
-        /// cocoro_ghost API Bearer トークン
+        /// otomekairo API Bearer トークン
         /// </summary>
-        string CocoroGhostBearerToken { get; set; }
+        string OtomeKairoBearerToken { get; set; }
 
         /// <summary>
         /// 対話機能（LLM）を使用するか
@@ -221,19 +220,19 @@ namespace CocoroConsole.Services
         /// </summary>
         string UserDataDirectory { get; }
         /// <summary>
-        /// CocoroGhost の HTTPS ベースURLを取得
+        /// OtomeKairo の HTTPS ベースURLを取得
         /// </summary>
-        string GetCocoroGhostBaseUrl();
+        string GetOtomeKairoBaseUrl();
 
         /// <summary>
-        /// CocoroGhost の WSS ベースURLを取得
+        /// OtomeKairo の WSS ベースURLを取得
         /// </summary>
-        string GetCocoroGhostWebSocketBaseUrl();
+        string GetOtomeKairoWebSocketBaseUrl();
 
         /// <summary>
-        /// CocoroGhost 接続先がローカルかどうか
+        /// OtomeKairo 接続先がローカルかどうか
         /// </summary>
-        bool IsCocoroGhostLocal();
+        bool IsOtomeKairoLocal();
 
         /// <summary>
         /// 現在選択されているキャラクター設定を取得

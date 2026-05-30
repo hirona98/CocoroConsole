@@ -218,6 +218,20 @@ namespace CocoroConsole
                 showMenuItem.Click += (s, e) => ShowMainWindow();
                 contextMenu.Items.Add(showMenuItem);
 
+                var factTraceMenuItem = new System.Windows.Forms.ToolStripMenuItem
+                {
+                    Text = "根拠トレース表示"
+                };
+                factTraceMenuItem.Click += (s, e) =>
+                {
+                    ShowMainWindow();
+                    if (Current.MainWindow is MainWindow mainWindow)
+                    {
+                        mainWindow.OpenFactResolutionViewer();
+                    }
+                };
+                contextMenu.Items.Add(factTraceMenuItem);
+
                 // 終了メニュー項目
                 var exitMenuItem = new System.Windows.Forms.ToolStripMenuItem
                 {

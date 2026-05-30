@@ -1,4 +1,4 @@
-﻿using CocoroConsole.Models;
+using CocoroConsole.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -197,9 +197,6 @@ namespace CocoroConsole.Communication
         // スクリーンショット機能の有効/無効
         public bool enabled { get; set; } = false;
 
-        // 取得間隔（分）
-        public int intervalMinutes { get; set; } = 10;
-
         // アクティブウィンドウのみキャプチャするか
         public bool captureActiveWindowOnly { get; set; } = true;
 
@@ -289,14 +286,14 @@ namespace CocoroConsole.Communication
     {
         public int CocoroConsolePort { get; set; }
         public int cocoroCorePort { get; set; }
-        // CocoroGhost 接続先ホスト（例: 127.0.0.1 / localhost / 192.168.1.50）
-        public string cocoroGhostHost { get; set; } = "127.0.0.1";
-        // true: 外部の CocoroGhost に接続する / false: ローカル起動を前提に接続する
-        public bool? useExternalCocoroGhost { get; set; }
+        // true: 外部の OtomeKairo に接続する / false: ローカル起動を前提に接続する
+        public bool? useExternalOtomeKairo { get; set; }
+        // OtomeKairo 接続先ホスト（例: 127.0.0.1 / localhost / 192.168.1.50）
+        public string otomeKairoHost { get; set; } = "127.0.0.1";
         public int cocoroShellPort { get; set; }
         // /api/events/stream で hello を送るためのクライアントID（安定ID）
         public string clientId { get; set; } = string.Empty;
-        public string? cocoroGhostBearerToken { get; set; }
+        public string? otomeKairoBearerToken { get; set; }
         public bool isUseLLM { get; set; }
         public bool isRestoreWindowPosition { get; set; }
         public bool isTopmost { get; set; }
@@ -333,11 +330,11 @@ namespace CocoroConsole.Communication
             {
                 CocoroConsolePort = this.CocoroConsolePort,
                 cocoroCorePort = this.cocoroCorePort,
-                cocoroGhostHost = this.cocoroGhostHost,
-                useExternalCocoroGhost = this.useExternalCocoroGhost,
+                useExternalOtomeKairo = this.useExternalOtomeKairo,
+                otomeKairoHost = this.otomeKairoHost,
                 cocoroShellPort = this.cocoroShellPort,
                 clientId = this.clientId,
-                cocoroGhostBearerToken = this.cocoroGhostBearerToken,
+                otomeKairoBearerToken = this.otomeKairoBearerToken,
                 isUseLLM = this.isUseLLM,
                 isRestoreWindowPosition = this.isRestoreWindowPosition,
                 isTopmost = this.isTopmost,
@@ -361,7 +358,6 @@ namespace CocoroConsole.Communication
                 screenshotSettings = new ScreenshotSettings
                 {
                     enabled = this.screenshotSettings.enabled,
-                    intervalMinutes = this.screenshotSettings.intervalMinutes,
                     captureActiveWindowOnly = this.screenshotSettings.captureActiveWindowOnly,
                     idleTimeoutMinutes = this.screenshotSettings.idleTimeoutMinutes,
                     excludePatterns = new List<string>(this.screenshotSettings.excludePatterns)
@@ -442,6 +438,8 @@ namespace CocoroConsole.Communication
         public string message { get; set; } = string.Empty;
         public string role { get; set; } = string.Empty; // "user" | "assistant"
         public string content { get; set; } = string.Empty;
+        public string sourceKind { get; set; } = string.Empty;
+        public bool forceNewBubble { get; set; }
         public DateTime timestamp { get; set; } = DateTime.UtcNow;
     }
 

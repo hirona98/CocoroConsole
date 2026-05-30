@@ -4,237 +4,161 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="800"
+             d:DesignHeight="900"
              d:DesignWidth="800">
 
-        <UserControl.Resources>
-                <!-- セクション枠（GroupBox）スタイル -->
-                <Style x:Key="PromptGroupBoxStyle"
-                       TargetType="GroupBox">
-                        <Setter Property="Background"
-                                Value="White"/>
-                        <Setter Property="BorderBrush"
-                                Value="#CCCCCC"/>
-                        <Setter Property="BorderThickness"
-                                Value="1"/>
-                        <Setter Property="Margin"
-                                Value="0,0,20,15"/>
-                        <Setter Property="FontSize"
-                                Value="14"/>
-                        <Setter Property="Foreground"
-                                Value="#4873CF"/>
-                        <Setter Property="SnapsToDevicePixels"
-                                Value="True"/>
-                </Style>
-                <Style x:Key="SettingLabelStyle"
-                       TargetType="TextBlock">
-                        <Setter Property="VerticalAlignment"
-                                Value="Center"/>
-                        <Setter Property="Margin"
-                                Value="0,0,10,0"/>
-                        <Setter Property="Width"
-                                Value="140"/>
-                        <Setter Property="Foreground"
-                                Value="#4873CF"/>
-                </Style>
-                <Style x:Key="SettingTextBoxStyle"
-                       TargetType="TextBox">
-                        <Setter Property="Foreground"
-                                Value="#FF0078D7"/>
-                        <Setter Property="Padding"
-                                Value="2"/>
-                        <Setter Property="BorderBrush"
-                                Value="#CCCCCC"/>
-                        <Setter Property="BorderThickness"
-                                Value="1"/>
-                </Style>
-                <Style x:Key="PresetButtonStyle"
-                       TargetType="Button">
-                        <Setter Property="Background"
-                                Value="#4873CF"/>
-                        <Setter Property="Foreground"
-                                Value="WhiteSmoke"/>
-                        <Setter Property="BorderThickness"
-                                Value="0"/>
-                        <Setter Property="Padding"
-                                Value="10,5"/>
-                </Style>
-                <!-- 削除ボタンは App.xaml の DeleteButtonStyle を使用 -->
-                <Style x:Key="ContentTextBlockStyle"
-                       TargetType="TextBlock">
-                        <Setter Property="FontSize"
-                                Value="12"/>
-                        <Setter Property="Foreground"
-                                Value="#4873CF"/>
-                </Style>
-        </UserControl.Resources>
+    <UserControl.Resources>
+        <Style x:Key="PromptGroupBoxStyle"
+               TargetType="GroupBox">
+            <Setter Property="Background"
+                    Value="White"/>
+            <Setter Property="BorderBrush"
+                    Value="#CCCCCC"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+            <Setter Property="Margin"
+                    Value="0,0,20,15"/>
+            <Setter Property="FontSize"
+                    Value="14"/>
+            <Setter Property="Foreground"
+                    Value="#4873CF"/>
+            <Setter Property="SnapsToDevicePixels"
+                    Value="True"/>
+        </Style>
+        <Style x:Key="SettingLabelStyle"
+               TargetType="TextBlock">
+            <Setter Property="VerticalAlignment"
+                    Value="Center"/>
+            <Setter Property="Margin"
+                    Value="0,0,10,0"/>
+            <Setter Property="Width"
+                    Value="150"/>
+            <Setter Property="Foreground"
+                    Value="#4873CF"/>
+        </Style>
+        <Style x:Key="SettingTextBoxStyle"
+               TargetType="TextBox">
+            <Setter Property="Foreground"
+                    Value="#FF0078D7"/>
+            <Setter Property="Padding"
+                    Value="2"/>
+            <Setter Property="BorderBrush"
+                    Value="#CCCCCC"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+        </Style>
+        <Style x:Key="PresetButtonStyle"
+               TargetType="Button">
+            <Setter Property="Background"
+                    Value="#4873CF"/>
+            <Setter Property="Foreground"
+                    Value="WhiteSmoke"/>
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+            <Setter Property="Padding"
+                    Value="10,5"/>
+        </Style>
+    </UserControl.Resources>
 
-        <Grid SnapsToDevicePixels="True"
-              UseLayoutRounding="True">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="0,0,0,20">
-                                <!-- Persona -->
-                                <GroupBox Header="ペルソナプロンプト"
-                                          Style="{StaticResource PromptGroupBoxStyle}">
-                                        <StackPanel Margin="10">
-                                                <!-- プリセット選択 -->
-                                                <Grid Margin="0,0,0,15">
-                                                        <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="80"/>
-                                                                <ColumnDefinition Width="80"/>
-                                                                <ColumnDefinition Width="85"/>
-                                                        </Grid.ColumnDefinitions>
+    <Grid SnapsToDevicePixels="True"
+          UseLayoutRounding="True">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,0,20">
+                <GroupBox Header="人格設定一覧"
+                          Style="{StaticResource PromptGroupBoxStyle}">
+                    <StackPanel Margin="10">
+                        <Grid Margin="0,0,0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="85"/>
+                            </Grid.ColumnDefinitions>
 
-                                                        <ComboBox x:Name="PersonaPresetSelectComboBox"
-                                                                  Grid.Column="0"
-                                                                  Margin="0,5,10,5"
-                                                                  SelectionChanged="PersonaPresetSelectComboBox_SelectionChanged"/>
+                            <ComboBox x:Name="PersonaSelectComboBox"
+                                      Grid.Column="0"
+                                      Margin="0,5,10,5"
+                                      SelectionChanged="PersonaSelectComboBox_SelectionChanged"/>
 
-                                                        <Button Grid.Column="1"
-                                                                Content="追加"
-                                                                Margin="0,5,0,5"
-                                                                Padding="10,5"
-                                                                Style="{StaticResource PresetButtonStyle}"
-                                                                Click="AddPersonaPresetButton_Click"/>
+                            <Button Grid.Column="1"
+                                    Content="追加"
+                                    Margin="0,5,0,5"
+                                    Padding="10,5"
+                                    Style="{StaticResource PresetButtonStyle}"
+                                    Click="AddPersonaButton_Click"/>
 
-                                                        <Button Grid.Column="2"
-                                                                Content="複製"
-                                                                Margin="5,5,0,5"
-                                                                Padding="10,5"
-                                                                Style="{StaticResource PresetButtonStyle}"
-                                                                Click="DuplicatePersonaPresetButton_Click"/>
+                            <Button Grid.Column="2"
+                                    Content="複製"
+                                    Margin="5,5,0,5"
+                                    Padding="10,5"
+                                    Style="{StaticResource PresetButtonStyle}"
+                                    Click="DuplicatePersonaButton_Click"/>
 
-                                                        <Button Grid.Column="3"
-                                                                Content="削除"
-                                                                Margin="5,5,0,5"
-                                                                Padding="10,5"
-                                                                Style="{StaticResource DeleteButtonStyle}"
-                                                                Click="DeletePersonaPresetButton_Click"/>
-                                                </Grid>
+                            <Button Grid.Column="3"
+                                    Content="削除"
+                                    Margin="5,5,0,5"
+                                    Padding="10,5"
+                                    Style="{StaticResource DeleteButtonStyle}"
+                                    Click="DeletePersonaButton_Click"/>
+                        </Grid>
 
-                                                <!-- 設定 -->
-                                                <Grid Margin="0,5">
-                                                        <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="130"/>
-                                                                <ColumnDefinition Width="*"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Text="プリセット名:"
-                                                                   Style="{StaticResource SettingLabelStyle}"/>
-                                                        <TextBox x:Name="PersonaPresetNameTextBox"
-                                                                 Grid.Column="1"
-                                                                 Style="{StaticResource SettingTextBoxStyle}"
-                                                                 TextChanged="OnPersonaSettingChanged"/>
-                                                </Grid>
+                        <TextBlock TextWrapping="Wrap"
+                                   Foreground="#666666">
+                            人格設定は自由文の人格本文と、会話出力専用の表現補助だけを編集します。
+                        </TextBlock>
+                    </StackPanel>
+                </GroupBox>
 
-                                                <Grid Margin="0,5">
-                                                        <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="130"/>
-                                                                <ColumnDefinition Width="*"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Text="ユーザーの呼び方:"
-                                                                   Style="{StaticResource SettingLabelStyle}"
-                                                                   ToolTip="ユーザーの呼び名（例: マスター）"/>
-                                                        <TextBox x:Name="SecondPersonLabelTextBox"
-                                                                 Grid.Column="1"
-                                                                 Style="{StaticResource SettingTextBoxStyle}"
-                                                                 TextChanged="OnPersonaSettingChanged"/>
-                                                </Grid>
+                <GroupBox Header="基本情報"
+                          Style="{StaticResource PromptGroupBoxStyle}">
+                    <StackPanel Margin="10">
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="表示名:"
+                                       Style="{StaticResource SettingLabelStyle}"/>
+                            <TextBox x:Name="DisplayNameTextBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource SettingTextBoxStyle}"
+                                     TextChanged="OnSettingChanged"/>
+                        </Grid>
 
-                                                <Border BorderBrush="#CCCCCC"
-                                                        BorderThickness="1"
-                                                        Margin="0,10,0,0"
-                                                        Padding="5">
-                                                        <TextBox x:Name="PersonaTextBox"
-                                                                 AcceptsReturn="True"
-                                                                 TextWrapping="Wrap"
-                                                                 VerticalScrollBarVisibility="Auto"
-                                                                 Height="500"
-                                                                 BorderThickness="0"
-                                                                 Foreground="#FF0078D7"
-                                                                 TextChanged="OnPersonaSettingChanged"/>
-                                                </Border>
-                                        </StackPanel>
-                                </GroupBox>
+                        <TextBlock Text="人格本文"
+                                   Margin="0,10,0,5"
+                                   Foreground="#4873CF"/>
+                        <TextBlock Text="役割、距離感、価値観、話し方、強い原則を自由文でまとめて書きます。"
+                                   Foreground="#666666"
+                                   Margin="0,0,0,5"/>
+                        <TextBox x:Name="PersonaPromptTextBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Height="320"
+                                 Foreground="#FF0078D7"
+                                 BorderBrush="#CCCCCC"
+                                 BorderThickness="1"
+                                 TextChanged="OnSettingChanged"/>
 
-                                <!-- Addon -->
-                                <GroupBox Header="追加プロンプト（任意）"
-                                          Style="{StaticResource PromptGroupBoxStyle}">
-                                        <StackPanel Margin="10">
-                                                <!-- 説明テキスト -->
-                                                <TextBlock TextWrapping="Wrap"
-                                                           Foreground="#666666"
-                                                           Margin="0,0,0,10">
-                                                        VRMの表情指定や会話の文字数制限などを入れてください。
-                                                        記憶更新処理の人格には使用されません。
-                                                </TextBlock>
-
-                                                <!-- プリセット選択 -->
-                                                <Grid Margin="0,0,0,15">
-                                                        <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="80"/>
-                                                                <ColumnDefinition Width="80"/>
-                                                                <ColumnDefinition Width="85"/>
-                                                        </Grid.ColumnDefinitions>
-
-                                                        <ComboBox x:Name="AddonPresetSelectComboBox"
-                                                                  Grid.Column="0"
-                                                                  Margin="0,5,10,5"
-                                                                  SelectionChanged="AddonPresetSelectComboBox_SelectionChanged"/>
-
-                                                        <Button Grid.Column="1"
-                                                                Content="追加"
-                                                                Margin="0,5,0,5"
-                                                                Padding="10,5"
-                                                                Style="{StaticResource PresetButtonStyle}"
-                                                                Click="AddAddonPresetButton_Click"/>
-
-                                                        <Button Grid.Column="2"
-                                                                Content="複製"
-                                                                Margin="5,5,0,5"
-                                                                Padding="10,5"
-                                                                Style="{StaticResource PresetButtonStyle}"
-                                                                Click="DuplicateAddonPresetButton_Click"/>
-
-                                                        <Button Grid.Column="3"
-                                                                Content="削除"
-                                                                Margin="5,5,0,5"
-                                                                Padding="10,5"
-                                                                Style="{StaticResource DeleteButtonStyle}"
-                                                                Click="DeleteAddonPresetButton_Click"/>
-                                                </Grid>
-
-                                                <!-- 設定 -->
-                                                <Grid Margin="0,5">
-                                                        <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="100"/>
-                                                                <ColumnDefinition Width="*"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Text="プリセット名:"
-                                                                   Style="{StaticResource SettingLabelStyle}"/>
-                                                        <TextBox x:Name="AddonPresetNameTextBox"
-                                                                 Grid.Column="1"
-                                                                 Style="{StaticResource SettingTextBoxStyle}"
-                                                                 TextChanged="OnAddonSettingChanged"/>
-                                                </Grid>
-
-                                                <Border BorderBrush="#CCCCCC"
-                                                        BorderThickness="1"
-                                                        Margin="0,10,0,0"
-                                                        Padding="5">
-                                                        <TextBox x:Name="AddonTextBox"
-                                                                 AcceptsReturn="True"
-                                                                 TextWrapping="Wrap"
-                                                                 VerticalScrollBarVisibility="Auto"
-                                                                 Height="200"
-                                                                 BorderThickness="0"
-                                                                 Foreground="#FF0078D7"
-                                                                 TextChanged="OnAddonSettingChanged"/>
-                                                </Border>
-                                        </StackPanel>
-                                </GroupBox>
-                        </StackPanel>
-                </ScrollViewer>
-        </Grid>
+                        <TextBlock Text="表現補助"
+                                   Margin="0,10,0,5"
+                                   Foreground="#4873CF"/>
+                        <TextBlock Text="会話時の表現生成でだけ使う補助指示を入れます。表情指定や出力補助に使えます。"
+                                   Foreground="#666666"
+                                   Margin="0,0,0,5"/>
+                        <TextBox x:Name="ExpressionAddonTextBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Height="160"
+                                 Foreground="#FF0078D7"
+                                 BorderBrush="#CCCCCC"
+                                 BorderThickness="1"
+                                 TextChanged="OnSettingChanged"/>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </UserControl>

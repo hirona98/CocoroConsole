@@ -1,8 +1,8 @@
-﻿# CocoroConsole
+# CocoroConsole
 
 CocoroConsole は AI人格システム CocoroAI Ver.5 のチャットおよび設定用UIです
 
-https://github.com/hirona98/CocoroGhost のWindowsクライアントとして使用可能です
+https://github.com/hirona98/OtomeKairo のWindowsクライアントとして使用可能です
 
 https://github.com/hirona98/CocoroDock をコピーして作成しています（ソリューションファイルのUUIDもCocoroDockのままです）
 

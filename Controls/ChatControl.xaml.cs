@@ -24,10 +24,10 @@ namespace CocoroConsole.Controls
     {
         public event EventHandler<string>? MessageSent;
 
-        // 添付画像データ（Base64形式のdata URL、最大5枚）
+        // 添付画像データ（Base64形式のdata URL、API仕様に合わせて最大1枚）
         private List<string> _attachedImageDataUrls = new List<string>();
         private List<BitmapSource> _attachedImageSources = new List<BitmapSource>();
-        private const int MaxImageCount = 5;
+        private const int MaxImageCount = 1;
 
         // バブル内の時刻表示識別子（右クリックコピー等の既存ロジックと干渉しないためTagで判別）
         private const string TimestampTag = "CocoroConsole.ChatBubble.Timestamp";
@@ -180,11 +180,22 @@ namespace CocoroConsole.Controls
         /// <param name="message">レスポンスメッセージ</param>
         public void AddAiMessage(string message)
         {
+            AddAiMessage(message, forceNewBubble: false);
+        }
+
+        /// <summary>
+        /// AIレスポンスをUIに追加
+        /// </summary>
+        /// <param name="message">レスポンスメッセージ</param>
+        /// <param name="forceNewBubble">直前がAIでも新しい吹き出しを強制するか</param>
+        public void AddAiMessage(string message, bool forceNewBubble)
+        {
             // --- 時刻（バブル表示用） ---
             var timestamp = DateTime.Now;
 
-            // 連続AIメッセージ判定
-            bool isContinuous = ShouldContinueLastMessage(MessageType.AI, hasImage: false);
+            // spontaneous 発話は通常会話と混ざらないように新しい吹き出しに分離する。
+            bool isContinuous = !forceNewBubble
+                && ShouldContinueLastMessage(MessageType.AI, hasImage: false);
 
             if (isContinuous)
             {
@@ -581,10 +592,10 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// デスクトップモニタリング画像を表示
+        /// 視覚キャプチャ画像を表示
         /// </summary>
         /// <param name="imageBase64">Base64エンコードされた画像データ</param>
-        public void AddDesktopMonitoringImage(string imageBase64)
+        public void AddVisualCaptureImage(string imageBase64)
         {
             try
             {
@@ -604,7 +615,7 @@ namespace CocoroConsole.Controls
                 var titleText = new TextBox
                 {
                     Style = (Style)Resources["SystemMessageTextStyle"],
-                    Text = "[デスクトップウォッチ画像]",
+                    Text = "[視覚キャプチャ画像]",
                     Margin = new Thickness(0, 0, 0, 5)
                 };
                 messageContent.Children.Add(titleText);

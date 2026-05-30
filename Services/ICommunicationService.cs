@@ -1,6 +1,6 @@
-﻿using CocoroConsole.Communication;
+using CocoroConsole.Communication;
 using CocoroAI.Services;
-using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Models.OtomeKairoApi;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -23,221 +23,42 @@ namespace CocoroConsole.Services
     }
 
     /// <summary>
-    /// /api/mood/debug 更新用のイベント引数
-    /// </summary>
-    public class MoodDebugUpdatedEventArgs : EventArgs
-    {
-        /// <summary>
-        /// /api/mood/debug の最新レスポンス
-        /// </summary>
-        public MoodDebugResponse Response { get; }
-
-        /// <summary>
-        /// CocoroConsole側で受信した時刻（ローカル）
-        /// </summary>
-        public DateTimeOffset ReceivedAt { get; }
-
-        public MoodDebugUpdatedEventArgs(MoodDebugResponse response, DateTimeOffset receivedAt)
-        {
-            Response = response;
-            ReceivedAt = receivedAt;
-        }
-    }
-
-    /// <summary>
     /// 通信サービスのインターフェース
     /// </summary>
     public interface ICommunicationService : IDisposable
     {
-        /// <summary>
-        /// チャットメッセージ受信イベント（CocoroConsole APIから）
-        /// </summary>
         event EventHandler<ChatRequest>? ChatMessageReceived;
-
-        /// <summary>
-        /// 通知メッセージ受信イベント（cocoro_ghost events/stream 由来）
-        /// </summary>
-        event Action<ChatMessagePayload, List<System.Windows.Media.Imaging.BitmapSource>?>? NotificationMessageReceived;
-
-        /// <summary>
-        /// 制御コマンド受信イベント（CocoroConsole APIから）
-        /// </summary>
         event EventHandler<ControlRequest>? ControlCommandReceived;
-
-        /// <summary>
-        /// エラー発生イベント
-        /// </summary>
         event EventHandler<string>? ErrorOccurred;
-
-        /// <summary>
-        /// ストリーミングチャットイベント（トークン逐次）
-        /// </summary>
         event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
-
-        /// <summary>
-        /// チャット送信中状態の変更イベント
-        /// </summary>
         event EventHandler<bool>? ChatBusyChanged;
-
-        /// <summary>
-        /// ステータス更新要求イベント
-        /// </summary>
         event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
-
-        /// <summary>
-        /// CocoroGhostステータス変更イベント
-        /// </summary>
-        event EventHandler<CocoroGhostStatus>? StatusChanged;
-
-        /// <summary>
-        /// cocoro_ghost の /api/settings 取得・更新後に発火
-        /// </summary>
-        event EventHandler<CocoroConsole.Models.CocoroGhostApi.CocoroGhostSettings>? CocoroGhostSettingsUpdated;
-
-        /// <summary>
-        /// ログストリームメッセージ受信イベント
-        /// </summary>
+        event EventHandler<OtomeKairoStatus>? StatusChanged;
         event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
-
-        /// <summary>
-        /// ログストリーム接続状態イベント
-        /// </summary>
         event EventHandler<bool>? LogStreamConnectionChanged;
-
-        /// <summary>
-        /// ログストリームエラーイベント
-        /// </summary>
         event EventHandler<string>? LogStreamError;
 
-        /// <summary>
-        /// /api/mood/debug の最新値受信イベント（ポーリング）
-        /// </summary>
-        event EventHandler<MoodDebugUpdatedEventArgs>? MoodDebugUpdated;
-
-        /// <summary>
-        /// /api/mood/debug のポーリングエラーイベント
-        /// </summary>
-        event EventHandler<string>? MoodDebugError;
-
-        /// <summary>
-        /// APIサーバーが起動しているかどうか
-        /// </summary>
         bool IsServerRunning { get; }
-
-        /// <summary>
-        /// 現在のCocoroGhostステータス
-        /// </summary>
-        CocoroGhostStatus CurrentStatus { get; }
-
-        /// <summary>
-        /// チャット送信中かどうか
-        /// </summary>
+        OtomeKairoStatus CurrentStatus { get; }
         bool IsChatBusy { get; }
 
-        /// <summary>
-        /// APIサーバーを開始
-        /// </summary>
         Task StartServerAsync();
-
-        /// <summary>
-        /// APIサーバーを停止
-        /// </summary>
         Task StopServerAsync();
-
-        /// <summary>
-        /// 現在の設定を取得
-        /// </summary>
         ConfigSettings GetCurrentConfig();
-
-        /// <summary>
-        /// CocoroCoreにAPIでチャットメッセージを送信
-        /// </summary>
-        /// <param name="message">送信メッセージ</param>
-        /// <param name="characterName">キャラクター名（オプション）</param>
-        /// <param name="imageDataUrl">画像データURL（オプション）</param>
         Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, string? imageDataUrl = null);
-
-        /// <summary>
-        /// CocoroCoreへメッセージを送信（複数画像対応）
-        /// </summary>
-        /// <param name="message">送信メッセージ</param>
-        /// <param name="characterName">キャラクター名（オプション）</param>
-        /// <param name="imageDataUrls">画像データURLリスト（オプション）</param>
         Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, List<string>? imageDataUrls = null);
-
-        /// <summary>
-         /// 新しい会話セッションを開始
-         /// </summary>
         void StartNewConversation();
-
-        /// <summary>
-        /// CocoroShellにアニメーションコマンドを送信
-        /// </summary>
-        /// <param name="animationName">アニメーション名</param>
         Task SendAnimationToShellAsync(string animationName);
-
-        /// <summary>
-        /// CocoroShellにTTS状態を送信
-        /// </summary>
-        /// <param name="isUseTTS">TTS使用状態</param>
         Task SendTTSStateToShellAsync(bool isUseTTS);
-
-        /// <summary>
-        /// ログストリーム接続を開始
-        /// </summary>
         Task StartLogStreamAsync();
-
-        /// <summary>
-        /// ログストリーム接続を停止
-        /// </summary>
         Task StopLogStreamAsync();
-
-        /// <summary>
-        /// /api/mood/debug のポーリングを開始（1秒間隔）
-        /// </summary>
-        Task StartMoodDebugPollingAsync();
-
-        /// <summary>
-        /// /api/mood/debug のポーリングを停止
-        /// </summary>
-        Task StopMoodDebugPollingAsync();
-
-
-
-	        /// <summary>
-	        /// ログビューアーウィンドウを開く
-	        /// </summary>
-	        void OpenLogViewer();
-
-	        /// <summary>
-	        /// CocoroShellから現在のキャラクター位置を取得
-	        /// </summary>
-	        Task<PositionResponse> GetShellPositionAsync();
-
-        /// <summary>
-        /// CocoroShellに設定の部分更新を送信
-        /// </summary>
-        /// <param name="updates">更新する設定のキーと値のペア</param>
+        void OpenLogViewer();
+        Task<PositionResponse> GetShellPositionAsync();
         Task SendConfigPatchToShellAsync(Dictionary<string, object> updates);
-
-        /// <summary>
-        /// 設定キャッシュを更新
-        /// </summary>
         void RefreshSettingsCache();
-
-        /// <summary>
-        /// CocoroGhost再起動開始を通知して起動待ち状態に戻す
-        /// </summary>
-        void NotifyCocoroGhostRestarting();
-
-        /// <summary>
-        /// cocoro_ghost の /api/settings を再取得して反映する
-        /// </summary>
-        Task RefreshCocoroGhostSettingsAsync();
-
-        /// <summary>
-        /// デスクトップウォッチ（cocoro_ghost側）の有効/無効を更新する
-        /// </summary>
+        void NotifyOtomeKairoRestarting();
+        void ResetShellConnectionState();
+        Task RefreshOtomeKairoCurrentSettingsAsync();
         Task SetDesktopWatchEnabledAsync(bool enabled);
     }
 }

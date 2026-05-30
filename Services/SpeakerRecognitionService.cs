@@ -300,37 +300,29 @@ namespace CocoroConsole.Services
         /// <returns>(話者ID, 話者名, 信頼度)</returns>
         public (string speakerId, string speakerName, float confidence) IdentifySpeaker(byte[] wavAudio)
         {
-            try
-            {
-                // 1. クエリ音声から埋め込み抽出
-                var queryEmbedding = ExtractEmbedding(wavAudio);
+            // 1. クエリ音声から埋め込み抽出
+            var queryEmbedding = ExtractEmbedding(wavAudio);
 
-                // 2. DBから全登録話者を取得
-                var registeredSpeakers = LoadAllEmbeddings();
+            // 2. DBから全登録話者を取得
+            var registeredSpeakers = LoadAllEmbeddings();
 
-                // 登録話者がゼロの場合は異常として停止
-                if (registeredSpeakers.Count == 0)
-                    throw new InvalidOperationException("話者が一人も登録されていません。先に話者を登録してください。");
+            // 登録話者がゼロの場合は異常として停止
+            if (registeredSpeakers.Count == 0)
+                throw new InvalidOperationException("話者が一人も登録されていません。先に話者を登録してください。");
 
-                // 3. コサイン類似度計算（並列処理）
-                var (bestId, bestName, maxSimilarity) = registeredSpeakers
-                    .AsParallel()
-                    .Select(s => (s.id, s.name, sim: CosineSimilarity(queryEmbedding, s.embedding)))
-                    .OrderByDescending(x => x.sim)
-                    .First();
+            // 3. コサイン類似度計算（並列処理）
+            var (bestId, bestName, maxSimilarity) = registeredSpeakers
+                .AsParallel()
+                .Select(s => (s.id, s.name, sim: CosineSimilarity(queryEmbedding, s.embedding)))
+                .OrderByDescending(x => x.sim)
+                .First();
 
-                // 4. 閾値判定（識別失敗は異常として停止）
-                if (maxSimilarity < _threshold)
-                    throw new InvalidOperationException($"話者を識別できませんでした（最高類似度: {maxSimilarity:F2} < 閾値: {_threshold:F2}）。話者登録を追加するか閾値を調整してください。");
+            // 4. 閾値判定（識別失敗は異常として停止）
+            if (maxSimilarity < _threshold)
+                throw new InvalidOperationException($"話者を識別できませんでした（最高類似度: {maxSimilarity:F2} < 閾値: {_threshold:F2}）。話者登録を追加するか閾値を調整してください。");
 
-                System.Diagnostics.Debug.WriteLine($"[SpeakerRecognition] Identified: {bestName} ({maxSimilarity:F2})");
-                return (bestId, bestName, maxSimilarity);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[SpeakerRecognition] IdentifySpeaker error: {ex.Message}");
-                throw;
-            }
+            System.Diagnostics.Debug.WriteLine($"[SpeakerRecognition] Identified: {bestName} ({maxSimilarity:F2})");
+            return (bestId, bestName, maxSimilarity);
         }
 
         /// <summary>

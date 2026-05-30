@@ -1,11 +1,12 @@
-﻿using CocoroConsole.Communication;
-using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Communication;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -25,8 +26,11 @@ namespace CocoroConsole.Controls
         // 通信サービス
         private ICommunicationService? _communicationService;
 
-        // cocoro_ghost APIクライアント
-        private CocoroGhostApiClient? _apiClient;
+        // otomekairo APIクライアント
+        private OtomeKairoApiClient? _apiClient;
+
+        // OtomeKairo の editor-state を保持
+        private OtomeKairoEditorState? _loadedOtomeKairoEditorState;
 
         // CocoroCore再起動が必要な設定の前回値を保存
         private ConfigSettings _previousCocoroCoreSettings;
@@ -40,14 +44,14 @@ namespace CocoroConsole.Controls
         public SettingWindow(ICommunicationService? communicationService)
         {
             InitializeComponent();
+            EmbeddingSettingsControl.ResolveLlmApiKey = () => LlmSettingsControl.GetPreferredApiKeyForEmbeddingPaste();
 
             _communicationService = communicationService;
 
             // LLM使用設定（全体設定）を初期表示に反映
             LlmSettingsControl.IsUseLlm = AppSettings.Instance.IsUseLLM;
-            EmbeddingSettingsControl.LlmApiKeyProvider = () => LlmSettingsControl.GetCurrentLlmApiKey();
 
-            // cocoro_ghost APIクライアントを初期化
+            // otomekairo APIクライアントを初期化
             InitializeApiClient();
 
             // Display タブ初期化
@@ -58,7 +62,6 @@ namespace CocoroConsole.Controls
             InitializeCharacterSettings();
 
             // システム設定コントロールを初期化（APIクライアント設定後に初期化）
-            SystemSettingsControl.SetApiClient(_apiClient);
             _ = InitializeSystemSettingsAsync();
 
             // システム設定変更イベントを登録
@@ -73,13 +76,18 @@ namespace CocoroConsole.Controls
             // 元の設定のバックアップを作成
             BackupSettings();
 
-            // CocoroGhost再起動チェック用に現在の設定のディープコピーを保存
+            // OtomeKairo再起動チェック用に現在の設定のディープコピーを保存
             _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
         }
 
         private async Task InitializeSystemSettingsAsync()
         {
             await SystemSettingsControl.InitializeAsync();
+        }
+
+        public void SetWakeDesktopObservationEnabled(bool enabled)
+        {
+            SystemSettingsControl.SetWakeDesktopObservationEnabled(enabled);
         }
 
         /// <summary>
@@ -109,7 +117,7 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// cocoro_ghost APIクライアントを初期化
+        /// otomekairo APIクライアントを初期化
         /// </summary>
         private void InitializeApiClient()
         {
@@ -120,12 +128,12 @@ namespace CocoroConsole.Controls
                 _apiClient = null;
 
                 var appSettings = AppSettings.Instance;
-                var baseUrl = appSettings.GetCocoroGhostBaseUrl();
-                var token = appSettings.CocoroGhostBearerToken;
+                var baseUrl = appSettings.GetOtomeKairoBaseUrl();
+                var token = appSettings.OtomeKairoBearerToken;
 
                 if (!string.IsNullOrEmpty(token))
                 {
-                    _apiClient = new CocoroGhostApiClient(baseUrl, token);
+                    _apiClient = new OtomeKairoApiClient(baseUrl, token);
                 }
             }
             catch (Exception ex)
@@ -143,30 +151,25 @@ namespace CocoroConsole.Controls
 
             try
             {
-                // APIから設定を取得
-                CocoroGhostSettings settings = await _apiClient.GetSettingsAsync();
+                _loadedOtomeKairoEditorState = await _apiClient.GetEditorStateAsync();
 
-                // LLM設定をリスト全体でロード
-                List<LlmPreset> llmPresets = settings.LlmPreset ?? new List<LlmPreset>();
-                LlmSettingsControl.SetApiClient(_apiClient, SaveLlmPresetsToApiAsync);
-                LlmSettingsControl.LoadSettingsList(llmPresets, settings.ActiveLlmPresetId);
-
-                // Embedding設定をリスト全体でロード
-                List<EmbeddingPreset> embeddingPresets = settings.EmbeddingPreset ?? new List<EmbeddingPreset>();
-                EmbeddingSettingsControl.SetApiClient(_apiClient, SaveEmbeddingPresetsToApiAsync);
-                EmbeddingSettingsControl.IsMemoryEnabled = settings.MemoryEnabled;
-                EmbeddingSettingsControl.LoadSettingsList(embeddingPresets, settings.ActiveEmbeddingPresetId);
-
-                // Promptプリセットをロード
-                PromptSettingsControl.SetApiClient(_apiClient, SaveAllSettingsToApiAsync);
-                PromptSettingsControl.LoadSettings(
-                    settings.PersonaPreset ?? new List<PersonaPreset>(),
-                    settings.ActivePersonaPresetId,
-                    settings.AddonPreset ?? new List<AddonPreset>(),
-                    settings.ActiveAddonPresetId
+                LlmSettingsControl.LoadSettingsList(
+                    CloneModelPresets(_loadedOtomeKairoEditorState.ModelPresets),
+                    _loadedOtomeKairoEditorState.Current.SelectedModelPresetId
                 );
 
-                // 設定変更イベントを登録
+                EmbeddingSettingsControl.LoadSettings(
+                    CloneMemorySets(_loadedOtomeKairoEditorState.MemorySets),
+                    _loadedOtomeKairoEditorState.Current.SelectedMemorySetId
+                );
+
+                PromptSettingsControl.LoadSettings(
+                    ClonePersonas(_loadedOtomeKairoEditorState.Personas),
+                    _loadedOtomeKairoEditorState.Current.SelectedPersonaId
+                );
+
+                SystemSettingsControl.ApplyOtomeKairoCurrentSettings(_loadedOtomeKairoEditorState.Current);
+
                 LlmSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 EmbeddingSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 PromptSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
@@ -176,6 +179,7 @@ namespace CocoroConsole.Controls
                 Debug.WriteLine($"プリセット管理初期化エラー: {ex.Message}");
             }
         }
+
 
         /// <summary>
         /// キャラクター設定の初期化
@@ -248,8 +252,8 @@ namespace CocoroConsole.Controls
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
             dict["WindowTitleExcludePatterns"] = SystemSettingsControl.GetWindowTitleExcludePatterns();
 
-            // デスクトップウォッチ（アイドルタイムアウト / ローカル設定）
-            dict["DesktopWatchIdleTimeoutMinutes"] = SystemSettingsControl.GetDesktopWatchIdleTimeoutMinutes();
+            // 視覚キャプチャ（アイドルタイムアウト / ローカル設定）
+            dict["VisualCaptureIdleTimeoutMinutes"] = SystemSettingsControl.GetVisualCaptureIdleTimeoutMinutes();
 
             return dict;
         }
@@ -362,12 +366,12 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task ApplySettingsChangesAsync()
         {
-            // CocoroGhost 接続情報は専用ウィンドウで管理し、ここでは現在の保存値を参照する。
-            var bearerToken = AppSettings.Instance.CocoroGhostBearerToken;
+            // OtomeKairo 接続情報は専用ウィンドウで管理し、ここでは現在の保存値を参照する。
+            var bearerToken = AppSettings.Instance.OtomeKairoBearerToken;
             if (string.IsNullOrWhiteSpace(bearerToken))
             {
                 var result = MessageBox.Show(
-                    "cocoro_ghostのBearerトークンが未設定です。チャット/通知/キャプチャは送受信できません。このまま保存しますか？",
+                    "otomekairoのBearerトークンが未設定です。チャット/通知/キャプチャは送受信できません。このまま保存しますか？",
                     "Bearerトークン未設定",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
@@ -380,19 +384,19 @@ namespace CocoroConsole.Controls
             // すべてのタブの設定を保存（プリセットの保存・有効化を含む）
             await SaveAllSettingsAsync();
 
-            // 保存後の設定を取得してCocoroGhost再起動が必要かチェック
+            // 保存後の設定を取得してOtomeKairo再起動が必要かチェック
             var currentSettings = GetCurrentUISettings();
-            bool needsCocoroGhostRestart =
-                HasCocoroGhostRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings);
+            bool needsOtomeKairoRestart =
+                HasOtomeKairoRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings);
 
             // CocoroShellを再起動
             RestartCocoroShell();
 
-            // CocoroGhostの設定変更があった場合は再起動
-            if (needsCocoroGhostRestart)
+            // OtomeKairoの設定変更があった場合は再起動
+            if (needsOtomeKairoRestart)
             {
-                await RestartCocoroGhostAsync();
-                Debug.WriteLine("CocoroGhost再起動処理を実行しました");
+                await RestartOtomeKairoAsync();
+                Debug.WriteLine("OtomeKairo再起動処理を実行しました");
             }
         }
 
@@ -427,7 +431,7 @@ namespace CocoroConsole.Controls
 
                 if (_communicationService != null)
                 {
-                    await _communicationService.RefreshCocoroGhostSettingsAsync();
+                    await _communicationService.RefreshOtomeKairoCurrentSettingsAsync();
                 }
             }
             catch (System.Exception ex)
@@ -442,86 +446,35 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task SaveAllSettingsToApiAsync()
         {
-            // --- 保存時点の接続設定（host/port/token）で API クライアントを再構築する ---
             InitializeApiClient();
-            SystemSettingsControl.SetApiClient(_apiClient);
             if (_apiClient == null) return;
-            LlmSettingsControl.SetApiClient(_apiClient, SaveLlmPresetsToApiAsync);
-            EmbeddingSettingsControl.SetApiClient(_apiClient, SaveEmbeddingPresetsToApiAsync);
-            PromptSettingsControl.SetApiClient(_apiClient, SaveAllSettingsToApiAsync);
 
             try
             {
-                // /api/settings は全量PUTのため、無効時にdesktop_watch_target_client_idを消さないよう現値を保持する
-                var latestSettings = await _apiClient.GetSettingsAsync();
+                _loadedOtomeKairoEditorState ??= await _apiClient.GetEditorStateAsync();
+                await SyncMemorySetsAsync(_loadedOtomeKairoEditorState);
 
-                bool memoryEnabled = EmbeddingSettingsControl.IsMemoryEnabled;
-                bool desktopWatchEnabled = SystemSettingsControl.GetDesktopWatchEnabled();
-                int desktopWatchIntervalSeconds = SystemSettingsControl.GetDesktopWatchIntervalSeconds();
-                var desktopWatchTargetClientId = desktopWatchEnabled
-                    ? AppSettings.Instance.ClientId
-                    : latestSettings.DesktopWatchTargetClientId;
-                List<LlmPreset> llmPresets = LlmSettingsControl.GetAllPresets();
-                List<EmbeddingPreset> embeddingPresets = EmbeddingSettingsControl.GetAllPresets();
-                List<PersonaPreset> personaPresets = PromptSettingsControl.GetAllPersonaPresets();
-                List<AddonPreset> addonPresets = PromptSettingsControl.GetAllAddonPresets();
+                var request = BuildEditorStateFromUi();
+                var updated = await _apiClient.ReplaceEditorStateAsync(request);
+                _loadedOtomeKairoEditorState = updated;
+                Debug.WriteLine("[SettingWindow] editor-state を API に保存しました");
 
-                EnsurePresetIds(llmPresets, p => p.LlmPresetId, (p, id) => p.LlmPresetId = id);
-                EnsurePresetIds(embeddingPresets, p => p.EmbeddingPresetId, (p, id) => p.EmbeddingPresetId = id);
-                EnsurePresetIds(personaPresets, p => p.PersonaPresetId, (p, id) => p.PersonaPresetId = id);
-                EnsurePresetIds(addonPresets, p => p.AddonPresetId, (p, id) => p.AddonPresetId = id);
+                LlmSettingsControl.LoadSettingsList(
+                    CloneModelPresets(updated.ModelPresets),
+                    updated.Current.SelectedModelPresetId
+                );
 
-                var activeLlmId = ResolveActivePresetId(llmPresets, LlmSettingsControl.GetActivePresetId(), p => p.LlmPresetId);
-                var activeEmbeddingId = ResolveActivePresetId(embeddingPresets, EmbeddingSettingsControl.GetActivePresetId(), p => p.EmbeddingPresetId);
-                var activePersonaId = ResolveActivePresetId(personaPresets, PromptSettingsControl.GetActivePersonaPresetId(), p => p.PersonaPresetId);
-                var activeAddonId = ResolveActivePresetId(addonPresets, PromptSettingsControl.GetActiveAddonPresetId(), p => p.AddonPresetId);
-
-                if (string.IsNullOrWhiteSpace(activeLlmId) ||
-                    string.IsNullOrWhiteSpace(activeEmbeddingId) ||
-                    string.IsNullOrWhiteSpace(activePersonaId) ||
-                    string.IsNullOrWhiteSpace(activeAddonId))
-                {
-                    Debug.WriteLine("[SettingWindow] 設定の保存に失敗しました: active preset id missing");
-                    MessageBox.Show("アクティブなプリセットが選択されていません。cocoro_ghost側のsettings.dbを確認してください。", "エラー",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                CocoroGhostSettingsUpdateRequest request = new CocoroGhostSettingsUpdateRequest
-                {
-                    MemoryEnabled = memoryEnabled,
-                    DesktopWatchEnabled = desktopWatchEnabled,
-                    DesktopWatchIntervalSeconds = desktopWatchIntervalSeconds,
-                    DesktopWatchTargetClientId = desktopWatchTargetClientId,
-                    ActiveLlmPresetId = activeLlmId!,
-                    ActiveEmbeddingPresetId = activeEmbeddingId!,
-                    ActivePersonaPresetId = activePersonaId!,
-                    ActiveAddonPresetId = activeAddonId!,
-                    LlmPreset = llmPresets,
-                    EmbeddingPreset = embeddingPresets,
-                    PersonaPreset = personaPresets,
-                    AddonPreset = addonPresets
-                };
-
-                CocoroGhostSettings updated = await _apiClient.UpdateSettingsAsync(request);
-                Debug.WriteLine("[SettingWindow] 設定をAPIに保存しました");
-
-                // リマインダー設定/CRUDを保存（別API）
-                await SystemSettingsControl.SaveRemindersToApiAsync();
-
-                List<LlmPreset> updatedLlmPresets = updated.LlmPreset ?? new List<LlmPreset>();
-                LlmSettingsControl.LoadSettingsList(updatedLlmPresets, updated.ActiveLlmPresetId);
-
-                List<EmbeddingPreset> updatedEmbeddingPresets = updated.EmbeddingPreset ?? new List<EmbeddingPreset>();
-                EmbeddingSettingsControl.IsMemoryEnabled = updated.MemoryEnabled;
-                EmbeddingSettingsControl.LoadSettingsList(updatedEmbeddingPresets, updated.ActiveEmbeddingPresetId);
+                EmbeddingSettingsControl.LoadSettings(
+                    CloneMemorySets(updated.MemorySets),
+                    updated.Current.SelectedMemorySetId
+                );
 
                 PromptSettingsControl.LoadSettings(
-                    updated.PersonaPreset ?? new List<PersonaPreset>(),
-                    updated.ActivePersonaPresetId,
-                    updated.AddonPreset ?? new List<AddonPreset>(),
-                    updated.ActiveAddonPresetId
+                    ClonePersonas(updated.Personas),
+                    updated.Current.SelectedPersonaId
                 );
+
+                SystemSettingsControl.ApplyOtomeKairoCurrentSettings(updated.Current);
             }
             catch (Exception ex)
             {
@@ -529,6 +482,7 @@ namespace CocoroConsole.Controls
                 MessageBox.Show($"設定のAPI保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
         private static void EnsurePresetIds<T>(
             IEnumerable<T> presets,
@@ -581,9 +535,174 @@ namespace CocoroConsole.Controls
             return idGetter(resolved)?.Trim();
         }
 
-        private Task SaveLlmPresetsToApiAsync() => SaveAllSettingsToApiAsync();
+        private async Task SyncMemorySetsAsync(OtomeKairoEditorState baseState)
+        {
+            if (_apiClient == null)
+            {
+                return;
+            }
 
-        private Task SaveEmbeddingPresetsToApiAsync() => SaveAllSettingsToApiAsync();
+            var memorySets = EmbeddingSettingsControl.GetAllMemorySets();
+            EnsurePresetIds(memorySets, p => p.MemorySetId, (p, id) => p.MemorySetId = id);
+
+            var activeMemorySetId = ResolveActivePresetId(
+                memorySets,
+                EmbeddingSettingsControl.GetActiveMemorySetId(),
+                p => p.MemorySetId);
+            if (string.IsNullOrWhiteSpace(activeMemorySetId))
+            {
+                throw new InvalidOperationException("アクティブな記憶集合を解決できませんでした。");
+            }
+
+            var baseMemorySets = baseState.MemorySets.ToDictionary(
+                memorySet => memorySet.MemorySetId,
+                StringComparer.OrdinalIgnoreCase);
+            var pendingClones = EmbeddingSettingsControl.GetPendingCloneRequests();
+            var pendingCloneIds = new HashSet<string>(
+                pendingClones.Select(item => item.Definition.MemorySetId),
+                StringComparer.OrdinalIgnoreCase);
+            var desiredMemorySetIds = new HashSet<string>(
+                memorySets.Select(memorySet => memorySet.MemorySetId),
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (var pendingClone in pendingClones)
+            {
+                await _apiClient.CloneMemorySetAsync(
+                    pendingClone.SourceMemorySetId,
+                    pendingClone.Definition.MemorySetId,
+                    pendingClone.Definition.DisplayName);
+            }
+
+            foreach (var memorySet in memorySets.Where(memorySet =>
+                         !baseMemorySets.ContainsKey(memorySet.MemorySetId)
+                         && !pendingCloneIds.Contains(memorySet.MemorySetId)))
+            {
+                await _apiClient.ReplaceMemorySetAsync(CloneMemorySet(memorySet));
+            }
+
+            foreach (var memorySet in memorySets.Where(memorySet =>
+                         baseMemorySets.TryGetValue(memorySet.MemorySetId, out var existing)
+                         && MemorySetDefinitionChanged(existing, memorySet)))
+            {
+                await _apiClient.ReplaceMemorySetAsync(CloneMemorySet(memorySet));
+            }
+
+            var deletedMemorySetIds = baseMemorySets.Keys
+                .Where(memorySetId => !desiredMemorySetIds.Contains(memorySetId))
+                .ToList();
+            if (deletedMemorySetIds.Count == 0)
+            {
+                return;
+            }
+
+            if (deletedMemorySetIds.Any(memorySetId =>
+                    string.Equals(memorySetId, baseState.Current.SelectedMemorySetId, StringComparison.OrdinalIgnoreCase)))
+            {
+                await _apiClient.PatchCurrentConfigAsync(new OtomeKairoCurrentSettingsPatch
+                {
+                    SelectedMemorySetId = activeMemorySetId,
+                });
+            }
+
+            foreach (var memorySetId in deletedMemorySetIds)
+            {
+                await _apiClient.DeleteMemorySetAsync(memorySetId);
+            }
+        }
+
+        private OtomeKairoEditorState BuildEditorStateFromUi()
+        {
+            var personas = PromptSettingsControl.GetAllPersonas();
+            var memorySets = EmbeddingSettingsControl.GetAllMemorySets();
+            var modelPresets = LlmSettingsControl.GetAllPresets();
+
+            EnsurePresetIds(personas, p => p.PersonaId, (p, id) => p.PersonaId = id);
+            EnsurePresetIds(memorySets, p => p.MemorySetId, (p, id) => p.MemorySetId = id);
+            EnsurePresetIds(modelPresets, p => p.ModelPresetId, (p, id) => p.ModelPresetId = id);
+
+            var activePersonaId = ResolveActivePresetId(personas, PromptSettingsControl.GetActivePersonaId(), p => p.PersonaId);
+            var activeMemorySetId = ResolveActivePresetId(memorySets, EmbeddingSettingsControl.GetActiveMemorySetId(), p => p.MemorySetId);
+            var activeModelPresetId = ResolveActivePresetId(modelPresets, LlmSettingsControl.GetActivePresetId(), p => p.ModelPresetId);
+
+            if (string.IsNullOrWhiteSpace(activePersonaId)
+                || string.IsNullOrWhiteSpace(activeMemorySetId)
+                || string.IsNullOrWhiteSpace(activeModelPresetId))
+            {
+                throw new InvalidOperationException("アクティブな OtomeKairo 設定資源を解決できませんでした。");
+            }
+
+            return new OtomeKairoEditorState
+            {
+                Current = new OtomeKairoCurrentSettings
+                {
+                    SelectedPersonaId = activePersonaId,
+                    SelectedMemorySetId = activeMemorySetId,
+                    SelectedModelPresetId = activeModelPresetId,
+                    WakePolicy = SystemSettingsControl.GetWakePolicy(),
+                },
+                Personas = ClonePersonas(personas),
+                MemorySets = CloneMemorySets(memorySets),
+                ModelPresets = CloneModelPresets(modelPresets),
+            };
+        }
+
+        private static List<OtomeKairoPersonaDefinition> ClonePersonas(IEnumerable<OtomeKairoPersonaDefinition> personas)
+        {
+            return personas.Select(ClonePersona).ToList();
+        }
+
+        private static List<OtomeKairoMemorySetDefinition> CloneMemorySets(IEnumerable<OtomeKairoMemorySetDefinition> memorySets)
+        {
+            return memorySets.Select(CloneMemorySet).ToList();
+        }
+
+        private static List<OtomeKairoModelPresetDefinition> CloneModelPresets(IEnumerable<OtomeKairoModelPresetDefinition> modelPresets)
+        {
+            return modelPresets.Select(CloneModelPreset).ToList();
+        }
+
+        private static OtomeKairoPersonaDefinition ClonePersona(OtomeKairoPersonaDefinition persona)
+        {
+            return DeepClone(persona);
+        }
+
+        private static OtomeKairoMemorySetDefinition CloneMemorySet(OtomeKairoMemorySetDefinition memorySet)
+        {
+            return DeepClone(memorySet);
+        }
+
+        private static bool MemorySetDefinitionChanged(
+            OtomeKairoMemorySetDefinition current,
+            OtomeKairoMemorySetDefinition updated)
+        {
+            return !string.Equals(current.DisplayName, updated.DisplayName, StringComparison.Ordinal)
+                || !EmbeddingDefinitionChanged(current.Embedding, updated.Embedding);
+        }
+
+        private static bool EmbeddingDefinitionChanged(
+            Dictionary<string, object?>? current,
+            Dictionary<string, object?>? updated)
+        {
+            var currentJson = JsonSerializer.Serialize(current ?? new Dictionary<string, object?>());
+            var updatedJson = JsonSerializer.Serialize(updated ?? new Dictionary<string, object?>());
+            return !string.Equals(currentJson, updatedJson, StringComparison.Ordinal);
+        }
+
+        private static OtomeKairoModelPresetDefinition CloneModelPreset(OtomeKairoModelPresetDefinition modelPreset)
+        {
+            return DeepClone(modelPreset);
+        }
+
+        private static T DeepClone<T>(T value)
+        {
+            var json = JsonSerializer.Serialize(value);
+            var clone = JsonSerializer.Deserialize<T>(json);
+            if (clone == null)
+            {
+                throw new InvalidOperationException($"型 {typeof(T).Name} の複製に失敗しました。");
+            }
+            return clone;
+        }
 
         /// <summary>
         /// 元の設定に戻す（一設定などがあるためDisplayのみ復元が必要）
@@ -710,8 +829,8 @@ namespace CocoroConsole.Controls
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
             appSettings.ScreenshotSettings.excludePatterns = (List<string>)snapshot["WindowTitleExcludePatterns"];
 
-            // デスクトップウォッチ（アイドルタイムアウト / ローカル設定）
-            appSettings.ScreenshotSettings.idleTimeoutMinutes = (int)snapshot["DesktopWatchIdleTimeoutMinutes"];
+            // 視覚キャプチャ（アイドルタイムアウト / ローカル設定）
+            appSettings.ScreenshotSettings.idleTimeoutMinutes = (int)snapshot["VisualCaptureIdleTimeoutMinutes"];
         }
 
         /// <summary>
@@ -833,16 +952,16 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// CocoroGhostを再起動する
+        /// OtomeKairoを再起動する
         /// </summary>
-        private async Task RestartCocoroGhostAsync()
+        private async Task RestartOtomeKairoAsync()
         {
             try
             {
                 // --- リモート接続時はローカルプロセス再起動を行わない ---
-                if (!AppSettings.Instance.IsCocoroGhostLocal())
+                if (!AppSettings.Instance.IsOtomeKairoLocal())
                 {
-                    Debug.WriteLine("CocoroGhost はリモート接続設定のため、ローカル再起動をスキップします。");
+                    Debug.WriteLine("OtomeKairo はリモート接続設定のため、ローカル再起動をスキップします。");
                     return;
                 }
 
@@ -851,95 +970,37 @@ namespace CocoroConsole.Controls
                 if (mainWindow != null)
                 {
                     // 再起動開始を通知して起動待ち状態に戻す
-                    _communicationService?.NotifyCocoroGhostRestarting();
+                    _communicationService?.NotifyOtomeKairoRestarting();
 
-                    // ProcessOperation.RestartIfRunning を指定してCocoroGhostを再起動（非同期）
-                    await mainWindow.LaunchCocoroGhostAsync(ProcessOperation.RestartIfRunning);
-                    Debug.WriteLine("CocoroGhostを再起動要求をしました");
+                    // ProcessOperation.RestartIfRunning を指定してOtomeKairoを再起動（非同期）
+                    await mainWindow.LaunchOtomeKairoAsync(ProcessOperation.RestartIfRunning);
+                    Debug.WriteLine("OtomeKairoを再起動要求をしました");
 
                     // 再起動完了を待機
-                    await WaitForCocoroGhostRestartAsync();
-                    Debug.WriteLine("CocoroGhostの再起動が完了しました");
+                    await WaitForOtomeKairoRestartAsync();
+                    Debug.WriteLine("OtomeKairoの再起動が完了しました");
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"CocoroGhost再起動中にエラーが発生しました: {ex.Message}");
-                throw new Exception($"CocoroGhostの再起動に失敗しました: {ex.Message}");
+                Debug.WriteLine($"OtomeKairo再起動中にエラーが発生しました: {ex.Message}");
+                throw new Exception($"OtomeKairoの再起動に失敗しました: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// CocoroGhostの再起動完了を待機
+        /// OtomeKairoの再起動完了を待機
         /// </summary>
-        private async Task WaitForCocoroGhostRestartAsync()
+        private async Task WaitForOtomeKairoRestartAsync()
         {
-            // 最大待機時間
-            var timeout = TimeSpan.FromSeconds(120);
-
             // 通信サービスがない場合は待機できない
             if (_communicationService == null)
             {
                 return;
             }
 
-            // 既に起動完了状態なら即終了
-            if (IsCocoroGhostReadyStatus(_communicationService.CurrentStatus))
-            {
-                return;
-            }
-
-            // ステータス変更を待つためのTCS
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            // ステータス変更イベント
-            void OnStatusChanged(object? sender, CocoroGhostStatus status)
-            {
-                // 起動完了状態に戻ったら終了
-                if (IsCocoroGhostReadyStatus(status))
-                {
-                    tcs.TrySetResult(true);
-                }
-            }
-
-            // ステータス変更イベントを購読
-            _communicationService.StatusChanged += OnStatusChanged;
-
-            try
-            {
-                // 購読後に再確認（取りこぼし防止）
-                if (IsCocoroGhostReadyStatus(_communicationService.CurrentStatus))
-                {
-                    return;
-                }
-
-                // タイムアウト付きで待機
-                var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
-                if (completed != tcs.Task)
-                {
-                    throw new TimeoutException("CocoroGhostの再起動がタイムアウトしました");
-                }
-
-                await tcs.Task;
-            }
-            finally
-            {
-                // ステータス変更イベントを解除
-                _communicationService.StatusChanged -= OnStatusChanged;
-            }
-        }
-
-        /// <summary>
-        /// CocoroGhostが起動完了状態かどうかを判定する
-        /// </summary>
-        /// <param name="status">CocoroGhostのステータス</param>
-        /// <returns>起動完了状態の場合true</returns>
-        private static bool IsCocoroGhostReadyStatus(CocoroGhostStatus status)
-        {
-            // Normal / Processing は起動完了扱い
-            return status == CocoroGhostStatus.Normal ||
-                   status == CocoroGhostStatus.ProcessingMessage ||
-                   status == CocoroGhostStatus.ProcessingImage;
+            await OtomeKairoStatusAwaiter
+                .WaitUntilReadyAsync(_communicationService, TimeSpan.FromSeconds(120));
         }
 
         /// <summary>
@@ -969,12 +1030,12 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// CocoroGhost再起動が必要な設定項目が変更されたかどうかをチェック
+        /// OtomeKairo再起動が必要な設定項目が変更されたかどうかをチェック
         /// </summary>
         /// <param name="previousSettings">以前の設定</param>
         /// <param name="currentSettings">現在の設定</param>
-        /// <returns>CocoroGhost再起動が必要な変更があった場合true</returns>
-        private bool HasCocoroGhostRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
+        /// <returns>OtomeKairo再起動が必要な変更があった場合true</returns>
+        private bool HasOtomeKairoRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
         {
             // 基本設定項目の比較
             if (currentSettings.currentCharacterIndex != previousSettings.currentCharacterIndex)
@@ -1003,21 +1064,9 @@ namespace CocoroConsole.Controls
         {
             try
             {
-                // MainWindowのインスタンスを取得
-                var mainWindow = Application.Current.MainWindow as MainWindow;
-                if (mainWindow != null)
-                {
-                    // MainWindowのLaunchCocoroShellメソッドを呼び出してCocoroShellを再起動
-                    var launchMethod = mainWindow.GetType().GetMethod("LaunchCocoroShell",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-                    if (launchMethod != null)
-                    {
-                        // ProcessOperation.RestartIfRunning を指定してCocoroShellを再起動
-                        launchMethod.Invoke(mainWindow, [ProcessOperation.RestartIfRunning]);
-                        Debug.WriteLine("CocoroShellを再起動しました");
-                    }
-                }
+                CocoroShellProcessManager.Apply(AppSettings.Instance, ProcessOperation.RestartIfRunning);
+                _communicationService?.ResetShellConnectionState();
+                Debug.WriteLine("CocoroShellを再起動しました");
             }
             catch (Exception ex)
             {

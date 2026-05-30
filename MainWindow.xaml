@@ -1,4 +1,4 @@
-﻿<Window x:Class="CocoroConsole.MainWindow"
+<Window x:Class="CocoroConsole.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,7 +7,7 @@
         xmlns:controls="clr-namespace:CocoroConsole.Controls"
         xmlns:svgc="http://sharpvectors.codeplex.com/svgc/"
         mc:Ignorable="d"
-        Title="CocoroAI Ver. 5.2.1 Beta"
+        Title="CocoroAI Ver. 6.0.0 Beta"
         Height="600"
         Width="500"
         ShowInTaskbar="True"
@@ -41,14 +41,17 @@
                                                    FontWeight="SemiBold">
                                                 <TextBlock.ContextMenu>
                                                         <ContextMenu>
-                                                                <MenuItem Header="CocoroGhost"
-                                                                          Click="CocoroGhostMenuItem_Click"/>
-                                                                <MenuItem Header="感情表示"
-                                                                          Click="MoodDebugMenuItem_Click"/>
+                                                                <MenuItem Header="根拠トレース表示"
+                                                                          Click="FactResolutionViewerMenuItem_Click"/>
+                                                                <MenuItem Header="現在状態表示"
+                                                                          Click="CurrentStateViewerMenuItem_Click"/>
+                                                                <Separator/>
                                                                 <MenuItem Header="ログ表示"
                                                                           Click="LogViewerMenuItem_Click"/>
                                                         </ContextMenu>
                                                 </TextBlock.ContextMenu>
+
+
                                         </TextBlock>
                                 </StackPanel>
 

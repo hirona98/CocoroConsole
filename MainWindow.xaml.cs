@@ -1,7 +1,7 @@
-﻿using CocoroAI.Services;
+using CocoroAI.Services;
 using CocoroConsole.Communication;
 using CocoroConsole.Controls;
-using CocoroConsole.Models.CocoroGhostApi;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using CocoroConsole.Utilities;
 using CocoroConsole.Windows;
@@ -26,26 +26,30 @@ namespace CocoroConsole
     {
         private ICommunicationService? _communicationService;
         private readonly IAppSettings _appSettings;
-        private bool _isDesktopWatchEnabled = false;
+        private bool _isDesktopWatchEnabled;
         private RealtimeVoiceRecognitionService? _voiceRecognitionService;
+        private VoiceRecognitionSettingsSnapshot? _voiceRecognitionSettingsSnapshot;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
-        private MoodDebugWindow? _moodDebugWindow;
-        private CocoroGhostSettingsWindow? _cocoroGhostSettingsWindow;
+        private FactResolutionViewerWindow? _factResolutionViewerWindow;
+        private CurrentStateViewerWindow? _currentStateViewerWindow;
         private DebugTraceListener? _debugTraceListener;
         private bool _isStreamingChatActive;
         private bool _skipNextAssistantMessage;
         private string? _skipNextAssistantMessageContent;
         private bool _isLogStreamHandlersAttached;
+        private CancellationTokenSource? _otomeKairoStartupMonitorCts;
+        private Task? _otomeKairoStartupMonitorTask;
         private const string MainWindowPlacementKey = "MainWindow";
         private const string SettingWindowPlacementKey = "SettingWindow";
         private const string LogViewerWindowPlacementKey = "LogViewerWindow";
-        private const string MoodDebugWindowPlacementKey = "MoodDebugWindow";
-        private const string CocoroGhostSettingsWindowPlacementKey = "CocoroGhostSettingsWindow";
+        private const string FactResolutionViewerWindowPlacementKey = "FactResolutionViewerWindow";
+        private const string CurrentStateViewerWindowPlacementKey = "CurrentStateViewerWindow";
+        private static readonly TimeSpan OtomeKairoStartupTimeout = TimeSpan.FromMinutes(2);
 
-        // --- CocoroGhost の最新ステータス（ステータスバー復帰先） ---
+        // --- OtomeKairo の最新ステータス（ステータスバー復帰先） ---
         // ログ表示で一時的に上書きしても、指定時間後「その時点の最新状態」に戻すために保持する。
-        private CocoroGhostStatus _latestCocoroGhostStatus = CocoroGhostStatus.WaitingForStartup;
+        private OtomeKairoStatus _latestOtomeKairoStatus = OtomeKairoStatus.WaitingForStartup;
 
         // --- ステータスバーの一時上書き（ログ表示用） ---
         // 直近ログで上書きし、指定間上書きが無ければ null に戻して通常表示へ復帰する。
@@ -65,6 +69,17 @@ namespace CocoroConsole
         // WPF の Shutdown 中に Closing をキャンセルすると、Dispatcher が Shutdown 開始状態のまま残って
         // UI が固まることがあるため、明示的終了時はキャンセルしない判定に使う。
         private int _isShutdownInProgress;
+
+        private sealed record VoiceRecognitionSettingsSnapshot(
+            int CurrentCharacterIndex,
+            bool IsUseSTT,
+            string SttEngine,
+            string SttWakeWord,
+            string SttProfileId,
+            string SttApiKey,
+            string SttLanguage,
+            int InputThreshold,
+            float SpeakerRecognitionThreshold);
 
 
         public MainWindow()
@@ -89,15 +104,16 @@ namespace CocoroConsole
             OpenLogViewer();
         }
 
-        private void MoodDebugMenuItem_Click(object sender, RoutedEventArgs e)
+        private void FactResolutionViewerMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            OpenMoodDebugWindow();
+            OpenFactResolutionViewer();
         }
 
-        private void CocoroGhostMenuItem_Click(object sender, RoutedEventArgs e)
+        private void CurrentStateViewerMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            OpenCocoroGhostSettingsWindow();
+            OpenCurrentStateViewer();
         }
+
 
         /// <summary>
         /// チャット履歴をクリア
@@ -170,12 +186,13 @@ namespace CocoroConsole
                 InitializeExternalProcesses();
 
                 // 通信サービスを初期化
-                // CommunicationServiceが初回Normal時にcocoro_ghost設定を取得・反映する
+                // CommunicationServiceが初回Normal時にotomekairo設定を取得・反映する
                 InitializeCommunicationService();
 
                 // 音声認識サービスを初期化
                 // 起動時はウェイクワードの有無に応じてVoiceRecognitionStateMachine内で状態が決定される
                 InitializeVoiceRecognitionService(startActive: false);
+                _voiceRecognitionSettingsSnapshot = CreateVoiceRecognitionSettingsSnapshot();
 
                 // UIコントロールのイベントハンドラを登録
                 RegisterEventHandlers();
@@ -190,7 +207,7 @@ namespace CocoroConsole
                 if (_communicationService != null)
                 {
                     // 通信サービスが持つ最新状態を初期表示として反映
-                    UpdateCocoroGhostStatusDisplay(_communicationService.CurrentStatus);
+                    UpdateOtomeKairoStatusDisplay(_communicationService.CurrentStatus);
                 }
 
                 // APIサーバーの起動を開始
@@ -207,7 +224,7 @@ namespace CocoroConsole
         /// </summary>
         private void InitializeButtonStates()
         {
-            // デスクトップウォッチの状態を反映（cocoro_ghost /api/settings 由来）
+            _isDesktopWatchEnabled = _appSettings.ScreenshotSettings.enabled;
             UpdateDesktopWatchButtonState();
 
             // 現在のキャラクターの設定を反映
@@ -269,14 +286,14 @@ namespace CocoroConsole
             // CocoroShell.exeを起動（既に起動していれば終了してから再起動）
             LaunchCocoroShell();
 
-            // CocoroGhost.exeはローカル接続時のみ起動（リモート接続時は別PC運用）
-            if (_appSettings.IsCocoroGhostLocal())
+            // OtomeKairo.exeはローカル接続時のみ起動（リモート接続時は別PC運用）
+            if (_appSettings.IsOtomeKairoLocal())
             {
-                LaunchCocoroGhost();
+                LaunchOtomeKairo();
             }
             else
             {
-                Debug.WriteLine("[CocoroConsole] CocoroGhost はリモート接続設定のため、ローカル起動をスキップします。");
+                Debug.WriteLine("[CocoroConsole] OtomeKairo はリモート接続設定のため、ローカル起動をスキップします。");
             }
         }
 
@@ -290,11 +307,9 @@ namespace CocoroConsole
             _communicationService.ChatMessageReceived += OnChatMessageReceived;
             _communicationService.StreamingChatReceived += OnStreamingChatReceived;
             _communicationService.ChatBusyChanged += OnChatBusyChanged;
-            _communicationService.NotificationMessageReceived += OnNotificationMessageReceived;
             _communicationService.ControlCommandReceived += OnControlCommandReceived;
             _communicationService.ErrorOccurred += OnErrorOccurred;
-            _communicationService.StatusChanged += OnCocoroGhostStatusChanged;
-            _communicationService.CocoroGhostSettingsUpdated += OnCocoroGhostSettingsUpdated;
+            _communicationService.StatusChanged += OnOtomeKairoStatusChanged;
         }
 
         /// <summary>
@@ -333,33 +348,33 @@ namespace CocoroConsole
 
 
         /// <summary>
-        /// CocoroGhostステータスに基づいて表示を更新
+        /// OtomeKairoステータスに基づいて表示を更新
         /// </summary>
-        /// <param name="status">CocoroGhostのステータス</param>
-        private void UpdateCocoroGhostStatusDisplay(CocoroGhostStatus status)
+        /// <param name="status">OtomeKairoのステータス</param>
+        private void UpdateOtomeKairoStatusDisplay(OtomeKairoStatus status)
         {
             // --- 最新状態を保持（ログ表示の復帰先になる） ---
-            _latestCocoroGhostStatus = status;
+            _latestOtomeKairoStatus = status;
 
             // --- 送信ボタンの有効/無効を状態に応じて更新 ---
             bool isLLMEnabled = _appSettings.IsUseLLM;
             bool isChatBusy = _communicationService?.IsChatBusy ?? false;
 
-            // --- CocoroGhost起動待ちは最優先表示（ログ上書きより優先） ---
-            if (status == CocoroGhostStatus.WaitingForStartup)
+            // --- OtomeKairo起動待ちは最優先表示（ログ上書きより優先） ---
+            if (status == OtomeKairoStatus.WaitingForStartup)
             {
                 _statusBarOverrideTimer?.Stop();
                 _statusBarOverrideText = null;
             }
 
             // --- ステータスバー表示は「通常表示 or ログ上書き」を統一して描画する ---
-            RenderStatusBarText(BuildCocoroGhostStatusBarText(status));
+            RenderStatusBarText(BuildOtomeKairoStatusBarText(status));
 
             // 送信ボタンの有効/無効を制御
             // NOTE:
             // - 送信中（SSEストリーム中）は UI 表示が 1 本前提なので、二重送信を抑止する。
             // - ステータスが Normal のときだけ送信可能にする。
-            bool isSendEnabled = isLLMEnabled && status == CocoroGhostStatus.Normal && !isChatBusy;
+            bool isSendEnabled = isLLMEnabled && status == OtomeKairoStatus.Normal && !isChatBusy;
             ChatControlInstance.UpdateSendButtonEnabled(isSendEnabled);
         }
 
@@ -436,32 +451,22 @@ namespace CocoroConsole
         /// </summary>
         private void OnSettingsSaved(object? sender, EventArgs e)
         {
-            // 現在の設定に基づいて音声認識サービスを制御
-            var currentCharacter = GetStoredCharacterSetting();
-            bool shouldBeActive = currentCharacter?.isUseSTT ?? false;
+            var previousVoiceSettings = _voiceRecognitionSettingsSnapshot;
+            var currentVoiceSettings = CreateVoiceRecognitionSettingsSnapshot();
+            if (!Equals(previousVoiceSettings, currentVoiceSettings))
+            {
+                var startActive = previousVoiceSettings != null
+                    && !previousVoiceSettings.IsUseSTT
+                    && currentVoiceSettings.IsUseSTT;
 
-            // 既存のサービスを停止
-            if (_voiceRecognitionService != null)
-            {
-                _voiceRecognitionService.StopListening();
-                _voiceRecognitionService.Dispose();
-                _voiceRecognitionService = null;
+                RestartVoiceRecognitionService(currentVoiceSettings, startActive);
             }
-
-            // 設定に応じてサービスを開始
-            if (shouldBeActive)
+            else if (!currentVoiceSettings.IsUseSTT || string.IsNullOrEmpty(currentVoiceSettings.SttApiKey))
             {
-                InitializeVoiceRecognitionService(startActive: true);
-                Debug.WriteLine("[CocoroConsole] 音声認識サービスを開始しました");
-            }
-            else
-            {
-                // 音声レベル表示をリセット
                 UIHelper.RunOnUIThread(() =>
                 {
                     ChatControlInstance.UpdateVoiceLevel(0, false);
                 });
-                Debug.WriteLine("[CocoroConsole] 音声認識サービスを停止しました");
             }
 
             // UI側の設定反映（ボタン状態とLLM表示）
@@ -471,9 +476,52 @@ namespace CocoroConsole
                 InitializeButtonStates();
 
                 // LLM有効/無効の表示を即時更新
-                var currentStatus = _communicationService?.CurrentStatus ?? CocoroGhostStatus.WaitingForStartup;
-                UpdateCocoroGhostStatusDisplay(currentStatus);
+                var currentStatus = _communicationService?.CurrentStatus ?? OtomeKairoStatus.WaitingForStartup;
+                UpdateOtomeKairoStatusDisplay(currentStatus);
             });
+        }
+
+        private VoiceRecognitionSettingsSnapshot CreateVoiceRecognitionSettingsSnapshot()
+        {
+            var currentCharacter = GetStoredCharacterSetting();
+            var microphoneSettings = _appSettings.MicrophoneSettings;
+
+            return new VoiceRecognitionSettingsSnapshot(
+                _appSettings.CurrentCharacterIndex,
+                currentCharacter?.isUseSTT ?? false,
+                currentCharacter?.sttEngine ?? string.Empty,
+                currentCharacter?.sttWakeWord ?? string.Empty,
+                currentCharacter?.sttProfileId ?? string.Empty,
+                currentCharacter?.sttApiKey ?? string.Empty,
+                currentCharacter?.sttLanguage ?? string.Empty,
+                microphoneSettings?.inputThreshold ?? -45,
+                microphoneSettings?.speakerRecognitionThreshold ?? 0.7f);
+        }
+
+        private void RestartVoiceRecognitionService(VoiceRecognitionSettingsSnapshot currentVoiceSettings, bool startActive)
+        {
+            if (_voiceRecognitionService != null)
+            {
+                _voiceRecognitionService.StopListening();
+                _voiceRecognitionService.Dispose();
+                _voiceRecognitionService = null;
+            }
+
+            if (currentVoiceSettings.IsUseSTT && !string.IsNullOrEmpty(currentVoiceSettings.SttApiKey))
+            {
+                InitializeVoiceRecognitionService(startActive);
+                Debug.WriteLine("[CocoroConsole] 音声認識サービスを開始しました");
+            }
+            else
+            {
+                UIHelper.RunOnUIThread(() =>
+                {
+                    ChatControlInstance.UpdateVoiceLevel(0, false);
+                });
+                Debug.WriteLine("[CocoroConsole] 音声認識サービスを停止しました");
+            }
+
+            _voiceRecognitionSettingsSnapshot = currentVoiceSettings;
         }
 
         #endregion
@@ -506,7 +554,7 @@ namespace CocoroConsole
                 else if (request.role == "assistant")
                 {
                     // サーバー側処理済みメッセージをそのまま新規追加
-                    ChatControlInstance.AddAiMessage(request.content);
+                    ChatControlInstance.AddAiMessage(request.content, request.forceNewBubble);
                 }
             });
         }
@@ -551,23 +599,10 @@ namespace CocoroConsole
             UIHelper.RunOnUIThread(() =>
             {
                 // --- 送信ボタン状態を即時反映する（ステータスポーリングの待ちを作らない） ---
-                var status = _communicationService?.CurrentStatus ?? CocoroGhostStatus.WaitingForStartup;
-                UpdateCocoroGhostStatusDisplay(status);
+                var status = _communicationService?.CurrentStatus ?? OtomeKairoStatus.WaitingForStartup;
+                UpdateOtomeKairoStatusDisplay(status);
             });
         }
-
-        /// <summary>
-        /// 通知メッセージ受信時のハンドラ
-        /// </summary>
-        private void OnNotificationMessageReceived(ChatMessagePayload notification, List<System.Windows.Media.Imaging.BitmapSource>? imageSources)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                // 通知メッセージをチャットウィンドウに表示（複数画像付き）
-                ChatControlInstance.AddNotificationMessage(notification.from, notification.message, imageSources);
-            });
-        }
-
 
         /// <summary>
         /// 制御コマンド受信時のハンドラ（CocoroConsole APIから）
@@ -609,22 +644,13 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// CocoroGhostステータス変更時のハンドラ
+        /// OtomeKairoステータス変更時のハンドラ
         /// </summary>
-        private void OnCocoroGhostStatusChanged(object? sender, CocoroGhostStatus status)
+        private void OnOtomeKairoStatusChanged(object? sender, OtomeKairoStatus status)
         {
             UIHelper.RunOnUIThread(() =>
             {
-                UpdateCocoroGhostStatusDisplay(status);
-            });
-        }
-
-        private void OnCocoroGhostSettingsUpdated(object? sender, CocoroGhostSettings settings)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                _isDesktopWatchEnabled = settings.DesktopWatchEnabled;
-                UpdateDesktopWatchButtonState();
+                UpdateOtomeKairoStatusDisplay(status);
             });
         }
 
@@ -678,89 +704,62 @@ namespace CocoroConsole
             _logViewerWindow.Show();
         }
 
-        /// <summary>
-        /// 感情デバッグウィンドウを開く（/api/mood/debug の表示）
-        /// </summary>
-        public void OpenMoodDebugWindow()
+        public void OpenFactResolutionViewer()
         {
-            // --- 通信サービスが無い場合は開けない ---
-            if (_communicationService == null)
+            if (_factResolutionViewerWindow != null && !_factResolutionViewerWindow.IsClosed)
             {
-                UIHelper.ShowError("エラー", "通信サービスが初期化されていません。");
+                _factResolutionViewerWindow.Activate();
+                _factResolutionViewerWindow.WindowState = WindowState.Normal;
                 return;
             }
 
-            // --- 既に開いている場合はアクティブにする ---
-            if (_moodDebugWindow != null && !_moodDebugWindow.IsClosed)
-            {
-                _moodDebugWindow.Activate();
-                _moodDebugWindow.WindowState = WindowState.Normal;
-                return;
-            }
-
-            // --- 新規作成 ---
-            _moodDebugWindow = new MoodDebugWindow(_communicationService);
-            var isMoodDebugPositionRestored = WindowPlacementManager.AttachAndRestore(
-                _moodDebugWindow,
-                MoodDebugWindowPlacementKey,
-                _appSettings);
-            if (!isMoodDebugPositionRestored)
-            {
-                PositionWindowNearMain(_moodDebugWindow);
-            }
-
-            // --- ウィンドウが閉じられた時の処理 ---
-            _moodDebugWindow.Closed += (_, __) =>
-            {
-                _moodDebugWindow = null;
-            };
-
-            _moodDebugWindow.Show();
-        }
-
-        /// <summary>
-        /// CocoroGhost設定ウィンドウを開く
-        /// </summary>
-        public void OpenCocoroGhostSettingsWindow()
-        {
-            // --- 設定ウィンドウが開いている場合は表示しない ---
-            if (_settingWindow != null && !_settingWindow.IsClosed)
-            {
-                MessageBox.Show(
-                    "先に設定ウインドウを閉じてください",
-                    "CocoroGhost",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                return;
-            }
-
-            // --- 既に開いている場合は前面化する ---
-            if (_cocoroGhostSettingsWindow != null && !_cocoroGhostSettingsWindow.IsClosed)
-            {
-                _cocoroGhostSettingsWindow.Activate();
-                _cocoroGhostSettingsWindow.WindowState = WindowState.Normal;
-                return;
-            }
-
-            // --- 新規作成して位置を復元する ---
-            _cocoroGhostSettingsWindow = new CocoroGhostSettingsWindow(_communicationService);
+            _factResolutionViewerWindow = new FactResolutionViewerWindow();
+            _factResolutionViewerWindow.Owner = this;
             var isPositionRestored = WindowPlacementManager.AttachAndRestore(
-                _cocoroGhostSettingsWindow,
-                CocoroGhostSettingsWindowPlacementKey,
+                _factResolutionViewerWindow,
+                FactResolutionViewerWindowPlacementKey,
                 _appSettings);
             if (!isPositionRestored)
             {
-                PositionWindowNearMain(_cocoroGhostSettingsWindow);
+                PositionWindowNearMain(_factResolutionViewerWindow);
             }
 
-            // --- 閉じたら参照を解放する ---
-            _cocoroGhostSettingsWindow.Closed += (_, __) =>
+            _factResolutionViewerWindow.Closed += (sender, args) =>
             {
-                _cocoroGhostSettingsWindow = null;
+                _factResolutionViewerWindow = null;
             };
 
-            _cocoroGhostSettingsWindow.Show();
+            _factResolutionViewerWindow.Show();
         }
+
+        public void OpenCurrentStateViewer()
+        {
+            if (_currentStateViewerWindow != null && !_currentStateViewerWindow.IsClosed)
+            {
+                _currentStateViewerWindow.Activate();
+                _currentStateViewerWindow.WindowState = WindowState.Normal;
+                return;
+            }
+
+            _currentStateViewerWindow = new CurrentStateViewerWindow();
+            _currentStateViewerWindow.Owner = this;
+            var isPositionRestored = WindowPlacementManager.AttachAndRestore(
+                _currentStateViewerWindow,
+                CurrentStateViewerWindowPlacementKey,
+                _appSettings);
+            if (!isPositionRestored)
+            {
+                PositionWindowNearMain(_currentStateViewerWindow);
+            }
+
+            _currentStateViewerWindow.Closed += (sender, args) =>
+            {
+                _currentStateViewerWindow = null;
+            };
+
+            _currentStateViewerWindow.Show();
+        }
+
 
         private void AttachLogStreamHandlers()
         {
@@ -801,7 +800,7 @@ namespace CocoroConsole
 
         private void OnDebugLogMessageReceived(object? sender, LogMessage logMessage)
         {
-            if (IsVoiceRelatedLog(logMessage))
+            if (IsVoiceRelatedLog(logMessage) && !IsRoutineVoiceLifecycleLog(logMessage))
             {
                 UpdateStatusFromLog(logMessage);
             }
@@ -864,6 +863,20 @@ namespace CocoroConsole
             return false;
         }
 
+        private static bool IsRoutineVoiceLifecycleLog(LogMessage logMessage)
+        {
+            var message = logMessage.message ?? string.Empty;
+
+            return message.Contains("音声認識サービスを開始しました", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("音声認識サービスを停止しました", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("音声認識機能が無効、またはAPIキーが未設定", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("Initialized with STT:", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("Started listening", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("Stopped listening", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("Started in ACTIVE state", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("Started in SLEEPING state", StringComparison.OrdinalIgnoreCase);
+        }
+
         private void UpdateStatusFromLog(LogMessage logMessage)
         {
             UIHelper.RunOnUIThread(() =>
@@ -885,8 +898,8 @@ namespace CocoroConsole
         /// <param name="overrideText">ステータスバーに表示するテキスト（例: "状態: VoiceRecognition 〜"）</param>
         private void SetStatusBarOverride(string overrideText)
         {
-            // --- CocoroGhost起動待ちは最優先表示（上書きしない） ---
-            if (_latestCocoroGhostStatus == CocoroGhostStatus.WaitingForStartup)
+            // --- OtomeKairo起動待ちは最優先表示（上書きしない） ---
+            if (_latestOtomeKairoStatus == OtomeKairoStatus.WaitingForStartup)
             {
                 return;
             }
@@ -921,19 +934,19 @@ namespace CocoroConsole
             // --- タイムアウト：上書きを解除して通常表示へ復帰 ---
             _statusBarOverrideTimer?.Stop();
             _statusBarOverrideText = null;
-            RenderStatusBarText(BuildCocoroGhostStatusBarText(_latestCocoroGhostStatus));
+            RenderStatusBarText(BuildOtomeKairoStatusBarText(_latestOtomeKairoStatus));
         }
 
         /// <summary>
         /// 現在の状態（または一時上書き）に基づき、ステータスバーの表示を更新する
         /// </summary>
-        /// <param name="normalStatusText">通常表示テキスト（例: "状態: 正常動作中"）</param>
+        /// <param name="normalStatusText">通常表示テキスト（例: "状態: OtomeKairo 正常動作中"）</param>
         private void RenderStatusBarText(string normalStatusText)
         {
-            // --- CocoroGhost起動待ちは最優先表示 ---
+            // --- OtomeKairo起動待ちは最優先表示 ---
             // 起動待ち中にログが流れても、ユーザーが状況を誤認しないよう「起動待ち」を固定で出す。
-            var textToShow = _latestCocoroGhostStatus == CocoroGhostStatus.WaitingForStartup
-                ? BuildCocoroGhostStatusBarText(CocoroGhostStatus.WaitingForStartup)
+            var textToShow = _latestOtomeKairoStatus == OtomeKairoStatus.WaitingForStartup
+                ? BuildOtomeKairoStatusBarText(OtomeKairoStatus.WaitingForStartup)
                 : (_statusBarOverrideText ?? normalStatusText);
 
             // --- UI要素が未生成の場合は何もしない（初期化順による） ---
@@ -944,19 +957,19 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// CocoroGhostの状態から、ステータスバーの通常表示文字列を組み立てる
+        /// OtomeKairoの状態から、ステータスバーの通常表示文字列を組み立てる
         /// </summary>
-        /// <param name="status">CocoroGhostの状態</param>
-        private string BuildCocoroGhostStatusBarText(CocoroGhostStatus status)
+        /// <param name="status">OtomeKairoの状態</param>
+        private string BuildOtomeKairoStatusBarText(OtomeKairoStatus status)
         {
-            // --- 表示文言は UpdateCocoroGhostStatusDisplay と同じルールで統一 ---
+            // --- 表示文言は UpdateOtomeKairoStatusDisplay と同じルールで統一 ---
             var isLLMEnabled = _appSettings.IsUseLLM;
             var statusText = status switch
             {
-                CocoroGhostStatus.WaitingForStartup => isLLMEnabled ? "CocoroGhost起動待ち" : "LLM無効",
-                CocoroGhostStatus.Normal => isLLMEnabled ? "正常動作中" : "LLM無効",
-                CocoroGhostStatus.ProcessingMessage => "LLMメッセージ処理中",
-                CocoroGhostStatus.ProcessingImage => "LLM画像処理中",
+                OtomeKairoStatus.WaitingForStartup => isLLMEnabled ? "OtomeKairo起動待ち" : "LLM無効",
+                OtomeKairoStatus.Normal => isLLMEnabled ? "正常動作中" : "LLM無効",
+                OtomeKairoStatus.ProcessingMessage => "LLMメッセージ処理中",
+                OtomeKairoStatus.ProcessingImage => "LLM画像処理中",
                 _ => "不明な状態"
             };
 
@@ -970,6 +983,8 @@ namespace CocoroConsole
         {
             try
             {
+                CancelOtomeKairoStartupMonitor();
+
                 // イベントハンドラの購読解除
                 AppSettings.SettingsSaved -= OnSettingsSaved;
 
@@ -1008,16 +1023,6 @@ namespace CocoroConsole
         {
             try
             {
-                // --- CocoroGhost設定ウィンドウが開いている場合は設定画面を開かない ---
-                if (_cocoroGhostSettingsWindow != null && !_cocoroGhostSettingsWindow.IsClosed)
-                {
-                    MessageBox.Show(
-                        "先にCocoroGhost設定ウインドウを閉じてください",
-                        "設定",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                    return;
-                }
 
                 // 既に設定画面が開いている場合はアクティブにする
                 if (_settingWindow != null && !_settingWindow.IsClosed)
@@ -1062,19 +1067,6 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// デスクトップウォッチ（cocoro_ghost側）の有効/無効切替
-        /// </summary>
-        private async void PauseScreenshotButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_communicationService == null)
-            {
-                return;
-            }
-
-            await _communicationService.SetDesktopWatchEnabledAsync(!_isDesktopWatchEnabled);
-        }
-
-        /// <summary>
         /// マイクボタンクリック時のイベントハンドラ
         /// </summary>
         private void MicButton_Click(object sender, RoutedEventArgs e)
@@ -1111,14 +1103,23 @@ namespace CocoroConsole
         /// </summary>
         private CharacterSettings? GetStoredCharacterSetting()
         {
-            var config = _appSettings.GetConfigSettings();
-            if (config.characterList != null &&
-                config.currentCharacterIndex >= 0 &&
-                config.currentCharacterIndex < config.characterList.Count)
+            return _appSettings.GetCurrentCharacter();
+        }
+
+        /// <summary>
+        /// デスクトップウォッチボタンクリック時のイベントハンドラ
+        /// </summary>
+        private async void PauseScreenshotButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_communicationService == null)
             {
-                return config.characterList[config.currentCharacterIndex];
+                return;
             }
-            return null;
+
+            await _communicationService.SetDesktopWatchEnabledAsync(!_isDesktopWatchEnabled);
+            _isDesktopWatchEnabled = _appSettings.ScreenshotSettings.enabled;
+            UpdateDesktopWatchButtonState();
+            _settingWindow?.SetWakeDesktopObservationEnabled(_isDesktopWatchEnabled);
         }
 
         /// <summary>
@@ -1181,33 +1182,21 @@ namespace CocoroConsole
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
         private void LaunchCocoroShell(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
-#if !DEBUG
-            if (_appSettings.CharacterList.Count > 0 &&
-               _appSettings.CurrentCharacterIndex < _appSettings.CharacterList.Count)
-            {
-                var currentCharacter = _appSettings.CharacterList[_appSettings.CurrentCharacterIndex];
-                if (!string.IsNullOrWhiteSpace(currentCharacter.vrmFilePath) || currentCharacter.isReadOnly == true)
-                {
-                    ProcessHelper.LaunchExternalApplication("CocoroShell.exe", "CocoroShell", operation, true);
-                    return;
-                }
-            }
-
-            // VRM未指定時は停止させる
-            ProcessHelper.LaunchExternalApplication("CocoroShell.exe", "CocoroShell", ProcessOperation.Terminate, true);
-#endif
+            CocoroShellProcessManager.Apply(_appSettings, operation);
+            _communicationService?.ResetShellConnectionState();
         }
 
         /// <summary>
-        /// CocoroGhost.exeを起動する（既に起動している場合は終了してから再起動）
+        /// OtomeKairo.exeを起動する（既に起動している場合は終了してから再起動）
         /// </summary>
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
-        private void LaunchCocoroGhost(ProcessOperation operation = ProcessOperation.RestartIfRunning)
+        private void LaunchOtomeKairo(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
             // --- リモート接続時はローカルプロセスを起動/終了しない ---
-            if (!_appSettings.IsCocoroGhostLocal())
+            if (!_appSettings.IsOtomeKairoLocal())
             {
-                Debug.WriteLine("[CocoroConsole] CocoroGhost はリモート接続設定のため、ローカルプロセス操作をスキップします。");
+                CancelOtomeKairoStartupMonitor();
+                Debug.WriteLine("[CocoroConsole] OtomeKairo はリモート接続設定のため、ローカルプロセス操作をスキップします。");
                 return;
             }
 
@@ -1215,30 +1204,28 @@ namespace CocoroConsole
             {
 #if !DEBUG
                 // プロセス起動
-                ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", operation, false);
+                ProcessHelper.LaunchExternalApplication("OtomeKairo.exe", "OtomeKairo", operation, false);
 #endif
-                // 非同期でAPI通信による起動完了を監視（無限ループ）
-                _ = Task.Run(async () =>
-                {
-                    await WaitForCocoroGhostStartupAsync();
-                });
+                StartOtomeKairoStartupMonitor();
             }
             else
             {
-                ProcessHelper.LaunchExternalApplication("CocoroGhost.exe", "CocoroGhost", operation, false);
+                CancelOtomeKairoStartupMonitor();
+                ProcessHelper.LaunchExternalApplication("OtomeKairo.exe", "OtomeKairo", operation, false);
             }
         }
 
         /// <summary>
-        /// CocoroGhost.exeを起動する（既に起動している場合は終了してから再起動）（非同期版）
+        /// OtomeKairo.exeを起動する（既に起動している場合は終了してから再起動）（非同期版）
         /// </summary>
         /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
-        internal async Task LaunchCocoroGhostAsync(ProcessOperation operation = ProcessOperation.RestartIfRunning)
+        internal async Task LaunchOtomeKairoAsync(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
             // --- リモート接続時はローカルプロセスを起動/終了しない ---
-            if (!_appSettings.IsCocoroGhostLocal())
+            if (!_appSettings.IsOtomeKairoLocal())
             {
-                Debug.WriteLine("[CocoroConsole] CocoroGhost はリモート接続設定のため、ローカルプロセス操作をスキップします。");
+                CancelOtomeKairoStartupMonitor();
+                Debug.WriteLine("[CocoroConsole] OtomeKairo はリモート接続設定のため、ローカルプロセス操作をスキップします。");
                 return;
             }
 
@@ -1246,17 +1233,80 @@ namespace CocoroConsole
             {
 #if !DEBUG
                 // プロセス起動（非同期）
-                await ProcessHelper.LaunchExternalApplicationAsync("CocoroGhost.exe", "CocoroGhost", operation, false);
+                await ProcessHelper.LaunchExternalApplicationAsync("OtomeKairo.exe", "OtomeKairo", operation, false);
 #endif
-                // 非同期でAPI通信による起動完了を監視（無限ループ）
-                _ = Task.Run(async () =>
-                {
-                    await WaitForCocoroGhostStartupAsync();
-                });
+                StartOtomeKairoStartupMonitor();
             }
             else
             {
-                await ProcessHelper.LaunchExternalApplicationAsync("CocoroGhost.exe", "CocoroGhost", operation, false);
+                CancelOtomeKairoStartupMonitor();
+                await ProcessHelper.LaunchExternalApplicationAsync("OtomeKairo.exe", "OtomeKairo", operation, false);
+            }
+        }
+
+        private void StartOtomeKairoStartupMonitor()
+        {
+            if (_communicationService == null)
+            {
+                return;
+            }
+
+            CancelOtomeKairoStartupMonitor();
+
+            var monitorCts = new CancellationTokenSource();
+            _otomeKairoStartupMonitorCts = monitorCts;
+            _otomeKairoStartupMonitorTask = MonitorOtomeKairoStartupAsync(monitorCts);
+        }
+
+        private async Task MonitorOtomeKairoStartupAsync(CancellationTokenSource monitorCts)
+        {
+            try
+            {
+                await WaitForOtomeKairoStartupAsync(monitorCts.Token).ConfigureAwait(false);
+                Debug.WriteLine("[CocoroConsole] OtomeKairo起動完了");
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.WriteLine("[CocoroConsole] OtomeKairo起動監視をキャンセルしました。");
+            }
+            catch (TimeoutException ex)
+            {
+                Debug.WriteLine($"[CocoroConsole] {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CocoroConsole] OtomeKairo起動監視エラー: {ex.Message}");
+            }
+            finally
+            {
+                if (ReferenceEquals(_otomeKairoStartupMonitorCts, monitorCts))
+                {
+                    _otomeKairoStartupMonitorTask = null;
+                    _otomeKairoStartupMonitorCts = null;
+                }
+
+                monitorCts.Dispose();
+            }
+        }
+
+        private void CancelOtomeKairoStartupMonitor()
+        {
+            var monitorCts = _otomeKairoStartupMonitorCts;
+            _otomeKairoStartupMonitorCts = null;
+            _otomeKairoStartupMonitorTask = null;
+
+            if (monitorCts == null)
+            {
+                return;
+            }
+
+            try
+            {
+                monitorCts.Cancel();
+            }
+            finally
+            {
+                monitorCts.Dispose();
             }
         }
 
@@ -1329,7 +1379,6 @@ namespace CocoroConsole
                 _voiceRecognitionService.OnRecognizedText += OnVoiceRecognized;
                 _voiceRecognitionService.OnStateChanged += OnVoiceStateChanged;
                 _voiceRecognitionService.OnVoiceLevel += OnVoiceLevelChanged;
-                _voiceRecognitionService.OnSpeakerIdentified += OnSpeakerIdentified; // 話者識別イベント
 
                 // 音声認識開始
                 _voiceRecognitionService.StartListening();
@@ -1353,20 +1402,8 @@ namespace CocoroConsole
                 // チャットに音声認識結果を表示
                 ChatControlInstance.AddVoiceMessage(text);
 
-                // CocoroGhostに送信
-                SendMessageToCocoroGhost(text, null);
-            });
-        }
-
-        /// <summary>
-        /// 話者識別結果を処理
-        /// </summary>
-        private void OnSpeakerIdentified(string speakerId, string speakerName, float confidence)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                // ステータス表示更新（必要に応じて）
-                System.Diagnostics.Debug.WriteLine($"[CocoroConsole] Speaker identified: {speakerName} ({confidence:P0})");
+                // OtomeKairoに送信
+                _ = SendMessageToOtomeKairoAsync(text, null);
             });
         }
 
@@ -1405,9 +1442,9 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// CocoroGhostにメッセージを送信
+        /// OtomeKairoにメッセージを送信
         /// </summary>
-        private async void SendMessageToCocoroGhost(string message, string? imageData)
+        private async Task SendMessageToOtomeKairoAsync(string message, string? imageData)
         {
             try
             {
@@ -1422,40 +1459,23 @@ namespace CocoroConsole
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[CocoroConsole] CocoroGhost送信エラー: {ex.Message}");
+                Debug.WriteLine($"[CocoroConsole] OtomeKairo送信エラー: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// CocoroGhostのAPI起動完了を監視（無限ループ）
+        /// OtomeKairoのAPI起動完了を監視
         /// </summary>
-        private async Task WaitForCocoroGhostStartupAsync()
+        private async Task WaitForOtomeKairoStartupAsync(CancellationToken cancellationToken)
         {
-            var delay = TimeSpan.FromSeconds(1); // 1秒間隔でチェック
-
-            while (true)
+            if (_communicationService == null)
             {
-                try
-                {
-                    if (_communicationService != null)
-                    {
-                        // StatusPollingServiceのステータスで起動状態を確認
-                        if (_communicationService.CurrentStatus == CocoroGhostStatus.Normal ||
-                            _communicationService.CurrentStatus == CocoroGhostStatus.ProcessingMessage ||
-                            _communicationService.CurrentStatus == CocoroGhostStatus.ProcessingImage)
-                        {
-                            // 起動成功時はログ出力のみ
-                            Debug.WriteLine("[CocoroConsole] CocoroGhost起動完了");
-                            return; // 起動完了で監視終了
-                        }
-                    }
-                }
-                catch
-                {
-                    // API未応答時は継続してチェック
-                }
-                await Task.Delay(delay);
+                return;
             }
+
+            await OtomeKairoStatusAwaiter
+                .WaitUntilReadyAsync(_communicationService, OtomeKairoStartupTimeout, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         /// <summary>
@@ -1567,6 +1587,8 @@ namespace CocoroConsole
                     return;
                 }
 
+                CancelOtomeKairoStartupMonitor();
+
                 // ウィンドウを最前面に表示
                 this.Show();
                 if (WindowState == WindowState.Minimized)
@@ -1583,7 +1605,6 @@ namespace CocoroConsole
                 {
                     _settingWindow?.Close();
                     _logViewerWindow?.Close();
-                    _cocoroGhostSettingsWindow?.Close();
                 }
                 catch (Exception ex)
                 {
@@ -1604,20 +1625,20 @@ namespace CocoroConsole
                 // シャットダウンオーバーレイを表示
                 ShutdownOverlay.Visibility = Visibility.Visible;
 
-                // --- CocoroGhost のローカル/リモート設定に応じて終了対象を決める ---
-                var isLocalGhost = _appSettings.IsCocoroGhostLocal();
+                // --- OtomeKairo のローカル/リモート設定に応じて終了対象を決める ---
+                var isLocalGhost = _appSettings.IsOtomeKairoLocal();
 
-                // --- CocoroGhostがローカル設定の場合のみ、ローカルプロセスIDを事前取得 ---
-                int? cocoroGhostProcessId = null;
+                // --- OtomeKairoがローカル設定の場合のみ、ローカルプロセスIDを事前取得 ---
+                int? otomeKairoProcessId = null;
                 if (isLocalGhost)
                 {
-                    cocoroGhostProcessId = GetProcessIdByPort(_appSettings.CocoroGhostPort);
-                    Debug.WriteLine($"CocoroGhost プロセスID: {cocoroGhostProcessId?.ToString() ?? "見つかりません"}");
-                    Debug.WriteLine("CocoroShellとCocoroGhostに終了要求を送信中...");
+                    otomeKairoProcessId = GetProcessIdByPort(_appSettings.OtomeKairoPort);
+                    Debug.WriteLine($"OtomeKairo プロセスID: {otomeKairoProcessId?.ToString() ?? "見つかりません"}");
+                    Debug.WriteLine("CocoroShellとOtomeKairoに終了要求を送信中...");
                 }
                 else
                 {
-                    Debug.WriteLine("CocoroGhost はリモート接続設定のため、ローカル終了要求を送信しません。");
+                    Debug.WriteLine("OtomeKairo はリモート接続設定のため、ローカル終了要求を送信しません。");
                     Debug.WriteLine("CocoroShell に終了要求を送信中...");
                 }
 
@@ -1627,10 +1648,10 @@ namespace CocoroConsole
                     Task.Run(() => ProcessHelper.ExitProcess("CocoroShell", ProcessOperation.Terminate))
                 };
 
-                // --- CocoroGhostはローカル設定時のみ終了要求を送る ---
+                // --- OtomeKairoはローカル設定時のみ終了要求を送る ---
                 if (isLocalGhost)
                 {
-                    shutdownTasks.Add(Task.Run(() => ProcessHelper.ExitProcess("CocoroGhost", ProcessOperation.Terminate)));
+                    shutdownTasks.Add(Task.Run(() => ProcessHelper.ExitProcess("OtomeKairo", ProcessOperation.Terminate)));
                 }
 
                 // すべてのシャットダウン要求の完了を待つ（最大5秒）
@@ -1643,14 +1664,14 @@ namespace CocoroConsole
                     Debug.WriteLine("一部のシャットダウン要求がタイムアウトしました。");
                 }
 
-                // --- CocoroGhostがローカル設定の場合のみ、停止完了を監視する ---
-                if (isLocalGhost && cocoroGhostProcessId.HasValue)
+                // --- OtomeKairoがローカル設定の場合のみ、停止完了を監視する ---
+                if (isLocalGhost && otomeKairoProcessId.HasValue)
                 {
                     Debug.WriteLine("CocoreGhost プロセスの終了を監視中...");
                     var maxWaitTime = TimeSpan.FromSeconds(30);
                     var startTime = DateTime.Now;
 
-                    while (IsProcessRunning(cocoroGhostProcessId.Value))
+                    while (IsProcessRunning(otomeKairoProcessId.Value))
                     {
                         if (DateTime.Now - startTime > maxWaitTime)
                         {
@@ -1671,7 +1692,7 @@ namespace CocoroConsole
                     var maxWaitTime = TimeSpan.FromSeconds(30);
                     var startTime = DateTime.Now;
 
-                    while (_communicationService != null && _communicationService.CurrentStatus != CocoroGhostStatus.WaitingForStartup)
+                    while (_communicationService != null && _communicationService.CurrentStatus != OtomeKairoStatus.WaitingForStartup)
                     {
                         if (DateTime.Now - startTime > maxWaitTime)
                         {
@@ -1686,7 +1707,7 @@ namespace CocoroConsole
                 }
                 else
                 {
-                    Debug.WriteLine("CocoroGhost はリモート接続設定のため、ローカル停止監視をスキップします。");
+                    Debug.WriteLine("OtomeKairo はリモート接続設定のため、ローカル停止監視をスキップします。");
                 }
 
                 // オーバーレイを非表示

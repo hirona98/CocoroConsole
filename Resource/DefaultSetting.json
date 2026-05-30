@@ -1,10 +1,11 @@
 {
   "cocoroConsolePort": 55600,
   "cocoroCorePort": 55601,
-  "cocoroGhostHost": "127.0.0.1",
+  "useExternalOtomeKairo": true,
+  "otomeKairoHost": "127.0.0.1",
   "cocoroShellPort": 55605,
-  "cocoroGhostBearerToken": "cocoro_token",
-  "isUseLLM": false,
+  "otomeKairoBearerToken": "",
+  "isUseLLM": true,
   "isRestoreWindowPosition": false,
   "isTopmost": true,
   "isEscapeCursor": false,
@@ -24,7 +25,6 @@
   "windowPositionY": 0,
   "screenshotSettings": {
     "enabled": false,
-    "intervalMinutes": 10,
     "captureActiveWindowOnly": true,
     "idleTimeoutMinutes": 10,
     "excludePatterns": [

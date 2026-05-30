@@ -3,7 +3,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Diagnostics;
@@ -31,7 +30,12 @@ namespace CocoroAI.Services
         /// <summary>
         /// 除外パターンにマッチしたためスキップ
         /// </summary>
-        ExcludedWindowTitle = 2
+        ExcludedWindowTitle = 2,
+
+        /// <summary>
+        /// ウィンドウ矩形が無効なためスキップ
+        /// </summary>
+        InvalidWindowBounds = 3
     }
 
     /// <summary>
@@ -73,18 +77,12 @@ namespace CocoroAI.Services
             public int Height => Bottom - Top;
         }
 
-        private System.Threading.Timer? _captureTimer;
-        private readonly int _intervalMilliseconds;
-        private readonly Func<ScreenshotData, Task>? _onCaptured;
-        private readonly Func<string, Task>? _onSkipped;
         private bool _isDisposed;
         private int _idleTimeoutMinutes = 10; // DefaultSetting.json と合わせて 10 分
         private List<Regex>? _compiledExcludePatterns;
 
 
-        public bool IsRunning { get; private set; }
         public bool CaptureActiveWindowOnly { get; set; }
-        public int IntervalMinutes => _intervalMilliseconds / 60000;
 
         /// <summary>
         /// 直近のキャプチャでスキップした理由（スキップしていない場合は None）
@@ -97,11 +95,8 @@ namespace CocoroAI.Services
             set => _idleTimeoutMinutes = value >= 0 ? value : 10;
         }
 
-        public ScreenshotService(int intervalMinutes = 10, Func<ScreenshotData, Task>? onCaptured = null, Func<string, Task>? onSkipped = null)
+        public ScreenshotService()
         {
-            _intervalMilliseconds = intervalMinutes * 60 * 1000;
-            _onCaptured = onCaptured;
-            _onSkipped = onSkipped;
             CaptureActiveWindowOnly = true;
         }
 
@@ -178,32 +173,6 @@ namespace CocoroAI.Services
         }
 
         /// <summary>
-        /// スクリーンショットの定期取得を開始
-        /// </summary>
-        public void Start(int? initialDelayMilliseconds = null)
-        {
-            if (IsRunning) return;
-
-            IsRunning = true;
-            var dueTime = (initialDelayMilliseconds.HasValue && initialDelayMilliseconds.Value > 0)
-                ? initialDelayMilliseconds.Value
-                : _intervalMilliseconds;
-            _captureTimer = new System.Threading.Timer(async _ => await CaptureTimerCallback(), null, dueTime, _intervalMilliseconds);
-        }
-
-        /// <summary>
-        /// スクリーンショットの定期取得を停止
-        /// </summary>
-        public void Stop()
-        {
-            if (!IsRunning) return;
-
-            IsRunning = false;
-            _captureTimer?.Dispose();
-            _captureTimer = null;
-        }
-
-        /// <summary>
         /// アクティブウィンドウのスクリーンショットを取得
         /// </summary>
         /// <returns>除外パターンにマッチした場合はnull（スキップ扱い）</returns>
@@ -246,6 +215,12 @@ namespace CocoroAI.Services
                 if (!GetWindowRect(hwnd, out RECT rect))
                 {
                     throw new InvalidOperationException("ウィンドウの情報を取得できません");
+                }
+
+                if (rect.Width <= 0 || rect.Height <= 0)
+                {
+                    LastSkipReason = ScreenshotSkipReason.InvalidWindowBounds;
+                    return null;
                 }
 
                 // スクリーンショットを撮影
@@ -320,60 +295,6 @@ namespace CocoroAI.Services
             });
         }
 
-        private async Task CaptureTimerCallback()
-        {
-            try
-            {
-                // アイドル時間をチェック
-                if (IsUserIdle())
-                {
-                    LastSkipReason = ScreenshotSkipReason.Idle;
-                    Debug.WriteLine($"ユーザーがアイドル状態（{_idleTimeoutMinutes}分以上操作なし）のため、スクリーンショットをスキップします");
-
-                    // アイドルスキップも「スキップ」として通知したい場合があるため、コールバックを呼ぶ
-                    if (_onSkipped != null)
-                    {
-                        await _onSkipped($"ユーザーがアイドル状態（{_idleTimeoutMinutes}分以上操作なし）のため、スクリーンショットをスキップしました");
-                    }
-                    return;
-                }
-
-                ScreenshotData screenshot;
-                if (CaptureActiveWindowOnly)
-                {
-                    var captured = await CaptureActiveWindowAsync();
-                    if (captured == null)
-                    {
-                        // 除外パターンでスキップされた場合
-                        if (_onSkipped != null)
-                        {
-                            await _onSkipped("除外パターンにマッチしたため画面キャプチャをスキップしました");
-                        }
-                        return;
-                    }
-
-                    screenshot = captured;
-                }
-                else
-                {
-                    screenshot = await CaptureFullScreenAsync();
-                }
-
-                // コールバックを実行
-                if (_onCaptured != null)
-                {
-                    await _onCaptured(screenshot);
-                }
-            }
-            catch (Exception ex)
-            {
-                // その他のエラー
-                System.Diagnostics.Debug.WriteLine($"スクリーンショット取得エラー: {ex.Message}");
-            }
-        }
-
-
-
         /// <summary>
         /// ユーザーがアイドル状態かどうかを判定
         /// </summary>
@@ -413,9 +334,6 @@ namespace CocoroAI.Services
         public void Dispose()
         {
             if (_isDisposed) return;
-
-            Stop();
-
             _isDisposed = true;
         }
     }

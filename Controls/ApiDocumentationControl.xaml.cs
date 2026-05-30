@@ -1,4 +1,4 @@
-﻿using CocoroConsole.Services;
+using CocoroConsole.Services;
 using System;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,8 +18,8 @@ namespace CocoroConsole.Controls
         {
             try
             {
-                NotificationApiTextBox.Text = GetNotificationApiDetails();
-                MetaRequestApiTextBox.Text = GetMetaRequestApiDetails();
+                ConversationApiTextBox.Text = GetConversationApiDetails();
+                WakeApiTextBox.Text = GetWakeApiDetails();
 
                 await Task.CompletedTask;
             }
@@ -29,17 +29,17 @@ namespace CocoroConsole.Controls
             }
         }
 
-        private static string GetNotificationApiDetails()
+        private static string GetConversationApiDetails()
         {
-            var baseUrl = AppSettings.Instance.GetCocoroGhostBaseUrl();
+            var baseUrl = AppSettings.Instance.GetOtomeKairoBaseUrl();
             var sb = new StringBuilder();
             sb.AppendLine("用途:");
-            sb.AppendLine("- 外部プログラムから通知依頼を送る");
-            sb.AppendLine("- 通知は /api/events/stream で接続中クライアントへ配信される（ブロードキャスト）");
+            sb.AppendLine("- OtomeKairo に会話入力を送る");
+            sb.AppendLine("- 応答は JSON envelope の data.result_kind と data.reply で返る");
             sb.AppendLine();
 
             sb.AppendLine("エンドポイント:");
-            sb.AppendLine($"- POST {baseUrl}/api/v2/notification");
+            sb.AppendLine($"- POST {baseUrl}/api/conversation");
             sb.AppendLine();
 
             sb.AppendLine("認証:");
@@ -48,54 +48,58 @@ namespace CocoroConsole.Controls
 
             sb.AppendLine("リクエストボディ (JSON):");
             sb.AppendLine("{");
-            sb.AppendLine("  \"source_system\": \"アプリ名\",");
-            sb.AppendLine("  \"text\": \"通知メッセージ\",");
-            sb.AppendLine("  \"images\": [  // オプション（最大5枚）");
-            sb.AppendLine("    \"data:image/jpeg;base64,/9j/4AAQ...\",  // 1枚目");
-            sb.AppendLine("    \"data:image/png;base64,iVBORw0KGgo...\"  // 2枚目");
-            sb.AppendLine("  ]");
+            sb.AppendLine("  \"text\": \"こんにちは\",");
+            sb.AppendLine("  \"images\": [\"data:image/png;base64,...\"],");
+            sb.AppendLine("  \"client_context\": {");
+            sb.AppendLine("    \"source\": \"CocoroConsole\",");
+            sb.AppendLine("    \"client_id\": \"console-...\",");
+            sb.AppendLine("    \"active_app\": \"Slack\",");
+            sb.AppendLine("    \"window_title\": \"general | Slack\",");
+            sb.AppendLine("    \"locale\": \"ja-JP\"");
+            sb.AppendLine("  }");
             sb.AppendLine("}");
+            sb.AppendLine("- images は省略可能、指定時は Data URI を最大1件送る");
             sb.AppendLine();
 
             sb.AppendLine("レスポンス:");
-            sb.AppendLine("- HTTP/1.1 204 No Content");
+            sb.AppendLine("{");
+            sb.AppendLine("  \"ok\": true,");
+            sb.AppendLine("  \"data\": {");
+            sb.AppendLine("    \"cycle_id\": \"cycle:...\",");
+            sb.AppendLine("    \"result_kind\": \"reply\",");
+            sb.AppendLine("    \"reply\": { \"text\": \"こんにちは\" }");
+            sb.AppendLine("  }");
+            sb.AppendLine("}");
             sb.AppendLine();
 
             sb.AppendLine("使用例 (cURL):");
-            sb.AppendLine("# 1枚の画像を送る場合");
-            sb.AppendLine($"curl.exe -k -X POST {baseUrl}/api/v2/notification \\");
+            sb.AppendLine($"curl.exe -k -X POST {baseUrl}/api/conversation \\");
             sb.AppendLine("  -H \"Authorization: Bearer <TOKEN>\" \\");
             sb.AppendLine("  -H \"Content-Type: application/json\" \\");
-            sb.AppendLine("  -d '{\"source_system\":\"MyApp\",\"text\":\"処理完了\",\"images\":[\"data:image/jpeg;base64,...\"]}'");
-            sb.AppendLine();
-            sb.AppendLine("# 複数枚の画像を送る場合");
-            sb.AppendLine($"curl.exe -k -X POST {baseUrl}/api/v2/notification \\");
-            sb.AppendLine("  -H \"Authorization: Bearer <TOKEN>\" \\");
-            sb.AppendLine("  -H \"Content-Type: application/json\" \\");
-            sb.AppendLine("  -d '{\"source_system\":\"MyApp\",\"text\":\"結果\",\"images\":[\"data:image/jpeg;base64,...\",\"data:image/png;base64,...\"]}'");
+            sb.AppendLine("  -d '{\"text\":\"こんにちは\",\"images\":[\"data:image/png;base64,...\"],\"client_context\":{\"source\":\"CocoroConsole\",\"client_id\":\"console-...\",\"locale\":\"ja-JP\"}}'");
             sb.AppendLine();
 
             sb.AppendLine("使用例 (PowerShell):");
             sb.AppendLine("# 自己署名HTTPSのため、Windows PowerShell では curl.exe 推奨 / PowerShell 7 なら -SkipCertificateCheck を使用");
-            sb.AppendLine("# 複数枚の画像を送る場合");
             sb.AppendLine("Invoke-RestMethod -Method Post `");
-            sb.AppendLine($"  -Uri \"{baseUrl}/api/v2/notification\" `");
+            sb.AppendLine($"  -Uri \"{baseUrl}/api/conversation\" `");
             sb.AppendLine("  -Headers @{ Authorization = \"Bearer <TOKEN>\" } `");
             sb.AppendLine("  -ContentType \"application/json; charset=utf-8\" `");
-            sb.AppendLine("  -Body '{\"source_system\":\"MyApp\",\"text\":\"結果\",\"images\":[\"data:image/jpeg;base64,...\",\"data:image/png;base64,...\"]}'");
+            sb.AppendLine("  -Body '{\"text\":\"こんにちは\",\"images\":[\"data:image/png;base64,...\"],\"client_context\":{\"source\":\"CocoroConsole\",\"client_id\":\"console-...\",\"locale\":\"ja-JP\"}}'");
             return sb.ToString();
         }
 
-        private static string GetMetaRequestApiDetails()
+        private static string GetWakeApiDetails()
         {
-            var baseUrl = AppSettings.Instance.GetCocoroGhostBaseUrl();
+            var baseUrl = AppSettings.Instance.GetOtomeKairoBaseUrl();
             var sb = new StringBuilder();
             sb.AppendLine("用途:");
-            sb.AppendLine("- 外部プログラムからメタ要求(指示 + テキスト)を送る");
+            sb.AppendLine("- OtomeKairo に自律起床 1 サイクルの実行を依頼する");
+            sb.AppendLine("- wake_policy が disabled の場合は noop を返す");
             sb.AppendLine();
 
             sb.AppendLine("エンドポイント:");
-            sb.AppendLine($"- POST {baseUrl}/api/v2/meta-request");
+            sb.AppendLine($"- POST {baseUrl}/api/wake");
             sb.AppendLine();
 
             sb.AppendLine("認証:");
@@ -104,33 +108,41 @@ namespace CocoroConsole.Controls
 
             sb.AppendLine("リクエストボディ (JSON):");
             sb.AppendLine("{");
-            sb.AppendLine("  \"instruction\": \"任意の指示\",");
-            sb.AppendLine("  \"payload_text\": \"補足情報（任意）\",");
-            sb.AppendLine("  \"images\": [  // オプション（最大5枚）");
-            sb.AppendLine("    \"data:image/jpeg;base64,/9j/4AAQ...\",  // 1枚目");
-            sb.AppendLine("    \"data:image/png;base64,iVBORw0KGgo...\"  // 2枚目");
-            sb.AppendLine("  ]");
+            sb.AppendLine("  \"client_context\": {");
+            sb.AppendLine("    \"source\": \"CocoroConsole\",");
+            sb.AppendLine("    \"client_id\": \"console-...\",");
+            sb.AppendLine("    \"active_app\": \"Slack\",");
+            sb.AppendLine("    \"window_title\": \"general | Slack\",");
+            sb.AppendLine("    \"locale\": \"ja-JP\"");
+            sb.AppendLine("  }");
             sb.AppendLine("}");
             sb.AppendLine();
 
             sb.AppendLine("レスポンス:");
-            sb.AppendLine("- HTTP/1.1 204 No Content");
+            sb.AppendLine("{");
+            sb.AppendLine("  \"ok\": true,");
+            sb.AppendLine("  \"data\": {");
+            sb.AppendLine("    \"cycle_id\": \"cycle:...\",");
+            sb.AppendLine("    \"result_kind\": \"noop\",");
+            sb.AppendLine("    \"reply\": null");
+            sb.AppendLine("  }");
+            sb.AppendLine("}");
             sb.AppendLine();
 
             sb.AppendLine("使用例 (cURL):");
-            sb.AppendLine($"curl.exe -k -X POST {baseUrl}/api/v2/meta-request \\");
+            sb.AppendLine($"curl.exe -k -X POST {baseUrl}/api/wake \\");
             sb.AppendLine("  -H \"Authorization: Bearer <TOKEN>\" \\");
             sb.AppendLine("  -H \"Content-Type: application/json\" \\");
-            sb.AppendLine("  -d '{\"instruction\":\"これは直近1時間のニュースです。内容をユーザに説明し、感想も述べてください。\",\"payload_text\":\"～ニュース内容～\"}'");
+            sb.AppendLine("  -d '{\"client_context\":{\"source\":\"CocoroConsole\",\"client_id\":\"console-...\",\"locale\":\"ja-JP\"}}'");
             sb.AppendLine();
 
             sb.AppendLine("使用例 (PowerShell):");
             sb.AppendLine("# 自己署名HTTPSのため、Windows PowerShell では curl.exe 推奨 / PowerShell 7 なら -SkipCertificateCheck を使用");
             sb.AppendLine("Invoke-RestMethod -Method Post `");
-            sb.AppendLine($"  -Uri \"{baseUrl}/api/v2/meta-request\" `");
+            sb.AppendLine($"  -Uri \"{baseUrl}/api/wake\" `");
             sb.AppendLine("  -Headers @{ Authorization = \"Bearer <TOKEN>\" } `");
             sb.AppendLine("  -ContentType \"application/json; charset=utf-8\" `");
-            sb.AppendLine("  -Body '{\"instruction\":\"これは直近1時間のニュースです。内容をユーザに説明し、感想も述べてください。\",\"payload_text\":\"～ニュース内容～\"}'");
+            sb.AppendLine("  -Body '{\"client_context\":{\"source\":\"CocoroConsole\",\"client_id\":\"console-...\",\"locale\":\"ja-JP\"}}'");
             return sb.ToString();
         }
     }
