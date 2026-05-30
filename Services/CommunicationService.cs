@@ -35,6 +35,9 @@ namespace CocoroConsole.Services
         // CocoroShell（Unity 側）へ送るクライアント
         private CocoroShellClient _shellClient;
 
+        // CocoroShellを経由できない場合の直接TTS実行サービス
+        private readonly DirectTtsService _directTtsService;
+
         private readonly IAppSettings _appSettings;
 
         // otomekairo の状態を定期取得して UI に通知する
@@ -73,6 +76,9 @@ namespace CocoroConsole.Services
         // OtomeKairo が Normal になった後、現在設定と events stream を初期化済みかを表す。
         private bool _initialSettingsFetched = false;
 
+        // 一度CocoroShellへの接続に失敗したら、明示的な再起動通知まで直接TTSに切り替える。
+        private bool _isShellUnavailable = false;
+
         private static bool IsVrmDisplayEnabled(CharacterSettings? currentCharacter)
         {
             // MainWindow.LaunchCocoroShell と同じ判定: パスがあれば有効 / readOnlyキャラは常に有効
@@ -85,6 +91,12 @@ namespace CocoroConsole.Services
             // 呼び出し元がキャラクターを渡していない場合はキャッシュから解決
             currentCharacter ??= GetStoredCharacterSetting();
             return IsVrmDisplayEnabled(currentCharacter);
+        }
+
+        public void ResetShellConnectionState()
+        {
+            _isShellUnavailable = false;
+            Debug.WriteLine("[Shell Forward] CocoroShell接続状態を再試行可能に戻しました");
         }
 
         public event EventHandler<ChatRequest>? ChatMessageReceived;
@@ -126,6 +138,7 @@ namespace CocoroConsole.Services
 
             // CocoroShellクライアントの初期化
             _shellClient = new CocoroShellClient(_appSettings.CocoroShellPort);
+            _directTtsService = new DirectTtsService();
 
             // OtomeKairo APIクライアントを初期化する
             var bearerToken = _appSettings.OtomeKairoBearerToken;
@@ -344,6 +357,7 @@ namespace CocoroConsole.Services
             {
                 _shellClient?.Dispose();
                 _shellClient = new CocoroShellClient(currentSettings.cocoroShellPort);
+                ResetShellConnectionState();
             }
 
             if (ghostEndpointChanged)
@@ -852,7 +866,23 @@ namespace CocoroConsole.Services
                     characterName = currentCharacter?.modelName
                 };
 
-                await _shellClient.SendChatMessageAsync(shellRequest).ConfigureAwait(false);
+                if (_isShellUnavailable)
+                {
+                    Debug.WriteLine("[Shell Forward] CocoroShell接続失敗状態のため直接TTSに送信します");
+                    await ForwardMessageToDirectTtsAsync(content, currentCharacter).ConfigureAwait(false);
+                    return;
+                }
+
+                try
+                {
+                    await _shellClient.SendChatMessageAsync(shellRequest).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (IsShellConnectionFailure(ex))
+                {
+                    _isShellUnavailable = true;
+                    Debug.WriteLine($"[Shell Forward] CocoroShell接続失敗を保持します: {ex.Message}");
+                    await ForwardMessageToDirectTtsAsync(content, currentCharacter).ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {
@@ -862,6 +892,32 @@ namespace CocoroConsole.Services
             {
                 _forwardMessageSemaphore.Release();
             }
+        }
+
+        private async Task ForwardMessageToDirectTtsAsync(string content, CharacterSettings? currentCharacter)
+        {
+            if (currentCharacter == null || !currentCharacter.isUseTTS)
+            {
+                Debug.WriteLine("[Direct TTS] TTSが無効のため直接TTS送信をスキップ");
+                return;
+            }
+
+            await _directTtsService.SpeakAsync(content, currentCharacter).ConfigureAwait(false);
+        }
+
+        private static bool IsShellConnectionFailure(Exception ex)
+        {
+            if (ex is TimeoutException)
+            {
+                return true;
+            }
+
+            if (ex is HttpRequestException httpEx)
+            {
+                return !httpEx.Message.StartsWith("API error:", StringComparison.Ordinal);
+            }
+
+            return ex.InnerException != null && IsShellConnectionFailure(ex.InnerException);
         }
 
         /// <summary>
@@ -1451,6 +1507,7 @@ namespace CocoroConsole.Services
             }
             _apiServer?.Dispose();
             _shellClient?.Dispose();
+            _directTtsService?.Dispose();
             _otomeKairoApiClient?.Dispose();
             _logStreamClient?.Dispose();
             _eventsStreamClient?.Dispose();

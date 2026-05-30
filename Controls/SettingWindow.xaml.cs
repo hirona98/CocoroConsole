@@ -1065,6 +1065,7 @@ namespace CocoroConsole.Controls
             try
             {
                 CocoroShellProcessManager.Apply(AppSettings.Instance, ProcessOperation.RestartIfRunning);
+                _communicationService?.ResetShellConnectionState();
                 Debug.WriteLine("CocoroShellを再起動しました");
             }
             catch (Exception ex)

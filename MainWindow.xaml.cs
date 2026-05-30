@@ -1183,6 +1183,7 @@ namespace CocoroConsole
         private void LaunchCocoroShell(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
             CocoroShellProcessManager.Apply(_appSettings, operation);
+            _communicationService?.ResetShellConnectionState();
         }
 
         /// <summary>

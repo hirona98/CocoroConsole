@@ -57,6 +57,7 @@ namespace CocoroConsole.Services
         Task SendConfigPatchToShellAsync(Dictionary<string, object> updates);
         void RefreshSettingsCache();
         void NotifyOtomeKairoRestarting();
+        void ResetShellConnectionState();
         Task RefreshOtomeKairoCurrentSettingsAsync();
         Task SetDesktopWatchEnabledAsync(bool enabled);
     }
