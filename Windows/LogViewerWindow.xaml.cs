@@ -17,8 +17,10 @@ namespace CocoroConsole.Windows
     public partial class LogViewerWindow : Window
     {
         private ObservableCollection<LogMessage> _allLogs = new ObservableCollection<LogMessage>();
+        public ObservableCollection<ComponentFilterItem> ComponentFilters { get; } = new ObservableCollection<ComponentFilterItem>();
         private ICollectionView? _filteredLogs;
         private string _levelFilter = "";
+        private bool _isUpdatingComponentSelection;
         private const int MaxDisplayedLogs = 200;
         public bool IsClosed { get; private set; } = false;
 
@@ -110,7 +112,7 @@ namespace CocoroConsole.Windows
         }
 
         /// <summary>
-        /// ログメッセージを追加（最大1000件まで）
+        /// ログメッセージを追加（最大200件まで）
         /// </summary>
         /// <param name="logMessage">ログメッセージ</param>
         public void AddLogMessage(LogMessage logMessage)
@@ -119,7 +121,7 @@ namespace CocoroConsole.Windows
         }
 
         /// <summary>
-        /// ログメッセージをまとめて追加（最大1000件まで）
+        /// ログメッセージをまとめて追加（最大200件まで）
         /// </summary>
         /// <param name="logMessages">ログメッセージのリスト</param>
         public void AddLogMessages(IReadOnlyList<LogMessage> logMessages)
@@ -139,6 +141,7 @@ namespace CocoroConsole.Windows
 
                 foreach (var logMessage in logMessages)
                 {
+                    EnsureComponentFilter(logMessage.component);
                     _allLogs.Add(logMessage);
                 }
 
@@ -190,9 +193,11 @@ namespace CocoroConsole.Windows
         {
             // 既にUIスレッドで呼ばれることを前提とした処理
             _allLogs.Clear();
+            ComponentFilters.Clear();
 
             foreach (var logMessage in logMessages)
             {
+                EnsureComponentFilter(logMessage.component);
                 _allLogs.Add(logMessage);
             }
 
@@ -231,6 +236,13 @@ namespace CocoroConsole.Windows
                 var logLevel = GetLogLevelPriority(log.level);
                 var filterLevel = GetLogLevelPriority(_levelFilter);
                 if (logLevel < filterLevel)
+                    return false;
+            }
+
+            if (ComponentFilters.Count > 0)
+            {
+                var component = NormalizeComponent(log.component);
+                if (!ComponentFilters.Any(filter => filter.Component == component && filter.IsSelected))
                     return false;
             }
 
@@ -322,11 +334,126 @@ namespace CocoroConsole.Windows
         }
 
         /// <summary>
+        /// コンポーネントフィルター変更イベント
+        /// </summary>
+        private void ComponentFilterCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isUpdatingComponentSelection) return;
+
+            RefreshFiltersPreservingScroll();
+            UpdateAllComponentsCheckBoxState();
+        }
+
+        /// <summary>
+        /// 全コンポーネントを選択する
+        /// </summary>
+        private void AllComponentsCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            SetAllComponentFilters(true);
+        }
+
+        /// <summary>
+        /// 全コンポーネントの選択を解除する
+        /// </summary>
+        private void AllComponentsCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            SetAllComponentFilters(false);
+        }
+
+        /// <summary>
+        /// 全コンポーネントの選択状態を設定する
+        /// </summary>
+        private void SetAllComponentFilters(bool isSelected)
+        {
+            if (_isUpdatingComponentSelection) return;
+
+            _isUpdatingComponentSelection = true;
+            try
+            {
+                foreach (var filter in ComponentFilters)
+                {
+                    filter.IsSelected = isSelected;
+                }
+            }
+            finally
+            {
+                _isUpdatingComponentSelection = false;
+            }
+
+            RefreshFiltersPreservingScroll();
+            UpdateAllComponentsCheckBoxState();
+        }
+
+        /// <summary>
+        /// スクロール位置を保持してフィルターを再適用する
+        /// </summary>
+        private void RefreshFiltersPreservingScroll()
+        {
+            double savedOffset = 0;
+            if (_scrollViewer != null && AutoScrollCheckBox.IsChecked != true)
+            {
+                savedOffset = _scrollViewer.VerticalOffset;
+            }
+
+            _filteredLogs?.Refresh();
+            UpdateLogCount();
+
+            if (_scrollViewer != null && AutoScrollCheckBox.IsChecked != true)
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    _scrollViewer.ScrollToVerticalOffset(savedOffset);
+                }, System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+        }
+
+        /// <summary>
+        /// コンポーネントフィルター項目を追加する
+        /// </summary>
+        private void EnsureComponentFilter(string? component)
+        {
+            var normalizedComponent = NormalizeComponent(component);
+            if (ComponentFilters.Any(filter => filter.Component == normalizedComponent)) return;
+
+            var isSelected = AllComponentsCheckBox?.IsChecked != false;
+            ComponentFilters.Add(new ComponentFilterItem(normalizedComponent, isSelected));
+            UpdateAllComponentsCheckBoxState();
+        }
+
+        /// <summary>
+        /// コンポーネント名を表示用に正規化する
+        /// </summary>
+        private static string NormalizeComponent(string? component)
+        {
+            return string.IsNullOrWhiteSpace(component) ? "(未指定)" : component.Trim();
+        }
+
+        /// <summary>
+        /// 全選択チェックボックスの状態を更新する
+        /// </summary>
+        private void UpdateAllComponentsCheckBoxState()
+        {
+            if (AllComponentsCheckBox == null) return;
+
+            _isUpdatingComponentSelection = true;
+            try
+            {
+                AllComponentsCheckBox.IsChecked = ComponentFilters.Count == 0 || ComponentFilters.All(filter => filter.IsSelected);
+            }
+            finally
+            {
+                _isUpdatingComponentSelection = false;
+            }
+        }
+
+        /// <summary>
         /// クリアボタンクリックイベント
         /// </summary>
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
             _allLogs.Clear();
+            ComponentFilters.Clear();
+            UpdateAllComponentsCheckBoxState();
             UpdateLogCount();
             UpdateStatus("ログクリア");
         }
@@ -341,5 +468,32 @@ namespace CocoroConsole.Windows
             base.OnClosed(e);
         }
 
+    }
+
+    public class ComponentFilterItem : INotifyPropertyChanged
+    {
+        private bool _isSelected = true;
+
+        public ComponentFilterItem(string component, bool isSelected)
+        {
+            Component = component;
+            _isSelected = isSelected;
+        }
+
+        public string Component { get; }
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                if (_isSelected == value) return;
+
+                _isSelected = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
+            }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
     }
 }
