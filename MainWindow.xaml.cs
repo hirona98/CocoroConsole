@@ -22,12 +22,12 @@ namespace CocoroConsole
     /// <summary>
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
-        public partial class MainWindow : Window
-        {
-            private ICommunicationService? _communicationService;
-            private readonly IAppSettings _appSettings;
-            private bool _isDesktopWatchEnabled;
-            private RealtimeVoiceRecognitionService? _voiceRecognitionService;
+    public partial class MainWindow : Window
+    {
+        private ICommunicationService? _communicationService;
+        private readonly IAppSettings _appSettings;
+        private bool _isDesktopWatchEnabled;
+        private RealtimeVoiceRecognitionService? _voiceRecognitionService;
         private VoiceRecognitionSettingsSnapshot? _voiceRecognitionSettingsSnapshot;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
@@ -1378,7 +1378,6 @@ namespace CocoroConsole
                 _voiceRecognitionService.OnRecognizedText += OnVoiceRecognized;
                 _voiceRecognitionService.OnStateChanged += OnVoiceStateChanged;
                 _voiceRecognitionService.OnVoiceLevel += OnVoiceLevelChanged;
-                _voiceRecognitionService.OnSpeakerIdentified += OnSpeakerIdentified; // 話者識別イベント
 
                 // 音声認識開始
                 _voiceRecognitionService.StartListening();
@@ -1404,18 +1403,6 @@ namespace CocoroConsole
 
                 // OtomeKairoに送信
                 _ = SendMessageToOtomeKairoAsync(text, null);
-            });
-        }
-
-        /// <summary>
-        /// 話者識別結果を処理
-        /// </summary>
-        private void OnSpeakerIdentified(string speakerId, string speakerName, float confidence)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                // ステータス表示更新（必要に応じて）
-                System.Diagnostics.Debug.WriteLine($"[CocoroConsole] Speaker identified: {speakerName} ({confidence:P0})");
             });
         }
 
