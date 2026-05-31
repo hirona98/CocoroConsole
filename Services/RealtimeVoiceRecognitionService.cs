@@ -267,7 +267,7 @@ namespace CocoroConsole.Services
                 if (i + 1 < bytesRecorded)
                 {
                     short sample = (short)((buffer[i + 1] << 8) | buffer[i]);
-                    float amplitude = Math.Abs(sample) / 32768f;
+                    float amplitude = Math.Abs((int)sample) / 32768f;
                     maxAmplitude = Math.Max(maxAmplitude, amplitude);
                 }
             }
