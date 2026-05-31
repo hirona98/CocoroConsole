@@ -169,6 +169,7 @@ namespace CocoroConsole.Windows
                 OverviewTextBox.Text = BuildOverview(trace, factTrace);
                 FactResolutionTraceTextBox.Text = PrettyJson(factTrace);
                 RecallTraceTextBox.Text = PrettyJson(trace.RecallTrace);
+                ActivityTraceTextBox.Text = PrettyJson(trace.ActivityTrace);
                 CycleTraceTextBox.Text = JsonSerializer.Serialize(trace, _jsonSerializerOptions);
 
                 UpdateStatus($"cycle trace を表示中: {cycleId}");
@@ -215,6 +216,7 @@ namespace CocoroConsole.Windows
             OverviewTextBox.Text = message;
             FactResolutionTraceTextBox.Text = message;
             RecallTraceTextBox.Text = string.Empty;
+            ActivityTraceTextBox.Text = string.Empty;
             CycleTraceTextBox.Text = string.Empty;
         }
 
@@ -289,6 +291,7 @@ namespace CocoroConsole.Windows
             AppendFactResolutionOverview(builder, factTrace);
             AppendRecallOverview(builder, trace.RecallTrace);
             AppendWorldStateOverview(builder, trace.WorldStateTrace);
+            AppendActivityOverview(builder, trace.ActivityTrace);
             AppendMemoryOverview(builder, trace.MemoryTrace);
 
             return builder.ToString();
@@ -344,6 +347,19 @@ namespace CocoroConsole.Windows
             AppendLineIfPresent(builder, "  更新数", BuildWorldStateCountLine(worldStateTrace));
             AppendLineIfPresent(builder, "  失敗理由", GetString(worldStateTrace, "failure_reason"));
             AppendTopArraySection(builder, "  判断に入った状態", TryGetProperty(worldStateTrace, "foreground_world_state"), 3, BuildWorldStateItemLine);
+            builder.AppendLine();
+        }
+
+        private void AppendActivityOverview(StringBuilder builder, JsonElement activityTrace)
+        {
+            builder.AppendLine("活動状態の推定");
+            AppendLineIfPresent(builder, "  状態", DescribeStatus(GetString(activityTrace, "result_status")));
+            AppendLineIfPresent(builder, "  候補数", GetString(activityTrace, "candidate_count"));
+            AppendLineIfPresent(builder, "  更新数", BuildActivityCountLine(activityTrace));
+            AppendLineIfPresent(builder, "  候補", BuildReadableObjectLine(TryGetProperty(activityTrace, "candidate_summary")));
+            AppendLineIfPresent(builder, "  現在活動", BuildActivityContextLine(TryGetProperty(TryGetProperty(activityTrace, "activity_context"), "current_activity")));
+            AppendLineIfPresent(builder, "  直前活動", BuildActivityContextLine(TryGetProperty(TryGetProperty(activityTrace, "activity_context"), "previous_activity")));
+            AppendLineIfPresent(builder, "  失敗理由", GetString(activityTrace, "failure_reason"));
             builder.AppendLine();
         }
 
@@ -512,6 +528,34 @@ namespace CocoroConsole.Windows
             return string.Join(" / ", parts);
         }
 
+        private static string BuildActivityCountLine(JsonElement activityTrace)
+        {
+            var parts = new[]
+            {
+                CountPart("更新", GetString(activityTrace, "updated_count")),
+                CountPart("期限切れ", GetString(activityTrace, "expired_count")),
+            }.Where(value => !string.IsNullOrWhiteSpace(value));
+            return string.Join(" / ", parts);
+        }
+
+        private static string BuildActivityContextLine(JsonElement activity)
+        {
+            if (activity.ValueKind != JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" / ", new[]
+            {
+                GetString(activity, "label"),
+                GetString(activity, "target"),
+                DescribeStatus(GetString(activity, "status")),
+                GetString(activity, "age_label"),
+                GetString(activity, "ended_age_label"),
+                GetString(activity, "reason_summary"),
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
         private static string CountPart(string label, string count)
         {
             return string.IsNullOrWhiteSpace(count) ? string.Empty : $"{label} {count}";
@@ -557,6 +601,9 @@ namespace CocoroConsole.Windows
                 "reason_summary",
                 "detail_summary",
                 "transition_source",
+                "transition",
+                "label",
+                "target",
                 "reason_code",
                 "event_count",
                 "episode_id",

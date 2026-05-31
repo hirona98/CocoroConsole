@@ -202,12 +202,47 @@ namespace CocoroConsole.Windows
             builder.AppendLine($"  現在VAD={BuildVadLine(TryGetProperty(TryGetProperty(currentState, "mood_state"), "current_vad"))}");
             builder.AppendLine();
 
+            builder.AppendLine("活動状態:");
+            var activityContext = TryGetProperty(currentState, "activity_context");
+            var currentActivity = TryGetProperty(activityContext, "current_activity");
+            var previousActivity = TryGetProperty(activityContext, "previous_activity");
+            if (currentActivity.ValueKind != JsonValueKind.Object && previousActivity.ValueKind != JsonValueKind.Object)
+            {
+                builder.AppendLine("  （なし）");
+            }
+            else
+            {
+                AppendActivityLine(builder, "  現在", currentActivity);
+                AppendActivityLine(builder, "  直前", previousActivity);
+            }
+            builder.AppendLine();
+
+            builder.AppendLine("視覚日次要約:");
+            var visualDailySummary = TryGetProperty(currentState, "visual_daily_summary");
+            if (visualDailySummary.ValueKind != JsonValueKind.Object)
+            {
+                builder.AppendLine("  （なし）");
+            }
+            else
+            {
+                builder.AppendLine(
+                    $"  日付={GetString(visualDailySummary, "latest_local_date")} " +
+                    $"digest={GetString(visualDailySummary, "latest_digest_id")} " +
+                    $"記録={GetString(visualDailySummary, "record_count")} " +
+                    $"group={GetString(visualDailySummary, "group_count")} " +
+                    $"保持={GetString(visualDailySummary, "retained_count")} " +
+                    $"圧縮={GetString(visualDailySummary, "compressed_count")} " +
+                    $"記憶候補={GetString(visualDailySummary, "memory_candidate_count")}"
+                );
+            }
+            builder.AppendLine();
+
             AppendArraySection(
                 builder,
                 "前景ワールド状態",
                 TryGetProperty(currentState, "foreground_world_states"),
                 element =>
-                    $"種別={GetString(element, "state_type")} 対象={GetString(element, "scope_type")}:{GetString(element, "scope_key")} " +
+                    $"種別={GetString(element, "state_type")} 対象={FirstNonEmpty(GetString(element, "scope"), $"{GetString(element, "scope_type")}:{GetString(element, "scope_key")}")} " +
                     $"顕著度={GetString(element, "salience")} 要約={GetString(element, "summary_text")}"
             );
             AppendArraySection(
@@ -241,7 +276,7 @@ namespace CocoroConsole.Windows
                 element =>
                     $"観測ID={GetString(element, "observation_id")} 有効={GetString(element, "enabled")} " +
                     $"間隔={GetString(element, "interval_seconds")}秒 最終状態={GetString(element, "last_status")} " +
-                    $"最終実行={GetString(element, "last_run_at")} source={GetString(element, "last_vision_source_id")} " +
+                    $"最終実行={GetString(element, "last_run_at")} source={FirstNonEmpty(GetString(element, "last_vision_source_id"), GetString(element, "vision_source_id"))} " +
                     $"画像数={GetString(element, "last_image_count")} 要約={GetString(element, "last_summary")}"
             );
             AppendArraySection(
@@ -354,6 +389,35 @@ namespace CocoroConsole.Windows
             }
 
             return $"快不快={GetString(element, "v")} 覚醒={GetString(element, "a")} 支配={GetString(element, "d")}";
+        }
+
+        private static void AppendActivityLine(StringBuilder builder, string label, JsonElement element)
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+            {
+                return;
+            }
+
+            builder.AppendLine(
+                $"{label}: {GetString(element, "label")} " +
+                $"対象={GetString(element, "target")} 状態={GetString(element, "status")} " +
+                $"確度={GetString(element, "confidence")} 顕著度={GetString(element, "salience")} " +
+                $"時期={FirstNonEmpty(GetString(element, "age_label"), GetString(element, "ended_age_label"))} " +
+                $"理由={GetString(element, "reason_summary")}"
+            );
+        }
+
+        private static string FirstNonEmpty(params string[] values)
+        {
+            foreach (var value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value) && value != ":")
+                {
+                    return value;
+                }
+            }
+
+            return string.Empty;
         }
     }
 }

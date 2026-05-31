@@ -144,6 +144,17 @@
                                                                  TextWrapping="NoWrap"/>
                                                 </Grid>
                                         </TabItem>
+                                        <TabItem Header="活動の詳細">
+                                                <Grid Margin="8">
+                                                        <TextBox x:Name="ActivityTraceTextBox"
+                                                                 IsReadOnly="True"
+                                                                 AcceptsReturn="True"
+                                                                 VerticalScrollBarVisibility="Auto"
+                                                                 HorizontalScrollBarVisibility="Auto"
+                                                                 FontFamily="Consolas"
+                                                                 TextWrapping="NoWrap"/>
+                                                </Grid>
+                                        </TabItem>
                                         <TabItem Header="全データ">
                                                 <Grid Margin="8">
                                                         <TextBox x:Name="CycleTraceTextBox"

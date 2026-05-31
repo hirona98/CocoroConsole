@@ -54,6 +54,9 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("world_state_trace")]
         public JsonElement WorldStateTrace { get; set; }
 
+        [JsonPropertyName("activity_trace")]
+        public JsonElement ActivityTrace { get; set; }
+
         [JsonPropertyName("result_trace")]
         public JsonElement ResultTrace { get; set; }
 
