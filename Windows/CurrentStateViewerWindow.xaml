@@ -26,7 +26,14 @@
                                         Height="28"
                                         Margin="0,0,16,0"
                                         Click="RefreshButton_Click"/>
-                                <TextBlock Text="point-in-time の current-state snapshot を inspection API から表示します。"
+                                <CheckBox x:Name="AutoRefreshCheckBox"
+                                          Content="自動更新"
+                                          IsChecked="True"
+                                          VerticalAlignment="Center"
+                                          Margin="0,0,16,0"
+                                          Checked="AutoRefreshCheckBox_Changed"
+                                          Unchecked="AutoRefreshCheckBox_Changed"/>
+                                <TextBlock Text="現在状態を inspection API から表示します。"
                                            VerticalAlignment="Center"
                                            Foreground="#444444"/>
                         </StackPanel>
@@ -45,7 +52,7 @@
                                                  TextWrapping="NoWrap"/>
                                 </Grid>
                         </TabItem>
-                        <TabItem Header="current_state">
+                        <TabItem Header="現在状態">
                                 <Grid Margin="8">
                                         <TextBox x:Name="CurrentStateTextBox"
                                                  IsReadOnly="True"
@@ -56,7 +63,7 @@
                                                  TextWrapping="NoWrap"/>
                                 </Grid>
                         </TabItem>
-                        <TabItem Header="runtime_detail">
+                        <TabItem Header="実行詳細">
                                 <Grid Margin="8">
                                         <TextBox x:Name="RuntimeDetailTextBox"
                                                  IsReadOnly="True"
@@ -67,7 +74,7 @@
                                                  TextWrapping="NoWrap"/>
                                 </Grid>
                         </TabItem>
-                        <TabItem Header="capability_inspection">
+                        <TabItem Header="能力状態">
                                 <Grid Margin="8">
                                         <TextBox x:Name="CapabilityInspectionTextBox"
                                                  IsReadOnly="True"
@@ -86,7 +93,7 @@
                         BorderThickness="0,1,0,0"
                         Padding="10,6">
                         <TextBlock x:Name="StatusTextBlock"
-                                   Text="inspection API に接続して current-state snapshot を読み込みます。"/>
+                                   Text="inspection API から現在状態を表示します。"/>
                 </Border>
         </Grid>
 </Window>

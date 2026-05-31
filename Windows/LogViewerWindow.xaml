@@ -108,7 +108,9 @@
                                                   Content="自動スクロール"
                                                   IsChecked="True"
                                                   VerticalAlignment="Center"
-                                                  Margin="20,0,0,0"/>
+                                                  Margin="20,0,0,0"
+                                                  Checked="AutoScrollCheckBox_Changed"
+                                                  Unchecked="AutoScrollCheckBox_Changed"/>
                                 </StackPanel>
 
                                 <DockPanel Grid.Row="1"

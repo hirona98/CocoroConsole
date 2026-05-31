@@ -22,6 +22,7 @@ namespace CocoroConsole.Windows
         private string _levelFilter = "";
         private bool _isUpdatingComponentSelection;
         private const int MaxDisplayedLogs = 200;
+        private readonly List<LogMessage> _pendingLogsWhileAutoScrollPaused = new List<LogMessage>();
         public bool IsClosed { get; private set; } = false;
 
         // スクロール位置保持用
@@ -130,59 +131,65 @@ namespace CocoroConsole.Windows
 
             Dispatcher.BeginInvoke(() =>
             {
-                // 自動スクロールがOFFの場合、現在のスクロール位置を保存
-                bool shouldPreservePosition = AutoScrollCheckBox.IsChecked != true;
-                double savedOffset = 0;
-
-                if (shouldPreservePosition && _scrollViewer != null)
+                if (!IsAutoScrollEnabled())
                 {
-                    savedOffset = _scrollViewer.VerticalOffset;
-                }
-
-                foreach (var logMessage in logMessages)
-                {
-                    EnsureComponentFilter(logMessage.component);
-                    _allLogs.Add(logMessage);
-                }
-
-                // 最大件数を超えた場合、古いログを削除
-                bool itemsRemoved = false;
-                while (_allLogs.Count > MaxDisplayedLogs)
-                {
-                    _allLogs.RemoveAt(0);
-                    itemsRemoved = true;
-                }
-
-                UpdateLogCount();
-                var latestLog = logMessages[logMessages.Count - 1];
-                UpdateStatus($"最新ログ: {latestLog.timestamp:HH:mm:ss} [{latestLog.level}] {latestLog.component}");
-
-                // スクロール位置の処理
-                if (AutoScrollCheckBox.IsChecked == true && LogDataGrid.Items.Count > 0)
-                {
-                    // 自動スクロールが有効の場合、最新アイテムまでスクロール
-                    LogDataGrid.ScrollIntoView(LogDataGrid.Items[LogDataGrid.Items.Count - 1]);
-                }
-                else if (shouldPreservePosition && _scrollViewer != null)
-                {
-                    // 自動スクロールが無効の場合、スクロール位置を復元
-                    Dispatcher.BeginInvoke(() =>
+                    _pendingLogsWhileAutoScrollPaused.AddRange(logMessages);
+                    while (_pendingLogsWhileAutoScrollPaused.Count > MaxDisplayedLogs)
                     {
-                        // アイテムが削除された場合、位置を調整
-                        if (itemsRemoved)
-                        {
-                            // 削除されたアイテム分だけ上にスクロール位置を調整
-                            // （削除された数 × 大体のアイテム高さ）を差し引く
-                            var adjustedOffset = Math.Max(0, savedOffset - 20); // 20は大体のアイテム高さ
-                            _scrollViewer.ScrollToVerticalOffset(adjustedOffset);
-                        }
-                        else
-                        {
-                            _scrollViewer.ScrollToVerticalOffset(savedOffset);
-                        }
-                    }, System.Windows.Threading.DispatcherPriority.Loaded);
+                        _pendingLogsWhileAutoScrollPaused.RemoveAt(0);
+                    }
+                    return;
                 }
+
+                AppendLogMessagesToView(logMessages, scrollToLatest: true);
             });
+        }
+
+        private void AppendLogMessagesToView(IReadOnlyList<LogMessage> logMessages, bool scrollToLatest)
+        {
+            foreach (var logMessage in logMessages)
+            {
+                EnsureComponentFilter(logMessage.component);
+                _allLogs.Add(logMessage);
+            }
+
+            while (_allLogs.Count > MaxDisplayedLogs)
+            {
+                _allLogs.RemoveAt(0);
+            }
+
+            UpdateLogCount();
+            var latestLog = logMessages[logMessages.Count - 1];
+            UpdateStatus($"最新ログ: {latestLog.timestamp:HH:mm:ss} [{latestLog.level}] {latestLog.component}");
+
+            if (scrollToLatest && LogDataGrid.Items.Count > 0)
+            {
+                LogDataGrid.ScrollIntoView(LogDataGrid.Items[LogDataGrid.Items.Count - 1]);
+            }
+        }
+
+        private void AutoScrollCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!IsAutoScrollEnabled())
+            {
+                UpdateStatus("自動スクロール停止中");
+                return;
+            }
+
+            if (_pendingLogsWhileAutoScrollPaused.Count == 0)
+            {
+                UpdateStatus("自動スクロール再開");
+                return;
+            }
+
+            var pendingLogs = _pendingLogsWhileAutoScrollPaused.ToList();
+            _pendingLogsWhileAutoScrollPaused.Clear();
+            AppendLogMessagesToView(pendingLogs, scrollToLatest: true);
+        }
+
+        private bool IsAutoScrollEnabled()
+        {
+            return AutoScrollCheckBox.IsChecked == true;
         }
 
         /// <summary>
@@ -193,6 +200,7 @@ namespace CocoroConsole.Windows
         {
             // 既にUIスレッドで呼ばれることを前提とした処理
             _allLogs.Clear();
+            _pendingLogsWhileAutoScrollPaused.Clear();
             ComponentFilters.Clear();
 
             foreach (var logMessage in logMessages)

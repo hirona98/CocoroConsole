@@ -714,7 +714,6 @@ namespace CocoroConsole
             }
 
             _factResolutionViewerWindow = new FactResolutionViewerWindow();
-            _factResolutionViewerWindow.Owner = this;
             var isPositionRestored = WindowPlacementManager.AttachAndRestore(
                 _factResolutionViewerWindow,
                 FactResolutionViewerWindowPlacementKey,
@@ -742,7 +741,6 @@ namespace CocoroConsole
             }
 
             _currentStateViewerWindow = new CurrentStateViewerWindow();
-            _currentStateViewerWindow.Owner = this;
             var isPositionRestored = WindowPlacementManager.AttachAndRestore(
                 _currentStateViewerWindow,
                 CurrentStateViewerWindowPlacementKey,

@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace CocoroConsole.Windows
 {
@@ -23,12 +24,18 @@ namespace CocoroConsole.Windows
 
         private OtomeKairoApiClient? _apiClient;
         private CancellationTokenSource? _loadCts;
+        private readonly DispatcherTimer _autoRefreshTimer;
         private bool _isLoading;
 
         public bool IsClosed { get; private set; }
 
         public CurrentStateViewerWindow()
         {
+            _autoRefreshTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(3),
+            };
+            _autoRefreshTimer.Tick += AutoRefreshTimer_Tick;
             InitializeComponent();
             Loaded += CurrentStateViewerWindow_Loaded;
             Closed += CurrentStateViewerWindow_Closed;
@@ -37,11 +44,16 @@ namespace CocoroConsole.Windows
         private async void CurrentStateViewerWindow_Loaded(object sender, RoutedEventArgs e)
         {
             await LoadCurrentStateAsync();
+            if (!IsClosed && IsAutoRefreshEnabled())
+            {
+                _autoRefreshTimer.Start();
+            }
         }
 
         private void CurrentStateViewerWindow_Closed(object? sender, EventArgs e)
         {
             IsClosed = true;
+            _autoRefreshTimer.Stop();
             _loadCts?.Cancel();
             _loadCts?.Dispose();
             _loadCts = null;
@@ -54,6 +66,32 @@ namespace CocoroConsole.Windows
             await LoadCurrentStateAsync();
         }
 
+        private async void AutoRefreshTimer_Tick(object? sender, EventArgs e)
+        {
+            await LoadCurrentStateAsync();
+        }
+
+        private void AutoRefreshCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (IsClosed)
+            {
+                return;
+            }
+
+            var isEnabled = sender is System.Windows.Controls.CheckBox checkBox
+                ? checkBox.IsChecked == true
+                : IsAutoRefreshEnabled();
+
+            if (isEnabled)
+            {
+                _autoRefreshTimer.Start();
+            }
+            else
+            {
+                _autoRefreshTimer.Stop();
+            }
+        }
+
         private async Task LoadCurrentStateAsync()
         {
             if (_isLoading)
@@ -62,7 +100,6 @@ namespace CocoroConsole.Windows
             }
 
             _isLoading = true;
-            RefreshButton.IsEnabled = false;
 
             try
             {
@@ -77,7 +114,6 @@ namespace CocoroConsole.Windows
                 _loadCts?.Dispose();
                 _loadCts = new CancellationTokenSource();
 
-                UpdateStatus("現在状態 snapshot を読み込み中...");
                 var snapshot = await client.GetCurrentStateInspectionAsync(_loadCts.Token).ConfigureAwait(true);
 
                 OverviewTextBox.Text = BuildOverview(snapshot);
@@ -93,7 +129,7 @@ namespace CocoroConsole.Windows
                     _jsonSerializerOptions);
                 CapabilityInspectionTextBox.Text = PrettyJson(snapshot.CapabilityInspection);
 
-                UpdateStatus($"現在状態 snapshot を表示中: {snapshot.GeneratedAt}");
+                UpdateStatus($"現在状態 snapshot を表示中: {snapshot.GeneratedAt} / 自動更新: {AutoRefreshStatusText()}");
             }
             catch (OperationCanceledException)
             {
@@ -107,7 +143,6 @@ namespace CocoroConsole.Windows
             finally
             {
                 _isLoading = false;
-                RefreshButton.IsEnabled = true;
             }
         }
 
@@ -141,6 +176,16 @@ namespace CocoroConsole.Windows
         private void UpdateStatus(string message)
         {
             StatusTextBlock.Text = message;
+        }
+
+        private bool IsAutoRefreshEnabled()
+        {
+            return AutoRefreshCheckBox.IsChecked == true;
+        }
+
+        private string AutoRefreshStatusText()
+        {
+            return IsAutoRefreshEnabled() ? "3秒" : "停止";
         }
 
         private string BuildOverview(OtomeKairoCurrentStateSnapshot snapshot)
