@@ -62,8 +62,8 @@ namespace CocoroConsole.Services
         public bool ShowMessageWindow { get; set; }
         public bool IsEnableAmbientOcclusion { get; set; }
         public int MsaaLevel { get; set; }
-        public int CharacterShadow { get; set; }
-        public int CharacterShadowResolution { get; set; }
+        public int AvatarShadow { get; set; }
+        public int AvatarShadowResolution { get; set; }
         public int BackgroundShadow { get; set; }
         public int BackgroundShadowResolution { get; set; }
         public int WindowSize { get; set; }
@@ -72,8 +72,8 @@ namespace CocoroConsole.Services
         public Dictionary<string, WindowPlacement> WindowPlacements { get; set; } = new Dictionary<string, WindowPlacement>();
 
         // アバター設定
-        public int CurrentCharacterIndex { get; set; } = 0;
-        public List<CharacterSettings> CharacterList { get; set; } = new List<CharacterSettings>();
+        public int CurrentAvatarIndex { get; set; } = 0;
+        public List<AvatarSettings> AvatarList { get; set; } = new List<AvatarSettings>();
 
         // アニメーション設定
         public int CurrentAnimationSettingIndex { get; set; } = 0;
@@ -140,7 +140,7 @@ namespace CocoroConsole.Services
         public void UpdateSettings(ConfigSettings config)
         {
             CocoroConsolePort = config.CocoroConsolePort;
-            OtomeKairoPort = config.cocoroCorePort;
+            OtomeKairoPort = config.otomeKairoPort;
 
             // --- 現行では OtomeKairo を外部サーバーとして扱う前提に寄せる ---
             UseExternalOtomeKairo = config.useExternalOtomeKairo ?? true;
@@ -165,22 +165,22 @@ namespace CocoroConsole.Services
             ShowMessageWindow = config.showMessageWindow;
             IsEnableAmbientOcclusion = config.isEnableAmbientOcclusion;
             MsaaLevel = config.msaaLevel;
-            CharacterShadow = config.characterShadow;
-            CharacterShadowResolution = config.characterShadowResolution;
+            AvatarShadow = config.avatarShadow;
+            AvatarShadowResolution = config.avatarShadowResolution;
             BackgroundShadow = config.backgroundShadow;
             BackgroundShadowResolution = config.backgroundShadowResolution;
             WindowSize = config.windowSize > 0 ? (int)config.windowSize : WindowSize;
             WindowPositionX = config.windowPositionX;
             WindowPositionY = config.windowPositionY;
-            CurrentCharacterIndex = config.currentCharacterIndex;
+            CurrentAvatarIndex = config.currentAvatarIndex;
 
             // アバターリストを更新（もし受信したリストが空でなければ）
-            if (config.characterList != null && config.characterList.Count > 0)
+            if (config.avatarList != null && config.avatarList.Count > 0)
             {
-                CharacterList = new List<CharacterSettings>(config.characterList);
+                AvatarList = new List<AvatarSettings>(config.avatarList);
             }
 
-            EnsureCharacterSchemaConsistency();
+            EnsureAvatarSchemaConsistency();
 
 
             // スクリーンショット設定を更新
@@ -213,7 +213,7 @@ namespace CocoroConsole.Services
         /// <summary>
         /// 新規追加項目などの不足を補完
         /// </summary>
-        private void EnsureCharacterSchemaConsistency()
+        private void EnsureAvatarSchemaConsistency()
         {
             // アバター設定の不足補完が必要になった場合はここで行う
         }
@@ -227,7 +227,7 @@ namespace CocoroConsole.Services
             var snapshot = new ConfigSettings
             {
                 CocoroConsolePort = CocoroConsolePort,
-                cocoroCorePort = OtomeKairoPort,
+                otomeKairoPort = OtomeKairoPort,
                 useExternalOtomeKairo = UseExternalOtomeKairo,
                 otomeKairoHost = OtomeKairoHost,
                 cocoroShellPort = CocoroShellPort,
@@ -244,8 +244,8 @@ namespace CocoroConsole.Services
                 showMessageWindow = ShowMessageWindow,
                 isEnableAmbientOcclusion = IsEnableAmbientOcclusion,
                 msaaLevel = MsaaLevel,
-                characterShadow = CharacterShadow,
-                characterShadowResolution = CharacterShadowResolution,
+                avatarShadow = AvatarShadow,
+                avatarShadowResolution = AvatarShadowResolution,
                 backgroundShadow = BackgroundShadow,
                 backgroundShadowResolution = BackgroundShadowResolution,
                 windowSize = WindowSize,
@@ -255,8 +255,8 @@ namespace CocoroConsole.Services
                 microphoneSettings = MicrophoneSettings,
                 messageWindowSettings = MessageWindowSettings,
                 windowPlacements = new Dictionary<string, WindowPlacement>(WindowPlacements),
-                currentCharacterIndex = CurrentCharacterIndex,
-                characterList = new List<CharacterSettings>(CharacterList)
+                currentAvatarIndex = CurrentAvatarIndex,
+                avatarList = new List<AvatarSettings>(AvatarList)
             };
 
             return snapshot.DeepCopy();
@@ -449,18 +449,18 @@ namespace CocoroConsole.Services
         /// <summary>
         /// DefaultSetting.json からアバターの雛形を作成する
         /// </summary>
-        public CharacterSettings CreateCharacterFromDefaults(string modelName)
+        public AvatarSettings CreateAvatarFromDefaults(string modelName)
         {
             var defaults = LoadDefaultSettings();
-            var template = defaults.characterList != null && defaults.characterList.Count > 0
-                ? defaults.characterList[0]
-                : new CharacterSettings();
+            var template = defaults.avatarList != null && defaults.avatarList.Count > 0
+                ? defaults.avatarList[0]
+                : new AvatarSettings();
 
-            var character = template.DeepCopy();
-            character.modelName = modelName;
-            character.vrmFilePath = string.Empty;
-            character.isReadOnly = false;
-            return character;
+            var avatar = template.DeepCopy();
+            avatar.modelName = modelName;
+            avatar.vrmFilePath = string.Empty;
+            avatar.isReadOnly = false;
+            return avatar;
         }
 
         /// <summary>
@@ -622,15 +622,15 @@ namespace CocoroConsole.Services
         /// 現在選択されているアバター設定を取得
         /// </summary>
         /// <returns>現在のアバター設定、存在しない場合はnull</returns>
-        public CharacterSettings? GetCurrentCharacter()
+        public AvatarSettings? GetCurrentAvatar()
         {
-            if (CharacterList == null || CharacterList.Count == 0)
+            if (AvatarList == null || AvatarList.Count == 0)
                 return null;
 
-            if (CurrentCharacterIndex < 0 || CurrentCharacterIndex >= CharacterList.Count)
+            if (CurrentAvatarIndex < 0 || CurrentAvatarIndex >= AvatarList.Count)
                 return null;
 
-            return CharacterList[CurrentCharacterIndex];
+            return AvatarList[CurrentAvatarIndex];
         }
 
         /// <summary>

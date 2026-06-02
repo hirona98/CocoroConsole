@@ -27,13 +27,13 @@
                               Content="起動時にアバター位置を復元する"
                               Foreground="#FF4873CF"
                               VerticalAlignment="Center"/>
-                    <Button x:Name="ResetCharacterPositionButton"
+                    <Button x:Name="ResetAvatarPositionButton"
                             Grid.Column="1"
                             Content="位置リセット"
                             Margin="10,0,0,0"
                             Padding="8,2"
                             VerticalAlignment="Center"
-                            Click="ResetCharacterPositionButton_Click"/>
+                            Click="ResetAvatarPositionButton_Click"/>
                 </Grid>
                 <CheckBox x:Name="TopMostCheckBox"
                           Content="最前面に表示"
@@ -150,7 +150,7 @@
                                        Foreground="#FF4873CF"
                                        Width="200"
                                        ToolTip="Avatar shadow"/>
-                            <ComboBox x:Name="CharacterShadowComboBox"
+                            <ComboBox x:Name="AvatarShadowComboBox"
                                       Width="120"
                                       Foreground="#FF4873CF">
                                 <ComboBoxItem Content="Disable"
@@ -170,7 +170,7 @@
                                        Foreground="#FF4873CF"
                                        Width="200"
                                        ToolTip="Avatar shadow resolution"/>
-                            <ComboBox x:Name="CharacterShadowResolutionComboBox"
+                            <ComboBox x:Name="AvatarShadowResolutionComboBox"
                                       Width="120"
                                       Foreground="#FF4873CF">
                                 <ComboBoxItem Content="Low"

@@ -78,7 +78,7 @@ namespace CocoroConsole.Communication
         public string outputAudioChannels { get; set; } = string.Empty;
     }
 
-    public class CharacterSettings
+    public class AvatarSettings
     {
         public bool isReadOnly { get; set; }
         public string modelName { get; set; } = string.Empty;
@@ -104,12 +104,12 @@ namespace CocoroConsole.Communication
 
 
         /// <summary>
-        /// このCharacterSettingsオブジェクトのディープコピーを作成
+        /// このAvatarSettingsオブジェクトのディープコピーを作成
         /// </summary>
-        /// <returns>新しいCharacterSettingsインスタンス</returns>
-        public CharacterSettings DeepCopy()
+        /// <returns>新しいAvatarSettingsインスタンス</returns>
+        public AvatarSettings DeepCopy()
         {
-            return new CharacterSettings
+            return new AvatarSettings
             {
                 isReadOnly = this.isReadOnly,
                 modelName = this.modelName,
@@ -285,7 +285,7 @@ namespace CocoroConsole.Communication
     public class ConfigSettings
     {
         public int CocoroConsolePort { get; set; }
-        public int cocoroCorePort { get; set; }
+        public int otomeKairoPort { get; set; }
         // true: 外部の OtomeKairo に接続する / false: ローカル起動を前提に接続する
         public bool? useExternalOtomeKairo { get; set; }
         // OtomeKairo 接続先ホスト（例: 127.0.0.1 / localhost / 192.168.1.50）
@@ -305,8 +305,8 @@ namespace CocoroConsole.Communication
         public bool showMessageWindow { get; set; }
         public bool isEnableAmbientOcclusion { get; set; }
         public int msaaLevel { get; set; }
-        public int characterShadow { get; set; }
-        public int characterShadowResolution { get; set; }
+        public int avatarShadow { get; set; }
+        public int avatarShadowResolution { get; set; }
         public int backgroundShadow { get; set; }
         public int backgroundShadowResolution { get; set; }
         public float windowSize { get; set; }
@@ -317,8 +317,8 @@ namespace CocoroConsole.Communication
         public MessageWindowSettings messageWindowSettings { get; set; } = new MessageWindowSettings();
         public Dictionary<string, WindowPlacement> windowPlacements { get; set; } = new Dictionary<string, WindowPlacement>();
 
-        public int currentCharacterIndex { get; set; }
-        public List<CharacterSettings> characterList { get; set; } = new List<CharacterSettings>();
+        public int currentAvatarIndex { get; set; }
+        public List<AvatarSettings> avatarList { get; set; } = new List<AvatarSettings>();
 
         /// <summary>
         /// このConfigSettingsオブジェクトのディープコピーを作成
@@ -329,7 +329,7 @@ namespace CocoroConsole.Communication
             return new ConfigSettings
             {
                 CocoroConsolePort = this.CocoroConsolePort,
-                cocoroCorePort = this.cocoroCorePort,
+                otomeKairoPort = this.otomeKairoPort,
                 useExternalOtomeKairo = this.useExternalOtomeKairo,
                 otomeKairoHost = this.otomeKairoHost,
                 cocoroShellPort = this.cocoroShellPort,
@@ -345,14 +345,14 @@ namespace CocoroConsole.Communication
                 showMessageWindow = this.showMessageWindow,
                 isEnableAmbientOcclusion = this.isEnableAmbientOcclusion,
                 msaaLevel = this.msaaLevel,
-                characterShadow = this.characterShadow,
-                characterShadowResolution = this.characterShadowResolution,
+                avatarShadow = this.avatarShadow,
+                avatarShadowResolution = this.avatarShadowResolution,
                 backgroundShadow = this.backgroundShadow,
                 backgroundShadowResolution = this.backgroundShadowResolution,
                 windowSize = this.windowSize,
                 windowPositionX = this.windowPositionX,
                 windowPositionY = this.windowPositionY,
-                currentCharacterIndex = this.currentCharacterIndex,
+                currentAvatarIndex = this.currentAvatarIndex,
 
                 // 複雑オブジェクトのディープコピー
                 screenshotSettings = new ScreenshotSettings
@@ -397,8 +397,8 @@ namespace CocoroConsole.Communication
                     enabled = ep.enabled
                 }).ToList(),
 
-                // CharacterSettingsリストのディープコピー
-                characterList = this.characterList.Select(c => c.DeepCopy()).ToList()
+                // AvatarSettingsリストのディープコピー
+                avatarList = this.avatarList.Select(c => c.DeepCopy()).ToList()
             };
         }
     }
@@ -482,7 +482,7 @@ namespace CocoroConsole.Communication
         public string content { get; set; } = string.Empty;
         public VoiceParams? voiceParams { get; set; }
         public string? animation { get; set; } // "talk" | "idle" | null
-        public string? characterName { get; set; }
+        public string? avatarName { get; set; }
     }
 
     /// <summary>

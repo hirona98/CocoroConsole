@@ -1,6 +1,6 @@
 {
   "cocoroConsolePort": 55600,
-  "cocoroCorePort": 55601,
+  "otomeKairoPort": 55601,
   "useExternalOtomeKairo": true,
   "otomeKairoHost": "127.0.0.1",
   "cocoroShellPort": 55605,
@@ -16,8 +16,8 @@
   "showMessageWindow": true,
   "isEnableAmbientOcclusion": false,
   "msaaLevel": 4,
-  "characterShadow": 1,
-  "characterShadowResolution": 0,
+  "avatarShadow": 1,
+  "avatarShadowResolution": 0,
   "backgroundShadow": 2,
   "backgroundShadowResolution": 2,
   "windowSize": 1200,
@@ -51,8 +51,8 @@
     "horizontalOffset": -0.2,
     "verticalOffset": 0.05
   },
-  "currentCharacterIndex": 0,
-  "characterList": [
+  "currentAvatarIndex": 0,
+  "avatarList": [
     {
       "isReadOnly": true,
       "modelName": "初音ミクSD",

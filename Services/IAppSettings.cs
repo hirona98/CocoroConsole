@@ -101,12 +101,12 @@ namespace CocoroConsole.Services
         /// <summary>
         /// アバターシャドウ
         /// </summary>
-        int CharacterShadow { get; set; }
+        int AvatarShadow { get; set; }
 
         /// <summary>
         /// アバターシャドウ解像度
         /// </summary>
-        int CharacterShadowResolution { get; set; }
+        int AvatarShadowResolution { get; set; }
 
         /// <summary>
         /// 背景シャドウ
@@ -141,7 +141,7 @@ namespace CocoroConsole.Services
         /// <summary>
         /// 現在のアバターインデックス
         /// </summary>
-        int CurrentCharacterIndex { get; set; }
+        int CurrentAvatarIndex { get; set; }
 
         /// <summary>
         /// スクリーンショット設定
@@ -156,7 +156,7 @@ namespace CocoroConsole.Services
         /// <summary>
         /// アバターリスト
         /// </summary>
-        List<CharacterSettings> CharacterList { get; set; }
+        List<AvatarSettings> AvatarList { get; set; }
 
         /// <summary>
         /// 現在のアニメーション設定インデックス
@@ -238,7 +238,7 @@ namespace CocoroConsole.Services
         /// 現在選択されているアバター設定を取得
         /// </summary>
         /// <returns>現在のアバター設定、存在しない場合はnull</returns>
-        CharacterSettings? GetCurrentCharacter();
+        AvatarSettings? GetCurrentAvatar();
 
         /// <summary>
         /// ウィンドウ位置を取得

@@ -13,7 +13,7 @@ namespace CocoroConsole.Utilities
             ArgumentNullException.ThrowIfNull(appSettings);
 
 #if !DEBUG
-            if (HasDisplayableCharacter(appSettings))
+            if (HasDisplayableAvatar(appSettings))
             {
                 ProcessHelper.LaunchExternalApplication("CocoroShell.exe", "CocoroShell", operation, true);
                 return;
@@ -26,17 +26,17 @@ namespace CocoroConsole.Utilities
 #endif
         }
 
-        private static bool HasDisplayableCharacter(IAppSettings appSettings)
+        private static bool HasDisplayableAvatar(IAppSettings appSettings)
         {
-            if (appSettings.CharacterList.Count == 0 ||
-                appSettings.CurrentCharacterIndex < 0 ||
-                appSettings.CurrentCharacterIndex >= appSettings.CharacterList.Count)
+            if (appSettings.AvatarList.Count == 0 ||
+                appSettings.CurrentAvatarIndex < 0 ||
+                appSettings.CurrentAvatarIndex >= appSettings.AvatarList.Count)
             {
                 return false;
             }
 
-            var currentCharacter = appSettings.CharacterList[appSettings.CurrentCharacterIndex];
-            return !string.IsNullOrWhiteSpace(currentCharacter.vrmFilePath) || currentCharacter.isReadOnly == true;
+            var currentAvatar = appSettings.AvatarList[appSettings.CurrentAvatarIndex];
+            return !string.IsNullOrWhiteSpace(currentAvatar.vrmFilePath) || currentAvatar.isReadOnly == true;
         }
     }
 }

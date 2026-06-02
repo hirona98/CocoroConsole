@@ -71,7 +71,7 @@ namespace CocoroConsole
         private int _isShutdownInProgress;
 
         private sealed record VoiceRecognitionSettingsSnapshot(
-            int CurrentCharacterIndex,
+            int CurrentAvatarIndex,
             bool IsUseSTT,
             string SttEngine,
             string SttWakeWord,
@@ -228,35 +228,35 @@ namespace CocoroConsole
             UpdateDesktopWatchButtonState();
 
             // 現在のキャラクターの設定を反映
-            var currentCharacter = GetStoredCharacterSetting();
-            if (currentCharacter != null)
+            var currentAvatar = GetStoredAvatarSetting();
+            if (currentAvatar != null)
             {
                 // STTの状態を反映
                 if (MicButtonImage != null)
                 {
-                    MicButtonImage.Source = new Uri(currentCharacter.isUseSTT ?
+                    MicButtonImage.Source = new Uri(currentAvatar.isUseSTT ?
                         "pack://application:,,,/Resource/icon/MicON.svg" :
                         "pack://application:,,,/Resource/icon/MicOFF.svg",
                         UriKind.Absolute);
                 }
                 if (MicButton != null)
                 {
-                    MicButton.ToolTip = currentCharacter.isUseSTT ? "STTを無効にする" : "STTを有効にする";
-                    MicButton.Opacity = currentCharacter.isUseSTT ? 1.0 : 0.6;
+                    MicButton.ToolTip = currentAvatar.isUseSTT ? "STTを無効にする" : "STTを有効にする";
+                    MicButton.Opacity = currentAvatar.isUseSTT ? 1.0 : 0.6;
                 }
 
                 // TTSの状態を反映
                 if (MuteButtonImage != null)
                 {
-                    MuteButtonImage.Source = new Uri(currentCharacter.isUseTTS ?
+                    MuteButtonImage.Source = new Uri(currentAvatar.isUseTTS ?
                         "pack://application:,,,/Resource/icon/SpeakerON.svg" :
                         "pack://application:,,,/Resource/icon/SpeakerOFF.svg",
                         UriKind.Absolute);
                 }
                 if (MuteButton != null)
                 {
-                    MuteButton.ToolTip = currentCharacter.isUseTTS ? "TTSを無効にする" : "TTSを有効にする";
-                    MuteButton.Opacity = currentCharacter.isUseTTS ? 1.0 : 0.6;
+                    MuteButton.ToolTip = currentAvatar.isUseTTS ? "TTSを無効にする" : "TTSを有効にする";
+                    MuteButton.Opacity = currentAvatar.isUseTTS ? 1.0 : 0.6;
                 }
             }
         }
@@ -409,13 +409,13 @@ namespace CocoroConsole
             // --- 送信開始と同時に送信ボタンを無効化（連打を防ぐ） ---
             ChatControlInstance.UpdateSendButtonEnabled(false);
 
-            // 非同期でCocoroCoreにメッセージを送信（UIをブロックしない）
+            // 非同期でOtomeKairoにメッセージを送信（UIをブロックしない）
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    // CocoroCoreにメッセージを送信（API使用、画像付きの場合は画像データも送信）
-                    await _communicationService.SendChatToCoreUnifiedAsync(message, null, imageDataUrls);
+                    // OtomeKairoにメッセージを送信（API使用、画像付きの場合は画像データも送信）
+                    await _communicationService.SendChatToOtomeKairoUnifiedAsync(message, null, imageDataUrls);
                 }
                 catch (TimeoutException)
                 {
@@ -483,17 +483,17 @@ namespace CocoroConsole
 
         private VoiceRecognitionSettingsSnapshot CreateVoiceRecognitionSettingsSnapshot()
         {
-            var currentCharacter = GetStoredCharacterSetting();
+            var currentAvatar = GetStoredAvatarSetting();
             var microphoneSettings = _appSettings.MicrophoneSettings;
 
             return new VoiceRecognitionSettingsSnapshot(
-                _appSettings.CurrentCharacterIndex,
-                currentCharacter?.isUseSTT ?? false,
-                currentCharacter?.sttEngine ?? string.Empty,
-                currentCharacter?.sttWakeWord ?? string.Empty,
-                currentCharacter?.sttProfileId ?? string.Empty,
-                currentCharacter?.sttApiKey ?? string.Empty,
-                currentCharacter?.sttLanguage ?? string.Empty,
+                _appSettings.CurrentAvatarIndex,
+                currentAvatar?.isUseSTT ?? false,
+                currentAvatar?.sttEngine ?? string.Empty,
+                currentAvatar?.sttWakeWord ?? string.Empty,
+                currentAvatar?.sttProfileId ?? string.Empty,
+                currentAvatar?.sttApiKey ?? string.Empty,
+                currentAvatar?.sttLanguage ?? string.Empty,
                 microphoneSettings?.inputThreshold ?? -45,
                 microphoneSettings?.speakerRecognitionThreshold ?? 0.7f);
         }
@@ -1070,15 +1070,15 @@ namespace CocoroConsole
         private void MicButton_Click(object sender, RoutedEventArgs e)
         {
             // 現在のキャラクターのSTT設定をトグル
-            var currentCharacter = GetStoredCharacterSetting();
-            if (currentCharacter != null)
+            var currentAvatar = GetStoredAvatarSetting();
+            if (currentAvatar != null)
             {
-                currentCharacter.isUseSTT = !currentCharacter.isUseSTT;
+                currentAvatar.isUseSTT = !currentAvatar.isUseSTT;
 
                 // ボタンの画像を更新
                 if (MicButtonImage != null)
                 {
-                    MicButtonImage.Source = new Uri(currentCharacter.isUseSTT ?
+                    MicButtonImage.Source = new Uri(currentAvatar.isUseSTT ?
                         "pack://application:,,,/Resource/icon/MicON.svg" :
                         "pack://application:,,,/Resource/icon/MicOFF.svg",
                         UriKind.Absolute);
@@ -1087,8 +1087,8 @@ namespace CocoroConsole
                 // ツールチップを更新
                 if (MicButton != null)
                 {
-                    MicButton.ToolTip = currentCharacter.isUseSTT ? "STTを無効にする" : "STTを有効にする";
-                    MicButton.Opacity = currentCharacter.isUseSTT ? 1.0 : 0.6;
+                    MicButton.ToolTip = currentAvatar.isUseSTT ? "STTを無効にする" : "STTを有効にする";
+                    MicButton.Opacity = currentAvatar.isUseSTT ? 1.0 : 0.6;
                 }
 
                 // 設定を保存（OnSettingsSavedで音声認識サービスが制御される）
@@ -1099,9 +1099,9 @@ namespace CocoroConsole
         /// <summary>
         /// 保存済みの現在のキャラクター設定を取得（AppSettingsから直接読み取り）
         /// </summary>
-        private CharacterSettings? GetStoredCharacterSetting()
+        private AvatarSettings? GetStoredAvatarSetting()
         {
-            return _appSettings.GetCurrentCharacter();
+            return _appSettings.GetCurrentAvatar();
         }
 
         /// <summary>
@@ -1126,10 +1126,10 @@ namespace CocoroConsole
         private void TTSButton_Click(object sender, RoutedEventArgs e)
         {
             // 現在のキャラクターのTTS設定をトグル
-            var currentCharacter = GetStoredCharacterSetting();
-            if (currentCharacter != null)
+            var currentAvatar = GetStoredAvatarSetting();
+            if (currentAvatar != null)
             {
-                currentCharacter.isUseTTS = !currentCharacter.isUseTTS;
+                currentAvatar.isUseTTS = !currentAvatar.isUseTTS;
 
                 // 設定を保存
                 _appSettings.SaveSettings();
@@ -1137,7 +1137,7 @@ namespace CocoroConsole
                 // ボタンの画像を更新
                 if (MuteButtonImage != null)
                 {
-                    MuteButtonImage.Source = new Uri(currentCharacter.isUseTTS ?
+                    MuteButtonImage.Source = new Uri(currentAvatar.isUseTTS ?
                         "pack://application:,,,/Resource/icon/SpeakerON.svg" :
                         "pack://application:,,,/Resource/icon/SpeakerOFF.svg",
                         UriKind.Absolute);
@@ -1146,10 +1146,10 @@ namespace CocoroConsole
                 // ツールチップを更新
                 if (MuteButton != null)
                 {
-                    MuteButton.ToolTip = currentCharacter.isUseTTS ? "TTSを無効にする" : "TTSを有効にする";
+                    MuteButton.ToolTip = currentAvatar.isUseTTS ? "TTSを無効にする" : "TTSを有効にする";
 
                     // 無効状態の場合は半透明にする
-                    MuteButton.Opacity = currentCharacter.isUseTTS ? 1.0 : 0.6;
+                    MuteButton.Opacity = currentAvatar.isUseTTS ? 1.0 : 0.6;
                 }
 
                 // CocoroShellにTTS状態を送信
@@ -1160,7 +1160,7 @@ namespace CocoroConsole
                         if (_communicationService != null)
                         {
                             // TTS設定をCocoroShellに送信
-                            await _communicationService.SendTTSStateToShellAsync(currentCharacter.isUseTTS);
+                            await _communicationService.SendTTSStateToShellAsync(currentAvatar.isUseTTS);
 
                             // TTS状態変更完了（ログ出力は既にある）
                         }
@@ -1318,15 +1318,15 @@ namespace CocoroConsole
             try
             {
                 // 現在のキャラクター設定を取得
-                var currentCharacter = GetStoredCharacterSetting();
-                if (currentCharacter == null)
+                var currentAvatar = GetStoredAvatarSetting();
+                if (currentAvatar == null)
                 {
                     Debug.WriteLine("[CocoroConsole] 現在のキャラクター設定が見つかりません");
                     return;
                 }
 
                 // 音声認識が有効でAPIキーが設定されている場合のみ初期化
-                if (!currentCharacter.isUseSTT || string.IsNullOrEmpty(currentCharacter.sttApiKey))
+                if (!currentAvatar.isUseSTT || string.IsNullOrEmpty(currentAvatar.sttApiKey))
                 {
                     Debug.WriteLine("[CocoroConsole] 音声認識機能が無効、またはAPIキーが未設定");
                     // 音量バーを0にリセット（UIスレッドで確実に実行）
@@ -1337,7 +1337,7 @@ namespace CocoroConsole
                     return;
                 }
 
-                // if (string.IsNullOrEmpty(currentCharacter.sttWakeWord))
+                // if (string.IsNullOrEmpty(currentAvatar.sttWakeWord))
                 // {
                 //     Debug.WriteLine("[CocoroConsole] ウェイクアップワードが未設定");
                 //     // 音量バーを0にリセット（UIスレッドで確実に実行）
@@ -1364,8 +1364,8 @@ namespace CocoroConsole
                 );
 
                 _voiceRecognitionService = new RealtimeVoiceRecognitionService(
-                    new AmiVoiceSpeechToTextService(currentCharacter.sttApiKey, currentCharacter.sttProfileId),
-                    currentCharacter.sttWakeWord,
+                    new AmiVoiceSpeechToTextService(currentAvatar.sttApiKey, currentAvatar.sttProfileId),
+                    currentAvatar.sttWakeWord,
                     speakerService, // 話者識別サービスを追加
                     voiceThreshold,
                     silenceTimeoutMs,
@@ -1450,8 +1450,8 @@ namespace CocoroConsole
                 {
                     if (_appSettings.IsUseLLM)
                     {
-                        var currentCharacter = GetStoredCharacterSetting();
-                        await _communicationService.SendChatToCoreUnifiedAsync(message, currentCharacter?.modelName, imageData);
+                        var currentAvatar = GetStoredAvatarSetting();
+                        await _communicationService.SendChatToOtomeKairoUnifiedAsync(message, currentAvatar?.modelName, imageData);
                     }
                 }
             }
@@ -1624,11 +1624,11 @@ namespace CocoroConsole
                 ShutdownOverlay.Visibility = Visibility.Visible;
 
                 // --- OtomeKairo のローカル/リモート設定に応じて終了対象を決める ---
-                var isLocalGhost = _appSettings.IsOtomeKairoLocal();
+                var isLocalOtomeKairo = _appSettings.IsOtomeKairoLocal();
 
                 // --- OtomeKairoがローカル設定の場合のみ、ローカルプロセスIDを事前取得 ---
                 int? otomeKairoProcessId = null;
-                if (isLocalGhost)
+                if (isLocalOtomeKairo)
                 {
                     otomeKairoProcessId = GetProcessIdByPort(_appSettings.OtomeKairoPort);
                     Debug.WriteLine($"OtomeKairo プロセスID: {otomeKairoProcessId?.ToString() ?? "見つかりません"}");
@@ -1647,7 +1647,7 @@ namespace CocoroConsole
                 };
 
                 // --- OtomeKairoはローカル設定時のみ終了要求を送る ---
-                if (isLocalGhost)
+                if (isLocalOtomeKairo)
                 {
                     shutdownTasks.Add(Task.Run(() => ProcessHelper.ExitProcess("OtomeKairo", ProcessOperation.Terminate)));
                 }
@@ -1663,9 +1663,9 @@ namespace CocoroConsole
                 }
 
                 // --- OtomeKairoがローカル設定の場合のみ、停止完了を監視する ---
-                if (isLocalGhost && otomeKairoProcessId.HasValue)
+                if (isLocalOtomeKairo && otomeKairoProcessId.HasValue)
                 {
-                    Debug.WriteLine("CocoreGhost プロセスの終了を監視中...");
+                    Debug.WriteLine("OtomeKairo プロセスの終了を監視中...");
                     var maxWaitTime = TimeSpan.FromSeconds(30);
                     var startTime = DateTime.Now;
 
@@ -1673,18 +1673,18 @@ namespace CocoroConsole
                     {
                         if (DateTime.Now - startTime > maxWaitTime)
                         {
-                            Debug.WriteLine("CocoreGhostの終了待機がタイムアウトしました。");
+                            Debug.WriteLine("OtomeKairoの終了待機がタイムアウトしました。");
                             break;
                         }
 
                         await Task.Delay(500); // 0.5秒間隔でチェック
                     }
 
-                    Debug.WriteLine("CocoreGhost プロセスの終了を確認しました。");
+                    Debug.WriteLine("OtomeKairo プロセスの終了を確認しました。");
                 }
-                else if (isLocalGhost)
+                else if (isLocalOtomeKairo)
                 {
-                    Debug.WriteLine("CocoreGhost プロセスが見つからなかったため、通常の監視を実行します。");
+                    Debug.WriteLine("OtomeKairo プロセスが見つからなかったため、通常の監視を実行します。");
 
                     // プロセスIDが取得できない場合は疎通確認で監視
                     var maxWaitTime = TimeSpan.FromSeconds(30);
@@ -1694,14 +1694,14 @@ namespace CocoroConsole
                     {
                         if (DateTime.Now - startTime > maxWaitTime)
                         {
-                            Debug.WriteLine("CocoreGhostの終了待機がタイムアウトしました。");
+                            Debug.WriteLine("OtomeKairoの終了待機がタイムアウトしました。");
                             break;
                         }
 
                         await Task.Delay(100);
                     }
 
-                    Debug.WriteLine("CocoreGhostの動作停止を確認しました。");
+                    Debug.WriteLine("OtomeKairoの動作停止を確認しました。");
                 }
                 else
                 {

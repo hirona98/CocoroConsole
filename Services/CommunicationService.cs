@@ -79,18 +79,18 @@ namespace CocoroConsole.Services
         // 一度CocoroShellへの接続に失敗したら、明示的な再起動通知まで直接TTSに切り替える。
         private bool _isShellUnavailable = false;
 
-        private static bool IsVrmDisplayEnabled(CharacterSettings? currentCharacter)
+        private static bool IsVrmDisplayEnabled(AvatarSettings? currentAvatar)
         {
             // MainWindow.LaunchCocoroShell と同じ判定: パスがあれば有効 / readOnlyキャラは常に有効
-            return currentCharacter != null &&
-                   (!string.IsNullOrWhiteSpace(currentCharacter.vrmFilePath) || currentCharacter.isReadOnly == true);
+            return currentAvatar != null &&
+                   (!string.IsNullOrWhiteSpace(currentAvatar.vrmFilePath) || currentAvatar.isReadOnly == true);
         }
 
-        private bool ShouldForwardToShell(CharacterSettings? currentCharacter = null)
+        private bool ShouldForwardToShell(AvatarSettings? currentAvatar = null)
         {
             // 呼び出し元がアバターを渡していない場合はキャッシュから解決
-            currentCharacter ??= GetStoredCharacterSetting();
-            return IsVrmDisplayEnabled(currentCharacter);
+            currentAvatar ??= GetStoredAvatarSetting();
+            return IsVrmDisplayEnabled(currentAvatar);
         }
 
         public void ResetShellConnectionState()
@@ -336,15 +336,15 @@ namespace CocoroConsole.Services
 
             bool consolePortChanged = previousSettings.CocoroConsolePort != currentSettings.CocoroConsolePort;
             bool shellPortChanged = previousSettings.cocoroShellPort != currentSettings.cocoroShellPort;
-            bool ghostPortChanged = previousSettings.cocoroCorePort != currentSettings.cocoroCorePort;
-            bool ghostHostChanged = !string.Equals(
+            bool otomeKairoPortChanged = previousSettings.otomeKairoPort != currentSettings.otomeKairoPort;
+            bool otomeKairoHostChanged = !string.Equals(
                 previousSettings.otomeKairoHost ?? string.Empty,
                 currentSettings.otomeKairoHost ?? string.Empty,
                 StringComparison.OrdinalIgnoreCase);
-            bool useExternalGhostChanged =
+            bool useExternalOtomeKairoChanged =
                 (previousSettings.useExternalOtomeKairo ?? false) !=
                 (currentSettings.useExternalOtomeKairo ?? false);
-            bool ghostEndpointChanged = ghostPortChanged || ghostHostChanged || useExternalGhostChanged;
+            bool otomeKairoEndpointChanged = otomeKairoPortChanged || otomeKairoHostChanged || useExternalOtomeKairoChanged;
             bool bearerTokenChanged = !string.Equals(previousSettings.otomeKairoBearerToken ?? string.Empty,
                 currentSettings.otomeKairoBearerToken ?? string.Empty, StringComparison.Ordinal);
 
@@ -360,12 +360,12 @@ namespace CocoroConsole.Services
                 ResetShellConnectionState();
             }
 
-            if (ghostEndpointChanged)
+            if (otomeKairoEndpointChanged)
             {
                 ResetStatusPollingService();
             }
 
-            if (ghostEndpointChanged || bearerTokenChanged)
+            if (otomeKairoEndpointChanged || bearerTokenChanged)
             {
                 UpdateOtomeKairoApiClient(currentSettings);
                 _initialSettingsFetched = false;
@@ -504,22 +504,22 @@ namespace CocoroConsole.Services
         /// OtomeKairoに対話入力を送信（HTTP/SSE）
         /// </summary>
         /// <param name="message">送信メッセージ</param>
-        /// <param name="characterName">アバター名（オプション）</param>
+        /// <param name="avatarName">アバター名（オプション）</param>
         /// <param name="imageDataUrl">画像データURL（オプション）</param>
-        public async Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, string? imageDataUrl = null)
+        public async Task SendChatToOtomeKairoUnifiedAsync(string message, string? avatarName = null, string? imageDataUrl = null)
         {
             // 単一画像を配列に変換して複数画像対応版を呼び出し
             var imageDataUrls = imageDataUrl != null ? new List<string> { imageDataUrl } : null;
-            await SendChatToCoreUnifiedAsync(message, characterName, imageDataUrls);
+            await SendChatToOtomeKairoUnifiedAsync(message, avatarName, imageDataUrls);
         }
 
         /// <summary>
         /// OtomeKairoへ対話入力を送信（複数画像対応）
         /// </summary>
         /// <param name="message">送信メッセージ</param>
-        /// <param name="characterName">アバター名（オプション）</param>
+        /// <param name="avatarName">アバター名（オプション）</param>
         /// <param name="imageDataUrls">画像データURLリスト（オプション）</param>
-        public async Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, List<string>? imageDataUrls = null)
+        public async Task SendChatToOtomeKairoUnifiedAsync(string message, string? avatarName = null, List<string>? imageDataUrls = null)
         {
             if (_otomeKairoApiClient == null)
             {
@@ -628,7 +628,7 @@ namespace CocoroConsole.Services
                         };
 
                         ChatMessageReceived?.Invoke(this, chatReply);
-                        await ForwardMessageToShellAsync(replyText, GetStoredCharacterSetting()).ConfigureAwait(false);
+                        await ForwardMessageToShellAsync(replyText, GetStoredAvatarSetting()).ConfigureAwait(false);
                     }
 
                     _statusPollingService.SetNormalStatus();
@@ -825,15 +825,15 @@ namespace CocoroConsole.Services
         /// <summary>
         /// 保存済みの現在のアバター設定を取得（キャッシュ使用）
         /// </summary>
-        private CharacterSettings? GetStoredCharacterSetting()
+        private AvatarSettings? GetStoredAvatarSetting()
         {
             // キャッシュされた設定を使用
             var config = _cachedConfigSettings;
-            if (config?.characterList != null &&
-                config.currentCharacterIndex >= 0 &&
-                config.currentCharacterIndex < config.characterList.Count)
+            if (config?.avatarList != null &&
+                config.currentAvatarIndex >= 0 &&
+                config.currentAvatarIndex < config.avatarList.Count)
             {
-                return config.characterList[config.currentCharacterIndex];
+                return config.avatarList[config.currentAvatarIndex];
             }
             return null;
         }
@@ -842,8 +842,8 @@ namespace CocoroConsole.Services
         /// CocoroShellにメッセージを転送（ノンブロッキング）
         /// </summary>
         /// <param name="content">転送するメッセージ内容</param>
-        /// <param name="currentCharacter">現在のアバター設定</param>
-        private async Task ForwardMessageToShellAsync(string content, CharacterSettings? currentCharacter)
+        /// <param name="currentAvatar">現在のアバター設定</param>
+        private async Task ForwardMessageToShellAsync(string content, AvatarSettings? currentAvatar)
         {
             await _forwardMessageSemaphore.WaitAsync().ConfigureAwait(false);
             try
@@ -853,7 +853,7 @@ namespace CocoroConsole.Services
                     return;
                 }
 
-                if (!ShouldForwardToShell(currentCharacter))
+                if (!ShouldForwardToShell(currentAvatar))
                 {
                     Debug.WriteLine("[Shell Forward] VRM表示OFFのためチャット転送をスキップ");
                     return;
@@ -863,13 +863,13 @@ namespace CocoroConsole.Services
                 {
                     content = content,
                     animation = "talk",
-                    characterName = currentCharacter?.modelName
+                    avatarName = currentAvatar?.modelName
                 };
 
                 if (_isShellUnavailable)
                 {
                     Debug.WriteLine("[Shell Forward] CocoroShell接続失敗状態のため直接TTSに送信します");
-                    await ForwardMessageToDirectTtsAsync(content, currentCharacter).ConfigureAwait(false);
+                    await ForwardMessageToDirectTtsAsync(content, currentAvatar).ConfigureAwait(false);
                     return;
                 }
 
@@ -881,7 +881,7 @@ namespace CocoroConsole.Services
                 {
                     _isShellUnavailable = true;
                     Debug.WriteLine($"[Shell Forward] CocoroShell接続失敗を保持します: {ex.Message}");
-                    await ForwardMessageToDirectTtsAsync(content, currentCharacter).ConfigureAwait(false);
+                    await ForwardMessageToDirectTtsAsync(content, currentAvatar).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -894,15 +894,15 @@ namespace CocoroConsole.Services
             }
         }
 
-        private async Task ForwardMessageToDirectTtsAsync(string content, CharacterSettings? currentCharacter)
+        private async Task ForwardMessageToDirectTtsAsync(string content, AvatarSettings? currentAvatar)
         {
-            if (currentCharacter == null || !currentCharacter.isUseTTS)
+            if (currentAvatar == null || !currentAvatar.isUseTTS)
             {
                 Debug.WriteLine("[Direct TTS] TTSが無効のため直接TTS送信をスキップ");
                 return;
             }
 
-            await _directTtsService.SpeakAsync(content, currentCharacter).ConfigureAwait(false);
+            await _directTtsService.SpeakAsync(content, currentAvatar).ConfigureAwait(false);
         }
 
         private static bool IsShellConnectionFailure(Exception ex)
@@ -1162,8 +1162,8 @@ namespace CocoroConsole.Services
 
             ChatMessageReceived?.Invoke(this, chatReply);
 
-            var currentCharacter = GetStoredCharacterSetting();
-            _ = ForwardMessageToShellAsync(partnerMessage, currentCharacter);
+            var currentAvatar = GetStoredAvatarSetting();
+            _ = ForwardMessageToShellAsync(partnerMessage, currentAvatar);
         }
 
         private static bool ShouldForceNewBubbleForAssistantEvent(string? sourceKind)

@@ -45,8 +45,8 @@ namespace CocoroConsole.Services
         Task StartServerAsync();
         Task StopServerAsync();
         ConfigSettings GetCurrentConfig();
-        Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, string? imageDataUrl = null);
-        Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, List<string>? imageDataUrls = null);
+        Task SendChatToOtomeKairoUnifiedAsync(string message, string? avatarName = null, string? imageDataUrl = null);
+        Task SendChatToOtomeKairoUnifiedAsync(string message, string? avatarName = null, List<string>? imageDataUrls = null);
         void StartNewConversation();
         Task SendAnimationToShellAsync(string animationName);
         Task SendTTSStateToShellAsync(bool isUseTTS);

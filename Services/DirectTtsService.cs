@@ -33,9 +33,9 @@ namespace CocoroConsole.Services
             };
         }
 
-        public async Task SpeakAsync(string content, CharacterSettings? character)
+        public async Task SpeakAsync(string content, AvatarSettings? avatar)
         {
-            if (string.IsNullOrWhiteSpace(content) || character == null || !character.isUseTTS)
+            if (string.IsNullOrWhiteSpace(content) || avatar == null || !avatar.isUseTTS)
             {
                 return;
             }
@@ -46,14 +46,14 @@ namespace CocoroConsole.Services
                 return;
             }
 
-            byte[] audioBytes = character.ttsType switch
+            byte[] audioBytes = avatar.ttsType switch
             {
-                "style-bert-vits2" => await SynthesizeStyleBertVits2Async(text, character.styleBertVits2Config).ConfigureAwait(false),
-                "aivis-cloud" => await SynthesizeAivisCloudAsync(text, character.aivisCloudConfig).ConfigureAwait(false),
-                _ => await SynthesizeVoicevoxAsync(text, character.voicevoxConfig).ConfigureAwait(false),
+                "style-bert-vits2" => await SynthesizeStyleBertVits2Async(text, avatar.styleBertVits2Config).ConfigureAwait(false),
+                "aivis-cloud" => await SynthesizeAivisCloudAsync(text, avatar.aivisCloudConfig).ConfigureAwait(false),
+                _ => await SynthesizeVoicevoxAsync(text, avatar.voicevoxConfig).ConfigureAwait(false),
             };
 
-            await PlayAudioAsync(audioBytes, GetAudioFormat(character)).ConfigureAwait(false);
+            await PlayAudioAsync(audioBytes, GetAudioFormat(avatar)).ConfigureAwait(false);
         }
 
         private static string NormalizeTextForSpeech(string content)
@@ -181,11 +181,11 @@ namespace CocoroConsole.Services
             }
         }
 
-        private static string GetAudioFormat(CharacterSettings character)
+        private static string GetAudioFormat(AvatarSettings avatar)
         {
-            if (character.ttsType == "aivis-cloud" && !string.IsNullOrWhiteSpace(character.aivisCloudConfig.outputFormat))
+            if (avatar.ttsType == "aivis-cloud" && !string.IsNullOrWhiteSpace(avatar.aivisCloudConfig.outputFormat))
             {
-                return character.aivisCloudConfig.outputFormat;
+                return avatar.aivisCloudConfig.outputFormat;
             }
 
             return "wav";

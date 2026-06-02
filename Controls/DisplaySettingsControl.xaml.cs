@@ -123,23 +123,23 @@ namespace CocoroConsole.Controls
                     break;
                 }
             }
-            foreach (ComboBoxItem item in CharacterShadowComboBox.Items)
+            foreach (ComboBoxItem item in AvatarShadowComboBox.Items)
             {
                 if (item.Tag != null &&
                     int.TryParse(item.Tag.ToString(), out int value) &&
-                    value == appSettings.CharacterShadow)
+                    value == appSettings.AvatarShadow)
                 {
-                    CharacterShadowComboBox.SelectedItem = item;
+                    AvatarShadowComboBox.SelectedItem = item;
                     break;
                 }
             }
-            foreach (ComboBoxItem item in CharacterShadowResolutionComboBox.Items)
+            foreach (ComboBoxItem item in AvatarShadowResolutionComboBox.Items)
             {
                 if (item.Tag != null &&
                     int.TryParse(item.Tag.ToString(), out int value) &&
-                    value == appSettings.CharacterShadowResolution)
+                    value == appSettings.AvatarShadowResolution)
                 {
-                    CharacterShadowResolutionComboBox.SelectedItem = item;
+                    AvatarShadowResolutionComboBox.SelectedItem = item;
                     break;
                 }
             }
@@ -200,14 +200,14 @@ namespace CocoroConsole.Controls
             _displaySettings["MsaaLevel"] = msaaLevel;
 
             int charaShadow = 0;
-            if (CharacterShadowComboBox.SelectedItem is ComboBoxItem charaShadowItem && charaShadowItem.Tag != null)
+            if (AvatarShadowComboBox.SelectedItem is ComboBoxItem charaShadowItem && charaShadowItem.Tag != null)
                 int.TryParse(charaShadowItem.Tag.ToString(), out charaShadow);
-            _displaySettings["CharacterShadow"] = charaShadow;
+            _displaySettings["AvatarShadow"] = charaShadow;
 
             int shadowRes = 0;
-            if (CharacterShadowResolutionComboBox.SelectedItem is ComboBoxItem shadowResItem && shadowResItem.Tag != null)
+            if (AvatarShadowResolutionComboBox.SelectedItem is ComboBoxItem shadowResItem && shadowResItem.Tag != null)
                 int.TryParse(shadowResItem.Tag.ToString(), out shadowRes);
-            _displaySettings["CharacterShadowResolution"] = shadowRes;
+            _displaySettings["AvatarShadowResolution"] = shadowRes;
 
             int backShadow = 0;
             if (BackgroundShadowComboBox.SelectedItem is ComboBoxItem backShadowItem && backShadowItem.Tag != null)
@@ -263,8 +263,8 @@ namespace CocoroConsole.Controls
             }
             appSettings.IsEnableAmbientOcclusion = (bool)snapshot["IsEnableAmbientOcclusion"];
             appSettings.MsaaLevel = (int)snapshot["MsaaLevel"];
-            appSettings.CharacterShadow = (int)snapshot["CharacterShadow"];
-            appSettings.CharacterShadowResolution = (int)snapshot["CharacterShadowResolution"];
+            appSettings.AvatarShadow = (int)snapshot["AvatarShadow"];
+            appSettings.AvatarShadowResolution = (int)snapshot["AvatarShadowResolution"];
             appSettings.BackgroundShadow = (int)snapshot["BackgroundShadow"];
             appSettings.BackgroundShadowResolution = (int)snapshot["BackgroundShadowResolution"];
             appSettings.WindowSize = (double)snapshot["WindowSize"] > 0 ? (int)(double)snapshot["WindowSize"] : 650;
@@ -379,7 +379,7 @@ namespace CocoroConsole.Controls
             return CallNextHookEx(_hookID, nCode, wParam, lParam);
         }
 
-        private void ResetCharacterPositionButton_Click(object sender, RoutedEventArgs e)
+        private void ResetAvatarPositionButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {

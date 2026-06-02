@@ -21,7 +21,7 @@ namespace CocoroConsole.Controls
     {
         // Display 設定は DisplaySettingsControl に委譲
         private Dictionary<string, object> _originalDisplaySettings = new Dictionary<string, object>();
-        private List<CharacterSettings> _originalCharacterList = new List<CharacterSettings>();
+        private List<AvatarSettings> _originalAvatarList = new List<AvatarSettings>();
 
         // 通信サービス
         private ICommunicationService? _communicationService;
@@ -59,7 +59,7 @@ namespace CocoroConsole.Controls
             DisplaySettingsControl.InitializeFromAppSettings();
 
             // アバター設定の初期化
-            InitializeCharacterSettings();
+            InitializeAvatarSettings();
 
             // システム設定コントロールを初期化（APIクライアント設定後に初期化）
             _ = InitializeSystemSettingsAsync();
@@ -184,14 +184,14 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// アバター設定の初期化
         /// </summary>
-        private void InitializeCharacterSettings()
+        private void InitializeAvatarSettings()
         {
-            // CharacterManagementControlの初期化
-            CharacterManagementControl.Initialize();
-            CharacterManagementControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
+            // AvatarManagementControlの初期化
+            AvatarManagementControl.Initialize();
+            AvatarManagementControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
 
             // アバター変更イベントを登録
-            CharacterManagementControl.CharacterChanged += (sender, args) =>
+            AvatarManagementControl.AvatarChanged += (sender, args) =>
             {
                 // アニメーション設定を更新
                 AnimationSettingsControl.Initialize();
@@ -220,10 +220,10 @@ namespace CocoroConsole.Controls
             _originalDisplaySettings = DisplaySettingsControl.GetSnapshot();
 
             // アバターリストのバックアップ（Deep Copy）
-            _originalCharacterList.Clear();
-            foreach (var character in AppSettings.Instance.CharacterList)
+            _originalAvatarList.Clear();
+            foreach (var avatar in AppSettings.Instance.AvatarList)
             {
-                _originalCharacterList.Add(DeepCopyCharacterSettings(character));
+                _originalAvatarList.Add(DeepCopyAvatarSettings(avatar));
             }
         }
 
@@ -420,8 +420,8 @@ namespace CocoroConsole.Controls
                 // AppSettings に反映（System）
                 ApplySystemSnapshotToAppSettings(systemSnapshot);
 
-                // Character/Animation の反映
-                UpdateCharacterAndAnimationAppSettings();
+                // Avatar/Animation の反映
+                UpdateAvatarAndAnimationAppSettings();
 
                 // 設定をファイルに保存
                 AppSettings.Instance.SaveAppSettings();
@@ -714,14 +714,14 @@ namespace CocoroConsole.Controls
             DisplaySettingsControl.InitializeFromAppSettings();
 
             // アバターリストの復元
-            AppSettings.Instance.CharacterList.Clear();
-            foreach (var character in _originalCharacterList)
+            AppSettings.Instance.AvatarList.Clear();
+            foreach (var avatar in _originalAvatarList)
             {
-                AppSettings.Instance.CharacterList.Add(DeepCopyCharacterSettings(character));
+                AppSettings.Instance.AvatarList.Add(DeepCopyAvatarSettings(avatar));
             }
 
-            // CharacterManagementControlのUIを更新
-            CharacterManagementControl.RefreshCharacterList();
+            // AvatarManagementControlのUIを更新
+            AvatarManagementControl.RefreshAvatarList();
         }
 
         #endregion
@@ -735,9 +735,9 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// アバター設定のディープコピーを作成
         /// </summary>
-        private CharacterSettings DeepCopyCharacterSettings(CharacterSettings source)
+        private AvatarSettings DeepCopyAvatarSettings(AvatarSettings source)
         {
-            return new CharacterSettings
+            return new AvatarSettings
             {
                 modelName = source.modelName,
                 vrmFilePath = source.vrmFilePath,
@@ -836,21 +836,21 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// AppSettingsを更新する
         /// </summary>
-        private void UpdateCharacterAndAnimationAppSettings()
+        private void UpdateAvatarAndAnimationAppSettings()
         {
             var appSettings = AppSettings.Instance;
-            appSettings.CurrentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
+            appSettings.CurrentAvatarIndex = AvatarManagementControl.GetCurrentAvatarIndex();
             appSettings.IsUseLLM = LlmSettingsControl.IsUseLlm;
 
-            var currentCharacterSetting = CharacterManagementControl.GetCurrentCharacterSettingFromUI();
-            if (currentCharacterSetting != null)
+            var currentAvatarSetting = AvatarManagementControl.GetCurrentAvatarSettingFromUI();
+            if (currentAvatarSetting != null)
             {
-                var currentIndex = CharacterManagementControl.GetCurrentCharacterIndex();
+                var currentIndex = AvatarManagementControl.GetCurrentAvatarIndex();
                 if (currentIndex >= 0 &&
-                    currentIndex < appSettings.CharacterList.Count)
+                    currentIndex < appSettings.AvatarList.Count)
                 {
                     // 現在のアバターの設定を更新
-                    appSettings.CharacterList[currentIndex] = currentCharacterSetting;
+                    appSettings.AvatarList[currentIndex] = currentAvatarSetting;
                     // 注: LLM/Embedding設定はAPI経由で管理される
                 }
             }
@@ -1015,14 +1015,14 @@ namespace CocoroConsole.Controls
             // LLM使用設定
             config.isUseLLM = LlmSettingsControl.IsUseLlm;
 
-            // Character設定の取得（ディープコピーを使用）
-            config.currentCharacterIndex = CharacterManagementControl.GetCurrentCharacterIndex();
-            var currentCharacterSetting = CharacterManagementControl.GetCurrentCharacterSettingFromUI();
-            if (currentCharacterSetting != null)
+            // Avatar設定の取得（ディープコピーを使用）
+            config.currentAvatarIndex = AvatarManagementControl.GetCurrentAvatarIndex();
+            var currentAvatarSetting = AvatarManagementControl.GetCurrentAvatarSettingFromUI();
+            if (currentAvatarSetting != null)
             {
-                if (config.currentCharacterIndex >= 0 && config.currentCharacterIndex < config.characterList.Count)
+                if (config.currentAvatarIndex >= 0 && config.currentAvatarIndex < config.avatarList.Count)
                 {
-                    config.characterList[config.currentCharacterIndex] = currentCharacterSetting;
+                    config.avatarList[config.currentAvatarIndex] = currentAvatarSetting;
                 }
             }
 
@@ -1038,7 +1038,7 @@ namespace CocoroConsole.Controls
         private bool HasOtomeKairoRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
         {
             // 基本設定項目の比較
-            if (currentSettings.currentCharacterIndex != previousSettings.currentCharacterIndex)
+            if (currentSettings.currentAvatarIndex != previousSettings.currentAvatarIndex)
             {
                 return true;
             }
@@ -1049,7 +1049,7 @@ namespace CocoroConsole.Controls
             }
 
             // アバターリストの比較
-            if (currentSettings.characterList.Count != previousSettings.characterList.Count)
+            if (currentSettings.avatarList.Count != previousSettings.avatarList.Count)
             {
                 return true;
             }
