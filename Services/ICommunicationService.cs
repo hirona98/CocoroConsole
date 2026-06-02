@@ -27,11 +27,11 @@ namespace CocoroConsole.Services
     /// </summary>
     public interface ICommunicationService : IDisposable
     {
-        event EventHandler<ChatRequest>? ChatMessageReceived;
+        event EventHandler<UiMessageRequest>? UiMessageReceived;
         event EventHandler<ControlRequest>? ControlCommandReceived;
         event EventHandler<string>? ErrorOccurred;
-        event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
-        event EventHandler<bool>? ChatBusyChanged;
+        event EventHandler<ConversationOutputEventArgs>? ConversationOutputReceived;
+        event EventHandler<bool>? ConversationInputBusyChanged;
         event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
         event EventHandler<OtomeKairoStatus>? StatusChanged;
         event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
@@ -40,13 +40,13 @@ namespace CocoroConsole.Services
 
         bool IsServerRunning { get; }
         OtomeKairoStatus CurrentStatus { get; }
-        bool IsChatBusy { get; }
+        bool IsConversationInputBusy { get; }
 
         Task StartServerAsync();
         Task StopServerAsync();
         ConfigSettings GetCurrentConfig();
-        Task SendChatToOtomeKairoUnifiedAsync(string message, string? avatarName = null, string? imageDataUrl = null);
-        Task SendChatToOtomeKairoUnifiedAsync(string message, string? avatarName = null, List<string>? imageDataUrls = null);
+        Task SendConversationInputToOtomeKairoAsync(string message, string? avatarName = null, string? imageDataUrl = null);
+        Task SendConversationInputToOtomeKairoAsync(string message, string? avatarName = null, List<string>? imageDataUrls = null);
         void StartNewConversation();
         Task SendAnimationToShellAsync(string animationName);
         Task SendTTSStateToShellAsync(bool isUseTTS);

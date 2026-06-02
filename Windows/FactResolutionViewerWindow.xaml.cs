@@ -246,7 +246,7 @@ namespace CocoroConsole.Windows
             builder.AppendLine($"  開始: {GetString(trace.CycleSummary, "started_at")}");
             builder.AppendLine($"  きっかけ: {DescribeTriggerKind(GetString(trace.CycleSummary, "trigger_kind"))}");
             builder.AppendLine($"  結果: {DescribeResultKind(GetString(trace.CycleSummary, "result_kind"))}");
-            AppendLineIfPresent(builder, "  返信", FirstNonEmpty(GetString(trace.ResultTrace, "reply_summary"), GetString(resultSummary, "reply_summary")));
+            AppendLineIfPresent(builder, "  発話", FirstNonEmpty(GetString(trace.ResultTrace, "speech_summary"), GetString(resultSummary, "speech_summary")));
             AppendLineIfPresent(builder, "  見送り理由", FirstNonEmpty(GetString(trace.ResultTrace, "noop_reason_summary"), GetString(resultSummary, "noop_reason_summary")));
             AppendLineIfPresent(builder, "  失敗理由", FirstNonEmpty(GetString(trace.ResultTrace, "internal_failure_summary"), GetString(resultSummary, "internal_failure_summary")));
             builder.AppendLine();
@@ -313,7 +313,7 @@ namespace CocoroConsole.Windows
             AppendLineIfPresent(builder, "  探したこと", FirstNonEmpty(JoinArrayValues(query, "query_terms"), GetString(query, "input_text")));
             AppendLineIfPresent(builder, "  対象", BuildTargetLine(query));
             AppendLineIfPresent(builder, "  未解決理由", GetString(factTrace, "missing_reason"));
-            AppendLineIfPresent(builder, "  返信方針", GetString(factTrace, "reply_guidance"));
+            AppendLineIfPresent(builder, "  発話方針", GetString(factTrace, "speech_guidance"));
             AppendTopArraySection(
                 builder,
                 "  採用した根拠",
@@ -706,7 +706,7 @@ namespace CocoroConsole.Windows
         {
             return value switch
             {
-                "reply" => "返信",
+                "speech" => "発話",
                 "noop" => "見送り",
                 "capability_request" => "能力実行",
                 "internal_failure" => "内部失敗",

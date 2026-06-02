@@ -54,23 +54,23 @@ namespace CocoroConsole.Services
         // シェルへの送信順序を保証するためのセマフォ（同時送信を直列化）
         private readonly SemaphoreSlim _forwardMessageSemaphore = new SemaphoreSlim(1, 1);
 
-        // チャット送信順序を保証するためのセマフォ（同時送信を直列化）
+        // 対話入力送信順序を保証するためのセマフォ（同時送信を直列化）
         // NOTE:
         // - 現在の OtomeKairo API は 1 リクエスト 1 応答のため、二重送信だけを防げばよい。
         // - 入力経路（UI/音声など）を跨いでも「1回の送信=1応答」に揃える。
-        private readonly SemaphoreSlim _chatSendSemaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _conversationInputSendSemaphore = new SemaphoreSlim(1, 1);
 
         // OtomeKairo の bootstrap と認証確認を直列化するためのセマフォ
         private readonly SemaphoreSlim _otomeKairoBootstrapSemaphore = new SemaphoreSlim(1, 1);
 
-        // チャット送信中フラグ（0/1）
+        // 対話入力送信中フラグ（0/1）
         // UI 側の送信ボタン無効化・二重送信抑止に使う。
-        private int _chatBusy = 0;
+        private int _conversationInputBusy = 0;
 
         // 設定キャッシュ（SettingsSaved で更新し、差分に応じてランタイム反映）
         private ConfigSettings? _cachedConfigSettings;
 
-        // memory_id キャッシュ（チャット返信を UI へ戻す際に付与）
+        // memory_id キャッシュ（発話を UI へ戻す際に付与）
         private string _cachedMemoryId = "memory";
 
         // OtomeKairo が Normal になった後、現在設定と event stream を初期化済みかを表す。
@@ -99,9 +99,9 @@ namespace CocoroConsole.Services
             Debug.WriteLine("[Shell Forward] CocoroShell接続状態を再試行可能に戻しました");
         }
 
-        public event EventHandler<ChatRequest>? ChatMessageReceived;
-        public event EventHandler<StreamingChatEventArgs>? StreamingChatReceived;
-        public event EventHandler<bool>? ChatBusyChanged;
+        public event EventHandler<UiMessageRequest>? UiMessageReceived;
+        public event EventHandler<ConversationOutputEventArgs>? ConversationOutputReceived;
+        public event EventHandler<bool>? ConversationInputBusyChanged;
         public event EventHandler<ControlRequest>? ControlCommandReceived;
         public event EventHandler<string>? ErrorOccurred;
         public event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
@@ -118,9 +118,9 @@ namespace CocoroConsole.Services
         public OtomeKairoStatus CurrentStatus => _statusPollingService.CurrentStatus;
 
         /// <summary>
-        /// チャット送信中かどうか
+        /// 対話入力送信中かどうか
         /// </summary>
-        public bool IsChatBusy => Volatile.Read(ref _chatBusy) == 1;
+        public bool IsConversationInputBusy => Volatile.Read(ref _conversationInputBusy) == 1;
 
         /// <summary>
         /// コンストラクタ
@@ -222,11 +222,11 @@ namespace CocoroConsole.Services
             _otomeKairoApiClient?.SetBearerToken(bearerToken);
         }
 
-        private void SetChatBusy(bool isBusy)
+        private void SetConversationInputBusy(bool isBusy)
         {
             // --- 状態の更新は 0/1 で統一し、変化があるときだけイベントを発火する ---
             int next = isBusy ? 1 : 0;
-            int prev = Interlocked.Exchange(ref _chatBusy, next);
+            int prev = Interlocked.Exchange(ref _conversationInputBusy, next);
             if (prev == next)
             {
                 return;
@@ -235,12 +235,12 @@ namespace CocoroConsole.Services
             // --- イベントは呼び出しスレッドで発火（UI側で Dispatcher に載せ替える） ---
             try
             {
-                ChatBusyChanged?.Invoke(this, isBusy);
+                ConversationInputBusyChanged?.Invoke(this, isBusy);
             }
             catch (Exception ex)
             {
                 // NOTE: UI 側の例外で通信層が停止しないようにする
-                Debug.WriteLine($"[CommunicationService] ChatBusyChanged handler error: {ex.Message}");
+                Debug.WriteLine($"[CommunicationService] ConversationInputBusyChanged handler error: {ex.Message}");
             }
         }
 
@@ -317,7 +317,7 @@ namespace CocoroConsole.Services
         private CocoroConsoleApiServer CreateApiServer(int port)
         {
             var server = new CocoroConsoleApiServer(port, _appSettings);
-            server.ChatMessageReceived += (sender, request) => ChatMessageReceived?.Invoke(this, request);
+            server.UiMessageReceived += (sender, request) => UiMessageReceived?.Invoke(this, request);
             server.ControlCommandReceived += (sender, request) => ControlCommandReceived?.Invoke(this, request);
             server.StatusUpdateReceived += (sender, request) =>
             {
@@ -506,11 +506,11 @@ namespace CocoroConsole.Services
         /// <param name="message">送信メッセージ</param>
         /// <param name="avatarName">アバター名（オプション）</param>
         /// <param name="imageDataUrl">画像データURL（オプション）</param>
-        public async Task SendChatToOtomeKairoUnifiedAsync(string message, string? avatarName = null, string? imageDataUrl = null)
+        public async Task SendConversationInputToOtomeKairoAsync(string message, string? avatarName = null, string? imageDataUrl = null)
         {
             // 単一画像を配列に変換して複数画像対応版を呼び出し
             var imageDataUrls = imageDataUrl != null ? new List<string> { imageDataUrl } : null;
-            await SendChatToOtomeKairoUnifiedAsync(message, avatarName, imageDataUrls);
+            await SendConversationInputToOtomeKairoAsync(message, avatarName, imageDataUrls);
         }
 
         /// <summary>
@@ -519,7 +519,7 @@ namespace CocoroConsole.Services
         /// <param name="message">送信メッセージ</param>
         /// <param name="avatarName">アバター名（オプション）</param>
         /// <param name="imageDataUrls">画像データURLリスト（オプション）</param>
-        public async Task SendChatToOtomeKairoUnifiedAsync(string message, string? avatarName = null, List<string>? imageDataUrls = null)
+        public async Task SendConversationInputToOtomeKairoAsync(string message, string? avatarName = null, List<string>? imageDataUrls = null)
         {
             if (_otomeKairoApiClient == null)
             {
@@ -527,23 +527,23 @@ namespace CocoroConsole.Services
                 return;
             }
 
-            await SendChatViaHttpStreamingAsync(message, imageDataUrls);
+            await SendConversationInputViaHttpAsync(message, imageDataUrls);
         }
 
-        private async Task SendChatViaHttpStreamingAsync(string message, List<string>? imageDataUrls)
+        private async Task SendConversationInputViaHttpAsync(string message, List<string>? imageDataUrls)
         {
             // --- 同時送信を直列化する ---
-            await _chatSendSemaphore.WaitAsync().ConfigureAwait(false);
+            await _conversationInputSendSemaphore.WaitAsync().ConfigureAwait(false);
 
             try
             {
                 // --- 送信中状態をセットする ---
-                SetChatBusy(true);
+                SetConversationInputBusy(true);
 
                 // --- LLMが無効の場合は処理しない ---
                 if (!_appSettings.IsUseLLM)
                 {
-                    Debug.WriteLine("チャット送信: LLMが無効のためスキップ");
+                    Debug.WriteLine("対話入力送信: LLMが無効のためスキップ");
                     return;
                 }
 
@@ -554,7 +554,7 @@ namespace CocoroConsole.Services
                 if (string.IsNullOrWhiteSpace(message))
                 {
                     var errorMessage = "メッセージを入力してください";
-                    StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                    ConversationOutputReceived?.Invoke(this, new ConversationOutputEventArgs
                     {
                         Content = string.Empty,
                         IsFinished = true,
@@ -570,7 +570,7 @@ namespace CocoroConsole.Services
                 if (_otomeKairoApiClient == null || string.IsNullOrWhiteSpace(_appSettings.OtomeKairoBearerToken))
                 {
                     var errorMessage = "OtomeKairo の console_access_token を取得できませんでした";
-                    StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                    ConversationOutputReceived?.Invoke(this, new ConversationOutputEventArgs
                     {
                         Content = string.Empty,
                         IsFinished = true,
@@ -585,8 +585,8 @@ namespace CocoroConsole.Services
                 await StartEventsStreamAsync().ConfigureAwait(false);
 
                 // --- 送信中ステータスを反映する ---
-                _statusPollingService.SetProcessingStatus(OtomeKairoStatus.ProcessingMessage);
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット送信開始"));
+                _statusPollingService.SetProcessingStatus(OtomeKairoStatus.ProcessingConversationInput);
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "対話入力送信開始"));
 
                 var normalizedImages = imageDataUrls?
                     .Where(url => !string.IsNullOrWhiteSpace(url))
@@ -605,41 +605,41 @@ namespace CocoroConsole.Services
                     ClientContext = BuildOtomeKairoClientContext()
                 }).ConfigureAwait(false);
 
-                // --- 応答種別ごとに UI へ反映する ---
-                if (string.Equals(response.ResultKind, "reply", StringComparison.Ordinal))
+                // --- 発話種別ごとに UI へ反映する ---
+                if (string.Equals(response.ResultKind, "speech", StringComparison.Ordinal))
                 {
-                    var replyText = response.Reply?.Text ?? string.Empty;
-                    StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                    var speechText = response.Speech?.Text ?? string.Empty;
+                    ConversationOutputReceived?.Invoke(this, new ConversationOutputEventArgs
                     {
-                        Content = replyText,
+                        Content = speechText,
                         IsFinished = true,
                         IsError = false
                     });
 
-                    if (!string.IsNullOrWhiteSpace(replyText))
+                    if (!string.IsNullOrWhiteSpace(speechText))
                     {
-                        var chatReply = new ChatRequest
+                        var uiMessage = new UiMessageRequest
                         {
                             memoryId = _cachedMemoryId,
                             sessionId = response.CycleId,
-                            message = replyText,
+                            message = speechText,
                             role = "assistant",
-                            content = replyText
+                            content = speechText
                         };
 
-                        ChatMessageReceived?.Invoke(this, chatReply);
-                        await ForwardMessageToShellAsync(replyText, GetStoredAvatarSetting()).ConfigureAwait(false);
+                        UiMessageReceived?.Invoke(this, uiMessage);
+                        await ForwardMessageToShellAsync(speechText, GetStoredAvatarSetting()).ConfigureAwait(false);
                     }
 
                     _statusPollingService.SetNormalStatus();
-                    StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "チャット完了"));
+                    StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "対話入力完了"));
                     return;
                 }
 
                 if (string.Equals(response.ResultKind, "noop", StringComparison.Ordinal))
                 {
                     _statusPollingService.SetNormalStatus();
-                    StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "今回は応答しませんでした"));
+                    StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "今回は発話しませんでした"));
                     return;
                 }
 
@@ -652,7 +652,7 @@ namespace CocoroConsole.Services
                 }
 
                 var internalFailureMessage = "OtomeKairo 内部処理に失敗しました";
-                StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                ConversationOutputReceived?.Invoke(this, new ConversationOutputEventArgs
                 {
                     Content = string.Empty,
                     IsFinished = true,
@@ -672,7 +672,7 @@ namespace CocoroConsole.Services
                     _ => ex.Message,
                 };
                 Debug.WriteLine($"OtomeKairo APIエラー: {errorMessage}");
-                StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                ConversationOutputReceived?.Invoke(this, new ConversationOutputEventArgs
                 {
                     Content = string.Empty,
                     IsFinished = true,
@@ -680,57 +680,57 @@ namespace CocoroConsole.Services
                     ErrorMessage = errorMessage
                 });
                 _statusPollingService.SetNormalStatus();
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"チャット送信エラー: {errorMessage}"));
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"対話入力送信エラー: {errorMessage}"));
             }
             catch (TimeoutException ex)
             {
-                Debug.WriteLine($"チャット送信タイムアウト: {ex.Message}");
-                StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                Debug.WriteLine($"対話入力送信タイムアウト: {ex.Message}");
+                ConversationOutputReceived?.Invoke(this, new ConversationOutputEventArgs
                 {
                     Content = string.Empty,
                     IsFinished = true,
                     IsError = true,
-                    ErrorMessage = $"チャット送信タイムアウト: {ex.Message}"
+                    ErrorMessage = $"対話入力送信タイムアウト: {ex.Message}"
                 });
                 _statusPollingService.SetNormalStatus();
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"チャット送信タイムアウト: {ex.Message}"));
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"対話入力送信タイムアウト: {ex.Message}"));
             }
             catch (HttpRequestException ex)
             {
-                Debug.WriteLine($"チャット送信HTTPエラー: {ex.Message}");
-                StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                Debug.WriteLine($"対話入力送信HTTPエラー: {ex.Message}");
+                ConversationOutputReceived?.Invoke(this, new ConversationOutputEventArgs
                 {
                     Content = string.Empty,
                     IsFinished = true,
                     IsError = true,
-                    ErrorMessage = $"チャット送信HTTPエラー: {ex.Message}"
+                    ErrorMessage = $"対話入力送信HTTPエラー: {ex.Message}"
                 });
                 _statusPollingService.SetNormalStatus();
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"チャット送信HTTPエラー: {ex.Message}"));
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"対話入力送信HTTPエラー: {ex.Message}"));
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"チャット送信エラー: {ex.Message}");
-                StreamingChatReceived?.Invoke(this, new StreamingChatEventArgs
+                Debug.WriteLine($"対話入力送信エラー: {ex.Message}");
+                ConversationOutputReceived?.Invoke(this, new ConversationOutputEventArgs
                 {
                     Content = string.Empty,
                     IsFinished = true,
                     IsError = true,
-                    ErrorMessage = $"チャット送信エラー: {ex.Message}"
+                    ErrorMessage = $"対話入力送信エラー: {ex.Message}"
                 });
                 _statusPollingService.SetNormalStatus();
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"チャット送信エラー: {ex.Message}"));
+                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"対話入力送信エラー: {ex.Message}"));
             }
             finally
             {
                 // --- 送信状態を解除して次の送信を許可する ---
                 try
                 {
-                    SetChatBusy(false);
+                    SetConversationInputBusy(false);
                 }
                 finally
                 {
-                    _chatSendSemaphore.Release();
+                    _conversationInputSendSemaphore.Release();
                 }
             }
         }
@@ -855,11 +855,11 @@ namespace CocoroConsole.Services
 
                 if (!ShouldForwardToShell(currentAvatar))
                 {
-                    Debug.WriteLine("[Shell Forward] VRM表示OFFのためチャット転送をスキップ");
+                    Debug.WriteLine("[Shell Forward] VRM表示OFFのため発話転送をスキップ");
                     return;
                 }
 
-                var shellRequest = new ShellChatRequest
+                var shellRequest = new ShellSpeechRequest
                 {
                     content = content,
                     animation = "talk",
@@ -875,7 +875,7 @@ namespace CocoroConsole.Services
 
                 try
                 {
-                    await _shellClient.SendChatMessageAsync(shellRequest).ConfigureAwait(false);
+                    await _shellClient.SendSpeechAsync(shellRequest).ConfigureAwait(false);
                 }
                 catch (Exception ex) when (IsShellConnectionFailure(ex))
                 {
@@ -1125,10 +1125,10 @@ namespace CocoroConsole.Services
             {
                 if (string.Equals(ev.Type, "assistant_message", StringComparison.OrdinalIgnoreCase))
                 {
-                    var partnerMessage = ev.Data.Message;
-                    if (!string.IsNullOrWhiteSpace(partnerMessage))
+                    var assistantSpeech = ev.Data.Message;
+                    if (!string.IsNullOrWhiteSpace(assistantSpeech))
                     {
-                        HandlePartnerMessageFromEvent(ev, partnerMessage);
+                        HandleAssistantSpeechFromEvent(ev, assistantSpeech);
                     }
                     return;
                 }
@@ -1145,25 +1145,25 @@ namespace CocoroConsole.Services
             }
         }
 
-        private void HandlePartnerMessageFromEvent(OtomeKairoEvent ev, string partnerMessage)
+        private void HandleAssistantSpeechFromEvent(OtomeKairoEvent ev, string assistantSpeech)
         {
             var sourceKind = ev.Data.SourceKind ?? string.Empty;
-            var chatReply = new ChatRequest
+            var uiMessage = new UiMessageRequest
             {
                 memoryId = string.Empty,
                 sessionId = ev.EventId.ToString(CultureInfo.InvariantCulture),
-                message = partnerMessage,
+                message = assistantSpeech,
                 role = "assistant",
-                content = partnerMessage,
+                content = assistantSpeech,
                 sourceKind = sourceKind,
                 // spontaneous assistant_message は通常会話と分離して別バブルに出す。
                 forceNewBubble = ShouldForceNewBubbleForAssistantEvent(sourceKind)
             };
 
-            ChatMessageReceived?.Invoke(this, chatReply);
+            UiMessageReceived?.Invoke(this, uiMessage);
 
             var currentAvatar = GetStoredAvatarSetting();
-            _ = ForwardMessageToShellAsync(partnerMessage, currentAvatar);
+            _ = ForwardMessageToShellAsync(assistantSpeech, currentAvatar);
         }
 
         private static bool ShouldForceNewBubbleForAssistantEvent(string? sourceKind)
@@ -1512,7 +1512,7 @@ namespace CocoroConsole.Services
             _logStreamClient?.Dispose();
             _eventsStreamClient?.Dispose();
             _otomeKairoBootstrapSemaphore?.Dispose();
-            _chatSendSemaphore?.Dispose();
+            _conversationInputSendSemaphore?.Dispose();
         }
     }
 }

@@ -24,7 +24,7 @@ namespace CocoroConsole.Communication
         private CancellationTokenSource? _cts;
 
         // イベント
-        public event EventHandler<ChatRequest>? ChatMessageReceived;
+        public event EventHandler<UiMessageRequest>? UiMessageReceived;
         public event EventHandler<ControlRequest>? ControlCommandReceived;
         public event EventHandler<StatusUpdateRequest>? StatusUpdateReceived;
 
@@ -128,12 +128,12 @@ namespace CocoroConsole.Communication
         /// </summary>
         private void ConfigureEndpoints(WebApplication app)
         {
-            // POST /api/addChatUi - 対話メッセージ受信
-            app.MapPost("/api/addChatUi", async (HttpContext context) =>
+            // POST /api/ui/messages - UIメッセージ受信
+            app.MapPost("/api/ui/messages", async (HttpContext context) =>
             {
                 try
                 {
-                    var request = await context.Request.ReadFromJsonAsync<ChatRequest>();
+                    var request = await context.Request.ReadFromJsonAsync<UiMessageRequest>();
                     if (request == null)
                     {
                         context.Response.StatusCode = 400;
@@ -169,13 +169,13 @@ namespace CocoroConsole.Communication
                     }
 
                     // イベント発火
-                    ChatMessageReceived?.Invoke(this, request);
+                    UiMessageReceived?.Invoke(this, request);
 
                     // 成功レスポンス
                     await context.Response.WriteAsJsonAsync(new StandardResponse
                     {
                         status = "success",
-                        message = "Chat message received"
+                        message = "UI message received"
                     });
                 }
                 catch (System.Text.Json.JsonException)
@@ -189,7 +189,7 @@ namespace CocoroConsole.Communication
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"チャット処理エラー: {ex.Message}");
+                    Debug.WriteLine($"UIメッセージ処理エラー: {ex.Message}");
                     context.Response.StatusCode = 500;
                     await context.Response.WriteAsJsonAsync(new ErrorResponse
                     {

@@ -35,7 +35,7 @@ namespace CocoroConsole.Controls
             var sb = new StringBuilder();
             sb.AppendLine("用途:");
             sb.AppendLine("- OtomeKairo に会話入力を送る");
-            sb.AppendLine("- 応答は JSON envelope の data.result_kind と data.reply で返る");
+            sb.AppendLine("- 発話は JSON envelope の data.result_kind と data.speech で返る");
             sb.AppendLine();
 
             sb.AppendLine("エンドポイント:");
@@ -66,8 +66,8 @@ namespace CocoroConsole.Controls
             sb.AppendLine("  \"ok\": true,");
             sb.AppendLine("  \"data\": {");
             sb.AppendLine("    \"cycle_id\": \"cycle:...\",");
-            sb.AppendLine("    \"result_kind\": \"reply\",");
-            sb.AppendLine("    \"reply\": { \"text\": \"こんにちは\" }");
+            sb.AppendLine("    \"result_kind\": \"speech\",");
+            sb.AppendLine("    \"speech\": { \"text\": \"こんにちは\" }");
             sb.AppendLine("  }");
             sb.AppendLine("}");
             sb.AppendLine();
@@ -124,7 +124,7 @@ namespace CocoroConsole.Controls
             sb.AppendLine("  \"data\": {");
             sb.AppendLine("    \"cycle_id\": \"cycle:...\",");
             sb.AppendLine("    \"result_kind\": \"noop\",");
-            sb.AppendLine("    \"reply\": null");
+            sb.AppendLine("    \"speech\": null");
             sb.AppendLine("  }");
             sb.AppendLine("}");
             sb.AppendLine();

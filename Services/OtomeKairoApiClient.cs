@@ -482,14 +482,14 @@ namespace CocoroConsole.Services
         [JsonPropertyName("result_kind")]
         public string ResultKind { get; set; } = string.Empty;
 
-        [JsonPropertyName("reply")]
-        public OtomeKairoConversationReply? Reply { get; set; }
+        [JsonPropertyName("speech")]
+        public OtomeKairoConversationSpeech? Speech { get; set; }
 
         [JsonPropertyName("capability_request")]
         public OtomeKairoCapabilityRequestSummary? CapabilityRequest { get; set; }
     }
 
-    public class OtomeKairoConversationReply
+    public class OtomeKairoConversationSpeech
     {
         [JsonPropertyName("text")]
         public string Text { get; set; } = string.Empty;

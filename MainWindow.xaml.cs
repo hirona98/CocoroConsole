@@ -34,7 +34,7 @@ namespace CocoroConsole
         private FactResolutionViewerWindow? _factResolutionViewerWindow;
         private CurrentStateViewerWindow? _currentStateViewerWindow;
         private DebugTraceListener? _debugTraceListener;
-        private bool _isStreamingChatActive;
+        private bool _isConversationOutputActive;
         private bool _skipNextAssistantMessage;
         private string? _skipNextAssistantMessageContent;
         private bool _isLogStreamHandlersAttached;
@@ -304,9 +304,9 @@ namespace CocoroConsole
         {
             // 通信サービスを初期化 (REST APIサーバーを使用)
             _communicationService = new CommunicationService(_appSettings);            // 通信サービスのイベントハンドラを設定
-            _communicationService.ChatMessageReceived += OnChatMessageReceived;
-            _communicationService.StreamingChatReceived += OnStreamingChatReceived;
-            _communicationService.ChatBusyChanged += OnChatBusyChanged;
+            _communicationService.UiMessageReceived += OnUiMessageReceived;
+            _communicationService.ConversationOutputReceived += OnConversationOutputReceived;
+            _communicationService.ConversationInputBusyChanged += OnConversationInputBusyChanged;
             _communicationService.ControlCommandReceived += OnControlCommandReceived;
             _communicationService.ErrorOccurred += OnErrorOccurred;
             _communicationService.StatusChanged += OnOtomeKairoStatusChanged;
@@ -358,7 +358,7 @@ namespace CocoroConsole
 
             // --- 送信ボタンの有効/無効を状態に応じて更新 ---
             bool isLLMEnabled = _appSettings.IsUseLLM;
-            bool isChatBusy = _communicationService?.IsChatBusy ?? false;
+            bool isConversationInputBusy = _communicationService?.IsConversationInputBusy ?? false;
 
             // --- OtomeKairo起動待ちは最優先表示（ログ上書きより優先） ---
             if (status == OtomeKairoStatus.WaitingForStartup)
@@ -374,7 +374,7 @@ namespace CocoroConsole
             // NOTE:
             // - 送信中（SSEストリーム中）は UI 表示が 1 本前提なので、二重送信を抑止する。
             // - ステータスが Normal のときだけ送信可能にする。
-            bool isSendEnabled = isLLMEnabled && status == OtomeKairoStatus.Normal && !isChatBusy;
+            bool isSendEnabled = isLLMEnabled && status == OtomeKairoStatus.Normal && !isConversationInputBusy;
             ChatControlInstance.UpdateSendButtonEnabled(isSendEnabled);
         }
 
@@ -393,9 +393,9 @@ namespace CocoroConsole
             }
 
             // --- 送信中は二重送信を抑止（Enter送信などの抜け道もあるため） ---
-            if (_communicationService.IsChatBusy)
+            if (_communicationService.IsConversationInputBusy)
             {
-                ChatControlInstance.AddSystemErrorMessage("前の送信が処理中です。応答を待ってください。");
+                ChatControlInstance.AddSystemErrorMessage("前の対話入力が処理中です。発話を待ってください。");
                 return;
             }
 
@@ -415,14 +415,14 @@ namespace CocoroConsole
                 try
                 {
                     // OtomeKairoにメッセージを送信（API使用、画像付きの場合は画像データも送信）
-                    await _communicationService.SendChatToOtomeKairoUnifiedAsync(message, null, imageDataUrls);
+                    await _communicationService.SendConversationInputToOtomeKairoAsync(message, null, imageDataUrls);
                 }
                 catch (TimeoutException)
                 {
                     // UIスレッドでエラーメッセージを表示
                     UIHelper.RunOnUIThread(() =>
                     {
-                        ChatControlInstance.AddSystemErrorMessage("AI応答がタイムアウトしました。もう一度お試しください。");
+                        ChatControlInstance.AddSystemErrorMessage("AI発話がタイムアウトしました。もう一度お試しください。");
                     });
                 }
                 catch (HttpRequestException ex)
@@ -430,7 +430,7 @@ namespace CocoroConsole
                     // UIスレッドでエラーメッセージを表示
                     UIHelper.RunOnUIThread(() =>
                     {
-                        ChatControlInstance.AddSystemErrorMessage("AI応答サーバーに接続できません。");
+                        ChatControlInstance.AddSystemErrorMessage("AI発話サーバーに接続できません。");
                     });
                     Debug.WriteLine($"HttpRequestException: {ex.Message}");
                 }
@@ -531,7 +531,7 @@ namespace CocoroConsole
         /// <summary>
         /// チャットメッセージ受信時のハンドラ（CocoroConsole APIから）
         /// </summary>
-        private void OnChatMessageReceived(object? sender, ChatRequest request)
+        private void OnUiMessageReceived(object? sender, UiMessageRequest request)
         {
             UIHelper.RunOnUIThread(() =>
             {
@@ -559,14 +559,14 @@ namespace CocoroConsole
             });
         }
 
-        private void OnStreamingChatReceived(object? sender, StreamingChatEventArgs e)
+        private void OnConversationOutputReceived(object? sender, ConversationOutputEventArgs e)
         {
             UIHelper.RunOnUIThread(() =>
             {
                 if (e.IsError)
                 {
                     ChatControlInstance.AddAiMessage($"[error] {e.ErrorMessage ?? "チャット中断"}");
-                    _isStreamingChatActive = false;
+                    _isConversationOutputActive = false;
                     _skipNextAssistantMessage = false;
                     _skipNextAssistantMessageContent = null;
                     return;
@@ -574,10 +574,10 @@ namespace CocoroConsole
 
                 if (!e.IsFinished)
                 {
-                    if (!_isStreamingChatActive)
+                    if (!_isConversationOutputActive)
                     {
                         ChatControlInstance.AddAiMessage(e.Content);
-                        _isStreamingChatActive = true;
+                        _isConversationOutputActive = true;
                     }
                     else
                     {
@@ -587,14 +587,14 @@ namespace CocoroConsole
                 else
                 {
                     ChatControlInstance.UpdateStreamingAiMessage(e.Content);
-                    _isStreamingChatActive = false;
+                    _isConversationOutputActive = false;
                     _skipNextAssistantMessage = true; // 直後の最終メッセージ表示を抑止
                     _skipNextAssistantMessageContent = e.Content;
                 }
             });
         }
 
-        private void OnChatBusyChanged(object? sender, bool isBusy)
+        private void OnConversationInputBusyChanged(object? sender, bool isBusy)
         {
             UIHelper.RunOnUIThread(() =>
             {
@@ -966,7 +966,7 @@ namespace CocoroConsole
             {
                 OtomeKairoStatus.WaitingForStartup => isLLMEnabled ? "OtomeKairo起動待ち" : "LLM無効",
                 OtomeKairoStatus.Normal => isLLMEnabled ? "正常動作中" : "LLM無効",
-                OtomeKairoStatus.ProcessingMessage => "LLMメッセージ処理中",
+                OtomeKairoStatus.ProcessingConversationInput => "対話入力処理中",
                 OtomeKairoStatus.ProcessingImage => "LLM画像処理中",
                 _ => "不明な状態"
             };
@@ -1451,7 +1451,7 @@ namespace CocoroConsole
                     if (_appSettings.IsUseLLM)
                     {
                         var currentAvatar = GetStoredAvatarSetting();
-                        await _communicationService.SendChatToOtomeKairoUnifiedAsync(message, currentAvatar?.modelName, imageData);
+                        await _communicationService.SendConversationInputToOtomeKairoAsync(message, currentAvatar?.modelName, imageData);
                     }
                 }
             }

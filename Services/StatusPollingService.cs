@@ -16,8 +16,8 @@ namespace CocoroConsole.Services
         WaitingForStartup,
         /// <summary>正常動作中（OtomeKairoとのポーリングが正常なとき）</summary>
         Normal,
-        /// <summary>LLMメッセージ処理中</summary>
-        ProcessingMessage,
+        /// <summary>対話入力処理中</summary>
+        ProcessingConversationInput,
         /// <summary>LLM画像処理中</summary>
         ProcessingImage
     }
@@ -163,7 +163,7 @@ namespace CocoroConsole.Services
         /// <param name="processingStatus">処理状態</param>
         public void SetProcessingStatus(OtomeKairoStatus processingStatus)
         {
-            if (processingStatus == OtomeKairoStatus.ProcessingMessage ||
+            if (processingStatus == OtomeKairoStatus.ProcessingConversationInput ||
                 processingStatus == OtomeKairoStatus.ProcessingImage)
             {
                 UpdateStatus(processingStatus);

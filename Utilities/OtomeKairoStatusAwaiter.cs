@@ -14,7 +14,7 @@ namespace CocoroConsole.Utilities
         public static bool IsReadyStatus(OtomeKairoStatus status)
         {
             return status == OtomeKairoStatus.Normal ||
-                   status == OtomeKairoStatus.ProcessingMessage ||
+                   status == OtomeKairoStatus.ProcessingConversationInput ||
                    status == OtomeKairoStatus.ProcessingImage;
         }
 

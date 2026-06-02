@@ -429,9 +429,9 @@ namespace CocoroConsole.Communication
     #region REST API ペイロードクラス
 
     /// <summary>
-    /// CocoroConsole API: チャットリクエスト
+    /// CocoroConsole API: UIメッセージ要求
     /// </summary>
-    public class ChatRequest
+    public class UiMessageRequest
     {
         public string memoryId { get; set; } = string.Empty;
         public string sessionId { get; set; } = string.Empty;
@@ -475,9 +475,9 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// CocoroShell API: チャットリクエスト
+    /// CocoroShell API: 発話要求
     /// </summary>
-    public class ShellChatRequest
+    public class ShellSpeechRequest
     {
         public string content { get; set; } = string.Empty;
         public VoiceParams? voiceParams { get; set; }
@@ -552,11 +552,11 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// ストリーミングチャットイベントデータ
+    /// 対話出力イベントデータ
     /// </summary>
-    public class StreamingChatEventArgs : EventArgs
+    public class ConversationOutputEventArgs : EventArgs
     {
-        public string Content { get; set; } = string.Empty; // ストリーミングコンテンツ
+        public string Content { get; set; } = string.Empty; // 出力内容
         public bool IsFinished { get; set; } // 完了フラグ
         public string? ErrorMessage { get; set; } // エラーメッセージ（エラー時のみ）
         public bool IsError { get; set; } // エラーフラグ

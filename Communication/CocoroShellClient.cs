@@ -39,9 +39,9 @@ namespace CocoroConsole.Communication
         }
 
         /// <summary>
-        /// 対話メッセージを送信
+        /// 発話を送信
         /// </summary>
-        public async Task<StandardResponse> SendChatMessageAsync(ShellChatRequest request)
+        public async Task<StandardResponse> SendSpeechAsync(ShellSpeechRequest request)
         {
             try
             {
@@ -53,7 +53,7 @@ namespace CocoroConsole.Communication
                     return result ?? new StandardResponse
                     {
                         status = "success",
-                        message = "Chat message sent"
+                        message = "Speech sent"
                     };
                 }
                 else
@@ -72,8 +72,8 @@ namespace CocoroConsole.Communication
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"対話メッセージ送信エラー: {ex.Message}");
-                throw new InvalidOperationException($"Failed to send chat message: {ex.Message}", ex);
+                Debug.WriteLine($"発話送信エラー: {ex.Message}");
+                throw new InvalidOperationException($"Failed to send speech: {ex.Message}", ex);
             }
         }
 
