@@ -7,7 +7,7 @@ namespace CocoroConsole.Communication
 {
 
     /// <summary>
-    /// チャットメッセージペイロードクラス
+    /// 対話メッセージペイロードクラス
     /// </summary>
     public class ChatMessagePayload
     {
@@ -547,7 +547,7 @@ namespace CocoroConsole.Communication
     {
         public DateTime timestamp { get; set; } = DateTime.UtcNow;
         public string level { get; set; } = string.Empty; // "DEBUG", "INFO", "WARNING", "ERROR"
-        public string component { get; set; } = string.Empty; // "CocoroCore"
+        public string component { get; set; } = string.Empty; // "OtomeKairo"
         public string message { get; set; } = string.Empty;
     }
 

@@ -33,7 +33,7 @@ namespace CocoroConsole.Services
             if (found)
             {
                 var detectedWord = _wakeWords.First(wakeWord => lowerText.Contains(wakeWord));
-                System.Diagnostics.Debug.WriteLine($"[WakeWordDetector] Detected wake word: '{detectedWord}' in text: '{recognizedText}'");
+                System.Diagnostics.Debug.WriteLine($"[WakeWordDetector] 音声起動ワード検出: '{detectedWord}' in text: '{recognizedText}'");
             }
 
             return found;
@@ -54,7 +54,7 @@ namespace CocoroConsole.Services
             if (found)
             {
                 var detectedWord = _wakeWords.First(wakeWord => words.Contains(wakeWord));
-                System.Diagnostics.Debug.WriteLine($"[WakeWordDetector] Detected exact wake word: '{detectedWord}' in text: '{recognizedText}'");
+                System.Diagnostics.Debug.WriteLine($"[WakeWordDetector] 音声起動ワード完全一致: '{detectedWord}' in text: '{recognizedText}'");
             }
 
             return found;

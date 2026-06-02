@@ -128,7 +128,7 @@ namespace CocoroConsole.Communication
         /// </summary>
         private void ConfigureEndpoints(WebApplication app)
         {
-            // POST /api/addChatUi - チャットメッセージ受信
+            // POST /api/addChatUi - 対話メッセージ受信
             app.MapPost("/api/addChatUi", async (HttpContext context) =>
             {
                 try

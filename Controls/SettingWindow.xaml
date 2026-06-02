@@ -110,17 +110,17 @@
                 <local:DisplaySettingsControl x:Name="DisplaySettingsControl"/>
             </TabItem>
 
-            <TabItem Header="キャラクター"
+            <TabItem Header="アバター"
                      Style="{StaticResource AdminTabItemStyle}"
-                     ToolTip="Character setting">
+                     ToolTip="Avatar setting">
                 <Grid Margin="20,20,0,20">
                     <local:CharacterManagementControl x:Name="CharacterManagementControl"/>
                 </Grid>
             </TabItem>
 
-            <TabItem Header="ペルソナ"
+            <TabItem Header="人格設定"
                      Style="{StaticResource AdminTabItemStyle}"
-                     ToolTip="Prompt preset setting">
+                     ToolTip="Persona setting">
                 <Grid Margin="20,20,0,20">
                     <local:PromptSettingsControl x:Name="PromptSettingsControl"/>
                 </Grid>

@@ -395,7 +395,7 @@ namespace CocoroConsole.Controls
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"キャラクター位置のリセット中にエラーが発生しました: {ex.Message}",
+                MessageBox.Show($"アバター位置のリセット中にエラーが発生しました: {ex.Message}",
                     "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

@@ -220,7 +220,7 @@
                               Background="#FAFAFA"
                               VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="ChatMessagesPanel">
-                                <!-- チャットメッセージがここに追加されます -->
+                                <!-- 対話メッセージがここに追加されます -->
                         </StackPanel>
                 </ScrollViewer>
 

@@ -32,8 +32,8 @@ namespace CocoroConsole.Controls
         // OtomeKairo の editor-state を保持
         private OtomeKairoEditorState? _loadedOtomeKairoEditorState;
 
-        // CocoroCore再起動が必要な設定の前回値を保存
-        private ConfigSettings _previousCocoroCoreSettings;
+        // OtomeKairo再起動が必要な設定の前回値を保存
+        private ConfigSettings _previousOtomeKairoSettings;
 
         public bool IsClosed { get; private set; } = false;
 
@@ -58,7 +58,7 @@ namespace CocoroConsole.Controls
             DisplaySettingsControl.SetCommunicationService(_communicationService);
             DisplaySettingsControl.InitializeFromAppSettings();
 
-            // キャラクター設定の初期化
+            // アバター設定の初期化
             InitializeCharacterSettings();
 
             // システム設定コントロールを初期化（APIクライアント設定後に初期化）
@@ -77,7 +77,7 @@ namespace CocoroConsole.Controls
             BackupSettings();
 
             // OtomeKairo再起動チェック用に現在の設定のディープコピーを保存
-            _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
+            _previousOtomeKairoSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
         }
 
         private async Task InitializeSystemSettingsAsync()
@@ -182,7 +182,7 @@ namespace CocoroConsole.Controls
 
 
         /// <summary>
-        /// キャラクター設定の初期化
+        /// アバター設定の初期化
         /// </summary>
         private void InitializeCharacterSettings()
         {
@@ -190,7 +190,7 @@ namespace CocoroConsole.Controls
             CharacterManagementControl.Initialize();
             CharacterManagementControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
 
-            // キャラクター変更イベントを登録
+            // アバター変更イベントを登録
             CharacterManagementControl.CharacterChanged += (sender, args) =>
             {
                 // アニメーション設定を更新
@@ -219,7 +219,7 @@ namespace CocoroConsole.Controls
             DisplaySettingsControl.SaveToSnapshot();
             _originalDisplaySettings = DisplaySettingsControl.GetSnapshot();
 
-            // キャラクターリストのバックアップ（Deep Copy）
+            // アバターリストのバックアップ（Deep Copy）
             _originalCharacterList.Clear();
             foreach (var character in AppSettings.Instance.CharacterList)
             {
@@ -353,7 +353,7 @@ namespace CocoroConsole.Controls
 
                 // 設定のバックアップを更新（適用後の状態を新しいベースラインとする）
                 BackupSettings();
-                _previousCocoroCoreSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
+                _previousOtomeKairoSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
             }
             catch (Exception ex)
             {
@@ -387,7 +387,7 @@ namespace CocoroConsole.Controls
             // 保存後の設定を取得してOtomeKairo再起動が必要かチェック
             var currentSettings = GetCurrentUISettings();
             bool needsOtomeKairoRestart =
-                HasOtomeKairoRestartRequiredChanges(_previousCocoroCoreSettings, currentSettings);
+                HasOtomeKairoRestartRequiredChanges(_previousOtomeKairoSettings, currentSettings);
 
             // CocoroShellを再起動
             RestartCocoroShell();
@@ -713,7 +713,7 @@ namespace CocoroConsole.Controls
             DisplaySettingsControl.ApplySnapshotToAppSettings(_originalDisplaySettings);
             DisplaySettingsControl.InitializeFromAppSettings();
 
-            // キャラクターリストの復元
+            // アバターリストの復元
             AppSettings.Instance.CharacterList.Clear();
             foreach (var character in _originalCharacterList)
             {
@@ -733,7 +733,7 @@ namespace CocoroConsole.Controls
         /// </summary>
 
         /// <summary>
-        /// キャラクター設定のディープコピーを作成
+        /// アバター設定のディープコピーを作成
         /// </summary>
         private CharacterSettings DeepCopyCharacterSettings(CharacterSettings source)
         {
@@ -849,7 +849,7 @@ namespace CocoroConsole.Controls
                 if (currentIndex >= 0 &&
                     currentIndex < appSettings.CharacterList.Count)
                 {
-                    // 現在のキャラクターの設定を更新
+                    // 現在のアバターの設定を更新
                     appSettings.CharacterList[currentIndex] = currentCharacterSetting;
                     // 注: LLM/Embedding設定はAPI経由で管理される
                 }
@@ -1048,7 +1048,7 @@ namespace CocoroConsole.Controls
                 return true;
             }
 
-            // キャラクターリストの比較
+            // アバターリストの比較
             if (currentSettings.characterList.Count != previousSettings.characterList.Count)
             {
                 return true;

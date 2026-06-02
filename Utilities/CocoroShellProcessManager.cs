@@ -4,7 +4,7 @@ using System;
 namespace CocoroConsole.Utilities
 {
     /// <summary>
-    /// 現在のキャラクター設定に応じて CocoroShell の起動状態を調整する。
+    /// 現在のアバター設定に応じて CocoroShell の起動状態を調整する。
     /// </summary>
     public static class CocoroShellProcessManager
     {

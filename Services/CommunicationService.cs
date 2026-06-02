@@ -73,7 +73,7 @@ namespace CocoroConsole.Services
         // memory_id キャッシュ（チャット返信を UI へ戻す際に付与）
         private string _cachedMemoryId = "memory";
 
-        // OtomeKairo が Normal になった後、現在設定と events stream を初期化済みかを表す。
+        // OtomeKairo が Normal になった後、現在設定と event stream を初期化済みかを表す。
         private bool _initialSettingsFetched = false;
 
         // 一度CocoroShellへの接続に失敗したら、明示的な再起動通知まで直接TTSに切り替える。
@@ -88,7 +88,7 @@ namespace CocoroConsole.Services
 
         private bool ShouldForwardToShell(CharacterSettings? currentCharacter = null)
         {
-            // 呼び出し元がキャラクターを渡していない場合はキャッシュから解決
+            // 呼び出し元がアバターを渡していない場合はキャッシュから解決
             currentCharacter ??= GetStoredCharacterSetting();
             return IsVrmDisplayEnabled(currentCharacter);
         }
@@ -130,7 +130,7 @@ namespace CocoroConsole.Services
         {
             _appSettings = appSettings;
 
-            // --- ClientId は otomekairo の events stream の hello で必須になるため、起動時に確実に用意する ---
+            // --- ClientId は OtomeKairo の event stream の hello で必須になるため、起動時に確実に用意する ---
             EnsureClientIdInitialized();
 
             // APIサーバーの初期化
@@ -440,7 +440,7 @@ namespace CocoroConsole.Services
             // 外部イベントに転送
             StatusChanged?.Invoke(this, status);
 
-            // Normal 復帰時は、初回または events stream 未接続なら source 登録まで再初期化する。
+            // Normal 復帰時は、初回または event stream 未接続なら source 登録まで再初期化する。
             if (status == OtomeKairoStatus.Normal && (!_initialSettingsFetched || !IsEventsStreamConnected()))
             {
                 _initialSettingsFetched = true;
@@ -501,10 +501,10 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// OtomeKairoにチャットメッセージを送信（HTTP/SSE）
+        /// OtomeKairoに対話入力を送信（HTTP/SSE）
         /// </summary>
         /// <param name="message">送信メッセージ</param>
-        /// <param name="characterName">キャラクター名（オプション）</param>
+        /// <param name="characterName">アバター名（オプション）</param>
         /// <param name="imageDataUrl">画像データURL（オプション）</param>
         public async Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, string? imageDataUrl = null)
         {
@@ -514,10 +514,10 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// CocoroCoreへメッセージを送信（複数画像対応）
+        /// OtomeKairoへ対話入力を送信（複数画像対応）
         /// </summary>
         /// <param name="message">送信メッセージ</param>
-        /// <param name="characterName">キャラクター名（オプション）</param>
+        /// <param name="characterName">アバター名（オプション）</param>
         /// <param name="imageDataUrls">画像データURLリスト（オプション）</param>
         public async Task SendChatToCoreUnifiedAsync(string message, string? characterName = null, List<string>? imageDataUrls = null)
         {
@@ -581,7 +581,7 @@ namespace CocoroConsole.Services
                     return;
                 }
 
-                // --- 能力実行要求を配送できるよう、会話送信前に events stream を接続する ---
+                // --- 能力実行要求を配送できるよう、会話送信前に event stream を接続する ---
                 await StartEventsStreamAsync().ConfigureAwait(false);
 
                 // --- 送信中ステータスを反映する ---
@@ -823,7 +823,7 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// 保存済みの現在のキャラクター設定を取得（キャッシュ使用）
+        /// 保存済みの現在のアバター設定を取得（キャッシュ使用）
         /// </summary>
         private CharacterSettings? GetStoredCharacterSetting()
         {
@@ -842,7 +842,7 @@ namespace CocoroConsole.Services
         /// CocoroShellにメッセージを転送（ノンブロッキング）
         /// </summary>
         /// <param name="content">転送するメッセージ内容</param>
-        /// <param name="currentCharacter">現在のキャラクター設定</param>
+        /// <param name="currentCharacter">現在のアバター設定</param>
         private async Task ForwardMessageToShellAsync(string content, CharacterSettings? currentCharacter)
         {
             await _forwardMessageSemaphore.WaitAsync().ConfigureAwait(false);
@@ -1054,7 +1054,7 @@ namespace CocoroConsole.Services
                 return;
             }
 
-            // events stream の hello を確実に送るため、ClientId を用意しておく
+            // event stream の hello を確実に送るため、ClientId を用意しておく
             EnsureClientIdInitialized();
 
             var eventsStreamUri = new Uri($"{_appSettings.GetOtomeKairoWebSocketBaseUrl()}/api/events/stream");
@@ -1426,7 +1426,7 @@ namespace CocoroConsole.Services
 
 
         /// <summary>
-        /// CocoroShellから現在のキャラクター位置を取得
+        /// CocoroShellから現在のアバター位置を取得
         /// </summary>
         public async Task<PositionResponse> GetShellPositionAsync()
         {

@@ -112,7 +112,7 @@
                                     <ColumnDefinition Width="28"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0"
-                                           Text="起床間隔:"
+                                           Text="自律起床間隔:"
                                            VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="1"
                                          x:Name="WakeIntervalSecondsTextBox"

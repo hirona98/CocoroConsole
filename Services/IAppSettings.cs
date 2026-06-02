@@ -14,7 +14,7 @@ namespace CocoroConsole.Services
         int CocoroConsolePort { get; set; }
 
         /// <summary>
-        /// CocoroCoreポート
+        /// OtomeKairoポート
         /// </summary>
         int OtomeKairoPort { get; set; }
 
@@ -49,7 +49,7 @@ namespace CocoroConsole.Services
         bool IsUseLLM { get; set; }
 
         /// <summary>
-        /// キャラクター位置復元
+        /// アバター位置復元
         /// </summary>
         bool IsRestoreWindowPosition { get; set; }
 
@@ -99,12 +99,12 @@ namespace CocoroConsole.Services
         int MsaaLevel { get; set; }
 
         /// <summary>
-        /// キャラクターシャドウ
+        /// アバターシャドウ
         /// </summary>
         int CharacterShadow { get; set; }
 
         /// <summary>
-        /// キャラクターシャドウ解像度
+        /// アバターシャドウ解像度
         /// </summary>
         int CharacterShadowResolution { get; set; }
 
@@ -139,7 +139,7 @@ namespace CocoroConsole.Services
         Dictionary<string, WindowPlacement> WindowPlacements { get; set; }
 
         /// <summary>
-        /// 現在のキャラクターインデックス
+        /// 現在のアバターインデックス
         /// </summary>
         int CurrentCharacterIndex { get; set; }
 
@@ -154,7 +154,7 @@ namespace CocoroConsole.Services
         MicrophoneSettings MicrophoneSettings { get; set; }
 
         /// <summary>
-        /// キャラクターリスト
+        /// アバターリスト
         /// </summary>
         List<CharacterSettings> CharacterList { get; set; }
 
@@ -235,9 +235,9 @@ namespace CocoroConsole.Services
         bool IsOtomeKairoLocal();
 
         /// <summary>
-        /// 現在選択されているキャラクター設定を取得
+        /// 現在選択されているアバター設定を取得
         /// </summary>
-        /// <returns>現在のキャラクター設定、存在しない場合はnull</returns>
+        /// <returns>現在のアバター設定、存在しない場合はnull</returns>
         CharacterSettings? GetCurrentCharacter();
 
         /// <summary>

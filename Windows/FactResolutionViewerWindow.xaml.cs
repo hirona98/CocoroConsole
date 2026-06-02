@@ -263,7 +263,7 @@ namespace CocoroConsole.Windows
                 GetString(trace.InputTrace, "input_context_addition_summary"),
                 GetString(trace.DecisionTrace, "input_context_addition_summary")
             ));
-            AppendLineIfPresent(builder, "  外界状態", BuildWorldStateLine(trace.WorldStateTrace));
+            AppendLineIfPresent(builder, "  世界状態", BuildWorldStateLine(trace.WorldStateTrace));
             AppendLineIfPresent(builder, "  継続中の行動", BuildReadableObjectLine(FirstObject(
                 TryGetProperty(trace.InputTrace, "ongoing_action_summary"),
                 TryGetProperty(trace.DecisionTrace, "ongoing_action_summary")
@@ -279,8 +279,8 @@ namespace CocoroConsole.Windows
                 GetString(trace.DecisionTrace, "reason_summary"),
                 GetString(decisionSummary, "reason_summary")
             ));
-            AppendLineIfPresent(builder, "  人格", GetString(trace.DecisionTrace, "persona_summary"));
-            AppendLineIfPresent(builder, "  記憶セット", GetString(trace.DecisionTrace, "memory_summary"));
+            AppendLineIfPresent(builder, "  人格設定", GetString(trace.DecisionTrace, "persona_summary"));
+            AppendLineIfPresent(builder, "  記憶集合", GetString(trace.DecisionTrace, "memory_summary"));
             AppendLineIfPresent(builder, "  能力要求", BuildCapabilityLine(FirstObject(
                 TryGetProperty(trace.ResultTrace, "capability_dispatch_summary"),
                 TryGetProperty(trace.ResultTrace, "capability_request_summary"),
@@ -342,7 +342,7 @@ namespace CocoroConsole.Windows
 
         private void AppendWorldStateOverview(StringBuilder builder, JsonElement worldStateTrace)
         {
-            builder.AppendLine("外界状態の更新");
+            builder.AppendLine("世界状態の更新");
             AppendLineIfPresent(builder, "  状態", DescribeStatus(GetString(worldStateTrace, "result_status")));
             AppendLineIfPresent(builder, "  更新数", BuildWorldStateCountLine(worldStateTrace));
             AppendLineIfPresent(builder, "  失敗理由", GetString(worldStateTrace, "failure_reason"));
@@ -696,7 +696,7 @@ namespace CocoroConsole.Windows
                 "user_message" => "ユーザー入力",
                 "capability_result" => "能力の実行結果",
                 "wake" => "自律起床",
-                "background_wake" => "バックグラウンド起床",
+                "background_wake" => "バックグラウンド自律起床",
                 "" => string.Empty,
                 _ => value,
             };

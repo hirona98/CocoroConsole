@@ -39,7 +39,7 @@ namespace CocoroConsole.Communication
         }
 
         /// <summary>
-        /// チャットメッセージを送信
+        /// 対話メッセージを送信
         /// </summary>
         public async Task<StandardResponse> SendChatMessageAsync(ShellChatRequest request)
         {
@@ -72,7 +72,7 @@ namespace CocoroConsole.Communication
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"チャットメッセージ送信エラー: {ex.Message}");
+                Debug.WriteLine($"対話メッセージ送信エラー: {ex.Message}");
                 throw new InvalidOperationException($"Failed to send chat message: {ex.Message}", ex);
             }
         }
@@ -156,7 +156,7 @@ namespace CocoroConsole.Communication
         }
 
         /// <summary>
-        /// 現在のキャラクター位置を取得
+        /// 現在のアバター位置を取得
         /// </summary>
         public async Task<PositionResponse> GetPositionAsync()
         {

@@ -24,7 +24,7 @@
                     </Grid.ColumnDefinitions>
                     <CheckBox x:Name="RestoreWindowPositionCheckBox"
                               Grid.Column="0"
-                              Content="起動時にキャラクター位置を復元する"
+                              Content="起動時にアバター位置を復元する"
                               Foreground="#FF4873CF"
                               VerticalAlignment="Center"/>
                     <Button x:Name="ResetCharacterPositionButton"
@@ -83,10 +83,10 @@
                           Foreground="#FF4873CF"/>
 
                 <!-- ウィンドウサイズ設定 -->
-                <GroupBox Header="キャラクターサイズ"
+                <GroupBox Header="アバターサイズ"
                           Margin="0,15,0,0"
                           Padding="10"
-                          ToolTip="Character size">
+                          ToolTip="Avatar size">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -142,14 +142,14 @@
                             </ComboBox>
                         </StackPanel>
 
-                        <!-- キャラクターシャドウ設定 -->
+                        <!-- アバターシャドウ設定 -->
                         <StackPanel Orientation="Horizontal"
                                     Margin="0,5">
-                            <TextBlock Text="キャラクターの影"
+                            <TextBlock Text="アバターの影"
                                        VerticalAlignment="Center"
                                        Foreground="#FF4873CF"
                                        Width="200"
-                                       ToolTip="Character Shadow"/>
+                                       ToolTip="Avatar shadow"/>
                             <ComboBox x:Name="CharacterShadowComboBox"
                                       Width="120"
                                       Foreground="#FF4873CF">
@@ -162,14 +162,14 @@
                             </ComboBox>
                         </StackPanel>
 
-                        <!-- キャラクターシャドウレゾリューション -->
+                        <!-- アバターシャドウ解像度 -->
                         <StackPanel Orientation="Horizontal"
                                     Margin="0,5">
-                            <TextBlock Text="キャラクターの影の解像度"
+                            <TextBlock Text="アバターの影の解像度"
                                        VerticalAlignment="Center"
                                        Foreground="#FF4873CF"
                                        Width="200"
-                                       ToolTip="Character Shadow Resolution"/>
+                                       ToolTip="Avatar shadow resolution"/>
                             <ComboBox x:Name="CharacterShadowResolutionComboBox"
                                       Width="120"
                                       Foreground="#FF4873CF">

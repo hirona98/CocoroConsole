@@ -192,10 +192,10 @@ namespace CocoroConsole.Windows
         {
             var builder = new StringBuilder();
             builder.AppendLine($"生成時刻: {snapshot.GeneratedAt}");
-            builder.AppendLine($"選択中人格ID: {GetString(snapshot.SettingsSnapshot, "selected_persona_id")}");
-            builder.AppendLine($"選択中記憶セットID: {GetString(snapshot.SettingsSnapshot, "selected_memory_set_id")}");
+            builder.AppendLine($"選択中人格設定ID: {GetString(snapshot.SettingsSnapshot, "selected_persona_id")}");
+            builder.AppendLine($"選択中記憶集合ID: {GetString(snapshot.SettingsSnapshot, "selected_memory_set_id")}");
             builder.AppendLine($"選択中モデルプリセットID: {GetString(snapshot.SettingsSnapshot, "selected_model_preset_id")}");
-            builder.AppendLine($"起床モード: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "wake_policy"), "mode")}");
+            builder.AppendLine($"自律起床モード: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "wake_policy"), "mode")}");
             var visionCaptureCapability = FindCapability(snapshot.CapabilityInspection, "vision.capture");
             builder.AppendLine($"視覚機能利用可: {GetString(visionCaptureCapability, "available")}");
             builder.AppendLine($"視覚source数: {GetArrayLength(TryGetProperty(visionCaptureCapability, "vision_sources"))}");
@@ -203,7 +203,7 @@ namespace CocoroConsole.Windows
 
             builder.AppendLine("実行要約:");
             builder.AppendLine($"  接続状態={GetString(snapshot.RuntimeSummary, "connection_state")}");
-            builder.AppendLine($"  起床スケジューラ稼働={GetString(snapshot.RuntimeSummary, "wake_scheduler_active")}");
+            builder.AppendLine($"  自律起床スケジューラ稼働={GetString(snapshot.RuntimeSummary, "wake_scheduler_active")}");
             builder.AppendLine($"  進行中アクションあり={GetString(snapshot.RuntimeSummary, "ongoing_action_exists")}");
             builder.AppendLine($"  記憶ジョブワーカー稼働={GetString(snapshot.RuntimeSummary, "memory_job_worker_active")}");
             builder.AppendLine($"  保留中記憶ジョブ数={GetString(snapshot.RuntimeSummary, "pending_memory_job_count")}");
@@ -212,7 +212,7 @@ namespace CocoroConsole.Windows
 
             builder.AppendLine("実行詳細:");
             builder.AppendLine(
-                $"  起床状態 最終起床={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_wake_at")} " +
+                $"  自律起床状態 最終自律起床={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_wake_at")} " +
                 $"最終自発発話={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_spontaneous_at")} " +
                 $"クールダウン終了={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "cooldown_until")}"
             );
@@ -220,7 +220,7 @@ namespace CocoroConsole.Windows
                 $"  記憶後処理 現在サイクルID={GetString(TryGetProperty(snapshot.RuntimeDetail, "memory_postprocess_runtime_state"), "current_cycle_id")}"
             );
             builder.AppendLine(
-                $"  保留中機能要求数={GetArrayLength(TryGetProperty(snapshot.RuntimeDetail, "pending_capability_requests"))}"
+                $"  保留中能力要求数={GetArrayLength(TryGetProperty(snapshot.RuntimeDetail, "pending_capability_requests"))}"
             );
             builder.AppendLine();
 
@@ -235,7 +235,7 @@ namespace CocoroConsole.Windows
             {
                 builder.AppendLine(
                     $"  アクションID={GetString(ongoingAction, "action_id")} 状態={GetString(ongoingAction, "status")} " +
-                    $"最終機能ID={GetString(ongoingAction, "last_capability_id")}"
+                    $"最終能力ID={GetString(ongoingAction, "last_capability_id")}"
                 );
                 builder.AppendLine($"  目標={GetString(ongoingAction, "goal_summary")}");
                 builder.AppendLine($"  ステップ={GetString(ongoingAction, "step_summary")}");
@@ -284,7 +284,7 @@ namespace CocoroConsole.Windows
 
             AppendArraySection(
                 builder,
-                "前景ワールド状態",
+                "前景世界状態",
                 TryGetProperty(currentState, "foreground_world_states"),
                 element =>
                     $"種別={GetString(element, "state_type")} 対象={FirstNonEmpty(GetString(element, "scope"), $"{GetString(element, "scope_type")}:{GetString(element, "scope_key")}")} " +
@@ -308,10 +308,10 @@ namespace CocoroConsole.Windows
             );
             AppendArraySection(
                 builder,
-                "保留中機能要求",
+                "保留中能力要求",
                 TryGetProperty(snapshot.RuntimeDetail, "pending_capability_requests"),
                 element =>
-                    $"機能ID={GetString(element, "capability_id")} 要求ID={GetString(element, "request_id")} " +
+                    $"能力ID={GetString(element, "capability_id")} 要求ID={GetString(element, "request_id")} " +
                     $"対象={GetString(element, "target_client_id")} 失効時刻={GetString(element, "expires_at")}"
             );
             AppendArraySection(
@@ -335,10 +335,10 @@ namespace CocoroConsole.Windows
             );
             AppendArraySection(
                 builder,
-                "機能一覧",
+                "能力一覧",
                 TryGetProperty(snapshot.CapabilityInspection, "capabilities"),
                 element =>
-                    $"機能ID={GetString(element, "capability_id")} 利用可能={GetString(element, "available")} " +
+                    $"能力ID={GetString(element, "capability_id")} 利用可能={GetString(element, "available")} " +
                     $"理由={GetString(element, "unavailable_reason")} 実行中={GetString(TryGetProperty(element, "state"), "busy")} " +
                     $"一時停止={GetString(TryGetProperty(element, "state"), "paused")}"
             );

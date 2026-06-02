@@ -46,7 +46,7 @@ namespace CocoroConsole.Services
                 StartTimeoutTimer();
                 if (!_wakeWordDetector.HasWakeWords)
                 {
-                    System.Diagnostics.Debug.WriteLine("[VoiceRecognition] Started in ACTIVE state (no wake words configured)");
+                    System.Diagnostics.Debug.WriteLine("[VoiceRecognition] Started in ACTIVE state (音声起動ワード未設定)");
                 }
                 else
                 {
@@ -55,7 +55,7 @@ namespace CocoroConsole.Services
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("[VoiceRecognition] Started in SLEEPING state (normal startup with wake words)");
+                System.Diagnostics.Debug.WriteLine("[VoiceRecognition] Started in SLEEPING state (音声起動ワード待機)");
             }
         }
 
@@ -148,13 +148,13 @@ namespace CocoroConsole.Services
                     if (_isMicButtonActivated || !_wakeWordDetector.HasWakeWords)
                     {
                         // MicButton切り替えの場合、またはウェイクワードが未設定の場合：タイムアウト後もACTIVE状態を維持
-                        System.Diagnostics.Debug.WriteLine("[VoiceRecognition] MicButton mode or no wake words: staying in ACTIVE after timeout");
+                        System.Diagnostics.Debug.WriteLine("[VoiceRecognition] MicButton mode or 音声起動ワード未設定: staying in ACTIVE after timeout");
                         ResetTimeoutTimer(); // タイマーを再開始
                     }
                     else
                     {
                         // 通常起動かつウェイクワード設定済みの場合：タイムアウト後はSLEEPING状態に戻る
-                        System.Diagnostics.Debug.WriteLine("[VoiceRecognition] Normal mode with wake words: returning to SLEEPING after timeout");
+                        System.Diagnostics.Debug.WriteLine("[VoiceRecognition] 音声起動ワード待機へ戻ります");
                         TransitionTo(VoiceRecognitionState.SLEEPING);
                     }
                 }

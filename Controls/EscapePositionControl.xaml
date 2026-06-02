@@ -126,7 +126,7 @@
                         Padding="10,5"
                         Margin="0,0,10,0"
                         Click="AddEscapePositionButton_Click"
-                        ToolTip="現在のキャラクター位置を移動先座標として追加"/>
+                        ToolTip="現在のアバター位置を移動先座標として追加"/>
                 <Button x:Name="ClearEscapePositionsButton"
                         Content="全削除"
                         Padding="10,5"

@@ -480,7 +480,7 @@ namespace CocoroConsole.Controls
         {
             // 確認ダイアログを表示
             var result = MessageBox.Show(
-                $"全キャラクターのすべての記憶データを削除します。\n" +
+                $"すべての記憶データを削除します。\n" +
                 "この操作は元に戻せません。\n\n" +
                 "本当に削除しますか？",
                 "記憶の削除確認",

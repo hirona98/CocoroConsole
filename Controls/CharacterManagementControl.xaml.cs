@@ -23,12 +23,12 @@ namespace CocoroConsole.Controls
         public event EventHandler? SettingsChanged;
 
         /// <summary>
-        /// キャラクターが変更されたときに発生するイベント
+        /// アバターが変更されたときに発生するイベント
         /// </summary>
         public event EventHandler? CharacterChanged;
 
         /// <summary>
-        /// 現在選択中のキャラクターインデックス
+        /// 現在選択中のアバターインデックス
         /// </summary>
         private int _currentCharacterIndex = -1;
 
@@ -38,7 +38,7 @@ namespace CocoroConsole.Controls
         private bool _isInitialized = false;
 
         /// <summary>
-        /// キャラクター名変更のデバウンス用タイマー
+        /// アバター名変更のデバウンス用タイマー
         /// </summary>
         private DispatcherTimer? _characterNameChangeTimer;
 
@@ -51,7 +51,7 @@ namespace CocoroConsole.Controls
         {
             InitializeComponent();
 
-            // キャラクター名変更用のデバウンスタイマーを初期化
+            // アバター名変更用のデバウンスタイマーを初期化
             _characterNameChangeTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(CHARACTER_NAME_DEBOUNCE_DELAY_MS)
@@ -87,7 +87,7 @@ namespace CocoroConsole.Controls
         {
             LoadCharacterList();
 
-            // 選択されたキャラクターの設定をUIに反映
+            // 選択されたアバターの設定をUIに反映
             if (CharacterSelectComboBox.SelectedIndex >= 0)
             {
                 _currentCharacterIndex = CharacterSelectComboBox.SelectedIndex;
@@ -98,7 +98,7 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// キャラクターリストを読み込み
+        /// アバターリストを読み込み
         /// </summary>
         private void LoadCharacterList()
         {
@@ -116,14 +116,14 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// UI上の現在のキャラクター設定を取得（UIから値を読み取ってディープコピーを返却）
+        /// UI上の現在のアバター設定を取得（UIから値を読み取ってディープコピーを返却）
         /// </summary>
         public CharacterSettings? GetCurrentCharacterSettingFromUI()
         {
             if (_currentCharacterIndex < 0 || _currentCharacterIndex >= AppSettings.Instance.CharacterList.Count)
                 return null;
 
-            // 既存のキャラクター設定のディープコピーを作成
+            // 既存のアバター設定のディープコピーを作成
             var originalCharacter = AppSettings.Instance.CharacterList[_currentCharacterIndex];
             var character = originalCharacter.DeepCopy();
 
@@ -205,7 +205,7 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// 現在のキャラクターインデックスを取得
+        /// 現在のアバターインデックスを取得
         /// </summary>
         public int GetCurrentCharacterIndex()
         {
@@ -213,7 +213,7 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// キャラクター選択変更イベント
+        /// アバター選択変更イベント
         /// </summary>
         private void CharacterSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -223,12 +223,12 @@ namespace CocoroConsole.Controls
             _currentCharacterIndex = CharacterSelectComboBox.SelectedIndex;
             UpdateCharacterUI();
 
-            // キャラクター変更イベントを発生
+            // アバター変更イベントを発生
             CharacterChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
-        /// キャラクターUIを更新
+        /// アバターUIを更新
         /// </summary>
         private void UpdateCharacterUI()
         {
@@ -332,20 +332,20 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// キャラクター追加ボタンクリック
+        /// アバター追加ボタンクリック
         /// </summary>
         private void AddCharacterButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                // 新規キャラクターの名前を生成
-                var newName = "新規キャラクター";
+                // 新規アバターの名前を生成
+                var newName = "新規アバター";
 
-                // 同名のキャラクターが既に存在する場合は番号を付ける
+                // 同名のアバターが既に存在する場合は番号を付ける
                 int characterNumber = 1;
                 while (AppSettings.Instance.CharacterList.Any(c => c.modelName == newName))
                 {
-                    newName = $"新規キャラクター{characterNumber}";
+                    newName = $"新規アバター{characterNumber}";
                     characterNumber++;
                 }
 
@@ -364,13 +364,13 @@ namespace CocoroConsole.Controls
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"キャラクター追加エラー: {ex.Message}", "エラー",
+                MessageBox.Show($"アバター追加エラー: {ex.Message}", "エラー",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         /// <summary>
-        /// キャラクター削除ボタンクリック
+        /// アバター削除ボタンクリック
         /// </summary>
         private void DeleteCharacterButton_Click(object sender, RoutedEventArgs e)
         {
@@ -401,13 +401,13 @@ namespace CocoroConsole.Controls
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"キャラクター削除エラー: {ex.Message}", "エラー",
+                MessageBox.Show($"アバター削除エラー: {ex.Message}", "エラー",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         /// <summary>
-        /// キャラクター複製ボタンクリック
+        /// アバター複製ボタンクリック
         /// </summary>
         private void DuplicateCharacterButton_Click(object sender, RoutedEventArgs e)
         {
@@ -418,10 +418,10 @@ namespace CocoroConsole.Controls
 
                 var sourceCharacter = AppSettings.Instance.CharacterList[_currentCharacterIndex];
 
-                // 複製するキャラクターの名前を生成
+                // 複製するアバターの名前を生成
                 var newName = sourceCharacter.modelName + "_copy";
 
-                // 同名のキャラクターが既に存在する場合は番号を付ける
+                // 同名のアバターが既に存在する場合は番号を付ける
                 int copyNumber = 1;
                 while (AppSettings.Instance.CharacterList.Any(c => c.modelName == newName))
                 {
@@ -429,7 +429,7 @@ namespace CocoroConsole.Controls
                     copyNumber++;
                 }
 
-                // キャラクター設定をコピー
+                // アバター設定をコピー
                 var newCharacter = new CharacterSettings
                 {
                     modelName = newName,
@@ -510,18 +510,18 @@ namespace CocoroConsole.Controls
                 CharacterSelectComboBox.ItemsSource = null;
                 CharacterSelectComboBox.ItemsSource = AppSettings.Instance.CharacterList;
 
-                // 新しく追加したキャラクターを選択
+                // 新しく追加したアバターを選択
                 int newIndex = AppSettings.Instance.CharacterList.Count - 1;
                 CharacterSelectComboBox.SelectedIndex = newIndex;
 
                 // 設定変更イベントを発生
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
 
-                Debug.WriteLine($"キャラクター複製: {sourceCharacter.modelName} -> {newName}");
+                Debug.WriteLine($"アバター複製: {sourceCharacter.modelName} -> {newName}");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"キャラクター複製エラー: {ex.Message}", "エラー",
+                MessageBox.Show($"アバター複製エラー: {ex.Message}", "エラー",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -543,7 +543,7 @@ namespace CocoroConsole.Controls
                 {
                     VRMFilePathTextBox.Text = dialog.FileName;
 
-                    // ファイル名から自動的にキャラクター名を更新（ユーザーが変更可能）
+                    // ファイル名から自動的にアバター名を更新（ユーザーが変更可能）
                     if (string.IsNullOrWhiteSpace(CharacterNameTextBox.Text))
                     {
                         CharacterNameTextBox.Text = Path.GetFileNameWithoutExtension(dialog.FileName);
@@ -635,7 +635,7 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// キャラクター名のテキスト変更イベント（リアルタイム更新）
+        /// アバター名のテキスト変更イベント（リアルタイム更新）
         /// </summary>
         private void CharacterNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -651,7 +651,7 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// キャラクター名変更タイマーのTickイベント（デバウンス処理）
+        /// アバター名変更タイマーのTickイベント（デバウンス処理）
         /// </summary>
         private void CharacterNameChangeTimer_Tick(object? sender, EventArgs e)
         {
@@ -669,7 +669,7 @@ namespace CocoroConsole.Controls
                 // 現在選択されているアイテムのインデックスを保存
                 var currentSelectedIndex = _currentCharacterIndex;
 
-                // キャラクター設定の名前を更新
+                // アバター設定の名前を更新
                 AppSettings.Instance.CharacterList[_currentCharacterIndex].modelName = newName;
 
                 // ComboBoxのItemsSourceを一時的に無効にしてSelectionChangedイベントを防ぐ
@@ -690,7 +690,7 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// キャラクターリストのUIを更新
+        /// アバターリストのUIを更新
         /// </summary>
         public void RefreshCharacterList()
         {
@@ -717,7 +717,7 @@ namespace CocoroConsole.Controls
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"キャラクターリスト復元エラー: {ex.Message}");
+                Debug.WriteLine($"アバターリスト復元エラー: {ex.Message}");
             }
         }
     }

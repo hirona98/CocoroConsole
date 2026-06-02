@@ -65,7 +65,7 @@ namespace CocoroConsole.Models.OtomeKairoApi
     }
 
     /// <summary>
-    /// 記憶セット設定を表します。
+    /// 記憶集合設定を表します。
     /// </summary>
     public class OtomeKairoMemorySetDefinition
     {

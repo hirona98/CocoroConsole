@@ -18,7 +18,7 @@
                         <TextBlock Foreground="#666666"
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,10">
-                            <Run Text="全キャラクターのデータが完全に削除されます。"
+                            <Run Text="すべての記憶データが完全に削除されます。"
                                  Foreground="Red"/>
                         </TextBlock>
                         <StackPanel Orientation="Horizontal">

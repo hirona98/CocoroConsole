@@ -71,7 +71,7 @@ namespace CocoroConsole.Services
         public float WindowPositionY { get; set; }
         public Dictionary<string, WindowPlacement> WindowPlacements { get; set; } = new Dictionary<string, WindowPlacement>();
 
-        // キャラクター設定
+        // アバター設定
         public int CurrentCharacterIndex { get; set; } = 0;
         public List<CharacterSettings> CharacterList { get; set; } = new List<CharacterSettings>();
 
@@ -174,7 +174,7 @@ namespace CocoroConsole.Services
             WindowPositionY = config.windowPositionY;
             CurrentCharacterIndex = config.currentCharacterIndex;
 
-            // キャラクターリストを更新（もし受信したリストが空でなければ）
+            // アバターリストを更新（もし受信したリストが空でなければ）
             if (config.characterList != null && config.characterList.Count > 0)
             {
                 CharacterList = new List<CharacterSettings>(config.characterList);
@@ -215,7 +215,7 @@ namespace CocoroConsole.Services
         /// </summary>
         private void EnsureCharacterSchemaConsistency()
         {
-            // キャラクター設定の不足補完が必要になった場合はここで行う
+            // アバター設定の不足補完が必要になった場合はここで行う
         }
 
         /// <summary>
@@ -447,7 +447,7 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// DefaultSetting.json からキャラクターの雛形を作成する
+        /// DefaultSetting.json からアバターの雛形を作成する
         /// </summary>
         public CharacterSettings CreateCharacterFromDefaults(string modelName)
         {
@@ -619,9 +619,9 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// 現在選択されているキャラクター設定を取得
+        /// 現在選択されているアバター設定を取得
         /// </summary>
-        /// <returns>現在のキャラクター設定、存在しない場合はnull</returns>
+        /// <returns>現在のアバター設定、存在しない場合はnull</returns>
         public CharacterSettings? GetCurrentCharacter()
         {
             if (CharacterList == null || CharacterList.Count == 0)
