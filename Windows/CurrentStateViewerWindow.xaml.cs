@@ -195,7 +195,7 @@ namespace CocoroConsole.Windows
             builder.AppendLine($"選択中人格設定ID: {GetString(snapshot.SettingsSnapshot, "selected_persona_id")}");
             builder.AppendLine($"選択中記憶集合ID: {GetString(snapshot.SettingsSnapshot, "selected_memory_set_id")}");
             builder.AppendLine($"選択中モデルプリセットID: {GetString(snapshot.SettingsSnapshot, "selected_model_preset_id")}");
-            builder.AppendLine($"自律起床モード: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "wake_policy"), "mode")}");
+            builder.AppendLine($"起床ポリシーモード: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "wake_policy"), "mode")}");
             var visionCaptureCapability = FindCapability(snapshot.CapabilityInspection, "vision.capture");
             builder.AppendLine($"視覚機能利用可: {GetString(visionCaptureCapability, "available")}");
             builder.AppendLine($"視覚source数: {GetArrayLength(TryGetProperty(visionCaptureCapability, "vision_sources"))}");
@@ -203,7 +203,7 @@ namespace CocoroConsole.Windows
 
             builder.AppendLine("実行要約:");
             builder.AppendLine($"  接続状態={GetString(snapshot.RuntimeSummary, "connection_state")}");
-            builder.AppendLine($"  自律起床スケジューラ稼働={GetString(snapshot.RuntimeSummary, "wake_scheduler_active")}");
+            builder.AppendLine($"  定期起床スケジューラ稼働={GetString(snapshot.RuntimeSummary, "wake_scheduler_active")}");
             builder.AppendLine($"  進行中アクションあり={GetString(snapshot.RuntimeSummary, "ongoing_action_exists")}");
             builder.AppendLine($"  記憶ジョブワーカー稼働={GetString(snapshot.RuntimeSummary, "memory_job_worker_active")}");
             builder.AppendLine($"  保留中記憶ジョブ数={GetString(snapshot.RuntimeSummary, "pending_memory_job_count")}");
@@ -212,7 +212,7 @@ namespace CocoroConsole.Windows
 
             builder.AppendLine("実行詳細:");
             builder.AppendLine(
-                $"  自律起床状態 最終自律起床={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_wake_at")} " +
+                $"  起床状態 最終起床={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_wake_at")} " +
                 $"最終自発発話={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_spontaneous_at")} " +
                 $"クールダウン終了={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "cooldown_until")}"
             );

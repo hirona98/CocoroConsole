@@ -16,7 +16,7 @@
                     <StackPanel>
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666">
-                            APIを使って外部プログラムから会話入力と自律起床を実行します。
+                            APIを使って外部プログラムから会話入力とAPI起床を実行します。
                         </TextBlock>
 
                         <Expander x:Name="ConversationApiExpander"
@@ -37,7 +37,7 @@
                         </Expander>
 
                         <Expander x:Name="WakeApiExpander"
-                                  Header="自律起床API（POST /api/wake）"
+                                  Header="API起床（POST /api/wake）"
                                   Foreground="#666666"
                                   IsExpanded="False"
                                   Margin="0,10,0,0">

@@ -220,14 +220,14 @@ namespace CocoroConsole
 
                 var factTraceMenuItem = new System.Windows.Forms.ToolStripMenuItem
                 {
-                    Text = "根拠トレース表示"
+                    Text = "判断トレース表示"
                 };
                 factTraceMenuItem.Click += (s, e) =>
                 {
                     ShowMainWindow();
                     if (Current.MainWindow is MainWindow mainWindow)
                     {
-                        mainWindow.OpenFactResolutionViewer();
+                        mainWindow.OpenJudgmentTraceViewer();
                     }
                 };
                 contextMenu.Items.Add(factTraceMenuItem);

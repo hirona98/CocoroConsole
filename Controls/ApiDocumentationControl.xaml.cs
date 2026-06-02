@@ -94,7 +94,7 @@ namespace CocoroConsole.Controls
             var baseUrl = AppSettings.Instance.GetOtomeKairoBaseUrl();
             var sb = new StringBuilder();
             sb.AppendLine("用途:");
-            sb.AppendLine("- OtomeKairo に自律起床 1 サイクルの実行を依頼する");
+            sb.AppendLine("- OtomeKairo に API起床 1 サイクルの実行を依頼する");
             sb.AppendLine("- wake_policy が disabled の場合は noop を返す");
             sb.AppendLine();
 

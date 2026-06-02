@@ -31,7 +31,7 @@ namespace CocoroConsole
         private VoiceRecognitionSettingsSnapshot? _voiceRecognitionSettingsSnapshot;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
-        private FactResolutionViewerWindow? _factResolutionViewerWindow;
+        private JudgmentTraceViewerWindow? _judgmentTraceViewerWindow;
         private CurrentStateViewerWindow? _currentStateViewerWindow;
         private DebugTraceListener? _debugTraceListener;
         private bool _isConversationOutputActive;
@@ -43,7 +43,7 @@ namespace CocoroConsole
         private const string MainWindowPlacementKey = "MainWindow";
         private const string SettingWindowPlacementKey = "SettingWindow";
         private const string LogViewerWindowPlacementKey = "LogViewerWindow";
-        private const string FactResolutionViewerWindowPlacementKey = "FactResolutionViewerWindow";
+        private const string JudgmentTraceViewerWindowPlacementKey = "JudgmentTraceViewerWindow";
         private const string CurrentStateViewerWindowPlacementKey = "CurrentStateViewerWindow";
         private static readonly TimeSpan OtomeKairoStartupTimeout = TimeSpan.FromMinutes(2);
 
@@ -104,9 +104,9 @@ namespace CocoroConsole
             OpenLogViewer();
         }
 
-        private void FactResolutionViewerMenuItem_Click(object sender, RoutedEventArgs e)
+        private void JudgmentTraceViewerMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            OpenFactResolutionViewer();
+            OpenJudgmentTraceViewer();
         }
 
         private void CurrentStateViewerMenuItem_Click(object sender, RoutedEventArgs e)
@@ -704,31 +704,31 @@ namespace CocoroConsole
             _logViewerWindow.Show();
         }
 
-        public void OpenFactResolutionViewer()
+        public void OpenJudgmentTraceViewer()
         {
-            if (_factResolutionViewerWindow != null && !_factResolutionViewerWindow.IsClosed)
+            if (_judgmentTraceViewerWindow != null && !_judgmentTraceViewerWindow.IsClosed)
             {
-                _factResolutionViewerWindow.Activate();
-                _factResolutionViewerWindow.WindowState = WindowState.Normal;
+                _judgmentTraceViewerWindow.Activate();
+                _judgmentTraceViewerWindow.WindowState = WindowState.Normal;
                 return;
             }
 
-            _factResolutionViewerWindow = new FactResolutionViewerWindow();
+            _judgmentTraceViewerWindow = new JudgmentTraceViewerWindow();
             var isPositionRestored = WindowPlacementManager.AttachAndRestore(
-                _factResolutionViewerWindow,
-                FactResolutionViewerWindowPlacementKey,
+                _judgmentTraceViewerWindow,
+                JudgmentTraceViewerWindowPlacementKey,
                 _appSettings);
             if (!isPositionRestored)
             {
-                PositionWindowNearMain(_factResolutionViewerWindow);
+                PositionWindowNearMain(_judgmentTraceViewerWindow);
             }
 
-            _factResolutionViewerWindow.Closed += (sender, args) =>
+            _judgmentTraceViewerWindow.Closed += (sender, args) =>
             {
-                _factResolutionViewerWindow = null;
+                _judgmentTraceViewerWindow = null;
             };
 
-            _factResolutionViewerWindow.Show();
+            _judgmentTraceViewerWindow.Show();
         }
 
         public void OpenCurrentStateViewer()

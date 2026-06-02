@@ -16,7 +16,7 @@ namespace CocoroConsole.Windows
     /// <summary>
     /// 判断サイクルの要点と詳細 trace を確認する inspection ビューアー。
     /// </summary>
-    public partial class FactResolutionViewerWindow : Window
+    public partial class JudgmentTraceViewerWindow : Window
     {
         private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
         {
@@ -31,19 +31,19 @@ namespace CocoroConsole.Windows
 
         public bool IsClosed { get; private set; }
 
-        public FactResolutionViewerWindow()
+        public JudgmentTraceViewerWindow()
         {
             InitializeComponent();
-            Loaded += FactResolutionViewerWindow_Loaded;
-            Closed += FactResolutionViewerWindow_Closed;
+            Loaded += JudgmentTraceViewerWindow_Loaded;
+            Closed += JudgmentTraceViewerWindow_Closed;
         }
 
-        private async void FactResolutionViewerWindow_Loaded(object sender, RoutedEventArgs e)
+        private async void JudgmentTraceViewerWindow_Loaded(object sender, RoutedEventArgs e)
         {
             await LoadCycleSummariesAsync(preserveSelection: false);
         }
 
-        private void FactResolutionViewerWindow_Closed(object? sender, EventArgs e)
+        private void JudgmentTraceViewerWindow_Closed(object? sender, EventArgs e)
         {
             IsClosed = true;
             _traceLoadCts?.Cancel();
@@ -165,9 +165,9 @@ namespace CocoroConsole.Windows
                 SelectedCycleTitleTextBlock.Text = cycleId;
                 SelectedCycleMetaTextBlock.Text = BuildCycleMetaText(cycleSummary);
 
-                var factTrace = TryGetProperty(trace.RecallTrace, "fact_resolution_trace");
-                OverviewTextBox.Text = BuildOverview(trace, factTrace);
-                FactResolutionTraceTextBox.Text = PrettyJson(factTrace);
+                var evidenceResolutionTrace = TryGetProperty(trace.RecallTrace, "fact_resolution_trace");
+                OverviewTextBox.Text = BuildOverview(trace, evidenceResolutionTrace);
+                EvidenceResolutionTraceTextBox.Text = PrettyJson(evidenceResolutionTrace);
                 RecallTraceTextBox.Text = PrettyJson(trace.RecallTrace);
                 ActivityTraceTextBox.Text = PrettyJson(trace.ActivityTrace);
                 CycleTraceTextBox.Text = JsonSerializer.Serialize(trace, _jsonSerializerOptions);
@@ -214,7 +214,7 @@ namespace CocoroConsole.Windows
             SelectedCycleTitleTextBlock.Text = "cycle 未選択";
             SelectedCycleMetaTextBlock.Text = string.Empty;
             OverviewTextBox.Text = message;
-            FactResolutionTraceTextBox.Text = message;
+            EvidenceResolutionTraceTextBox.Text = message;
             RecallTraceTextBox.Text = string.Empty;
             ActivityTraceTextBox.Text = string.Empty;
             CycleTraceTextBox.Text = string.Empty;
@@ -234,7 +234,7 @@ namespace CocoroConsole.Windows
             return $"開始時刻: {startedAt} / きっかけ: {DescribeTriggerKind(triggerKind)} / 結果: {DescribeResultKind(resultKind)} / 失敗: {DescribeBool(failed)}";
         }
 
-        private string BuildOverview(OtomeKairoCycleTrace trace, JsonElement factTrace)
+        private string BuildOverview(OtomeKairoCycleTrace trace, JsonElement evidenceResolutionTrace)
         {
             var builder = new StringBuilder();
             var compact = TryGetProperty(trace.ResultTrace, "trigger_compact_summary");
@@ -288,7 +288,7 @@ namespace CocoroConsole.Windows
             )));
             builder.AppendLine();
 
-            AppendFactResolutionOverview(builder, factTrace);
+            AppendEvidenceResolutionOverview(builder, evidenceResolutionTrace);
             AppendRecallOverview(builder, trace.RecallTrace);
             AppendWorldStateOverview(builder, trace.WorldStateTrace);
             AppendActivityOverview(builder, trace.ActivityTrace);
@@ -297,35 +297,35 @@ namespace CocoroConsole.Windows
             return builder.ToString();
         }
 
-        private void AppendFactResolutionOverview(StringBuilder builder, JsonElement factTrace)
+        private void AppendEvidenceResolutionOverview(StringBuilder builder, JsonElement evidenceResolutionTrace)
         {
-            builder.AppendLine("根拠解決");
+            builder.AppendLine("根拠の解決");
 
-            if (factTrace.ValueKind != JsonValueKind.Object)
+            if (evidenceResolutionTrace.ValueKind != JsonValueKind.Object)
             {
                 builder.AppendLine("  この判断では個別根拠の解決はありません。");
                 builder.AppendLine();
                 return;
             }
 
-            var query = TryGetProperty(factTrace, "query");
-            AppendLineIfPresent(builder, "  状態", DescribeStatus(GetString(factTrace, "result_status")));
+            var query = TryGetProperty(evidenceResolutionTrace, "query");
+            AppendLineIfPresent(builder, "  状態", DescribeStatus(GetString(evidenceResolutionTrace, "result_status")));
             AppendLineIfPresent(builder, "  探したこと", FirstNonEmpty(JoinArrayValues(query, "query_terms"), GetString(query, "input_text")));
             AppendLineIfPresent(builder, "  対象", BuildTargetLine(query));
-            AppendLineIfPresent(builder, "  未解決理由", GetString(factTrace, "missing_reason"));
-            AppendLineIfPresent(builder, "  発話方針", GetString(factTrace, "speech_guidance"));
+            AppendLineIfPresent(builder, "  未解決理由", GetString(evidenceResolutionTrace, "missing_reason"));
+            AppendLineIfPresent(builder, "  発話方針", GetString(evidenceResolutionTrace, "speech_guidance"));
             AppendTopArraySection(
                 builder,
                 "  採用した根拠",
-                TryGetProperty(factTrace, "adopted_evidence_items"),
+                TryGetProperty(evidenceResolutionTrace, "adopted_evidence_items"),
                 3,
                 BuildEventLine
             );
-            AppendTopArraySection(builder, "  確認した候補", TryGetProperty(factTrace, "boundary_event_candidates"), 2, BuildEventLine);
-            AppendTopArraySection(builder, "  近いサイクル候補", TryGetProperty(factTrace, "cycle_event_candidates"), 2, BuildEventLine);
-            AppendTopArraySection(builder, "  近い発話候補", TryGetProperty(factTrace, "statement_event_candidates"), 2, BuildEventLine);
-            AppendTopArraySection(builder, "  矛盾候補", TryGetProperty(factTrace, "conflict_candidates"), 2, BuildEventLine);
-            AppendConsistencyOverview(builder, TryGetProperty(factTrace, "consistency_checks"));
+            AppendTopArraySection(builder, "  確認した候補", TryGetProperty(evidenceResolutionTrace, "boundary_event_candidates"), 2, BuildEventLine);
+            AppendTopArraySection(builder, "  近いサイクル候補", TryGetProperty(evidenceResolutionTrace, "cycle_event_candidates"), 2, BuildEventLine);
+            AppendTopArraySection(builder, "  近い発話候補", TryGetProperty(evidenceResolutionTrace, "statement_event_candidates"), 2, BuildEventLine);
+            AppendTopArraySection(builder, "  矛盾候補", TryGetProperty(evidenceResolutionTrace, "conflict_candidates"), 2, BuildEventLine);
+            AppendConsistencyOverview(builder, TryGetProperty(evidenceResolutionTrace, "consistency_checks"));
             builder.AppendLine();
         }
 
@@ -695,8 +695,8 @@ namespace CocoroConsole.Windows
             {
                 "user_message" => "ユーザー入力",
                 "capability_result" => "能力の実行結果",
-                "wake" => "自律起床",
-                "background_wake" => "バックグラウンド自律起床",
+                "wake" => "API起床",
+                "background_wake" => "定期起床",
                 "" => string.Empty,
                 _ => value,
             };

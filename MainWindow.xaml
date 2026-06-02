@@ -41,8 +41,8 @@
                                                    FontWeight="SemiBold">
                                                 <TextBlock.ContextMenu>
                                                         <ContextMenu>
-                                                                <MenuItem Header="根拠トレース表示"
-                                                                          Click="FactResolutionViewerMenuItem_Click"/>
+                                                                <MenuItem Header="判断トレース表示"
+                                                                          Click="JudgmentTraceViewerMenuItem_Click"/>
                                                                 <MenuItem Header="現在状態表示"
                                                                           Click="CurrentStateViewerMenuItem_Click"/>
                                                                 <Separator/>
