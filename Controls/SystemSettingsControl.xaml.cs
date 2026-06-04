@@ -15,7 +15,7 @@ namespace CocoroConsole.Controls
     {
         public event EventHandler? SettingsChanged;
 
-        private const double DefaultDesktopSceneSimilarityThreshold = 0.4;
+        private const double DefaultVisualObservationSimilarityThreshold = 0.3;
 
         private bool _isInitialized;
         private Dictionary<string, object?> _wakePolicy = new Dictionary<string, object?>();
@@ -71,15 +71,13 @@ namespace CocoroConsole.Controls
             WakeIntervalSecondsTextBox.Text = ReadInt(wakePolicy, "interval_seconds", 300).ToString(CultureInfo.InvariantCulture);
             DesktopSceneSimilarityThresholdTextBox.Text = ReadDouble(
                 wakePolicy,
-                "desktop_scene_similarity_threshold",
-                DefaultDesktopSceneSimilarityThreshold).ToString("0.###", CultureInfo.InvariantCulture);
+                "visual_observation_similarity_threshold",
+                DefaultVisualObservationSimilarityThreshold).ToString("0.###", CultureInfo.InvariantCulture);
             WakeDesktopObservationCheckBox.IsChecked = DesktopWakePolicyHelper.HasDesktopWakeObservation(wakePolicy, AppSettings.Instance.ClientId);
         }
 
         public void SetWakeDesktopObservationEnabled(bool enabled)
         {
-            _wakePolicy = DesktopWakePolicyHelper.SetDesktopWakeObservationEnabled(_wakePolicy, AppSettings.Instance.ClientId, enabled);
-
             var previousInitialized = _isInitialized;
             _isInitialized = false;
             WakeDesktopObservationCheckBox.IsChecked = enabled;
@@ -95,7 +93,7 @@ namespace CocoroConsole.Controls
             WakePolicyEnabledCheckBox.IsChecked = false;
             WakeDesktopObservationCheckBox.IsChecked = false;
             WakeIntervalSecondsTextBox.Text = "300";
-            DesktopSceneSimilarityThresholdTextBox.Text = DefaultDesktopSceneSimilarityThreshold.ToString("0.###", CultureInfo.InvariantCulture);
+            DesktopSceneSimilarityThresholdTextBox.Text = DefaultVisualObservationSimilarityThreshold.ToString("0.###", CultureInfo.InvariantCulture);
         }
 
         private void SetupEventHandlers()
@@ -123,27 +121,17 @@ namespace CocoroConsole.Controls
 
         public Dictionary<string, object?> GetWakePolicy()
         {
-            var wakePolicy = new Dictionary<string, object?>(_wakePolicy);
-            wakePolicy["desktop_scene_similarity_threshold"] = ReadDesktopSceneSimilarityThreshold();
-            if (WakePolicyEnabledCheckBox.IsChecked ?? false)
+            var mode = WakePolicyEnabledCheckBox.IsChecked ?? false ? "interval" : "disabled";
+            int? intervalSeconds = null;
+            if (int.TryParse(WakeIntervalSecondsTextBox.Text, out var parsed) && parsed > 0)
             {
-                var intervalSeconds = 300;
-                if (int.TryParse(WakeIntervalSecondsTextBox.Text, out var parsed) && parsed > 0)
-                {
-                    intervalSeconds = parsed;
-                }
-
-                wakePolicy["mode"] = "interval";
-                wakePolicy["interval_seconds"] = intervalSeconds;
-                return DesktopWakePolicyHelper.SetDesktopWakeObservationEnabled(
-                    wakePolicy,
-                    AppSettings.Instance.ClientId,
-                    WakeDesktopObservationCheckBox.IsChecked ?? false);
+                intervalSeconds = parsed;
             }
 
-            wakePolicy["mode"] = "disabled";
-            return DesktopWakePolicyHelper.SetDesktopWakeObservationEnabled(
-                wakePolicy,
+            return DesktopWakePolicyHelper.BuildWakePolicyRequest(
+                mode,
+                intervalSeconds,
+                ReadDesktopSceneSimilarityThreshold(),
                 AppSettings.Instance.ClientId,
                 WakeDesktopObservationCheckBox.IsChecked ?? false);
         }
@@ -156,7 +144,7 @@ namespace CocoroConsole.Controls
                 CultureInfo.InvariantCulture,
                 out var threshold))
             {
-                return DefaultDesktopSceneSimilarityThreshold;
+                return DefaultVisualObservationSimilarityThreshold;
             }
 
             if (threshold < 0)

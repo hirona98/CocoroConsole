@@ -104,10 +104,10 @@ namespace CocoroConsole.Controls
 
             var messageContent = new StackPanel();
 
-            // 複数画像がある場合は先に表示
+            // 添付画像がある場合は先に表示
             if (imageSources != null && imageSources.Count > 0)
             {
-                // 画像を横並びで表示するためのWrapPanel
+                // 添付画像を表示するためのWrapPanel
                 var imagePanel = new WrapPanel
                 {
                     Orientation = Orientation.Horizontal,
@@ -536,7 +536,7 @@ namespace CocoroConsole.Controls
             // 複数画像がある場合は追加
             if (imageSources != null && imageSources.Count > 0)
             {
-                // 画像を横並びで表示するためのWrapPanel
+                // 添付画像を表示するためのWrapPanel
                 var imagePanel = new WrapPanel
                 {
                     Orientation = Orientation.Horizontal,
@@ -974,7 +974,7 @@ namespace CocoroConsole.Controls
             }
             else
             {
-                // 複数画像をプレビューに表示
+                // 添付画像をプレビューに表示
                 for (int i = 0; i < _attachedImageSources.Count; i++)
                 {
                     var imageSource = _attachedImageSources[i];
@@ -1063,7 +1063,7 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// 添付画像データ（複数）を取得してクリア
+        /// 添付画像データを取得してクリア
         /// </summary>
         public List<string> GetAndClearAttachedImages()
         {
@@ -1078,34 +1078,11 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// 添付画像の最初の1枚を取得してクリア（既存互換性のため）
-        /// </summary>
-        public string? GetAndClearAttachedImage()
-        {
-            string? imageDataUrl = _attachedImageDataUrls.Count > 0 ? _attachedImageDataUrls[0] : null;
-            if (_attachedImageDataUrls.Count > 0)
-            {
-                _attachedImageDataUrls.Clear();
-                _attachedImageSources.Clear();
-                UpdateImagePreview();
-            }
-            return imageDataUrl;
-        }
-
-        /// <summary>
         /// 添付画像のBitmapSourceリストを取得
         /// </summary>
         public List<BitmapSource> GetAttachedImageSources()
         {
             return new List<BitmapSource>(_attachedImageSources);
-        }
-
-        /// <summary>
-        /// 添付画像の最初の1枚のBitmapSourceを取得（既存互換性のため）
-        /// </summary>
-        public BitmapSource? GetAttachedImageSource()
-        {
-            return _attachedImageSources.Count > 0 ? _attachedImageSources[0] : null;
         }
 
         /// <summary>

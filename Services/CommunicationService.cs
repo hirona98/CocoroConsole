@@ -591,6 +591,7 @@ namespace CocoroConsole.Services
                 var normalizedImages = imageDataUrls?
                     .Where(url => !string.IsNullOrWhiteSpace(url))
                     .Select(url => url.Trim())
+                    .Take(1)
                     .ToList();
                 if (normalizedImages != null && normalizedImages.Count == 0)
                 {
@@ -765,7 +766,7 @@ namespace CocoroConsole.Services
                     .GetOtomeKairoConfigAsync()
                     .ConfigureAwait(false);
                 var currentWakePolicy = configResponse.SettingsSnapshot.WakePolicy ?? new Dictionary<string, object?>();
-                var wakePolicy = DesktopWakePolicyHelper.SetDesktopWakeObservationEnabled(
+                var wakePolicy = DesktopWakePolicyHelper.BuildWakePolicyRequestFromCurrent(
                     currentWakePolicy,
                     _appSettings.ClientId,
                     enabled);
