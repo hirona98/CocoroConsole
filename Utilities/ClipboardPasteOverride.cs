@@ -1,5 +1,8 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -7,6 +10,18 @@ namespace CocoroConsole.Utilities
 {
     public static class ClipboardPasteOverride
     {
+        public enum CopyResult
+        {
+            Copied,
+            AlreadyPending,
+            Failed
+        }
+
+        private static readonly SemaphoreSlim ClipboardWriteLock = new SemaphoreSlim(1, 1);
+        private static readonly object ActiveCopyLock = new object();
+        private static Task<bool>? _activeCopyTask;
+        private static string? _activeCopyText;
+
         public static void CopyToClipboard(TextBox source)
         {
             if (source == null)
@@ -14,7 +29,7 @@ namespace CocoroConsole.Utilities
                 return;
             }
 
-            TrySetText(source.Text);
+            _ = SetTextAsync(source.Text);
         }
 
         public static void CopyToClipboard(PasswordBox source)
@@ -24,7 +39,7 @@ namespace CocoroConsole.Utilities
                 return;
             }
 
-            TrySetText(source.Password);
+            _ = SetTextAsync(source.Password);
         }
 
         public static void PasteOverwrite(TextBox target)
@@ -74,18 +89,90 @@ namespace CocoroConsole.Utilities
             }
         }
 
-        private static void TrySetText(string? text)
+        public static async Task<bool> TrySetTextAsync(string? text)
+        {
+            return await SetTextAsync(text).ConfigureAwait(true) != CopyResult.Failed;
+        }
+
+        public static Task<CopyResult> SetTextAsync(string? text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return Task.FromResult(CopyResult.Failed);
+            }
+
+            lock (ActiveCopyLock)
+            {
+                if (_activeCopyTask != null
+                    && !_activeCopyTask.IsCompleted
+                    && string.Equals(_activeCopyText, text, StringComparison.Ordinal))
+                {
+                    return Task.FromResult(CopyResult.AlreadyPending);
+                }
+
+                var copyTask = TrySetTextCoreAsync(text);
+                _activeCopyTask = copyTask;
+                _activeCopyText = text;
+                _ = ClearActiveCopyAsync(copyTask);
+                return ToCopyResultAsync(copyTask);
+            }
+        }
+
+        private static async Task<CopyResult> ToCopyResultAsync(Task<bool> copyTask)
+        {
+            return await copyTask.ConfigureAwait(true) ? CopyResult.Copied : CopyResult.Failed;
+        }
+
+        private static async Task ClearActiveCopyAsync(Task<bool> copyTask)
         {
             try
             {
-                if (!string.IsNullOrEmpty(text))
+                await copyTask.ConfigureAwait(false);
+            }
+            finally
+            {
+                lock (ActiveCopyLock)
                 {
-                    Clipboard.SetText(text);
+                    if (ReferenceEquals(_activeCopyTask, copyTask))
+                    {
+                        _activeCopyTask = null;
+                        _activeCopyText = null;
+                    }
                 }
             }
-            catch (Exception ex)
+        }
+
+        private static async Task<bool> TrySetTextCoreAsync(string text)
+        {
+            const int clipboardCannotOpenHResult = unchecked((int)0x800401D0);
+            const int maxAttempts = 8;
+            await ClipboardWriteLock.WaitAsync().ConfigureAwait(true);
+            try
             {
-                Debug.WriteLine($"Clipboard copy failed: {ex}");
+                for (int attempt = 1; attempt <= maxAttempts; attempt++)
+                {
+                    try
+                    {
+                        Clipboard.SetText(text);
+                        return true;
+                    }
+                    catch (COMException ex) when (ex.ErrorCode == clipboardCannotOpenHResult && attempt < maxAttempts)
+                    {
+                        await Task.Delay(25).ConfigureAwait(true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Clipboard copy failed: {ex}");
+                        return false;
+                    }
+                }
+
+                Debug.WriteLine("Clipboard copy failed: OpenClipboard に失敗しました");
+                return false;
+            }
+            finally
+            {
+                ClipboardWriteLock.Release();
             }
         }
     }

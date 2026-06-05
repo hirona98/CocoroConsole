@@ -12,6 +12,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using CocoroConsole.Windows;
 using CocoroConsole.Services;
+using CocoroConsole.Utilities;
 using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
 
@@ -1265,27 +1266,33 @@ namespace CocoroConsole.Controls
         /// </summary>
         private void AttachCopyOnRightClick(Border bubble)
         {
-            bubble.MouseRightButtonUp += (s, e) =>
+            bubble.MouseRightButtonUp += async (s, e) =>
             {
                 try
                 {
+                    e.Handled = true;
+
                     string text = CollectTextFromBubble(bubble);
                     if (string.IsNullOrWhiteSpace(text))
                     {
                         ShowTransientTooltip(bubble, "コピーするテキストがありません");
-                        e.Handled = true;
                         return;
                     }
 
-                    Clipboard.SetText(text);
-                    ShowTransientTooltip(bubble, "コピーしました");
-                    e.Handled = true;
+                    var copyResult = await ClipboardPasteOverride.SetTextAsync(text);
+                    if (copyResult == ClipboardPasteOverride.CopyResult.Copied)
+                    {
+                        ShowTransientTooltip(bubble, "コピーしました");
+                    }
+                    else if (copyResult == ClipboardPasteOverride.CopyResult.Failed)
+                    {
+                        ShowTransientTooltip(bubble, "コピーに失敗しました");
+                    }
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Clipboard copy failed: {ex}");
                     ShowTransientTooltip(bubble, "コピーに失敗しました");
-                    e.Handled = true;
                 }
             };
         }
