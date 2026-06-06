@@ -9,86 +9,74 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!-- アバター選択 -->
-                <GroupBox Header="アバター選択"
-                          Margin="0,0,20,20"
-                          Padding="10"
-                          ToolTip="Select avatar (restart required)">
+                <Grid Margin="0,0,20,0"
+                      ToolTip="Select avatar (restart required)" HorizontalAlignment="Left">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="85"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ComboBox x:Name="AvatarSelectComboBox"
+                              Grid.Column="0"
+                              Margin="0,5,10,5"
+                              SelectionChanged="AvatarSelectComboBox_SelectionChanged"
+                              DisplayMemberPath="modelName"
+                              SelectedValuePath="modelName" Width="500" HorizontalAlignment="Left">
+                    </ComboBox>
+
+                    <Button x:Name="AddAvatarButton"
+                            Grid.Column="1"
+                            Content="追加"
+                            Margin="0,5,0,5"
+                            Padding="10,5"
+                            Click="AddAvatarButton_Click"
+                            ToolTip="Add avatar"/>
+
+                    <Button x:Name="DuplicateAvatarButton"
+                            Grid.Column="2"
+                            Content="複製"
+                            Margin="5,5,0,5"
+                            Padding="10,5"
+                            Click="DuplicateAvatarButton_Click"
+                            ToolTip="Duplicate current avatar"/>
+
+                    <Button x:Name="DeleteAvatarButton"
+                            Grid.Column="3"
+                            Content="削除"
+                            Margin="5,5,0,5"
+                            Padding="10,5"
+                            Style="{StaticResource DeleteButtonStyle}"
+                            Click="DeleteAvatarButton_Click"
+                            ToolTip="Delete this avatar"/>
+                </Grid>
+
+                <Grid Margin="0,20,20,0"
+                      ToolTip="Basic setting">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="プリセット名:"
+                               VerticalAlignment="Center"
+                               ToolTip="Name"/>
+                    <TextBox Grid.Column="1"
+                             x:Name="AvatarNameTextBox"
+                             Foreground="#FF0078D7"
+                             Padding="2"
+                             TextChanged="AvatarNameTextBox_TextChanged" Width="500" HorizontalAlignment="Left"/>
+                </Grid>
+
+
+                <!-- VRM設定 -->
+                <GroupBox Header="VRM"
+                          Margin="0,20,20,20"
+                          Padding="10">
                     <StackPanel>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="85"/>
-                            </Grid.ColumnDefinitions>
-
-                            <ComboBox x:Name="AvatarSelectComboBox"
-                                      Grid.Column="0"
-                                      Margin="0,5,10,5"
-                                      SelectionChanged="AvatarSelectComboBox_SelectionChanged"
-                                      DisplayMemberPath="modelName"
-                                      SelectedValuePath="modelName">
-                            </ComboBox>
-
-                            <Button x:Name="AddAvatarButton"
-                                    Grid.Column="1"
-                                    Content="追加"
-                                    Margin="0,5,0,5"
-                                    Padding="10,5"
-                                    Click="AddAvatarButton_Click"
-                                    ToolTip="Add avatar"/>
-
-                            <Button x:Name="DuplicateAvatarButton"
-                                    Grid.Column="2"
-                                    Content="複製"
-                                    Margin="5,5,0,5"
-                                    Padding="10,5"
-                                    Click="DuplicateAvatarButton_Click"
-                                    ToolTip="Duplicate current avatar"/>
-
-                            <Button x:Name="DeleteAvatarButton"
-                                    Grid.Column="3"
-                                    Content="削除"
-                                    Margin="5,5,0,5"
-                                    Padding="10,5"
-                                    Style="{StaticResource DeleteButtonStyle}"
-                                    Click="DeleteAvatarButton_Click"
-                                    ToolTip="Delete this avatar"/>
-                        </Grid>
-
-                        <TextBlock Margin="0,8,0,0"
-                                   Foreground="#666666"
-                                   TextWrapping="Wrap">
-                            <Run>LLM(AI)を使う場合は会話/記憶/人格設定タブも設定してください</Run>
-                        </TextBlock>
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- 基本設定 -->
-                <GroupBox Header="基本設定"
-                          Margin="0,0,20,20"
-                          Padding="10"
-                          ToolTip="Basic setting">
-                    <StackPanel>
-                        <Grid Margin="0,5">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="130"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0"
-                                       Text="プリセット名:"
-                                       VerticalAlignment="Center"
-                                       ToolTip="Name"/>
-                            <TextBox Grid.Column="1"
-                                     x:Name="AvatarNameTextBox"
-                                     Foreground="#FF0078D7"
-                                     Padding="2"
-                                     TextChanged="AvatarNameTextBox_TextChanged"/>
-                        </Grid>
-
                         <!-- VRMFilePathの設定 -->
-                        <Grid Margin="0,10,0,0">
+                        <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="*"/>
@@ -111,25 +99,11 @@
                                     Margin="5,0,0,0"/>
                         </Grid>
                         <!-- VRMファイル説明テキスト -->
-                        <TextBlock Foreground="#666666"
-                                   TextWrapping="Wrap"
-                                   Margin="130,0,0,0">
-                            未指定の場合はVRM表示/音声出力が無効になります。
-                        </TextBlock>
-                    </StackPanel>
-                </GroupBox>
 
-                <!-- LLMパラメータ -->
-
-                <!-- マテリアル・影設定 -->
-                <GroupBox Header="マテリアル・影設定"
-                          Margin="0,0,20,20"
-                          Padding="10">
-                    <StackPanel>
                         <!-- MToon変換設定 -->
                         <CheckBox x:Name="ConvertMToonCheckBox"
                                   Content="UnlitをMToonに変換する（正常に表示されないときに有効にしてみてください）"
-                                  Foreground="#FF4873CF"/>
+                                  Foreground="#FF4873CF" Margin="0,10,0,0"/>
 
                         <!-- 影オフメッシュ設定 -->
                         <CheckBox x:Name="EnableShadowOffCheckBox"
@@ -163,9 +137,6 @@
                           Margin="0,0,20,0"
                           Padding="10">
                     <StackPanel>
-                        <TextBlock Text="VRM表示時のみ有効です"
-                                   Foreground="#666666"
-                                   Margin="0,-5,0,10"/>
                         <Grid>
                             <CheckBox x:Name="IsUseTTSCheckBox"
                                       Content="TTSを使用する"

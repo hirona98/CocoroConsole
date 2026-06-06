@@ -33,11 +33,6 @@
                     <Border Background="White"
                             Padding="10">
                         <StackPanel>
-                            <TextBlock TextWrapping="Wrap"
-                                       Foreground="#666666"
-                                       Margin="0,0,0,10">
-                                OtomeKairo から `vision.capture_request` を受けたときのローカルキャプチャ条件を設定します。
-                            </TextBlock>
 
                             <Grid Margin="0,0,0,5">
                                 <Grid.ColumnDefinitions>
@@ -60,20 +55,10 @@
                                            VerticalAlignment="Center"/>
                             </Grid>
 
-                            <Rectangle Fill="#E0E0E0"
-                                       Height="1"
-                                       Margin="0,10,0,10"/>
-
                             <TextBlock TextWrapping="Wrap"
-                                       Foreground="#666666"
-                                       Margin="0,0,0,10">
-                                起床前観測は `wake_policy.observations` へ保存します。
-                            </TextBlock>
-
-                            <TextBlock TextWrapping="Wrap"
-                                       Foreground="#666666"
-                                       Margin="0,0,0,10">
-                                アクティブウィンドウのタイトルに対して正規表現でマッチ判定し、マッチした場合は画面キャプチャをスキップします。
+                                       Foreground="#FF0078D7"
+                                       Margin="0,10,0,5">
+                                スキップタイトルパターン（正規表現でマッチしたウィンドウタイトルはキャプチャをスキップします）
                             </TextBlock>
 
                             <TextBox x:Name="ExcludeWindowTitlePatternsTextBox"
@@ -94,11 +79,6 @@
                     <Border Background="White"
                             Padding="10">
                         <StackPanel>
-                            <TextBlock TextWrapping="Wrap"
-                                       Foreground="#666666"
-                                       Margin="0,0,0,10">
-                                `wake_policy` を編集します。無効時は `mode=disabled`、有効時は `mode=interval` を使います。
-                            </TextBlock>
 
                             <CheckBox x:Name="WakePolicyEnabledCheckBox"
                                       Content="定期起床を有効にする"
@@ -146,7 +126,7 @@
                                          Padding="2"
                                          Width="60"
                                          Margin="10,0,10,0"
-                                         ToolTip="同じ desktop scene と見なす visual_summary_text 類似度しきい値。低いほど同じ画面扱いしやすく、自発発話が減ります。"/>
+                                         ToolTip="低いほど画面変化がないと判断し、多少自発発話が減ります。"/>
                                 <TextBlock Grid.Column="2"
                                            Text="0.0-1.0"
                                            VerticalAlignment="Center"/>

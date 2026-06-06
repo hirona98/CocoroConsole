@@ -33,11 +33,6 @@ namespace CocoroConsole.Controls
         {
             var baseUrl = AppSettings.Instance.GetOtomeKairoBaseUrl();
             var sb = new StringBuilder();
-            sb.AppendLine("用途:");
-            sb.AppendLine("- OtomeKairo に会話入力を送る");
-            sb.AppendLine("- 発話は JSON envelope の data.result_kind と data.speech で返る");
-            sb.AppendLine();
-
             sb.AppendLine("エンドポイント:");
             sb.AppendLine($"- POST {baseUrl}/api/conversation");
             sb.AppendLine();
@@ -93,11 +88,6 @@ namespace CocoroConsole.Controls
         {
             var baseUrl = AppSettings.Instance.GetOtomeKairoBaseUrl();
             var sb = new StringBuilder();
-            sb.AppendLine("用途:");
-            sb.AppendLine("- OtomeKairo に API起床 1 サイクルの実行を依頼する");
-            sb.AppendLine("- wake_policy が disabled の場合は noop を返す");
-            sb.AppendLine();
-
             sb.AppendLine("エンドポイント:");
             sb.AppendLine($"- POST {baseUrl}/api/wake");
             sb.AppendLine();

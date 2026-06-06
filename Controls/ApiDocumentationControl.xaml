@@ -16,7 +16,7 @@
                     <StackPanel>
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666">
-                            APIを使って外部プログラムから会話入力とAPI起床を実行します。
+                            APIを使って外部プログラムから会話入力と定期起床を実行します。（動作未確認）
                         </TextBlock>
 
                         <Expander x:Name="ConversationApiExpander"
