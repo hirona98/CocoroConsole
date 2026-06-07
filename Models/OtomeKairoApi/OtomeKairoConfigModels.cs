@@ -107,4 +107,44 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("recent_turn_minutes")]
         public int RecentTurnMinutes { get; set; }
     }
+
+    public class OtomeKairoCameraSourcesEditorState
+    {
+        [JsonPropertyName("camera_sources")]
+        public List<OtomeKairoCameraSourceDefinition> CameraSources { get; set; } = new List<OtomeKairoCameraSourceDefinition>();
+    }
+
+    public class OtomeKairoCameraSourceDefinition
+    {
+        [JsonPropertyName("vision_source_id")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? VisionSourceId { get; set; }
+
+        [JsonPropertyName("connector_kind")]
+        public string ConnectorKind { get; set; } = "tapo_c220";
+
+        [JsonPropertyName("client_id")]
+        public string ClientId { get; set; } = "tapo-c220-connector-main";
+
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; }
+
+        [JsonPropertyName("label")]
+        public string Label { get; set; } = string.Empty;
+
+        [JsonPropertyName("connection")]
+        public OtomeKairoCameraSourceConnection Connection { get; set; } = new OtomeKairoCameraSourceConnection();
+    }
+
+    public class OtomeKairoCameraSourceConnection
+    {
+        [JsonPropertyName("host")]
+        public string Host { get; set; } = string.Empty;
+
+        [JsonPropertyName("camera_username")]
+        public string CameraUsername { get; set; } = string.Empty;
+
+        [JsonPropertyName("camera_password")]
+        public string CameraPassword { get; set; } = string.Empty;
+    }
 }

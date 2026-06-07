@@ -98,7 +98,7 @@
                              TextChanged="AnimationSetNameTextBox_TextChanged"
                              LostFocus="AnimationSetNameTextBox_LostFocus" Width="500" HorizontalAlignment="Left"/>
                 </Grid>
-                <Grid Margin="0,20,0,0">
+                <Grid Margin="0,20,20,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="*"/>
@@ -116,7 +116,7 @@
                                      TextChanged="PostureChangeLoopCountStandingTextBox_TextChanged"
                                      ToolTip="立ち姿勢の変更ループ回数を設定します"/>
                 </Grid>
-                <Grid Margin="0,10,0,0">
+                <Grid Margin="0,10,20,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="*"/>

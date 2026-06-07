@@ -1,0 +1,222 @@
+<UserControl x:Class="CocoroConsole.Controls.CapabilitySettingsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="900"
+             d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <Style x:Key="SettingLabelStyle"
+               TargetType="TextBlock">
+            <Setter Property="VerticalAlignment"
+                    Value="Center"/>
+            <Setter Property="Margin"
+                    Value="0,0,10,0"/>
+            <Setter Property="Width"
+                    Value="150"/>
+        </Style>
+        <Style x:Key="SettingTextBoxStyle"
+               TargetType="TextBox">
+            <Setter Property="Foreground"
+                    Value="#FF0078D7"/>
+            <Setter Property="Padding"
+                    Value="2"/>
+            <Setter Property="BorderBrush"
+                    Value="#CCCCCC"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+        </Style>
+        <Style x:Key="SettingPasswordBoxStyle"
+               TargetType="PasswordBox">
+            <Setter Property="Foreground"
+                    Value="#FF0078D7"/>
+            <Setter Property="Padding"
+                    Value="2"/>
+            <Setter Property="BorderBrush"
+                    Value="#CCCCCC"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+        </Style>
+        <Style x:Key="CapabilityButtonStyle"
+               TargetType="Button">
+            <Setter Property="Background"
+                    Value="#4873CF"/>
+            <Setter Property="Foreground"
+                    Value="WhiteSmoke"/>
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+            <Setter Property="Padding"
+                    Value="10,5"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <GroupBox Header="視覚"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <TextBlock
+                                       Text="登録済みカメラ:"
+                                       Width="140" HorizontalAlignment="Left"/>
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="80"/>
+                            </Grid.ColumnDefinitions>
+                            <ListBox Grid.Column="0"
+                                     x:Name="CameraSourcesListBox"
+                                     Height="140"
+                                     HorizontalContentAlignment="Stretch"
+                                     VerticalAlignment="Top"
+                                     Margin="0,5,10,0"
+                                     SelectionChanged="CameraSourcesListBox_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="180"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      VerticalAlignment="Center"
+                                                      Tag="{Binding}"
+                                                      Checked="CameraSourceEnabledCheckBox_Changed"
+                                                      Unchecked="CameraSourceEnabledCheckBox_Changed"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding DisplayName}"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="14"
+                                                       Margin="10,0,0,0"/>
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding HostDisplay}"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="#666666"
+                                                       Margin="10,0,0,0"/>
+                                            <Button Grid.Column="3"
+                                                    Content="削除"
+                                                    Click="DeleteCameraSourceButton_Click"
+                                                    Tag="{Binding}"
+                                                    Style="{StaticResource CapabilityButtonStyle}"
+                                                    Padding="15,2"
+                                                    Margin="5,0"
+                                                    HorizontalAlignment="Right"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <Button Grid.Column="1"
+                                    Content="追加"
+                                    Margin="0,5,0,5"
+                                    VerticalAlignment="Top"
+                                    Style="{StaticResource CapabilityButtonStyle}"
+                                    Click="AddCameraSourceButton_Click"/>
+                        </Grid>
+
+                        <StackPanel x:Name="CameraEditorPanel"
+                                    IsEnabled="False">
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="表示名:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="CameraLabelTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnTextChanged"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="ホスト/IP:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="CameraHostTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnTextChanged"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="ユーザー名:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="CameraUsernameTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnTextChanged"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="パスワード:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <PasswordBox x:Name="CameraPasswordBox"
+                                             Grid.Column="1"
+                                             Style="{StaticResource SettingPasswordBoxStyle}"
+                                             PasswordChanged="CameraPasswordBox_PasswordChanged"/>
+                            </Grid>
+
+                            <Grid Margin="0,12,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="接続種別:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="CameraConnectorKindTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         IsEnabled="False"
+                                         Text="tapo_c220"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="接続クライアント:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="CameraClientIdTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         IsEnabled="False"
+                                         Text="tapo-c220-connector-main"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="視覚ソースID:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="CameraVisionSourceIdTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         IsEnabled="False"/>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

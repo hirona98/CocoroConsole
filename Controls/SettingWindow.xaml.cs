@@ -31,6 +31,7 @@ namespace CocoroConsole.Controls
 
         // OtomeKairo の editor-state を保持
         private OtomeKairoEditorState? _loadedOtomeKairoEditorState;
+        private OtomeKairoCameraSourcesEditorState? _loadedCameraSourcesEditorState;
 
         // OtomeKairo再起動が必要な設定の前回値を保存
         private ConfigSettings _previousOtomeKairoSettings;
@@ -169,14 +170,37 @@ namespace CocoroConsole.Controls
                 );
 
                 SystemSettingsControl.ApplyOtomeKairoCurrentSettings(_loadedOtomeKairoEditorState.Current);
+                await InitializeCameraSourcesControlAsync();
 
                 LlmSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 EmbeddingSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 PromptSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
+                CapabilitySettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"プリセット管理初期化エラー: {ex.Message}");
+            }
+        }
+
+
+        private async Task InitializeCameraSourcesControlAsync()
+        {
+            if (_apiClient == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _loadedCameraSourcesEditorState = await _apiClient.GetCameraSourcesEditorStateAsync();
+                CapabilitySettingsControl.LoadCameraSources(_loadedCameraSourcesEditorState);
+            }
+            catch (Exception ex)
+            {
+                _loadedCameraSourcesEditorState = null;
+                CapabilitySettingsControl.LoadCameraSources(null);
+                Debug.WriteLine($"カメラ視覚初期化エラー: {ex.Message}");
             }
         }
 
@@ -457,6 +481,7 @@ namespace CocoroConsole.Controls
                 var request = BuildEditorStateFromUi();
                 var updated = await _apiClient.ReplaceEditorStateAsync(request);
                 _loadedOtomeKairoEditorState = updated;
+                await SaveCameraSourcesToApiAsync();
                 Debug.WriteLine("[SettingWindow] editor-state を API に保存しました");
 
                 LlmSettingsControl.LoadSettingsList(
@@ -481,6 +506,21 @@ namespace CocoroConsole.Controls
                 Debug.WriteLine($"[SettingWindow] 設定の保存に失敗しました: {ex.Message}");
                 MessageBox.Show($"設定のAPI保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+
+        private async Task SaveCameraSourcesToApiAsync()
+        {
+            if (_apiClient == null || _loadedCameraSourcesEditorState == null)
+            {
+                return;
+            }
+
+            var request = CapabilitySettingsControl.GetCameraSourcesEditorState();
+            var updated = await _apiClient.ReplaceCameraSourcesEditorStateAsync(request);
+            _loadedCameraSourcesEditorState = updated;
+            CapabilitySettingsControl.LoadCameraSources(updated);
+            Debug.WriteLine("[SettingWindow] camera-sources editor-state saved to API");
         }
 
 

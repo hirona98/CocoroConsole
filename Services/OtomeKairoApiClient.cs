@@ -106,6 +106,28 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoEditorState>(HttpMethod.Put, "/api/config/editor-state", request, cancellationToken);
         }
 
+        public Task<OtomeKairoCameraSourcesEditorState> GetCameraSourcesEditorStateAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoCameraSourcesEditorState>(
+                HttpMethod.Get,
+                "/api/config/camera-sources/editor-state",
+                null,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoCameraSourcesEditorState> ReplaceCameraSourcesEditorStateAsync(
+            OtomeKairoCameraSourcesEditorState request,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoCameraSourcesEditorState>(
+                HttpMethod.Put,
+                "/api/config/camera-sources/editor-state",
+                request,
+                cancellationToken);
+        }
+
         public Task ReplaceMemorySetAsync(OtomeKairoMemorySetDefinition request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
