@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -92,7 +93,7 @@ namespace CocoroConsole.Windows
 
             if (StatusTextBlock != null)
             {
-                UpdateStatus($"自律実行 run 一覧を表示します。自動更新: {AutoRefreshStatusText()}");
+                UpdateStatus($"自律実行一覧を表示します。自動更新: {AutoRefreshStatusText()}");
             }
         }
 
@@ -140,7 +141,8 @@ namespace CocoroConsole.Windows
                 var response = await client.GetAutonomousRunsAsync(_loadCts.Token).ConfigureAwait(true);
                 var runs = response.AutonomousRuns ?? new List<OtomeKairoAutonomousRunSummary>();
                 ApplyRuns(runs);
-                UpdateStatus($"自律実行 run 一覧を表示中: 件数={_runItems.Count} / 生成時刻={DisplayValue(response.GeneratedAt)} / 自動更新: {AutoRefreshStatusText()}");
+                UpdateSummary(response.GeneratedAt);
+                UpdateStatus($"自律実行一覧を表示中: 件数={_runItems.Count} / 最終取得: {DisplayDateTime(response.GeneratedAt)} / 自動更新: {AutoRefreshStatusText()}");
 
                 if (_runItems.Count == 0)
                 {
@@ -247,6 +249,7 @@ namespace CocoroConsole.Windows
         private void ClearView(string message)
         {
             _runItems.Clear();
+            UpdateSummary(null);
             ClearSelectedRun(message);
         }
 
@@ -266,8 +269,10 @@ namespace CocoroConsole.Windows
             }
 
             var run = selected.Run;
-            SetText(SelectedRunTitleTextBlock, DisplayValue(run.RunId));
-            SetText(SelectedRunMetaTextBlock, $"状態: {DescribeStatus(run.Status)} / 更新: {DisplayValue(run.UpdatedAt)}");
+            SetText(SelectedRunTitleTextBlock, selected.ObjectiveDisplay);
+            SetText(
+                SelectedRunMetaTextBlock,
+                $"状態: {DescribeStatus(run.Status)} / 起点: {DescribeOriginKind(run.OriginKind)} / 更新: {DisplayDateTime(run.UpdatedAt)}");
             SetText(SelectedRunDetailsTextBox, BuildRunDetails(run));
         }
 
@@ -286,25 +291,43 @@ namespace CocoroConsole.Windows
             return IsAutoRefreshEnabled() ? "3秒" : "停止";
         }
 
+        private void UpdateSummary(string? generatedAt)
+        {
+            var activeCount = CountByStatus("active");
+            var waitingCount = CountByStatus("waiting_timer", "waiting_result");
+            var pausedCount = CountByStatus("paused");
+            var completedCount = CountByStatus("completed");
+            var cancelledCount = CountByStatus("cancelled");
+            var latestText = string.IsNullOrWhiteSpace(generatedAt)
+                ? "未取得"
+                : DisplayDateTime(generatedAt);
+            SetText(
+                SummaryTextBlock,
+                $"件数: {_runItems.Count} / 進行中: {activeCount} / 待機中: {waitingCount} / 一時停止: {pausedCount} / 完了: {completedCount} / キャンセル: {cancelledCount} / 最終取得: {latestText}");
+        }
+
+        private int CountByStatus(params string[] statuses)
+        {
+            return _runItems.Count(item => statuses.Contains(item.StatusRaw, StringComparer.Ordinal));
+        }
+
         private static string BuildRunDetails(OtomeKairoAutonomousRunSummary run)
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"run_id: {DisplayValue(run.RunId)}");
-            builder.AppendLine($"memory_set_id: {DisplayValue(run.MemorySetId)}");
-            builder.AppendLine($"status: {DescribeStatus(run.Status)}");
+            builder.AppendLine($"目的: {DisplayValue(run.ObjectiveSummary)}");
+            builder.AppendLine($"今の動き: {DisplayValue(run.CurrentStepSummary)}");
+            builder.AppendLine($"これまでの経過: {DisplayValue(run.HistorySummary)}");
+            builder.AppendLine();
+            builder.AppendLine($"次の予定: {DisplayDateTime(run.NextRunAt)}");
+            builder.AppendLine($"待機中の能力 request ID: {DisplayValue(run.WaitingRequestId)}");
+            builder.AppendLine($"一時停止理由: {DescribePauseReason(run.PauseReason)}");
+            builder.AppendLine();
+            builder.AppendLine($"作成: {DisplayDateTime(run.CreatedAt)}");
+            builder.AppendLine($"更新: {DisplayDateTime(run.UpdatedAt)}");
+            builder.AppendLine($"完了: {DisplayDateTime(run.CompletedAt)}");
+            builder.AppendLine();
+            builder.AppendLine($"status: {DisplayValue(run.Status)}");
             builder.AppendLine($"origin_kind: {DisplayValue(run.OriginKind)}");
-            builder.AppendLine();
-            builder.AppendLine($"objective_summary: {DisplayValue(run.ObjectiveSummary)}");
-            builder.AppendLine($"current_step_summary: {DisplayValue(run.CurrentStepSummary)}");
-            builder.AppendLine($"history_summary: {DisplayValue(run.HistorySummary)}");
-            builder.AppendLine();
-            builder.AppendLine($"next_run_at: {DisplayValue(run.NextRunAt)}");
-            builder.AppendLine($"waiting_request_id: {DisplayValue(run.WaitingRequestId)}");
-            builder.AppendLine($"pause_reason: {DisplayValue(run.PauseReason)}");
-            builder.AppendLine();
-            builder.AppendLine($"created_at: {DisplayValue(run.CreatedAt)}");
-            builder.AppendLine($"updated_at: {DisplayValue(run.UpdatedAt)}");
-            builder.AppendLine($"completed_at: {DisplayValue(run.CompletedAt)}");
             return builder.ToString();
         }
 
@@ -317,19 +340,71 @@ namespace CocoroConsole.Windows
 
             return status.Trim() switch
             {
-                "active" => "実行中 (active)",
-                "waiting_timer" => "タイマー待機 (waiting_timer)",
-                "waiting_result" => "能力結果待ち (waiting_result)",
-                "paused" => "一時停止 (paused)",
-                "completed" => "完了 (completed)",
-                "cancelled" => "キャンセル済み (cancelled)",
+                "active" => "実行中",
+                "waiting_timer" => "タイマー待機",
+                "waiting_result" => "能力結果待ち",
+                "paused" => "一時停止",
+                "completed" => "完了",
+                "cancelled" => "キャンセル",
                 _ => status.Trim(),
+            };
+        }
+
+        private static string DescribeOriginKind(string? originKind)
+        {
+            if (string.IsNullOrWhiteSpace(originKind))
+            {
+                return "（なし）";
+            }
+
+            return originKind.Trim() switch
+            {
+                "user_message" => "ユーザー依頼",
+                "background_wake" => "定期起床",
+                "wake" => "手動起床",
+                "capability_result" => "能力結果",
+                _ => originKind.Trim(),
+            };
+        }
+
+        private static string DescribePauseReason(string? pauseReason)
+        {
+            if (string.IsNullOrWhiteSpace(pauseReason))
+            {
+                return "（なし）";
+            }
+
+            return pauseReason.Trim() switch
+            {
+                "paused_by_user_interaction" => "ユーザー対応中",
+                "manual_pause" => "手動一時停止",
+                _ => pauseReason.Trim(),
             };
         }
 
         private static string DisplayValue(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? "（なし）" : value.Trim();
+        }
+
+        private static string DisplayDateTime(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "（なし）";
+            }
+
+            if (DateTimeOffset.TryParse(value.Trim(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var timestamp))
+            {
+                return timestamp.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss", CultureInfo.InvariantCulture);
+            }
+
+            return value.Trim();
+        }
+
+        private static string DisplayWaitingRequest(string? waitingRequestId)
+        {
+            return string.IsNullOrWhiteSpace(waitingRequestId) ? "なし" : "結果待ち";
         }
 
         private static void SetText(TextBlock textBlock, string value)
@@ -363,19 +438,21 @@ namespace CocoroConsole.Windows
 
             public string RunId => _run.RunId;
 
+            public string StatusRaw => _run.Status;
+
             public string StatusDisplay => DescribeStatus(_run.Status);
 
             public string ObjectiveDisplay => DisplayValue(_run.ObjectiveSummary);
 
             public string CurrentStepDisplay => DisplayValue(_run.CurrentStepSummary);
 
-            public string NextRunAtDisplay => DisplayValue(_run.NextRunAt);
+            public string NextRunAtDisplay => DisplayDateTime(_run.NextRunAt);
 
-            public string WaitingRequestIdDisplay => DisplayValue(_run.WaitingRequestId);
+            public string WaitingRequestIdDisplay => DisplayWaitingRequest(_run.WaitingRequestId);
 
-            public string UpdatedAtDisplay => DisplayValue(_run.UpdatedAt);
+            public string UpdatedAtDisplay => DisplayDateTime(_run.UpdatedAt);
 
-            public string OriginKindDisplay => DisplayValue(_run.OriginKind);
+            public string OriginKindDisplay => DescribeOriginKind(_run.OriginKind);
 
             public void Update(OtomeKairoAutonomousRunSummary run)
             {
@@ -410,6 +487,7 @@ namespace CocoroConsole.Windows
             {
                 OnPropertyChanged(nameof(Run));
                 OnPropertyChanged(nameof(RunId));
+                OnPropertyChanged(nameof(StatusRaw));
                 OnPropertyChanged(nameof(StatusDisplay));
                 OnPropertyChanged(nameof(ObjectiveDisplay));
                 OnPropertyChanged(nameof(CurrentStepDisplay));

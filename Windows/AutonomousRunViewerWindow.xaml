@@ -33,7 +33,7 @@
                                           Margin="0,0,16,0"
                                           Checked="AutoRefreshCheckBox_Changed"
                                           Unchecked="AutoRefreshCheckBox_Changed"/>
-                                <TextBlock Text="自律実行 run を OtomeKairo API から表示します。"
+                                <TextBlock Text="自律実行の進行状況を表示します。"
                                            VerticalAlignment="Center"
                                            Foreground="#444444"/>
                         </StackPanel>
@@ -42,13 +42,26 @@
                 <Grid Grid.Row="1"
                       Margin="8">
                         <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="8"/>
-                                <RowDefinition Height="290"/>
+                                <RowDefinition Height="260"/>
                         </Grid.RowDefinitions>
 
+                        <Border Grid.Row="0"
+                                Background="#F8FAFC"
+                                BorderBrush="#D9E2EF"
+                                BorderThickness="1"
+                                Padding="8"
+                                Margin="0,0,0,8">
+                                <TextBlock x:Name="SummaryTextBlock"
+                                           Text="件数: 0 / 進行中: 0 / 待機中: 0 / 一時停止: 0 / 完了: 0 / キャンセル: 0"
+                                           Foreground="#333333"
+                                           TextWrapping="Wrap"/>
+                        </Border>
+
                         <DataGrid x:Name="RunListDataGrid"
-                                  Grid.Row="0"
+                                  Grid.Row="1"
                                   AutoGenerateColumns="False"
                                   IsReadOnly="True"
                                   CanUserAddRows="False"
@@ -85,29 +98,29 @@
                                 <DataGrid.Columns>
                                         <DataGridTextColumn Header="状態"
                                                             Binding="{Binding StatusDisplay, Mode=OneWay}"
-                                                            Width="130"/>
-                                        <DataGridTextColumn Header="目的"
+                                                            Width="110"/>
+                                        <DataGridTextColumn Header="目的（何をするか）"
                                                             Binding="{Binding ObjectiveDisplay, Mode=OneWay}"
                                                             Width="2*"/>
-                                        <DataGridTextColumn Header="現在ステップ"
+                                        <DataGridTextColumn Header="今の動き"
                                                             Binding="{Binding CurrentStepDisplay, Mode=OneWay}"
                                                             Width="2*"/>
-                                        <DataGridTextColumn Header="次回実行"
+                                        <DataGridTextColumn Header="次の予定"
                                                             Binding="{Binding NextRunAtDisplay, Mode=OneWay}"
-                                                            Width="155"/>
-                                        <DataGridTextColumn Header="待機 request"
+                                                            Width="140"/>
+                                        <DataGridTextColumn Header="能力待ち"
                                                             Binding="{Binding WaitingRequestIdDisplay, Mode=OneWay}"
-                                                            Width="150"/>
+                                                            Width="90"/>
                                         <DataGridTextColumn Header="更新"
                                                             Binding="{Binding UpdatedAtDisplay, Mode=OneWay}"
-                                                            Width="155"/>
+                                                            Width="140"/>
                                         <DataGridTextColumn Header="起点"
                                                             Binding="{Binding OriginKindDisplay, Mode=OneWay}"
                                                             Width="120"/>
                                 </DataGrid.Columns>
                         </DataGrid>
 
-                        <Grid Grid.Row="2">
+                        <Grid Grid.Row="3">
                                 <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="*"/>
