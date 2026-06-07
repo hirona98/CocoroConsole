@@ -44,58 +44,66 @@
                         <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="8"/>
-                                <RowDefinition Height="210"/>
+                                <RowDefinition Height="290"/>
                         </Grid.RowDefinitions>
 
                         <DataGrid x:Name="RunListDataGrid"
                                   Grid.Row="0"
                                   AutoGenerateColumns="False"
                                   IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  CanUserReorderColumns="True"
+                                  CanUserResizeColumns="True"
+                                  CanUserSortColumns="True"
                                   SelectionMode="Single"
+                                  SelectionUnit="FullRow"
                                   SelectionChanged="RunListDataGrid_SelectionChanged"
                                   HeadersVisibility="Column"
-                                  GridLinesVisibility="Horizontal"
-                                  AlternatingRowBackground="#F9F9F9">
+                                  GridLinesVisibility="All"
+                                  AlternatingRowBackground="#F9F9F9"
+                                  RowHeight="24"
+                                  ColumnHeaderHeight="26"
+                                  MinColumnWidth="70"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"
+                                  EnableRowVirtualization="True"
+                                  EnableColumnVirtualization="True"
+                                  VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                  ScrollViewer.CanContentScroll="True">
+                                <DataGrid.Resources>
+                                        <Style TargetType="TextBlock">
+                                                <Setter Property="TextTrimming"
+                                                        Value="CharacterEllipsis"/>
+                                                <Setter Property="TextWrapping"
+                                                        Value="NoWrap"/>
+                                                <Setter Property="VerticalAlignment"
+                                                        Value="Center"/>
+                                        </Style>
+                                </DataGrid.Resources>
                                 <DataGrid.Columns>
                                         <DataGridTextColumn Header="状態"
                                                             Binding="{Binding StatusDisplay, Mode=OneWay}"
-                                                            Width="110"/>
+                                                            Width="130"/>
                                         <DataGridTextColumn Header="目的"
                                                             Binding="{Binding ObjectiveDisplay, Mode=OneWay}"
-                                                            Width="2*">
-                                                <DataGridTextColumn.ElementStyle>
-                                                        <Style TargetType="TextBlock">
-                                                                <Setter Property="TextWrapping"
-                                                                        Value="Wrap"/>
-                                                                <Setter Property="Padding"
-                                                                        Value="2"/>
-                                                        </Style>
-                                                </DataGridTextColumn.ElementStyle>
-                                        </DataGridTextColumn>
+                                                            Width="2*"/>
                                         <DataGridTextColumn Header="現在ステップ"
                                                             Binding="{Binding CurrentStepDisplay, Mode=OneWay}"
-                                                            Width="2*">
-                                                <DataGridTextColumn.ElementStyle>
-                                                        <Style TargetType="TextBlock">
-                                                                <Setter Property="TextWrapping"
-                                                                        Value="Wrap"/>
-                                                                <Setter Property="Padding"
-                                                                        Value="2"/>
-                                                        </Style>
-                                                </DataGridTextColumn.ElementStyle>
-                                        </DataGridTextColumn>
+                                                            Width="2*"/>
                                         <DataGridTextColumn Header="次回実行"
                                                             Binding="{Binding NextRunAtDisplay, Mode=OneWay}"
-                                                            Width="150"/>
+                                                            Width="155"/>
                                         <DataGridTextColumn Header="待機 request"
                                                             Binding="{Binding WaitingRequestIdDisplay, Mode=OneWay}"
                                                             Width="150"/>
                                         <DataGridTextColumn Header="更新"
                                                             Binding="{Binding UpdatedAtDisplay, Mode=OneWay}"
-                                                            Width="150"/>
+                                                            Width="155"/>
                                         <DataGridTextColumn Header="起点"
                                                             Binding="{Binding OriginKindDisplay, Mode=OneWay}"
-                                                            Width="115"/>
+                                                            Width="120"/>
                                 </DataGrid.Columns>
                         </DataGrid>
 
