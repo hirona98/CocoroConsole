@@ -68,6 +68,7 @@ namespace CocoroConsole.Communication
                     Type = "hello",
                     ClientId = _clientId!,
                     Caps = _caps?.ToArray() ?? new[] { new OtomeKairoCapabilityOffer("vision.capture", "1") },
+                    EventSubscriptions = new[] { "assistant_message" },
                     VisionSources = _visionSources?.ToArray() ?? Array.Empty<OtomeKairoVisionSourceOffer>(),
                 };
 
@@ -295,6 +296,9 @@ namespace CocoroConsole.Communication
 
         [JsonPropertyName("caps")]
         public OtomeKairoCapabilityOffer[] Caps { get; set; } = Array.Empty<OtomeKairoCapabilityOffer>();
+
+        [JsonPropertyName("event_subscriptions")]
+        public string[] EventSubscriptions { get; set; } = Array.Empty<string>();
 
         [JsonPropertyName("vision_sources")]
         public OtomeKairoVisionSourceOffer[] VisionSources { get; set; } = Array.Empty<OtomeKairoVisionSourceOffer>();
