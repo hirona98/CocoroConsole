@@ -33,6 +33,7 @@ namespace CocoroConsole
         private LogViewerWindow? _logViewerWindow;
         private JudgmentTraceViewerWindow? _judgmentTraceViewerWindow;
         private CurrentStateViewerWindow? _currentStateViewerWindow;
+        private AutonomousRunViewerWindow? _autonomousRunViewerWindow;
         private DebugTraceListener? _debugTraceListener;
         private bool _isConversationOutputActive;
         private bool _skipNextAssistantMessage;
@@ -45,6 +46,7 @@ namespace CocoroConsole
         private const string LogViewerWindowPlacementKey = "LogViewerWindow";
         private const string JudgmentTraceViewerWindowPlacementKey = "JudgmentTraceViewerWindow";
         private const string CurrentStateViewerWindowPlacementKey = "CurrentStateViewerWindow";
+        private const string AutonomousRunViewerWindowPlacementKey = "AutonomousRunViewerWindow";
         private static readonly TimeSpan OtomeKairoStartupTimeout = TimeSpan.FromMinutes(2);
 
         // --- OtomeKairo の最新ステータス（ステータスバー復帰先） ---
@@ -112,6 +114,11 @@ namespace CocoroConsole
         private void CurrentStateViewerMenuItem_Click(object sender, RoutedEventArgs e)
         {
             OpenCurrentStateViewer();
+        }
+
+        private void AutonomousRunViewerMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            OpenAutonomousRunViewer();
         }
 
 
@@ -756,6 +763,33 @@ namespace CocoroConsole
             };
 
             _currentStateViewerWindow.Show();
+        }
+
+        public void OpenAutonomousRunViewer()
+        {
+            if (_autonomousRunViewerWindow != null && !_autonomousRunViewerWindow.IsClosed)
+            {
+                _autonomousRunViewerWindow.Activate();
+                _autonomousRunViewerWindow.WindowState = WindowState.Normal;
+                return;
+            }
+
+            _autonomousRunViewerWindow = new AutonomousRunViewerWindow();
+            var isPositionRestored = WindowPlacementManager.AttachAndRestore(
+                _autonomousRunViewerWindow,
+                AutonomousRunViewerWindowPlacementKey,
+                _appSettings);
+            if (!isPositionRestored)
+            {
+                PositionWindowNearMain(_autonomousRunViewerWindow);
+            }
+
+            _autonomousRunViewerWindow.Closed += (sender, args) =>
+            {
+                _autonomousRunViewerWindow = null;
+            };
+
+            _autonomousRunViewerWindow.Show();
         }
 
 

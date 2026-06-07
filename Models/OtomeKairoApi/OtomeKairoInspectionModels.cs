@@ -84,4 +84,55 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("capability_inspection")]
         public JsonElement CapabilityInspection { get; set; }
     }
+
+    public class OtomeKairoAutonomousRunsResponse
+    {
+        [JsonPropertyName("generated_at")]
+        public string GeneratedAt { get; set; } = string.Empty;
+
+        [JsonPropertyName("autonomous_runs")]
+        public List<OtomeKairoAutonomousRunSummary> AutonomousRuns { get; set; } = new List<OtomeKairoAutonomousRunSummary>();
+    }
+
+    public class OtomeKairoAutonomousRunSummary
+    {
+        [JsonPropertyName("run_id")]
+        public string RunId { get; set; } = string.Empty;
+
+        [JsonPropertyName("memory_set_id")]
+        public string MemorySetId { get; set; } = string.Empty;
+
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = string.Empty;
+
+        [JsonPropertyName("objective_summary")]
+        public string? ObjectiveSummary { get; set; }
+
+        [JsonPropertyName("origin_kind")]
+        public string? OriginKind { get; set; }
+
+        [JsonPropertyName("current_step_summary")]
+        public string? CurrentStepSummary { get; set; }
+
+        [JsonPropertyName("history_summary")]
+        public string? HistorySummary { get; set; }
+
+        [JsonPropertyName("next_run_at")]
+        public string? NextRunAt { get; set; }
+
+        [JsonPropertyName("waiting_request_id")]
+        public string? WaitingRequestId { get; set; }
+
+        [JsonPropertyName("pause_reason")]
+        public string? PauseReason { get; set; }
+
+        [JsonPropertyName("created_at")]
+        public string? CreatedAt { get; set; }
+
+        [JsonPropertyName("updated_at")]
+        public string? UpdatedAt { get; set; }
+
+        [JsonPropertyName("completed_at")]
+        public string? CompletedAt { get; set; }
+    }
 }

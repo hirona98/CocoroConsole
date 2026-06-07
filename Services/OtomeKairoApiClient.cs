@@ -216,6 +216,16 @@ namespace CocoroConsole.Services
                 cancellationToken);
         }
 
+        public Task<OtomeKairoAutonomousRunsResponse> GetAutonomousRunsAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoAutonomousRunsResponse>(
+                HttpMethod.Get,
+                "/api/autonomous-runs",
+                null,
+                cancellationToken);
+        }
+
         public Task<OtomeKairoCycleTrace> GetCycleTraceAsync(string cycleId, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();

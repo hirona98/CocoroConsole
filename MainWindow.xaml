@@ -45,6 +45,8 @@
                                                                           Click="JudgmentTraceViewerMenuItem_Click"/>
                                                                 <MenuItem Header="現在状態表示"
                                                                           Click="CurrentStateViewerMenuItem_Click"/>
+                                                                <MenuItem Header="自律実行表示"
+                                                                          Click="AutonomousRunViewerMenuItem_Click"/>
                                                                 <Separator/>
                                                                 <MenuItem Header="ログ表示"
                                                                           Click="LogViewerMenuItem_Click"/>
