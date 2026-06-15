@@ -1,7 +1,7 @@
 <Window x:Class="CocoroConsole.Windows.AutonomousRunViewerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="自律実行ビューアー"
+        Title="CocoroAI 自律実行ビューアー"
         Width="1050"
         Height="760"
         WindowStartupLocation="CenterOwner"

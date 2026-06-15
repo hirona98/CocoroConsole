@@ -1,7 +1,7 @@
 <Window x:Class="CocoroConsole.Windows.JudgmentTraceViewerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="判断トレースビューアー"
+        Title="CocoroAI 判断トレースビューアー"
         Width="1000"
         Height="900"
         WindowStartupLocation="CenterOwner"
