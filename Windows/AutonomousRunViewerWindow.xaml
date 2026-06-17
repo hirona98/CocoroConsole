@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="CocoroAI 自律実行ビューアー"
         Width="1050"
-        Height="760"
+        Height="550"
         WindowStartupLocation="CenterOwner"
         Icon="/Resource/logo.ico">
 
@@ -33,9 +33,6 @@
                                           Margin="0,0,16,0"
                                           Checked="AutoRefreshCheckBox_Changed"
                                           Unchecked="AutoRefreshCheckBox_Changed"/>
-                                <TextBlock Text="自律実行の進行状況を表示します。"
-                                           VerticalAlignment="Center"
-                                           Foreground="#444444"/>
                         </StackPanel>
                 </Border>
 
@@ -45,7 +42,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="8"/>
-                                <RowDefinition Height="260"/>
+                                <RowDefinition Height="270"/>
                         </Grid.RowDefinitions>
 
                         <Border Grid.Row="0"
@@ -130,8 +127,7 @@
                                             Margin="0,0,0,6">
                                         <TextBlock x:Name="SelectedRunTitleTextBlock"
                                                    Text="run 未選択"
-                                                   FontSize="15"
-                                                   FontWeight="SemiBold"/>
+                                                   FontSize="15"/>
                                         <TextBlock x:Name="SelectedRunMetaTextBlock"
                                                    Text=""
                                                    Foreground="#555555"/>

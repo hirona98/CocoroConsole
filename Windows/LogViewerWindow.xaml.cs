@@ -1,4 +1,4 @@
-﻿using CocoroConsole.Communication;
+using CocoroConsole.Communication;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,7 +20,6 @@ namespace CocoroConsole.Windows
         public ObservableCollection<ComponentFilterItem> ComponentFilters { get; } = new ObservableCollection<ComponentFilterItem>();
         private ICollectionView? _filteredLogs;
         private string _levelFilter = "";
-        private bool _isUpdatingComponentSelection;
         private const int MaxDisplayedLogs = 200;
         private readonly List<LogMessage> _pendingLogsWhileAutoScrollPaused = new List<LogMessage>();
         public bool IsClosed { get; private set; } = false;
@@ -31,7 +30,9 @@ namespace CocoroConsole.Windows
         public LogViewerWindow()
         {
             InitializeComponent();
+            ComponentFilterItemsControl.ItemsSource = ComponentFilters;
             InitializeLogView();
+            UpdateComponentFilterSummary();
 
             // 初期UI状態を設定
             Cursor = System.Windows.Input.Cursors.Arrow;
@@ -346,50 +347,8 @@ namespace CocoroConsole.Windows
         /// </summary>
         private void ComponentFilterCheckBox_Changed(object sender, RoutedEventArgs e)
         {
-            if (_isUpdatingComponentSelection) return;
-
             RefreshFiltersPreservingScroll();
-            UpdateAllComponentsCheckBoxState();
-        }
-
-        /// <summary>
-        /// 全コンポーネントを選択する
-        /// </summary>
-        private void AllComponentsCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            SetAllComponentFilters(true);
-        }
-
-        /// <summary>
-        /// 全コンポーネントの選択を解除する
-        /// </summary>
-        private void AllComponentsCheckBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            SetAllComponentFilters(false);
-        }
-
-        /// <summary>
-        /// 全コンポーネントの選択状態を設定する
-        /// </summary>
-        private void SetAllComponentFilters(bool isSelected)
-        {
-            if (_isUpdatingComponentSelection) return;
-
-            _isUpdatingComponentSelection = true;
-            try
-            {
-                foreach (var filter in ComponentFilters)
-                {
-                    filter.IsSelected = isSelected;
-                }
-            }
-            finally
-            {
-                _isUpdatingComponentSelection = false;
-            }
-
-            RefreshFiltersPreservingScroll();
-            UpdateAllComponentsCheckBoxState();
+            UpdateComponentFilterSummary();
         }
 
         /// <summary>
@@ -423,9 +382,8 @@ namespace CocoroConsole.Windows
             var normalizedComponent = NormalizeComponent(component);
             if (ComponentFilters.Any(filter => filter.Component == normalizedComponent)) return;
 
-            var isSelected = AllComponentsCheckBox?.IsChecked != false;
-            ComponentFilters.Add(new ComponentFilterItem(normalizedComponent, isSelected));
-            UpdateAllComponentsCheckBoxState();
+            ComponentFilters.Add(new ComponentFilterItem(normalizedComponent, isSelected: true));
+            UpdateComponentFilterSummary();
         }
 
         /// <summary>
@@ -437,21 +395,19 @@ namespace CocoroConsole.Windows
         }
 
         /// <summary>
-        /// 全選択チェックボックスの状態を更新する
+        /// コンポーネントフィルターの選択状態を短く表示する
         /// </summary>
-        private void UpdateAllComponentsCheckBoxState()
+        private void UpdateComponentFilterSummary()
         {
-            if (AllComponentsCheckBox == null) return;
+            if (ComponentFilterButtonTextBlock == null) return;
 
-            _isUpdatingComponentSelection = true;
-            try
-            {
-                AllComponentsCheckBox.IsChecked = ComponentFilters.Count == 0 || ComponentFilters.All(filter => filter.IsSelected);
-            }
-            finally
-            {
-                _isUpdatingComponentSelection = false;
-            }
+            var totalCount = ComponentFilters.Count;
+            var selectedCount = ComponentFilters.Count(filter => filter.IsSelected);
+            var buttonText = $"{selectedCount} / {totalCount} 選択";
+
+            ComponentFilterButtonTextBlock.Text = buttonText;
+            ComponentFilterButtonTextBlock.ToolTip = buttonText;
+            ComponentFilterToggleButton.ToolTip = buttonText;
         }
 
         /// <summary>
@@ -461,7 +417,7 @@ namespace CocoroConsole.Windows
         {
             _allLogs.Clear();
             ComponentFilters.Clear();
-            UpdateAllComponentsCheckBoxState();
+            UpdateComponentFilterSummary();
             UpdateLogCount();
             UpdateStatus("ログクリア");
         }

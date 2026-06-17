@@ -63,12 +63,12 @@ namespace CocoroConsole.Windows
 
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            await LoadAutonomousRunsAsync(preserveSelection: true);
+            await LoadAutonomousRunsAsync(preserveSelection: true, updateRefreshButtonState: true);
         }
 
         private async void AutoRefreshTimer_Tick(object? sender, EventArgs e)
         {
-            await LoadAutonomousRunsAsync(preserveSelection: true);
+            await LoadAutonomousRunsAsync(preserveSelection: true, updateRefreshButtonState: false);
         }
 
         private void AutoRefreshCheckBox_Changed(object sender, RoutedEventArgs e)
@@ -107,7 +107,7 @@ namespace CocoroConsole.Windows
             UpdateSelectedRunDetails();
         }
 
-        private async Task LoadAutonomousRunsAsync(bool preserveSelection)
+        private async Task LoadAutonomousRunsAsync(bool preserveSelection, bool updateRefreshButtonState = true)
         {
             if (_isLoading)
             {
@@ -115,7 +115,10 @@ namespace CocoroConsole.Windows
             }
 
             _isLoading = true;
-            RefreshButton.IsEnabled = false;
+            if (updateRefreshButtonState)
+            {
+                RefreshButton.IsEnabled = false;
+            }
 
             try
             {
@@ -170,7 +173,10 @@ namespace CocoroConsole.Windows
             finally
             {
                 _isLoading = false;
-                RefreshButton.IsEnabled = true;
+                if (updateRefreshButtonState)
+                {
+                    RefreshButton.IsEnabled = true;
+                }
             }
         }
 

@@ -1,4 +1,4 @@
-﻿<Window x:Class="CocoroConsole.Windows.LogViewerWindow"
+<Window x:Class="CocoroConsole.Windows.LogViewerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="CocoroAI ログビューアー"
@@ -9,6 +9,61 @@
         Icon="/Resource/logo.ico">
 
         <Window.Resources>
+                <Style x:Key="ComponentFilterDropDownButtonStyle"
+                       TargetType="ToggleButton">
+                        <Setter Property="Background"
+                                Value="White"/>
+                        <Setter Property="Foreground"
+                                Value="#333333"/>
+                        <Setter Property="BorderBrush"
+                                Value="#B8C4E0"/>
+                        <Setter Property="BorderThickness"
+                                Value="1"/>
+                        <Setter Property="Padding"
+                                Value="8,0"/>
+                        <Setter Property="Template">
+                                <Setter.Value>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                                <Border x:Name="ButtonBorder"
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        SnapsToDevicePixels="True">
+                                                        <ContentPresenter HorizontalAlignment="Stretch"
+                                                                          VerticalAlignment="Center"
+                                                                          Margin="{TemplateBinding Padding}"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver"
+                                                                 Value="True">
+                                                                <Setter TargetName="ButtonBorder"
+                                                                        Property="Background"
+                                                                        Value="#F2F6FF"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsChecked"
+                                                                 Value="True">
+                                                                <Setter TargetName="ButtonBorder"
+                                                                        Property="BorderBrush"
+                                                                        Value="#4873CF"/>
+                                                        </Trigger>
+                                                </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                </Setter.Value>
+                        </Setter>
+                </Style>
+
+                <Style x:Key="CompactFilterCheckBoxStyle"
+                       TargetType="CheckBox">
+                        <Setter Property="FontSize"
+                                Value="12"/>
+                        <Setter Property="MinHeight"
+                                Value="20"/>
+                        <Setter Property="Margin"
+                                Value="0,1,6,1"/>
+                        <Setter Property="VerticalContentAlignment"
+                                Value="Center"/>
+                </Style>
+
                 <!-- ログレベル別の色設定 -->
                 <Style x:Key="LogLevelCellStyle"
                        TargetType="DataGridCell">
@@ -71,79 +126,112 @@
                         Background="#F5F5F5"
                         BorderBrush="#E0E0E0"
                         BorderThickness="0,0,0,1"
-                        Padding="10">
-                        <Grid>
-                                <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
+                        Padding="10,8">
+                        <WrapPanel Orientation="Horizontal"
+                                   VerticalAlignment="Center">
+                                <Label Content="レベル:"
+                                       VerticalAlignment="Center"
+                                       Padding="0,0,4,0"/>
+                                <ComboBox x:Name="LevelFilterComboBox"
+                                          Width="120"
+                                          Height="25"
+                                          Margin="0,0,16,0"
+                                          SelectionChanged="LevelFilterComboBox_SelectionChanged">
+                                        <ComboBoxItem Content="全て"
+                                                      IsSelected="True"
+                                                      Tag=""/>
+                                        <ComboBoxItem Content="INFO以上"
+                                                      Tag="INFO"/>
+                                        <ComboBoxItem Content="WARNING以上"
+                                                      Tag="WARNING"/>
+                                        <ComboBoxItem Content="ERRORのみ"
+                                                      Tag="ERROR"/>
+                                </ComboBox>
 
-                                <StackPanel Grid.Row="0"
-                                            Orientation="Horizontal">
-                                        <Label Content="レベル:"
-                                               VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="LevelFilterComboBox"
-                                                  Width="120"
-                                                  Margin="5,0"
-                                                  SelectionChanged="LevelFilterComboBox_SelectionChanged">
-                                                <ComboBoxItem Content="全て"
-                                                              IsSelected="True"
-                                                              Tag=""/>
-                                                <ComboBoxItem Content="INFO以上"
-                                                              Tag="INFO"/>
-                                                <ComboBoxItem Content="WARNING以上"
-                                                              Tag="WARNING"/>
-                                                <ComboBoxItem Content="ERRORのみ"
-                                                              Tag="ERROR"/>
-                                        </ComboBox>
+                                <Button x:Name="ClearButton"
+                                        Content="クリア"
+                                        Width="80"
+                                        Height="25"
+                                        Margin="0,0,18,0"
+                                        Click="ClearButton_Click"/>
 
-                                        <Button x:Name="ClearButton"
-                                                Content="クリア"
-                                                Width="80"
-                                                Height="25"
-                                                Margin="20,0,0,0"
-                                                Click="ClearButton_Click"/>
+                                <CheckBox x:Name="AutoScrollCheckBox"
+                                          Content="自動スクロール"
+                                          IsChecked="True"
+                                          VerticalAlignment="Center"
+                                          Margin="0,0,18,0"
+                                          Checked="AutoScrollCheckBox_Changed"
+                                          Unchecked="AutoScrollCheckBox_Changed"/>
 
-                                        <CheckBox x:Name="AutoScrollCheckBox"
-                                                  Content="自動スクロール"
-                                                  IsChecked="True"
-                                                  VerticalAlignment="Center"
-                                                  Margin="20,0,0,0"
-                                                  Checked="AutoScrollCheckBox_Changed"
-                                                  Unchecked="AutoScrollCheckBox_Changed"/>
-                                </StackPanel>
+                                <Label Content="コンポーネント:"
+                                       VerticalAlignment="Center"
+                                       Padding="0,0,4,0"/>
+                                <Grid>
+                                        <ToggleButton x:Name="ComponentFilterToggleButton"
+                                                      Width="180"
+                                                      Height="25"
+                                                      Style="{StaticResource ComponentFilterDropDownButtonStyle}">
+                                                <DockPanel LastChildFill="True">
+                                                        <Path DockPanel.Dock="Right"
+                                                              Fill="#4873CF"
+                                                              Width="8"
+                                                              Height="4"
+                                                              Stretch="Uniform"
+                                                              Margin="8,0,0,0"
+                                                              VerticalAlignment="Center"
+                                                              Data="M 0 0 L 4 4 L 8 0 Z"/>
+                                                        <TextBlock x:Name="ComponentFilterButtonTextBlock"
+                                                                   Text="0 / 0 選択"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   VerticalAlignment="Center"/>
+                                                </DockPanel>
+                                        </ToggleButton>
 
-                                <DockPanel Grid.Row="1"
-                                           Margin="0,8,0,0">
-                                        <Label Content="コンポーネント:"
-                                               VerticalAlignment="Top"
-                                               Padding="0,2,5,0"/>
-                                        <CheckBox x:Name="AllComponentsCheckBox"
-                                                  Content="全て"
-                                                  IsChecked="True"
-                                                  VerticalAlignment="Top"
-                                                  Margin="0,2,10,2"
-                                                  Checked="AllComponentsCheckBox_Checked"
-                                                  Unchecked="AllComponentsCheckBox_Unchecked"/>
-                                        <ItemsControl x:Name="ComponentFilterItemsControl"
-                                                      ItemsSource="{Binding ComponentFilters, RelativeSource={RelativeSource AncestorType=Window}}">
-                                                <ItemsControl.ItemsPanel>
-                                                        <ItemsPanelTemplate>
-                                                                <WrapPanel Orientation="Horizontal"/>
-                                                        </ItemsPanelTemplate>
-                                                </ItemsControl.ItemsPanel>
-                                                <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                                <CheckBox Content="{Binding Component}"
-                                                                          IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                          Margin="0,2,10,2"
-                                                                          Checked="ComponentFilterCheckBox_Changed"
-                                                                          Unchecked="ComponentFilterCheckBox_Changed"/>
-                                                        </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                </DockPanel>
-                        </Grid>
+                                        <Popup x:Name="ComponentFilterPopup"
+                                               Placement="Bottom"
+                                               PlacementTarget="{Binding ElementName=ComponentFilterToggleButton}"
+                                               IsOpen="{Binding IsChecked, ElementName=ComponentFilterToggleButton, Mode=TwoWay}"
+                                               StaysOpen="False"
+                                               PopupAnimation="Fade">
+                                                <Border Background="White"
+                                                        BorderBrush="#B8C4E0"
+                                                        BorderThickness="1"
+                                                        Padding="8"
+                                                        MinWidth="260"
+                                                        MaxWidth="360">
+                                                        <Grid>
+                                                                <Grid.RowDefinitions>
+                                                                        <RowDefinition Height="*"/>
+                                                                </Grid.RowDefinitions>
+
+                                                                <ScrollViewer Grid.Row="0"
+                                                                              Width="310"
+                                                                              MaxHeight="220"
+                                                                              VerticalScrollBarVisibility="Auto">
+                                                                        <ItemsControl x:Name="ComponentFilterItemsControl">
+                                                                                <ItemsControl.ItemsPanel>
+                                                                                        <ItemsPanelTemplate>
+                                                                                                <WrapPanel Orientation="Horizontal"
+                                                                                                           ItemWidth="150"/>
+                                                                                        </ItemsPanelTemplate>
+                                                                                </ItemsControl.ItemsPanel>
+                                                                                <ItemsControl.ItemTemplate>
+                                                                                        <DataTemplate>
+                                                                                                <CheckBox Content="{Binding Component}"
+                                                                                                          IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                                          Style="{StaticResource CompactFilterCheckBoxStyle}"
+                                                                                                          ToolTip="{Binding Component}"
+                                                                                                          Checked="ComponentFilterCheckBox_Changed"
+                                                                                                          Unchecked="ComponentFilterCheckBox_Changed"/>
+                                                                                        </DataTemplate>
+                                                                                </ItemsControl.ItemTemplate>
+                                                                        </ItemsControl>
+                                                                </ScrollViewer>
+                                                        </Grid>
+                                                </Border>
+                                        </Popup>
+                                </Grid>
+                        </WrapPanel>
                 </Border>
 
                 <!-- ログ表示エリア -->
