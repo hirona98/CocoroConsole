@@ -28,6 +28,7 @@
     "captureActiveWindowOnly": true,
     "idleTimeoutMinutes": 10,
     "excludePatterns": [
+      ".*CocoroAI.*",
       ".*パスワード.*",
       ".*ログイン.*",
       ".*プライベート.*",
