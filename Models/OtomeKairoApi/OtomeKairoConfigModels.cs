@@ -147,4 +147,41 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("camera_password")]
         public string CameraPassword { get; set; } = string.Empty;
     }
+
+    public class OtomeKairoMcpServersEditorState
+    {
+        [JsonPropertyName("mcp_servers")]
+        public List<OtomeKairoMcpServerDefinition> McpServers { get; set; } = new List<OtomeKairoMcpServerDefinition>();
+    }
+
+    public class OtomeKairoMcpServerDefinition
+    {
+        [JsonPropertyName("mcp_server_id")]
+        public string McpServerId { get; set; } = string.Empty;
+
+        [JsonPropertyName("connector_kind")]
+        public string ConnectorKind { get; set; } = "mcp_client";
+
+        [JsonPropertyName("client_id")]
+        public string ClientId { get; set; } = "mcp-client-connector-main";
+
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; }
+
+        [JsonPropertyName("transport")]
+        public string Transport { get; set; } = "stdio";
+
+        [JsonPropertyName("command")]
+        public string Command { get; set; } = string.Empty;
+
+        [JsonPropertyName("args")]
+        public List<string> Args { get; set; } = new List<string>();
+
+        [JsonPropertyName("cwd")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Cwd { get; set; }
+
+        [JsonPropertyName("env")]
+        public Dictionary<string, string> Env { get; set; } = new Dictionary<string, string>();
+    }
 }

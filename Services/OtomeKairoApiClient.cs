@@ -128,6 +128,28 @@ namespace CocoroConsole.Services
                 cancellationToken);
         }
 
+        public Task<OtomeKairoMcpServersEditorState> GetMcpServersEditorStateAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoMcpServersEditorState>(
+                HttpMethod.Get,
+                "/api/config/mcp-servers/editor-state",
+                null,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoMcpServersEditorState> ReplaceMcpServersEditorStateAsync(
+            OtomeKairoMcpServersEditorState request,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoMcpServersEditorState>(
+                HttpMethod.Put,
+                "/api/config/mcp-servers/editor-state",
+                request,
+                cancellationToken);
+        }
+
         public Task ReplaceMemorySetAsync(OtomeKairoMemorySetDefinition request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();

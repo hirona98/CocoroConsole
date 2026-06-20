@@ -11,6 +11,9 @@ namespace CocoroConsole.Controls
     {
         private const string DefaultConnectorKind = "tapo_c220";
         private const string DefaultClientId = "tapo-c220-connector-main";
+        private const string DefaultMcpConnectorKind = "mcp_client";
+        private const string DefaultMcpClientId = "mcp-client-connector-main";
+        private const string DefaultMcpTransport = "stdio";
 
         private sealed class CameraSourceEditorItem
         {
@@ -26,9 +29,31 @@ namespace CocoroConsole.Controls
             public string HostDisplay => string.IsNullOrWhiteSpace(Host) ? "IP未設定" : Host.Trim();
         }
 
+        private sealed class McpEnvEditorItem
+        {
+            public string Key { get; set; } = string.Empty;
+            public string Value { get; set; } = string.Empty;
+        }
+
+        private sealed class McpServerEditorItem
+        {
+            public string McpServerId { get; set; } = string.Empty;
+            public string ConnectorKind { get; set; } = DefaultMcpConnectorKind;
+            public string ClientId { get; set; } = DefaultMcpClientId;
+            public bool Enabled { get; set; }
+            public string Transport { get; set; } = DefaultMcpTransport;
+            public string Command { get; set; } = string.Empty;
+            public string ArgsText { get; set; } = string.Empty;
+            public string Cwd { get; set; } = string.Empty;
+            public List<McpEnvEditorItem> Env { get; set; } = new();
+            public string CommandDisplay => string.IsNullOrWhiteSpace(Command) ? "command未設定" : Command.Trim();
+        }
+
         private readonly List<CameraSourceEditorItem> _cameraSources = new();
+        private readonly List<McpServerEditorItem> _mcpServers = new();
         private bool _isInitializing;
         private int _currentCameraSourceIndex = -1;
+        private int _currentMcpServerIndex = -1;
 
         public event EventHandler? SettingsChanged;
 
@@ -78,6 +103,50 @@ namespace CocoroConsole.Controls
             return new OtomeKairoCameraSourcesEditorState
             {
                 CameraSources = _cameraSources.Select(ToDefinition).ToList(),
+            };
+        }
+
+        public void LoadMcpServers(OtomeKairoMcpServersEditorState? editorState)
+        {
+            _isInitializing = true;
+            try
+            {
+                _mcpServers.Clear();
+                _currentMcpServerIndex = -1;
+                RefreshMcpServerListBox();
+
+                if (editorState?.McpServers == null || editorState.McpServers.Count == 0)
+                {
+                    _currentMcpServerIndex = -1;
+                    ClearMcpServerUi();
+                    UpdateMcpEditorEnabled();
+                    return;
+                }
+
+                foreach (var mcpServer in editorState.McpServers)
+                {
+                    _mcpServers.Add(ToEditorItem(mcpServer));
+                }
+
+                _currentMcpServerIndex = 0;
+                RefreshMcpServerListBox();
+                McpServersListBox.SelectedIndex = _currentMcpServerIndex;
+                LoadMcpServerToUi(_mcpServers[_currentMcpServerIndex]);
+                UpdateMcpEditorEnabled();
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+        }
+
+        public OtomeKairoMcpServersEditorState GetMcpServersEditorState()
+        {
+            SyncCurrentMcpServerFromUi();
+            ValidateMcpServers();
+            return new OtomeKairoMcpServersEditorState
+            {
+                McpServers = _mcpServers.Select(ToDefinition).ToList(),
             };
         }
 
@@ -145,6 +214,73 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private void AddMcpServerButton_Click(object sender, RoutedEventArgs e)
+        {
+            SyncCurrentMcpServerFromUi();
+
+            var item = new McpServerEditorItem
+            {
+                Enabled = true,
+                McpServerId = GenerateUniqueMcpServerId(),
+                Command = "npx",
+                ArgsText = "-y",
+            };
+
+            _isInitializing = true;
+            try
+            {
+                _mcpServers.Add(item);
+                _currentMcpServerIndex = _mcpServers.Count - 1;
+                RefreshMcpServerListBox();
+                McpServersListBox.SelectedIndex = _currentMcpServerIndex;
+                LoadMcpServerToUi(item);
+                UpdateMcpEditorEnabled();
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void DeleteMcpServerButton_Click(object sender, RoutedEventArgs e)
+        {
+            var deleteIndex = ResolveMcpServerIndexFromSender(sender);
+            if (deleteIndex < 0 || deleteIndex >= _mcpServers.Count)
+            {
+                MessageBox.Show("削除するMCP serverを選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            _isInitializing = true;
+            try
+            {
+                _mcpServers.RemoveAt(deleteIndex);
+                if (_mcpServers.Count == 0)
+                {
+                    _currentMcpServerIndex = -1;
+                    RefreshMcpServerListBox();
+                    ClearMcpServerUi();
+                    UpdateMcpEditorEnabled();
+                }
+                else
+                {
+                    _currentMcpServerIndex = Math.Min(deleteIndex, _mcpServers.Count - 1);
+                    RefreshMcpServerListBox();
+                    McpServersListBox.SelectedIndex = _currentMcpServerIndex;
+                    LoadMcpServerToUi(_mcpServers[_currentMcpServerIndex]);
+                    UpdateMcpEditorEnabled();
+                }
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         private void CameraSourcesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isInitializing)
@@ -175,6 +311,36 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private void McpServersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            SyncCurrentMcpServerFromUi();
+
+            var selectedIndex = McpServersListBox.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= _mcpServers.Count)
+            {
+                return;
+            }
+
+            _isInitializing = true;
+            try
+            {
+                _currentMcpServerIndex = selectedIndex;
+                LoadMcpServerToUi(_mcpServers[selectedIndex]);
+                UpdateMcpEditorEnabled();
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         private void OnTextChanged(object sender, TextChangedEventArgs e)
         {
             if (_isInitializing)
@@ -186,6 +352,22 @@ namespace CocoroConsole.Controls
             {
                 SyncCurrentCameraSourceFromUi();
                 RefreshCameraSourceListBox();
+            }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void OnMcpTextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            if (sender == McpCommandTextBox || sender == McpServerIdTextBox)
+            {
+                SyncCurrentMcpServerFromUi();
+                RefreshMcpServerListBox();
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
@@ -205,6 +387,51 @@ namespace CocoroConsole.Controls
 
             RefreshCameraSourceListBox();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void McpServerEnabledCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            if (sender is CheckBox { Tag: McpServerEditorItem item })
+            {
+                item.Enabled = ((CheckBox)sender).IsChecked ?? false;
+            }
+
+            RefreshMcpServerListBox();
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void AddMcpEnvButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentMcpServerIndex < 0 || _currentMcpServerIndex >= _mcpServers.Count)
+            {
+                return;
+            }
+
+            SyncCurrentMcpServerFromUi();
+            _mcpServers[_currentMcpServerIndex].Env.Add(new McpEnvEditorItem());
+            RefreshMcpEnvListBox(_mcpServers[_currentMcpServerIndex]);
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void DeleteMcpEnvButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentMcpServerIndex < 0 || _currentMcpServerIndex >= _mcpServers.Count)
+            {
+                return;
+            }
+
+            if (sender is Button { Tag: McpEnvEditorItem item })
+            {
+                SyncCurrentMcpServerFromUi();
+                _mcpServers[_currentMcpServerIndex].Env.Remove(item);
+                RefreshMcpEnvListBox(_mcpServers[_currentMcpServerIndex]);
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         private void CameraPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
@@ -231,6 +458,24 @@ namespace CocoroConsole.Controls
             current.CameraPassword = CameraPasswordBox.Password;
         }
 
+        private void SyncCurrentMcpServerFromUi()
+        {
+            if (_currentMcpServerIndex < 0 || _currentMcpServerIndex >= _mcpServers.Count)
+            {
+                return;
+            }
+
+            var current = _mcpServers[_currentMcpServerIndex];
+            current.McpServerId = McpServerIdTextBox.Text;
+            current.ConnectorKind = NormalizeMcpConnectorKind(McpConnectorKindTextBox.Text);
+            current.ClientId = McpClientIdTextBox.Text;
+            current.Transport = NormalizeMcpTransport(McpTransportTextBox.Text);
+            current.Command = McpCommandTextBox.Text;
+            current.ArgsText = McpArgsTextBox.Text;
+            current.Cwd = McpCwdTextBox.Text;
+            current.Env = McpEnvListBox.Items.Cast<McpEnvEditorItem>().ToList();
+        }
+
         private void LoadCameraSourceToUi(CameraSourceEditorItem item)
         {
             CameraLabelTextBox.Text = item.Label;
@@ -240,6 +485,18 @@ namespace CocoroConsole.Controls
             CameraConnectorKindTextBox.Text = NormalizeConnectorKind(item.ConnectorKind);
             CameraClientIdTextBox.Text = NormalizeClientId(item.ClientId);
             CameraVisionSourceIdTextBox.Text = item.VisionSourceId ?? string.Empty;
+        }
+
+        private void LoadMcpServerToUi(McpServerEditorItem item)
+        {
+            McpServerIdTextBox.Text = item.McpServerId;
+            McpCommandTextBox.Text = item.Command;
+            McpArgsTextBox.Text = item.ArgsText;
+            McpCwdTextBox.Text = item.Cwd;
+            McpConnectorKindTextBox.Text = NormalizeMcpConnectorKind(item.ConnectorKind);
+            McpClientIdTextBox.Text = NormalizeMcpClientId(item.ClientId);
+            McpTransportTextBox.Text = NormalizeMcpTransport(item.Transport);
+            RefreshMcpEnvListBox(item);
         }
 
         private void ClearCameraSourceUi()
@@ -253,9 +510,26 @@ namespace CocoroConsole.Controls
             CameraVisionSourceIdTextBox.Text = string.Empty;
         }
 
+        private void ClearMcpServerUi()
+        {
+            McpServerIdTextBox.Text = string.Empty;
+            McpCommandTextBox.Text = string.Empty;
+            McpArgsTextBox.Text = string.Empty;
+            McpCwdTextBox.Text = string.Empty;
+            McpConnectorKindTextBox.Text = DefaultMcpConnectorKind;
+            McpClientIdTextBox.Text = DefaultMcpClientId;
+            McpTransportTextBox.Text = DefaultMcpTransport;
+            McpEnvListBox.ItemsSource = null;
+        }
+
         private void UpdateCameraEditorEnabled()
         {
             CameraEditorPanel.IsEnabled = _currentCameraSourceIndex >= 0 && _currentCameraSourceIndex < _cameraSources.Count;
+        }
+
+        private void UpdateMcpEditorEnabled()
+        {
+            McpEditorPanel.IsEnabled = _currentMcpServerIndex >= 0 && _currentMcpServerIndex < _mcpServers.Count;
         }
 
         private void RefreshCameraSourceListBox()
@@ -277,6 +551,31 @@ namespace CocoroConsole.Controls
             }
         }
 
+        private void RefreshMcpServerListBox()
+        {
+            var currentIndex = _currentMcpServerIndex;
+            var wasInitializing = _isInitializing;
+            _isInitializing = true;
+            try
+            {
+                McpServersListBox.SelectionChanged -= McpServersListBox_SelectionChanged;
+                McpServersListBox.ItemsSource = null;
+                McpServersListBox.ItemsSource = _mcpServers;
+                McpServersListBox.SelectedIndex = currentIndex >= 0 && currentIndex < _mcpServers.Count ? currentIndex : -1;
+                McpServersListBox.SelectionChanged += McpServersListBox_SelectionChanged;
+            }
+            finally
+            {
+                _isInitializing = wasInitializing;
+            }
+        }
+
+        private void RefreshMcpEnvListBox(McpServerEditorItem item)
+        {
+            McpEnvListBox.ItemsSource = null;
+            McpEnvListBox.ItemsSource = item.Env;
+        }
+
         private static CameraSourceEditorItem ToEditorItem(OtomeKairoCameraSourceDefinition cameraSource)
         {
             return new CameraSourceEditorItem
@@ -289,6 +588,29 @@ namespace CocoroConsole.Controls
                 Host = cameraSource.Connection?.Host ?? string.Empty,
                 CameraUsername = cameraSource.Connection?.CameraUsername ?? string.Empty,
                 CameraPassword = cameraSource.Connection?.CameraPassword ?? string.Empty,
+            };
+        }
+
+        private static McpServerEditorItem ToEditorItem(OtomeKairoMcpServerDefinition mcpServer)
+        {
+            return new McpServerEditorItem
+            {
+                McpServerId = mcpServer.McpServerId,
+                ConnectorKind = NormalizeMcpConnectorKind(mcpServer.ConnectorKind),
+                ClientId = NormalizeMcpClientId(mcpServer.ClientId),
+                Enabled = mcpServer.Enabled,
+                Transport = NormalizeMcpTransport(mcpServer.Transport),
+                Command = mcpServer.Command,
+                ArgsText = BuildArgsText(mcpServer.Args),
+                Cwd = mcpServer.Cwd ?? string.Empty,
+                Env = mcpServer.Env
+                    .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                    .Select(pair => new McpEnvEditorItem
+                    {
+                        Key = pair.Key,
+                        Value = pair.Value,
+                    })
+                    .ToList(),
             };
         }
 
@@ -310,6 +632,25 @@ namespace CocoroConsole.Controls
             };
         }
 
+        private static OtomeKairoMcpServerDefinition ToDefinition(McpServerEditorItem item)
+        {
+            return new OtomeKairoMcpServerDefinition
+            {
+                McpServerId = item.McpServerId.Trim(),
+                ConnectorKind = NormalizeMcpConnectorKind(item.ConnectorKind),
+                ClientId = NormalizeMcpClientId(item.ClientId),
+                Enabled = item.Enabled,
+                Transport = NormalizeMcpTransport(item.Transport),
+                Command = item.Command.Trim(),
+                Args = ParseArgsText(item.ArgsText),
+                Cwd = string.IsNullOrWhiteSpace(item.Cwd) ? null : item.Cwd.Trim(),
+                Env = item.Env.ToDictionary(
+                    env => env.Key.Trim(),
+                    env => env.Value ?? string.Empty,
+                    StringComparer.Ordinal),
+            };
+        }
+
         private int ResolveCameraSourceIndexFromSender(object sender)
         {
             if (sender is Button { Tag: CameraSourceEditorItem item })
@@ -320,6 +661,16 @@ namespace CocoroConsole.Controls
             return _currentCameraSourceIndex;
         }
 
+        private int ResolveMcpServerIndexFromSender(object sender)
+        {
+            if (sender is Button { Tag: McpServerEditorItem item })
+            {
+                return _mcpServers.IndexOf(item);
+            }
+
+            return _currentMcpServerIndex;
+        }
+
         private static string NormalizeConnectorKind(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? DefaultConnectorKind : value.Trim();
@@ -328,6 +679,21 @@ namespace CocoroConsole.Controls
         private static string NormalizeClientId(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? DefaultClientId : value.Trim();
+        }
+
+        private static string NormalizeMcpConnectorKind(string? value)
+        {
+            return DefaultMcpConnectorKind;
+        }
+
+        private static string NormalizeMcpClientId(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? DefaultMcpClientId : value.Trim();
+        }
+
+        private static string NormalizeMcpTransport(string? value)
+        {
+            return DefaultMcpTransport;
         }
 
         private static string GenerateUniqueName(IEnumerable<string> existingNames, string baseName)
@@ -341,6 +707,81 @@ namespace CocoroConsole.Controls
                 name = $"{baseName} {counter}";
             }
             return name;
+        }
+
+        private string GenerateUniqueMcpServerId()
+        {
+            var existingIds = new HashSet<string>(_mcpServers.Select(server => server.McpServerId), StringComparer.Ordinal);
+            var counter = 1;
+            while (true)
+            {
+                var id = $"mcp_server:custom:{counter}";
+                if (!existingIds.Contains(id))
+                {
+                    return id;
+                }
+
+                counter += 1;
+            }
+        }
+
+        private static List<string> ParseArgsText(string? text)
+        {
+            return (text ?? string.Empty)
+                .Replace("\r\n", "\n", StringComparison.Ordinal)
+                .Split('\n')
+                .Select(arg => arg.Trim())
+                .Where(arg => arg.Length > 0)
+                .ToList();
+        }
+
+        private static string BuildArgsText(IEnumerable<string>? args)
+        {
+            return string.Join(Environment.NewLine, args ?? Array.Empty<string>());
+        }
+
+        private void ValidateMcpServers()
+        {
+            var serverIds = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (var server in _mcpServers)
+            {
+                var id = server.McpServerId?.Trim() ?? string.Empty;
+                if (id.Length == 0)
+                {
+                    throw new InvalidOperationException("MCP server IDを入力してください。");
+                }
+
+                if (!id.StartsWith("mcp_server:", StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException($"MCP server IDは mcp_server: で始めてください: {id}");
+                }
+
+                if (!serverIds.Add(id))
+                {
+                    throw new InvalidOperationException($"MCP server IDが重複しています: {id}");
+                }
+
+                if (string.IsNullOrWhiteSpace(server.Command))
+                {
+                    throw new InvalidOperationException($"MCP serverのcommandを入力してください: {id}");
+                }
+
+                var envKeys = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var env in server.Env)
+                {
+                    var key = env.Key?.Trim() ?? string.Empty;
+                    if (key.Length == 0)
+                    {
+                        throw new InvalidOperationException($"MCP serverのenv keyを入力してください: {id}");
+                    }
+
+                    if (!envKeys.Add(key))
+                    {
+                        throw new InvalidOperationException($"MCP serverのenv keyが重複しています: {id} / {key}");
+                    }
+                }
+            }
         }
     }
 }

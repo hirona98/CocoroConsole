@@ -32,6 +32,7 @@ namespace CocoroConsole.Controls
         // OtomeKairo の editor-state を保持
         private OtomeKairoEditorState? _loadedOtomeKairoEditorState;
         private OtomeKairoCameraSourcesEditorState? _loadedCameraSourcesEditorState;
+        private OtomeKairoMcpServersEditorState? _loadedMcpServersEditorState;
 
         // OtomeKairo再起動が必要な設定の前回値を保存
         private ConfigSettings _previousOtomeKairoSettings;
@@ -171,6 +172,7 @@ namespace CocoroConsole.Controls
 
                 SystemSettingsControl.ApplyOtomeKairoCurrentSettings(_loadedOtomeKairoEditorState.Current);
                 await InitializeCameraSourcesControlAsync();
+                await InitializeMcpServersControlAsync();
 
                 LlmSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 EmbeddingSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
@@ -201,6 +203,27 @@ namespace CocoroConsole.Controls
                 _loadedCameraSourcesEditorState = null;
                 CapabilitySettingsControl.LoadCameraSources(null);
                 Debug.WriteLine($"カメラ視覚初期化エラー: {ex.Message}");
+            }
+        }
+
+
+        private async Task InitializeMcpServersControlAsync()
+        {
+            if (_apiClient == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _loadedMcpServersEditorState = await _apiClient.GetMcpServersEditorStateAsync();
+                CapabilitySettingsControl.LoadMcpServers(_loadedMcpServersEditorState);
+            }
+            catch (Exception ex)
+            {
+                _loadedMcpServersEditorState = null;
+                CapabilitySettingsControl.LoadMcpServers(null);
+                Debug.WriteLine($"MCP初期化エラー: {ex.Message}");
             }
         }
 
@@ -482,6 +505,7 @@ namespace CocoroConsole.Controls
                 var updated = await _apiClient.ReplaceEditorStateAsync(request);
                 _loadedOtomeKairoEditorState = updated;
                 await SaveCameraSourcesToApiAsync();
+                await SaveMcpServersToApiAsync();
                 Debug.WriteLine("[SettingWindow] editor-state を API に保存しました");
 
                 LlmSettingsControl.LoadSettingsList(
@@ -521,6 +545,21 @@ namespace CocoroConsole.Controls
             _loadedCameraSourcesEditorState = updated;
             CapabilitySettingsControl.LoadCameraSources(updated);
             Debug.WriteLine("[SettingWindow] camera-sources editor-state saved to API");
+        }
+
+
+        private async Task SaveMcpServersToApiAsync()
+        {
+            if (_apiClient == null || _loadedMcpServersEditorState == null)
+            {
+                return;
+            }
+
+            var request = CapabilitySettingsControl.GetMcpServersEditorState();
+            var updated = await _apiClient.ReplaceMcpServersEditorStateAsync(request);
+            _loadedMcpServersEditorState = updated;
+            CapabilitySettingsControl.LoadMcpServers(updated);
+            Debug.WriteLine("[SettingWindow] mcp-servers editor-state saved to API");
         }
 
 
