@@ -10,48 +10,39 @@
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <GroupBox Header="API説明"
+                <GroupBox Header="ドキュメント"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="#666666">
-                            APIを使って外部プログラムから会話入力と定期起床を実行します。（動作未確認）
+                            OtomeKairo が公開する説明ドキュメントを表示します。
                         </TextBlock>
 
-                        <Expander x:Name="ConversationApiExpander"
-                                  Header="会話API（POST /api/conversation）"
-                                  Foreground="#666666"
-                                  IsExpanded="False"
-                                  Margin="0,10,0,0">
-                            <TextBox x:Name="ConversationApiTextBox"
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="TOKEN:"
+                                       Foreground="#666666"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <TextBox x:Name="ConsoleAccessTokenTextBox"
+                                     Grid.Column="1"
                                      IsReadOnly="True"
-                                     BorderThickness="0"
-                                     VerticalScrollBarVisibility="Auto"
+                                     BorderThickness="1"
+                                     HorizontalScrollBarVisibility="Auto"
+                                     VerticalScrollBarVisibility="Disabled"
                                      Foreground="#666666"
-                                     Padding="2"
-                                     TextWrapping="Wrap"
-                                     AcceptsReturn="True"
-                                     FontFamily="Consolas"
-                                     Margin="0,10,0,0"/>
-                        </Expander>
+                                     Padding="4"
+                                     TextWrapping="NoWrap"
+                                     FontFamily="Consolas"/>
+                        </Grid>
 
-                        <Expander x:Name="WakeApiExpander"
-                                  Header="API起床（POST /api/wake）"
-                                  Foreground="#666666"
-                                  IsExpanded="False"
-                                  Margin="0,10,0,0">
-                            <TextBox x:Name="WakeApiTextBox"
-                                     IsReadOnly="True"
-                                     BorderThickness="0"
-                                     VerticalScrollBarVisibility="Auto"
-                                     Foreground="#666666"
-                                     Padding="2"
-                                     TextWrapping="Wrap"
-                                     AcceptsReturn="True"
-                                     FontFamily="Consolas"
-                                     Margin="0,10,0,0"/>
-                        </Expander>
+                        <StackPanel x:Name="DocsSectionsPanel"
+                                    Margin="0,10,0,0"/>
 
                     </StackPanel>
                 </GroupBox>

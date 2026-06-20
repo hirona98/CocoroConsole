@@ -82,6 +82,12 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoStatusResponse>(HttpMethod.Get, "/api/status", null, cancellationToken);
         }
 
+        public Task<OtomeKairoDocsResponse> GetApiDocumentationAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoDocsResponse>(HttpMethod.Get, "/api/docs", null, cancellationToken);
+        }
+
         public Task<OtomeKairoConversationResponse> SendConversationAsync(OtomeKairoConversationRequest request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -494,6 +500,33 @@ namespace CocoroConsole.Services
 
         [JsonPropertyName("selected_model_preset")]
         public OtomeKairoModelPresetDefinition SelectedModelPreset { get; set; } = new OtomeKairoModelPresetDefinition();
+    }
+
+    public class OtomeKairoDocsResponse
+    {
+        [JsonPropertyName("document_set_id")]
+        public string DocumentSetId { get; set; } = string.Empty;
+
+        [JsonPropertyName("title")]
+        public string Title { get; set; } = string.Empty;
+
+        [JsonPropertyName("format")]
+        public string Format { get; set; } = string.Empty;
+
+        [JsonPropertyName("sections")]
+        public List<OtomeKairoDocsSection> Sections { get; set; } = new List<OtomeKairoDocsSection>();
+    }
+
+    public class OtomeKairoDocsSection
+    {
+        [JsonPropertyName("section_id")]
+        public string SectionId { get; set; } = string.Empty;
+
+        [JsonPropertyName("title")]
+        public string Title { get; set; } = string.Empty;
+
+        [JsonPropertyName("body_text")]
+        public string BodyText { get; set; } = string.Empty;
     }
 
     public class OtomeKairoCurrentSettingsPatch

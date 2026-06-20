@@ -1,14 +1,15 @@
 using CocoroConsole.Services;
 using System;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace CocoroConsole.Controls
 {
     public partial class ApiDocumentationControl : UserControl
     {
+        private static readonly Brush DocumentationForeground = new SolidColorBrush(Color.FromRgb(0x66, 0x66, 0x66));
+
         public ApiDocumentationControl()
         {
             InitializeComponent();
@@ -16,124 +17,67 @@ namespace CocoroConsole.Controls
 
         public async Task InitializeAsync()
         {
+            UpdateConsoleAccessTokenText();
+            DocsSectionsPanel.Children.Clear();
             try
             {
-                ConversationApiTextBox.Text = GetConversationApiDetails();
-                WakeApiTextBox.Text = GetWakeApiDetails();
-
-                await Task.CompletedTask;
+                var appSettings = AppSettings.Instance;
+                using var apiClient = new OtomeKairoApiClient(
+                    appSettings.GetOtomeKairoBaseUrl(),
+                    appSettings.OtomeKairoBearerToken);
+                var docs = await apiClient.GetApiDocumentationAsync();
+                foreach (var section in docs.Sections)
+                {
+                    AddDocumentSection(
+                        string.IsNullOrWhiteSpace(section.Title) ? section.SectionId : section.Title,
+                        ReplaceDisplayPlaceholders(section.BodyText));
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"API説明の初期化エラー: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                AddDocumentSection(
+                    "ドキュメント",
+                    $"OtomeKairo から API ドキュメントを取得できませんでした。\n{ex.Message}",
+                    isExpanded: true);
             }
         }
 
-        private static string GetConversationApiDetails()
+        private void UpdateConsoleAccessTokenText()
         {
-            var baseUrl = AppSettings.Instance.GetOtomeKairoBaseUrl();
-            var sb = new StringBuilder();
-            sb.AppendLine("エンドポイント:");
-            sb.AppendLine($"- POST {baseUrl}/api/conversation");
-            sb.AppendLine();
-
-            sb.AppendLine("認証:");
-            sb.AppendLine("- Authorization: Bearer <TOKEN>");
-            sb.AppendLine();
-
-            sb.AppendLine("リクエストボディ (JSON):");
-            sb.AppendLine("{");
-            sb.AppendLine("  \"text\": \"こんにちは\",");
-            sb.AppendLine("  \"images\": [\"data:image/png;base64,...\"],");
-            sb.AppendLine("  \"client_context\": {");
-            sb.AppendLine("    \"source\": \"CocoroConsole\",");
-            sb.AppendLine("    \"client_id\": \"console-...\",");
-            sb.AppendLine("    \"active_app\": \"Slack\",");
-            sb.AppendLine("    \"window_title\": \"general | Slack\",");
-            sb.AppendLine("    \"locale\": \"ja-JP\"");
-            sb.AppendLine("  }");
-            sb.AppendLine("}");
-            sb.AppendLine("- images は省略可能、指定時は Data URI を最大1件送る");
-            sb.AppendLine();
-
-            sb.AppendLine("レスポンス:");
-            sb.AppendLine("{");
-            sb.AppendLine("  \"ok\": true,");
-            sb.AppendLine("  \"data\": {");
-            sb.AppendLine("    \"cycle_id\": \"cycle:...\",");
-            sb.AppendLine("    \"result_kind\": \"speech\",");
-            sb.AppendLine("    \"speech\": { \"text\": \"こんにちは\" }");
-            sb.AppendLine("  }");
-            sb.AppendLine("}");
-            sb.AppendLine();
-
-            sb.AppendLine("使用例 (cURL):");
-            sb.AppendLine($"curl.exe -k -X POST {baseUrl}/api/conversation \\");
-            sb.AppendLine("  -H \"Authorization: Bearer <TOKEN>\" \\");
-            sb.AppendLine("  -H \"Content-Type: application/json\" \\");
-            sb.AppendLine("  -d '{\"text\":\"こんにちは\",\"images\":[\"data:image/png;base64,...\"],\"client_context\":{\"source\":\"CocoroConsole\",\"client_id\":\"console-...\",\"locale\":\"ja-JP\"}}'");
-            sb.AppendLine();
-
-            sb.AppendLine("使用例 (PowerShell):");
-            sb.AppendLine("# 自己署名HTTPSのため、Windows PowerShell では curl.exe 推奨 / PowerShell 7 なら -SkipCertificateCheck を使用");
-            sb.AppendLine("Invoke-RestMethod -Method Post `");
-            sb.AppendLine($"  -Uri \"{baseUrl}/api/conversation\" `");
-            sb.AppendLine("  -Headers @{ Authorization = \"Bearer <TOKEN>\" } `");
-            sb.AppendLine("  -ContentType \"application/json; charset=utf-8\" `");
-            sb.AppendLine("  -Body '{\"text\":\"こんにちは\",\"images\":[\"data:image/png;base64,...\"],\"client_context\":{\"source\":\"CocoroConsole\",\"client_id\":\"console-...\",\"locale\":\"ja-JP\"}}'");
-            return sb.ToString();
+            var token = AppSettings.Instance.OtomeKairoBearerToken;
+            ConsoleAccessTokenTextBox.Text = string.IsNullOrWhiteSpace(token) ? "未取得" : token;
         }
 
-        private static string GetWakeApiDetails()
+        private void AddDocumentSection(string title, string body, bool isExpanded = false)
+        {
+            var textBox = new TextBox
+            {
+                IsReadOnly = true,
+                BorderThickness = new System.Windows.Thickness(0),
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Foreground = DocumentationForeground,
+                Padding = new System.Windows.Thickness(2),
+                TextWrapping = System.Windows.TextWrapping.Wrap,
+                AcceptsReturn = true,
+                FontFamily = new FontFamily("Consolas"),
+                Margin = new System.Windows.Thickness(0, 10, 0, 0),
+                Text = body,
+            };
+            var expander = new Expander
+            {
+                Header = title,
+                Foreground = DocumentationForeground,
+                IsExpanded = isExpanded,
+                Margin = new System.Windows.Thickness(0, 10, 0, 0),
+                Content = textBox,
+            };
+            DocsSectionsPanel.Children.Add(expander);
+        }
+
+        private static string ReplaceDisplayPlaceholders(string body)
         {
             var baseUrl = AppSettings.Instance.GetOtomeKairoBaseUrl();
-            var sb = new StringBuilder();
-            sb.AppendLine("エンドポイント:");
-            sb.AppendLine($"- POST {baseUrl}/api/wake");
-            sb.AppendLine();
-
-            sb.AppendLine("認証:");
-            sb.AppendLine("- Authorization: Bearer <TOKEN>");
-            sb.AppendLine();
-
-            sb.AppendLine("リクエストボディ (JSON):");
-            sb.AppendLine("{");
-            sb.AppendLine("  \"client_context\": {");
-            sb.AppendLine("    \"source\": \"CocoroConsole\",");
-            sb.AppendLine("    \"client_id\": \"console-...\",");
-            sb.AppendLine("    \"active_app\": \"Slack\",");
-            sb.AppendLine("    \"window_title\": \"general | Slack\",");
-            sb.AppendLine("    \"locale\": \"ja-JP\"");
-            sb.AppendLine("  }");
-            sb.AppendLine("}");
-            sb.AppendLine();
-
-            sb.AppendLine("レスポンス:");
-            sb.AppendLine("{");
-            sb.AppendLine("  \"ok\": true,");
-            sb.AppendLine("  \"data\": {");
-            sb.AppendLine("    \"cycle_id\": \"cycle:...\",");
-            sb.AppendLine("    \"result_kind\": \"noop\",");
-            sb.AppendLine("    \"speech\": null");
-            sb.AppendLine("  }");
-            sb.AppendLine("}");
-            sb.AppendLine();
-
-            sb.AppendLine("使用例 (cURL):");
-            sb.AppendLine($"curl.exe -k -X POST {baseUrl}/api/wake \\");
-            sb.AppendLine("  -H \"Authorization: Bearer <TOKEN>\" \\");
-            sb.AppendLine("  -H \"Content-Type: application/json\" \\");
-            sb.AppendLine("  -d '{\"client_context\":{\"source\":\"CocoroConsole\",\"client_id\":\"console-...\",\"locale\":\"ja-JP\"}}'");
-            sb.AppendLine();
-
-            sb.AppendLine("使用例 (PowerShell):");
-            sb.AppendLine("# 自己署名HTTPSのため、Windows PowerShell では curl.exe 推奨 / PowerShell 7 なら -SkipCertificateCheck を使用");
-            sb.AppendLine("Invoke-RestMethod -Method Post `");
-            sb.AppendLine($"  -Uri \"{baseUrl}/api/wake\" `");
-            sb.AppendLine("  -Headers @{ Authorization = \"Bearer <TOKEN>\" } `");
-            sb.AppendLine("  -ContentType \"application/json; charset=utf-8\" `");
-            sb.AppendLine("  -Body '{\"client_context\":{\"source\":\"CocoroConsole\",\"client_id\":\"console-...\",\"locale\":\"ja-JP\"}}'");
-            return sb.ToString();
+            return (body ?? string.Empty).Replace("{BASE_URL}", baseUrl, StringComparison.Ordinal);
         }
     }
 }
