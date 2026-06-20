@@ -105,7 +105,7 @@
                          AcceptsReturn="True"
                          TextWrapping="Wrap"
                          VerticalScrollBarVisibility="Auto"
-                         Height="320"
+                         Height="400"
                          Margin="0,0,20,0"
                          Foreground="#FF0078D7"
                          BorderBrush="#CCCCCC"

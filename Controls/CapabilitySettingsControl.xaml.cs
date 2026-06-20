@@ -467,7 +467,7 @@ namespace CocoroConsole.Controls
 
             var current = _mcpServers[_currentMcpServerIndex];
             current.McpServerId = McpServerIdTextBox.Text;
-            current.ConnectorKind = NormalizeMcpConnectorKind(McpConnectorKindTextBox.Text);
+            current.ConnectorKind = DefaultMcpConnectorKind;
             current.ClientId = McpClientIdTextBox.Text;
             current.Transport = NormalizeMcpTransport(McpTransportTextBox.Text);
             current.Command = McpCommandTextBox.Text;
@@ -493,7 +493,6 @@ namespace CocoroConsole.Controls
             McpCommandTextBox.Text = item.Command;
             McpArgsTextBox.Text = item.ArgsText;
             McpCwdTextBox.Text = item.Cwd;
-            McpConnectorKindTextBox.Text = NormalizeMcpConnectorKind(item.ConnectorKind);
             McpClientIdTextBox.Text = NormalizeMcpClientId(item.ClientId);
             McpTransportTextBox.Text = NormalizeMcpTransport(item.Transport);
             RefreshMcpEnvListBox(item);
@@ -516,7 +515,6 @@ namespace CocoroConsole.Controls
             McpCommandTextBox.Text = string.Empty;
             McpArgsTextBox.Text = string.Empty;
             McpCwdTextBox.Text = string.Empty;
-            McpConnectorKindTextBox.Text = DefaultMcpConnectorKind;
             McpClientIdTextBox.Text = DefaultMcpClientId;
             McpTransportTextBox.Text = DefaultMcpTransport;
             McpEnvListBox.ItemsSource = null;

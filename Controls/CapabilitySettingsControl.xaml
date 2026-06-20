@@ -39,6 +39,15 @@
             <Setter Property="BorderThickness"
                     Value="1"/>
         </Style>
+        <Style x:Key="SettingDescriptionStyle"
+               TargetType="TextBlock">
+            <Setter Property="Foreground"
+                    Value="#666666"/>
+            <Setter Property="TextWrapping"
+                    Value="Wrap"/>
+            <Setter Property="Margin"
+                    Value="0,0,0,0"/>
+        </Style>
         <Style x:Key="CapabilityButtonStyle"
                TargetType="Button">
             <Setter Property="Background"
@@ -289,11 +298,14 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="MCP server ID:"
-                                           Style="{StaticResource SettingLabelStyle}"/>
-                                <TextBox x:Name="McpServerIdTextBox"
-                                         Grid.Column="1"
-                                         Style="{StaticResource SettingTextBoxStyle}"
-                                         TextChanged="OnMcpTextChanged"/>
+                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBox x:Name="McpServerIdTextBox"
+                                             Style="{StaticResource SettingTextBoxStyle}"
+                                             TextChanged="OnMcpTextChanged"/>
+                                    <TextBlock Text="システム内で MCP server を一意に識別する ID。例: mcp_server:elyth"
+                                               Style="{StaticResource SettingDescriptionStyle}"/>
+                                </StackPanel>
                             </Grid>
 
                             <Grid Margin="0,5">
@@ -302,11 +314,14 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="command:"
-                                           Style="{StaticResource SettingLabelStyle}"/>
-                                <TextBox x:Name="McpCommandTextBox"
-                                         Grid.Column="1"
-                                         Style="{StaticResource SettingTextBoxStyle}"
-                                         TextChanged="OnMcpTextChanged"/>
+                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBox x:Name="McpCommandTextBox"
+                                             Style="{StaticResource SettingTextBoxStyle}"
+                                             TextChanged="OnMcpTextChanged"/>
+                                    <TextBlock Text="MCP server を起動する実行コマンド。例: npx"
+                                               Style="{StaticResource SettingDescriptionStyle}"/>
+                                </StackPanel>
                             </Grid>
 
                             <Grid Margin="0,5">
@@ -315,15 +330,18 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="args:"
-                                           Style="{StaticResource SettingLabelStyle}"/>
-                                <TextBox x:Name="McpArgsTextBox"
-                                         Grid.Column="1"
-                                         MinHeight="70"
-                                         AcceptsReturn="True"
-                                         VerticalScrollBarVisibility="Auto"
-                                         TextWrapping="NoWrap"
-                                         Style="{StaticResource SettingTextBoxStyle}"
-                                         TextChanged="OnMcpTextChanged"/>
+                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBox x:Name="McpArgsTextBox"
+                                             MinHeight="70"
+                                             AcceptsReturn="True"
+                                             VerticalScrollBarVisibility="Auto"
+                                             TextWrapping="NoWrap"
+                                             Style="{StaticResource SettingTextBoxStyle}"
+                                             TextChanged="OnMcpTextChanged"/>
+                                    <TextBlock Text="command に渡す引数。1 行を 1 引数として保存する。空行は保存しない。"
+                                               Style="{StaticResource SettingDescriptionStyle}"/>
+                                </StackPanel>
                             </Grid>
 
                             <Grid Margin="0,5">
@@ -332,25 +350,14 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="cwd:"
-                                           Style="{StaticResource SettingLabelStyle}"/>
-                                <TextBox x:Name="McpCwdTextBox"
-                                         Grid.Column="1"
-                                         Style="{StaticResource SettingTextBoxStyle}"
-                                         TextChanged="OnMcpTextChanged"/>
-                            </Grid>
-
-                            <Grid Margin="0,12,0,5">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="接続種別:"
-                                           Style="{StaticResource SettingLabelStyle}"/>
-                                <TextBox x:Name="McpConnectorKindTextBox"
-                                         Grid.Column="1"
-                                         Style="{StaticResource SettingTextBoxStyle}"
-                                         IsEnabled="False"
-                                         Text="mcp_client"/>
+                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBox x:Name="McpCwdTextBox"
+                                             Style="{StaticResource SettingTextBoxStyle}"
+                                             TextChanged="OnMcpTextChanged"/>
+                                    <TextBlock Text="MCP server 起動時の作業ディレクトリ。不要な場合は空欄にする。"
+                                               Style="{StaticResource SettingDescriptionStyle}"/>
+                                </StackPanel>
                             </Grid>
 
                             <Grid Margin="0,5">
@@ -359,11 +366,14 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="接続クライアント:"
-                                           Style="{StaticResource SettingLabelStyle}"/>
-                                <TextBox x:Name="McpClientIdTextBox"
-                                         Grid.Column="1"
-                                         Style="{StaticResource SettingTextBoxStyle}"
-                                         TextChanged="OnMcpTextChanged"/>
+                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBox x:Name="McpClientIdTextBox"
+                                             Style="{StaticResource SettingTextBoxStyle}"
+                                             TextChanged="OnMcpTextChanged"/>
+                                    <TextBlock Text="この MCP server を起動する MCP client connector の client_id。通常は既定値を使う。"
+                                               Style="{StaticResource SettingDescriptionStyle}"/>
+                                </StackPanel>
                             </Grid>
 
                             <Grid Margin="0,5">
@@ -372,12 +382,15 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="transport:"
-                                           Style="{StaticResource SettingLabelStyle}"/>
-                                <TextBox x:Name="McpTransportTextBox"
-                                         Grid.Column="1"
-                                         Style="{StaticResource SettingTextBoxStyle}"
-                                         IsEnabled="False"
-                                         Text="stdio"/>
+                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBox x:Name="McpTransportTextBox"
+                                             Style="{StaticResource SettingTextBoxStyle}"
+                                             IsEnabled="False"
+                                             Text="stdio"/>
+                                    <TextBlock Text="MCP server との通信方式。現在は stdio 固定。"
+                                               Style="{StaticResource SettingDescriptionStyle}"/>
+                                </StackPanel>
                             </Grid>
 
                             <Grid Margin="0,12,0,5">
@@ -386,52 +399,56 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="env:"
-                                           Style="{StaticResource SettingLabelStyle}"/>
-                                <Grid Grid.Column="1">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="90"/>
-                                    </Grid.ColumnDefinitions>
-                                    <ListBox x:Name="McpEnvListBox"
-                                             Grid.Column="0"
-                                             Height="130"
-                                             HorizontalContentAlignment="Stretch"
-                                             Margin="0,0,10,0">
-                                        <ListBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <Grid HorizontalAlignment="Stretch"
-                                                      Margin="0,2">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="180"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <TextBox Grid.Column="0"
-                                                             Text="{Binding Key, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                             Style="{StaticResource SettingTextBoxStyle}"
-                                                             TextChanged="OnMcpTextChanged"
-                                                             Margin="0,0,5,0"/>
-                                                    <TextBox Grid.Column="1"
-                                                             Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                             Style="{StaticResource SettingTextBoxStyle}"
-                                                             TextChanged="OnMcpTextChanged"
-                                                             Margin="0,0,5,0"/>
-                                                    <Button Grid.Column="2"
-                                                            Content="削除"
-                                                            Tag="{Binding}"
-                                                            Style="{StaticResource CapabilityButtonStyle}"
-                                                            Padding="10,2"
-                                                            Click="DeleteMcpEnvButton_Click"/>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ListBox.ItemTemplate>
-                                    </ListBox>
-                                    <Button Grid.Column="1"
-                                            Content="env追加"
-                                            VerticalAlignment="Top"
-                                            Style="{StaticResource CapabilityButtonStyle}"
-                                            Click="AddMcpEnvButton_Click"/>
-                                </Grid>
+                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="90"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ListBox x:Name="McpEnvListBox"
+                                                 Grid.Column="0"
+                                                 Height="130"
+                                                 HorizontalContentAlignment="Stretch"
+                                                 Margin="0,0,10,0">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid HorizontalAlignment="Stretch"
+                                                          Margin="0,2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="180"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBox Grid.Column="0"
+                                                                 Text="{Binding Key, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Style="{StaticResource SettingTextBoxStyle}"
+                                                                 TextChanged="OnMcpTextChanged"
+                                                                 Margin="0,0,5,0"/>
+                                                        <TextBox Grid.Column="1"
+                                                                 Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Style="{StaticResource SettingTextBoxStyle}"
+                                                                 TextChanged="OnMcpTextChanged"
+                                                                 Margin="0,0,5,0"/>
+                                                        <Button Grid.Column="2"
+                                                                Content="削除"
+                                                                Tag="{Binding}"
+                                                                Style="{StaticResource CapabilityButtonStyle}"
+                                                                Padding="10,2"
+                                                                Click="DeleteMcpEnvButton_Click"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                        <Button Grid.Column="1"
+                                                Content="env追加"
+                                                VerticalAlignment="Top"
+                                                Style="{StaticResource CapabilityButtonStyle}"
+                                                Click="AddMcpEnvButton_Click"/>
+                                    </Grid>
+                                    <TextBlock Text="MCP server 起動時に渡す環境変数。API key や token はここに設定し、値は設定DBに保存する。"
+                                               Style="{StaticResource SettingDescriptionStyle}"/>
+                                </StackPanel>
                             </Grid>
                         </StackPanel>
                     </StackPanel>

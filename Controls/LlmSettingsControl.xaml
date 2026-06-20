@@ -51,7 +51,8 @@
                           Unchecked="IsUseLLMCheckBox_Changed"
                           Margin="0,5,0,0"/>
 
-                <Grid Margin="0,10,20,0" HorizontalAlignment="Left">
+                <Grid Margin="0,10,20,0"
+                      HorizontalAlignment="Left">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="80"/>
@@ -62,7 +63,8 @@
                     <ComboBox x:Name="PresetSelectComboBox"
                               Grid.Column="0"
                               Margin="0,5,10,5"
-                              SelectionChanged="PresetSelectComboBox_SelectionChanged" Width="500"/>
+                              SelectionChanged="PresetSelectComboBox_SelectionChanged"
+                              Width="500"/>
 
                     <Button Grid.Column="1"
                             Content="追加"
@@ -86,20 +88,25 @@
                             Click="DeletePresetButton_Click"/>
                 </Grid>
 
-                <Grid Margin="0,20,20,20" HorizontalAlignment="Left">
+                <Grid Margin="0,20,20,20"
+                      HorizontalAlignment="Left">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="プリセット名:"
-                               Style="{StaticResource SettingLabelStyle}" Width="100" HorizontalAlignment="Left"/>
+                               Style="{StaticResource SettingLabelStyle}"
+                               Width="100"
+                               HorizontalAlignment="Left"/>
                     <TextBox x:Name="PresetNameTextBox"
                              Grid.Column="1"
                              Style="{StaticResource SettingTextBoxStyle}"
-                             TextChanged="OnSettingChanged" Width="500" HorizontalAlignment="Left"/>
+                             TextChanged="OnSettingChanged"
+                             Width="500"
+                             HorizontalAlignment="Left"/>
                 </Grid>
 
-                <GroupBox Header="会話履歴の取り込み範囲"
+                <GroupBox Header="直近会話の取り込み範囲（記憶は別途入ります）"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
