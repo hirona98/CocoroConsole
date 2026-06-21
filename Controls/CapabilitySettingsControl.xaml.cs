@@ -14,6 +14,7 @@ namespace CocoroConsole.Controls
         private const string DefaultMcpConnectorKind = "mcp_client";
         private const string DefaultMcpClientId = "mcp-client-connector-main";
         private const string DefaultMcpTransport = "stdio";
+        private const string DefaultElythMcpServerId = "mcp:elyth";
 
         private sealed class CameraSourceEditorItem
         {
@@ -117,8 +118,11 @@ namespace CocoroConsole.Controls
 
                 if (editorState?.McpServers == null || editorState.McpServers.Count == 0)
                 {
-                    _currentMcpServerIndex = -1;
-                    ClearMcpServerUi();
+                    _mcpServers.Add(BuildDefaultElythMcpServerItem());
+                    _currentMcpServerIndex = 0;
+                    RefreshMcpServerListBox();
+                    McpServersListBox.SelectedIndex = _currentMcpServerIndex;
+                    LoadMcpServerToUi(_mcpServers[_currentMcpServerIndex]);
                     UpdateMcpEditorEnabled();
                     return;
                 }
@@ -612,6 +616,25 @@ namespace CocoroConsole.Controls
             };
         }
 
+        private static McpServerEditorItem BuildDefaultElythMcpServerItem()
+        {
+            return new McpServerEditorItem
+            {
+                McpServerId = DefaultElythMcpServerId,
+                ConnectorKind = DefaultMcpConnectorKind,
+                ClientId = DefaultMcpClientId,
+                Enabled = false,
+                Transport = DefaultMcpTransport,
+                Command = "npx",
+                ArgsText = "-y" + Environment.NewLine + "elyth-mcp-server@latest",
+                Env = new List<McpEnvEditorItem>
+                {
+                    new McpEnvEditorItem { Key = "ELYTH_API_BASE", Value = "https://elythworld.com" },
+                    new McpEnvEditorItem { Key = "ELYTH_API_KEY", Value = string.Empty },
+                },
+            };
+        }
+
         private static OtomeKairoCameraSourceDefinition ToDefinition(CameraSourceEditorItem item)
         {
             return new OtomeKairoCameraSourceDefinition
@@ -713,7 +736,7 @@ namespace CocoroConsole.Controls
             var counter = 1;
             while (true)
             {
-                var id = $"mcp_server:custom:{counter}";
+                var id = $"mcp:custom:{counter}";
                 if (!existingIds.Contains(id))
                 {
                     return id;
@@ -750,9 +773,9 @@ namespace CocoroConsole.Controls
                     throw new InvalidOperationException("MCP server IDを入力してください。");
                 }
 
-                if (!id.StartsWith("mcp_server:", StringComparison.Ordinal))
+                if (!id.StartsWith("mcp:", StringComparison.Ordinal))
                 {
-                    throw new InvalidOperationException($"MCP server IDは mcp_server: で始めてください: {id}");
+                    throw new InvalidOperationException($"MCP server IDは mcp: で始めてください: {id}");
                 }
 
                 if (!serverIds.Add(id))

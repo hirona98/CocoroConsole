@@ -303,7 +303,7 @@
                                     <TextBox x:Name="McpServerIdTextBox"
                                              Style="{StaticResource SettingTextBoxStyle}"
                                              TextChanged="OnMcpTextChanged"/>
-                                    <TextBlock Text="システム内で MCP server を一意に識別する ID。例: mcp_server:elyth"
+                                    <TextBlock Text="システム内で MCP server を一意に識別する ID。例: mcp:elyth"
                                                Style="{StaticResource SettingDescriptionStyle}"/>
                                 </StackPanel>
                             </Grid>
