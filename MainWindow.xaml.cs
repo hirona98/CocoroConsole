@@ -1409,7 +1409,6 @@ namespace CocoroConsole
 
                 // イベント購読
                 _voiceRecognitionService.OnRecognizedText += OnVoiceRecognized;
-                _voiceRecognitionService.OnStateChanged += OnVoiceStateChanged;
                 _voiceRecognitionService.OnVoiceLevel += OnVoiceLevelChanged;
 
                 // 音声認識開始
@@ -1436,29 +1435,6 @@ namespace CocoroConsole
 
                 // OtomeKairoに送信
                 _ = SendMessageToOtomeKairoAsync(text, null);
-            });
-        }
-
-        /// <summary>
-        /// 音声認識状態変更を処理
-        /// </summary>
-        private void OnVoiceStateChanged(VoiceRecognitionState state)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                // 音声認識状態変更はログのみ
-                string statusMessage = state switch
-                {
-                    VoiceRecognitionState.SLEEPING => "ウェイクアップワード待機中",
-                    VoiceRecognitionState.ACTIVE => "会話モード開始",
-                    VoiceRecognitionState.PROCESSING => "音声認識処理中",
-                    _ => ""
-                };
-
-                if (!string.IsNullOrEmpty(statusMessage))
-                {
-                    Debug.WriteLine($"[VoiceRecognition] {statusMessage}");
-                }
             });
         }
 

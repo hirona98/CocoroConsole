@@ -301,7 +301,6 @@ namespace CocoroConsole.Services
             {
                 _triggered = true;
                 result.IsSpeechStart = true;
-                System.Diagnostics.Debug.WriteLine($"[SileroVAD] Speech start (prob: {speechProb:F3})");
             }
 
             if (_triggered)
@@ -315,7 +314,6 @@ namespace CocoroConsole.Services
                         _triggered = false;
                         result.IsSpeechEnd = true;
                         _samplesSinceLastSpeech = 0;
-                        System.Diagnostics.Debug.WriteLine("[SileroVAD] Speech end");
                     }
                 }
                 else
