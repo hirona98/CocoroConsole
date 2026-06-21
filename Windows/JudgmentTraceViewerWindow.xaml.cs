@@ -361,6 +361,54 @@ namespace CocoroConsole.Windows
             AppendLineIfPresent(builder, "  関係 view", BuildContextCountLine(cognitiveContext.RelationshipContext, "relationship_items", "関係"));
             AppendLineIfPresent(builder, "  予測差分", BuildContextCountLine(cognitiveContext.PredictionErrorContext, "signals", "差分"));
             AppendLineIfPresent(builder, "  静かな再浮上", BuildContextCountLine(cognitiveContext.DefaultModeContext, "resurfacing_candidates", "再浮上"));
+            AppendTopArraySection(
+                builder,
+                "  workspace 候補",
+                TryGetProperty(cognitiveContext.WorkspaceContextSummary, "workspace_candidates"),
+                5,
+                BuildWorkspaceCandidateLine);
+            AppendTopArraySection(
+                builder,
+                "  抑制した候補",
+                TryGetProperty(cognitiveContext.ForegroundSelection, "suppressed_factors"),
+                3,
+                BuildSuppressedFactorLine);
+            AppendTopArraySection(
+                builder,
+                "  感覚信頼度",
+                TryGetProperty(cognitiveContext.SelfStateContext, "sensory_confidence"),
+                3,
+                BuildContextItemLine);
+            AppendTopArraySection(
+                builder,
+                "  agency 信頼度",
+                TryGetProperty(cognitiveContext.SelfStateContext, "agency_confidence"),
+                3,
+                BuildContextItemLine);
+            AppendTopArraySection(
+                builder,
+                "  関係項目",
+                TryGetProperty(cognitiveContext.RelationshipContext, "relationship_items"),
+                4,
+                BuildContextItemLine);
+            AppendTopArraySection(
+                builder,
+                "  関係感情",
+                TryGetProperty(cognitiveContext.RelationshipContext, "affect_items"),
+                3,
+                BuildContextItemLine);
+            AppendTopArraySection(
+                builder,
+                "  予測差分候補",
+                TryGetProperty(cognitiveContext.PredictionErrorContext, "signals"),
+                4,
+                BuildContextItemLine);
+            AppendTopArraySection(
+                builder,
+                "  静かな再浮上候補",
+                TryGetProperty(cognitiveContext.DefaultModeContext, "resurfacing_candidates"),
+                4,
+                BuildContextItemLine);
             builder.AppendLine();
         }
 
@@ -526,6 +574,65 @@ namespace CocoroConsole.Windows
                 LabelValue("主役", GetString(foregroundSelection, "primary_factor_ref")),
                 LabelValue("補助", JoinArrayValues(foregroundSelection, "supporting_factor_refs")),
                 LabelValue("抑制", suppressedCount),
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        private static string BuildWorkspaceCandidateLine(JsonElement candidate)
+        {
+            if (candidate.ValueKind != JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" / ", new[]
+            {
+                LabelValue("ref", GetString(candidate, "factor_ref")),
+                FirstNonEmpty(GetString(candidate, "kind"), GetString(candidate, "source")),
+                GetString(candidate, "summary_text"),
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        private static string BuildSuppressedFactorLine(JsonElement factor)
+        {
+            if (factor.ValueKind != JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" / ", new[]
+            {
+                LabelValue("ref", GetString(factor, "factor_ref")),
+                GetString(factor, "reason_summary"),
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        private static string BuildContextItemLine(JsonElement item)
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" / ", new[]
+            {
+                FirstNonEmpty(
+                    GetString(item, "summary_text"),
+                    GetString(item, "reason_summary"),
+                    GetString(item, "detail_summary"),
+                    GetString(item, "label")),
+                LabelValue("source", GetString(item, "source")),
+                LabelValue("ref", FirstNonEmpty(
+                    GetString(item, "item_ref"),
+                    GetString(item, "candidate_ref"),
+                    GetString(item, "factor_ref"),
+                    GetString(item, "source_id"))),
+                LabelValue("kind", FirstNonEmpty(
+                    GetString(item, "signal_kind"),
+                    GetString(item, "kind"),
+                    GetString(item, "channel"))),
+                LabelValue("confidence", FirstNonEmpty(
+                    GetString(item, "confidence_hint"),
+                    GetString(item, "confidence"))),
             }.Where(value => !string.IsNullOrWhiteSpace(value)));
         }
 
