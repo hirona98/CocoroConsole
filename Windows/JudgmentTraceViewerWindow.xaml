@@ -155,6 +155,17 @@
                                                                  TextWrapping="NoWrap"/>
                                                 </Grid>
                                         </TabItem>
+                                        <TabItem Header="認知コンテキスト">
+                                                <Grid Margin="8">
+                                                        <TextBox x:Name="CognitiveContextTextBox"
+                                                                 IsReadOnly="True"
+                                                                 AcceptsReturn="True"
+                                                                 VerticalScrollBarVisibility="Auto"
+                                                                 HorizontalScrollBarVisibility="Auto"
+                                                                 FontFamily="Consolas"
+                                                                 TextWrapping="NoWrap"/>
+                                                </Grid>
+                                        </TabItem>
                                         <TabItem Header="全データ">
                                                 <Grid Margin="8">
                                                         <TextBox x:Name="CycleTraceTextBox"

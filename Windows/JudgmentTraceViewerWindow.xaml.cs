@@ -159,17 +159,22 @@ namespace CocoroConsole.Windows
                 _traceLoadCts = new CancellationTokenSource();
 
                 UpdateStatus($"cycle trace を読み込み中... {cycleId}");
-                var trace = await client.GetCycleTraceAsync(cycleId, _traceLoadCts.Token).ConfigureAwait(true);
+                var traceTask = client.GetCycleTraceAsync(cycleId, _traceLoadCts.Token);
+                var cognitiveContextTask = client.GetCycleCognitiveContextAsync(cycleId, _traceLoadCts.Token);
+                await Task.WhenAll(traceTask, cognitiveContextTask).ConfigureAwait(true);
+                var trace = await traceTask.ConfigureAwait(true);
+                var cognitiveContext = await cognitiveContextTask.ConfigureAwait(true);
 
                 var cycleSummary = trace.CycleSummary;
                 SelectedCycleTitleTextBlock.Text = cycleId;
                 SelectedCycleMetaTextBlock.Text = BuildCycleMetaText(cycleSummary);
 
                 var evidenceResolutionTrace = TryGetProperty(trace.RecallTrace, "fact_resolution_trace");
-                OverviewTextBox.Text = BuildOverview(trace, evidenceResolutionTrace);
+                OverviewTextBox.Text = BuildOverview(trace, cognitiveContext, evidenceResolutionTrace);
                 EvidenceResolutionTraceTextBox.Text = PrettyJson(evidenceResolutionTrace);
                 RecallTraceTextBox.Text = PrettyJson(trace.RecallTrace);
                 ActivityTraceTextBox.Text = PrettyJson(trace.ActivityTrace);
+                CognitiveContextTextBox.Text = PrettyJson(cognitiveContext);
                 CycleTraceTextBox.Text = JsonSerializer.Serialize(trace, _jsonSerializerOptions);
 
                 UpdateStatus($"cycle trace を表示中: {cycleId}");
@@ -217,6 +222,7 @@ namespace CocoroConsole.Windows
             EvidenceResolutionTraceTextBox.Text = message;
             RecallTraceTextBox.Text = string.Empty;
             ActivityTraceTextBox.Text = string.Empty;
+            CognitiveContextTextBox.Text = string.Empty;
             CycleTraceTextBox.Text = string.Empty;
         }
 
@@ -234,7 +240,10 @@ namespace CocoroConsole.Windows
             return $"開始時刻: {startedAt} / きっかけ: {DescribeTriggerKind(triggerKind)} / 結果: {DescribeResultKind(resultKind)} / 失敗: {DescribeBool(failed)}";
         }
 
-        private string BuildOverview(OtomeKairoCycleTrace trace, JsonElement evidenceResolutionTrace)
+        private string BuildOverview(
+            OtomeKairoCycleTrace trace,
+            OtomeKairoCycleCognitiveContext cognitiveContext,
+            JsonElement evidenceResolutionTrace)
         {
             var builder = new StringBuilder();
             var compact = TryGetProperty(trace.ResultTrace, "trigger_compact_summary");
@@ -279,6 +288,8 @@ namespace CocoroConsole.Windows
                 GetString(trace.DecisionTrace, "reason_summary"),
                 GetString(decisionSummary, "reason_summary")
             ));
+            AppendLineIfPresent(builder, "  前景化", BuildForegroundSelectionLine(cognitiveContext.ForegroundSelection));
+            AppendLineIfPresent(builder, "  候補盤面", BuildWorkspaceContextLine(cognitiveContext.WorkspaceContextSummary));
             AppendLineIfPresent(builder, "  人格設定", GetString(trace.DecisionTrace, "persona_summary"));
             AppendLineIfPresent(builder, "  記憶集合", GetString(trace.DecisionTrace, "memory_summary"));
             AppendLineIfPresent(builder, "  能力要求", BuildCapabilityLine(FirstObject(
@@ -290,6 +301,7 @@ namespace CocoroConsole.Windows
 
             AppendEvidenceResolutionOverview(builder, evidenceResolutionTrace);
             AppendRecallOverview(builder, trace.RecallTrace);
+            AppendCognitiveContextOverview(builder, cognitiveContext);
             AppendWorldStateOverview(builder, trace.WorldStateTrace);
             AppendActivityOverview(builder, trace.ActivityTrace);
             AppendMemoryOverview(builder, trace.MemoryTrace);
@@ -337,6 +349,18 @@ namespace CocoroConsole.Windows
             AppendLineIfPresent(builder, "  採用理由", GetString(recallTrace, "adopted_reason_summary"));
             AppendLineIfPresent(builder, "  落とした候補", GetString(recallTrace, "rejected_candidate_summary"));
             AppendLineIfPresent(builder, "  要約", BuildReadableObjectLine(TryGetProperty(recallTrace, "recall_pack_summary")));
+            builder.AppendLine();
+        }
+
+        private void AppendCognitiveContextOverview(StringBuilder builder, OtomeKairoCycleCognitiveContext cognitiveContext)
+        {
+            builder.AppendLine("前景化と派生 view");
+            AppendLineIfPresent(builder, "  前景化", BuildForegroundSelectionLine(cognitiveContext.ForegroundSelection));
+            AppendLineIfPresent(builder, "  候補盤面", BuildWorkspaceContextLine(cognitiveContext.WorkspaceContextSummary));
+            AppendLineIfPresent(builder, "  自己状態", BuildSelfStateLine(cognitiveContext.SelfStateContext));
+            AppendLineIfPresent(builder, "  関係 view", BuildContextCountLine(cognitiveContext.RelationshipContext, "relationship_items", "関係"));
+            AppendLineIfPresent(builder, "  予測差分", BuildContextCountLine(cognitiveContext.PredictionErrorContext, "signals", "差分"));
+            AppendLineIfPresent(builder, "  静かな再浮上", BuildContextCountLine(cognitiveContext.DefaultModeContext, "resurfacing_candidates", "再浮上"));
             builder.AppendLine();
         }
 
@@ -485,6 +509,68 @@ namespace CocoroConsole.Windows
             }.Where(value => !string.IsNullOrWhiteSpace(value)));
         }
 
+        private static string BuildForegroundSelectionLine(JsonElement foregroundSelection)
+        {
+            if (foregroundSelection.ValueKind != JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            var suppressedFactors = TryGetProperty(foregroundSelection, "suppressed_factors");
+            var suppressedCount = suppressedFactors.ValueKind == JsonValueKind.Array
+                ? suppressedFactors.GetArrayLength().ToString()
+                : string.Empty;
+            return string.Join(" / ", new[]
+            {
+                GetString(foregroundSelection, "summary_text"),
+                LabelValue("主役", GetString(foregroundSelection, "primary_factor_ref")),
+                LabelValue("補助", JoinArrayValues(foregroundSelection, "supporting_factor_refs")),
+                LabelValue("抑制", suppressedCount),
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        private static string BuildWorkspaceContextLine(JsonElement workspaceContextSummary)
+        {
+            if (workspaceContextSummary.ValueKind != JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" / ", new[]
+            {
+                LabelValue("候補", GetString(workspaceContextSummary, "candidate_count")),
+                LabelValue("全候補", GetString(workspaceContextSummary, "total_candidate_count")),
+                LabelValue("除外", GetString(workspaceContextSummary, "dropped_candidate_count")),
+                BuildReadableObjectLine(TryGetProperty(workspaceContextSummary, "source_counts")),
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        private static string BuildSelfStateLine(JsonElement selfStateContext)
+        {
+            if (selfStateContext.ValueKind != JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" / ", new[]
+            {
+                BuildContextCountLine(selfStateContext, "sensory_confidence", "感覚"),
+                BuildContextCountLine(selfStateContext, "agency_confidence", "働きかけ"),
+                BuildReadableObjectLine(TryGetProperty(selfStateContext, "focus_stability")),
+            }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        private static string BuildContextCountLine(JsonElement context, string arrayPropertyName, string label)
+        {
+            var array = TryGetProperty(context, arrayPropertyName);
+            if (array.ValueKind != JsonValueKind.Array)
+            {
+                return string.Empty;
+            }
+
+            return $"{label} {array.GetArrayLength()}";
+        }
+
         private static string BuildSelectedIdsLine(JsonElement recallTrace)
         {
             var parts = new List<string>();
@@ -561,6 +647,11 @@ namespace CocoroConsole.Windows
             return string.IsNullOrWhiteSpace(count) ? string.Empty : $"{label} {count}";
         }
 
+        private static string LabelValue(string label, string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : $"{label}={value}";
+        }
+
         private static string BuildTargetLine(JsonElement query)
         {
             return string.Join(" / ", new[]
@@ -634,6 +725,11 @@ namespace CocoroConsole.Windows
             }
 
             return JsonSerializer.Serialize(element, _jsonSerializerOptions);
+        }
+
+        private string PrettyJson<T>(T value)
+        {
+            return JsonSerializer.Serialize(value, _jsonSerializerOptions);
         }
 
         private static JsonElement TryGetProperty(JsonElement element, string propertyName)

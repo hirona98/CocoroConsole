@@ -64,6 +64,33 @@ namespace CocoroConsole.Models.OtomeKairoApi
         public JsonElement MemoryTrace { get; set; }
     }
 
+    public class OtomeKairoCycleCognitiveContext
+    {
+        [JsonPropertyName("cycle_id")]
+        public string CycleId { get; set; } = string.Empty;
+
+        [JsonPropertyName("cycle_summary")]
+        public JsonElement CycleSummary { get; set; }
+
+        [JsonPropertyName("foreground_selection")]
+        public JsonElement ForegroundSelection { get; set; }
+
+        [JsonPropertyName("workspace_context_summary")]
+        public JsonElement WorkspaceContextSummary { get; set; }
+
+        [JsonPropertyName("self_state_context")]
+        public JsonElement SelfStateContext { get; set; }
+
+        [JsonPropertyName("relationship_context")]
+        public JsonElement RelationshipContext { get; set; }
+
+        [JsonPropertyName("prediction_error_context")]
+        public JsonElement PredictionErrorContext { get; set; }
+
+        [JsonPropertyName("default_mode_context")]
+        public JsonElement DefaultModeContext { get; set; }
+    }
+
     public class OtomeKairoCurrentStateSnapshot
     {
         [JsonPropertyName("generated_at")]

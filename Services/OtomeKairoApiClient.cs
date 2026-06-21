@@ -269,6 +269,21 @@ namespace CocoroConsole.Services
                 cancellationToken);
         }
 
+        public Task<OtomeKairoCycleCognitiveContext> GetCycleCognitiveContextAsync(string cycleId, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            if (string.IsNullOrWhiteSpace(cycleId))
+            {
+                throw new ArgumentException("cycleIdを指定してください", nameof(cycleId));
+            }
+
+            return SendOtomeKairoAsync<OtomeKairoCycleCognitiveContext>(
+                HttpMethod.Get,
+                $"/api/inspection/cycles/{cycleId.Trim()}/cognitive-context",
+                null,
+                cancellationToken);
+        }
+
         private async Task<T> SendOtomeKairoAsync<T>(
             HttpMethod method,
             string path,
