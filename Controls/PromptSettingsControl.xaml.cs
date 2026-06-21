@@ -9,11 +9,14 @@ namespace CocoroConsole.Controls
 {
     public partial class PromptSettingsControl : UserControl
     {
+        private const string DefaultUserNaturalReference = "マスター";
+
         private sealed class PersonaEditorItem
         {
             public string PersonaId { get; set; } = string.Empty;
             public string DisplayName { get; set; } = string.Empty;
             public string InitiativeBaseline { get; set; } = "medium";
+            public string UserNaturalReference { get; set; } = DefaultUserNaturalReference;
             public string PersonaPrompt { get; set; } = string.Empty;
             public string ExpressionAddon { get; set; } = string.Empty;
         }
@@ -85,6 +88,7 @@ namespace CocoroConsole.Controls
                 PersonaId = $"persona:{Guid.NewGuid():N}",
                 DisplayName = GenerateUniqueName(_personas.Select(p => p.DisplayName), "新規人格設定"),
                 InitiativeBaseline = "medium",
+                UserNaturalReference = DefaultUserNaturalReference,
                 PersonaPrompt = string.Empty,
                 ExpressionAddon = string.Empty,
             };
@@ -121,6 +125,7 @@ namespace CocoroConsole.Controls
                 PersonaId = $"persona:{Guid.NewGuid():N}",
                 DisplayName = GenerateUniqueName(_personas.Select(p => p.DisplayName), $"{source.DisplayName} (コピー)"),
                 InitiativeBaseline = source.InitiativeBaseline,
+                UserNaturalReference = source.UserNaturalReference,
                 PersonaPrompt = source.PersonaPrompt,
                 ExpressionAddon = source.ExpressionAddon,
             };
@@ -227,6 +232,7 @@ namespace CocoroConsole.Controls
 
             var current = _personas[_currentPersonaIndex];
             current.DisplayName = DisplayNameTextBox.Text;
+            current.UserNaturalReference = NormalizeUserNaturalReference(UserNaturalReferenceTextBox.Text);
             current.PersonaPrompt = PersonaPromptTextBox.Text;
             current.ExpressionAddon = ExpressionAddonTextBox.Text;
         }
@@ -234,6 +240,7 @@ namespace CocoroConsole.Controls
         private void LoadPersonaToUi(PersonaEditorItem item)
         {
             DisplayNameTextBox.Text = item.DisplayName;
+            UserNaturalReferenceTextBox.Text = item.UserNaturalReference;
             PersonaPromptTextBox.Text = item.PersonaPrompt;
             ExpressionAddonTextBox.Text = item.ExpressionAddon;
         }
@@ -241,6 +248,7 @@ namespace CocoroConsole.Controls
         private void ClearPersonaUi()
         {
             DisplayNameTextBox.Text = string.Empty;
+            UserNaturalReferenceTextBox.Text = string.Empty;
             PersonaPromptTextBox.Text = string.Empty;
             ExpressionAddonTextBox.Text = string.Empty;
         }
@@ -265,6 +273,7 @@ namespace CocoroConsole.Controls
                 PersonaId = persona.PersonaId,
                 DisplayName = persona.DisplayName,
                 InitiativeBaseline = string.IsNullOrWhiteSpace(persona.InitiativeBaseline) ? "medium" : persona.InitiativeBaseline,
+                UserNaturalReference = NormalizeUserNaturalReference(persona.ReferenceStyle?.UserNaturalReference),
                 PersonaPrompt = persona.PersonaPrompt ?? string.Empty,
                 ExpressionAddon = persona.ExpressionAddon ?? string.Empty,
             };
@@ -277,9 +286,18 @@ namespace CocoroConsole.Controls
                 PersonaId = item.PersonaId,
                 DisplayName = item.DisplayName,
                 InitiativeBaseline = string.IsNullOrWhiteSpace(item.InitiativeBaseline) ? "medium" : item.InitiativeBaseline,
+                ReferenceStyle = new OtomeKairoPersonaReferenceStyle
+                {
+                    UserNaturalReference = NormalizeUserNaturalReference(item.UserNaturalReference),
+                },
                 PersonaPrompt = item.PersonaPrompt,
                 ExpressionAddon = item.ExpressionAddon,
             };
+        }
+
+        private static string NormalizeUserNaturalReference(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? DefaultUserNaturalReference : value.Trim();
         }
 
         private static int ResolveActiveIndex(IReadOnlyList<string?> ids, string? activeId)

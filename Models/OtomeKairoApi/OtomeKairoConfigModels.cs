@@ -57,11 +57,20 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("initiative_baseline")]
         public string InitiativeBaseline { get; set; } = "medium";
 
+        [JsonPropertyName("reference_style")]
+        public OtomeKairoPersonaReferenceStyle ReferenceStyle { get; set; } = new OtomeKairoPersonaReferenceStyle();
+
         [JsonPropertyName("persona_prompt")]
         public string PersonaPrompt { get; set; } = string.Empty;
 
         [JsonPropertyName("expression_addon")]
         public string ExpressionAddon { get; set; } = string.Empty;
+    }
+
+    public class OtomeKairoPersonaReferenceStyle
+    {
+        [JsonPropertyName("user_natural_reference")]
+        public string UserNaturalReference { get; set; } = "マスター";
     }
 
     /// <summary>
