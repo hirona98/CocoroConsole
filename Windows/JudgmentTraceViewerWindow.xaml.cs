@@ -170,7 +170,7 @@ namespace CocoroConsole.Windows
                 SelectedCycleMetaTextBlock.Text = BuildCycleMetaText(cycleSummary);
 
                 var evidenceResolutionTrace = TryGetProperty(trace.RecallTrace, "fact_resolution_trace");
-                OverviewTextBox.Text = BuildOverview(trace, cognitiveContext, evidenceResolutionTrace);
+                UpdateOverview(trace, cognitiveContext, evidenceResolutionTrace);
                 EvidenceResolutionTraceTextBox.Text = PrettyJson(evidenceResolutionTrace);
                 RecallTraceTextBox.Text = PrettyJson(trace.RecallTrace);
                 ActivityTraceTextBox.Text = PrettyJson(trace.ActivityTrace);
@@ -218,7 +218,7 @@ namespace CocoroConsole.Windows
         {
             SelectedCycleTitleTextBlock.Text = "cycle 未選択";
             SelectedCycleMetaTextBlock.Text = string.Empty;
-            OverviewTextBox.Text = message;
+            SetOverviewMessage(message);
             EvidenceResolutionTraceTextBox.Text = message;
             RecallTraceTextBox.Text = string.Empty;
             ActivityTraceTextBox.Text = string.Empty;
@@ -240,17 +240,17 @@ namespace CocoroConsole.Windows
             return $"開始時刻: {startedAt} / きっかけ: {DescribeTriggerKind(triggerKind)} / 結果: {DescribeResultKind(resultKind)} / 失敗: {DescribeBool(failed)}";
         }
 
-        private string BuildOverview(
+        private void UpdateOverview(
             OtomeKairoCycleTrace trace,
             OtomeKairoCycleCognitiveContext cognitiveContext,
             JsonElement evidenceResolutionTrace)
         {
-            var builder = new StringBuilder();
             var compact = TryGetProperty(trace.ResultTrace, "trigger_compact_summary");
             var entrySummary = TryGetProperty(compact, "entry_summary");
             var decisionSummary = TryGetProperty(compact, "decision_summary");
             var resultSummary = TryGetProperty(compact, "result_summary");
 
+            var builder = new StringBuilder();
             builder.AppendLine("この判断で起きたこと");
             builder.AppendLine($"  開始: {GetString(trace.CycleSummary, "started_at")}");
             builder.AppendLine($"  きっかけ: {DescribeTriggerKind(GetString(trace.CycleSummary, "trigger_kind"))}");
@@ -258,8 +258,9 @@ namespace CocoroConsole.Windows
             AppendLineIfPresent(builder, "  発話", FirstNonEmpty(GetString(trace.ResultTrace, "speech_summary"), GetString(resultSummary, "speech_summary")));
             AppendLineIfPresent(builder, "  見送り理由", FirstNonEmpty(GetString(trace.ResultTrace, "noop_reason_summary"), GetString(resultSummary, "noop_reason_summary")));
             AppendLineIfPresent(builder, "  失敗理由", FirstNonEmpty(GetString(trace.ResultTrace, "internal_failure_summary"), GetString(resultSummary, "internal_failure_summary")));
-            builder.AppendLine();
+            JudgmentSummaryTextBlock.Text = CleanOverviewText(builder);
 
+            builder.Clear();
             builder.AppendLine("入力と状況");
             AppendLineIfPresent(builder, "  入力", FirstNonEmpty(
                 GetString(TryGetProperty(compact, "current_input_summary"), "text"),
@@ -277,8 +278,9 @@ namespace CocoroConsole.Windows
                 TryGetProperty(trace.InputTrace, "ongoing_action_summary"),
                 TryGetProperty(trace.DecisionTrace, "ongoing_action_summary")
             )));
-            builder.AppendLine();
+            InputContextOverviewTextBlock.Text = CleanOverviewText(builder);
 
+            builder.Clear();
             builder.AppendLine("判断理由");
             AppendLineIfPresent(builder, "  判断", DescribeResultKind(FirstNonEmpty(
                 GetString(trace.DecisionTrace, "result_kind"),
@@ -297,16 +299,120 @@ namespace CocoroConsole.Windows
                 TryGetProperty(trace.ResultTrace, "capability_request_summary"),
                 TryGetProperty(trace.DecisionTrace, "capability_request_candidate_summary")
             )));
-            builder.AppendLine();
+            DecisionReasonOverviewTextBlock.Text = CleanOverviewText(builder);
 
+            builder.Clear();
             AppendEvidenceResolutionOverview(builder, evidenceResolutionTrace);
-            AppendRecallOverview(builder, trace.RecallTrace);
-            AppendCognitiveContextOverview(builder, cognitiveContext);
-            AppendWorldStateOverview(builder, trace.WorldStateTrace);
-            AppendActivityOverview(builder, trace.ActivityTrace);
-            AppendMemoryOverview(builder, trace.MemoryTrace);
+            EvidenceOverviewTextBlock.Text = CleanOverviewText(builder);
 
-            return builder.ToString();
+            builder.Clear();
+            AppendRecallOverview(builder, trace.RecallTrace);
+            RecallOverviewTextBlock.Text = CleanOverviewText(builder);
+
+            builder.Clear();
+            AppendCognitiveContextOverview(builder, cognitiveContext);
+            SetCognitiveContextOverview(builder);
+
+            builder.Clear();
+            AppendWorldStateOverview(builder, trace.WorldStateTrace);
+            WorldStateOverviewTextBlock.Text = CleanOverviewText(builder);
+
+            builder.Clear();
+            AppendActivityOverview(builder, trace.ActivityTrace);
+            ActivityOverviewTextBlock.Text = CleanOverviewText(builder);
+
+            builder.Clear();
+            AppendMemoryOverview(builder, trace.MemoryTrace);
+            MemoryOverviewTextBlock.Text = CleanOverviewText(builder);
+        }
+
+        private void SetOverviewMessage(string message)
+        {
+            JudgmentSummaryTextBlock.Text = message;
+            InputContextOverviewTextBlock.Text = string.Empty;
+            DecisionReasonOverviewTextBlock.Text = string.Empty;
+            EvidenceOverviewTextBlock.Text = string.Empty;
+            RecallOverviewTextBlock.Text = string.Empty;
+            CognitiveContextOverviewPanel.Children.Clear();
+            WorldStateOverviewTextBlock.Text = string.Empty;
+            ActivityOverviewTextBlock.Text = string.Empty;
+            MemoryOverviewTextBlock.Text = string.Empty;
+        }
+
+        private static string CleanOverviewText(StringBuilder builder)
+        {
+            var lines = builder
+                .ToString()
+                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+                .Skip(1)
+                .Select(line => line.TrimStart())
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .ToList();
+
+            return lines.Count == 0 ? "（なし）" : string.Join(Environment.NewLine, lines);
+        }
+
+        private void SetCognitiveContextOverview(StringBuilder builder)
+        {
+            CognitiveContextOverviewPanel.Children.Clear();
+
+            var lines = builder
+                .ToString()
+                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+                .Skip(1)
+                .Select(line => line.TrimStart())
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .ToList();
+
+            if (lines.Count == 0)
+            {
+                CognitiveContextOverviewPanel.Children.Add(CreateOverviewTextBlock("（なし）"));
+                return;
+            }
+
+            foreach (var line in lines)
+            {
+                if (line.StartsWith("- ", StringComparison.Ordinal))
+                {
+                    AddBulletOverviewLine(line.Substring(2).TrimStart());
+                }
+                else
+                {
+                    CognitiveContextOverviewPanel.Children.Add(CreateOverviewTextBlock(line));
+                }
+            }
+        }
+
+        private void AddBulletOverviewLine(string text)
+        {
+            var grid = new Grid
+            {
+                Margin = new Thickness(0, 0, 0, 2),
+            };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var bulletTextBlock = CreateOverviewTextBlock("-");
+            bulletTextBlock.Margin = new Thickness(0, 0, 6, 0);
+            Grid.SetColumn(bulletTextBlock, 0);
+
+            var bodyTextBlock = CreateOverviewTextBlock(text);
+            Grid.SetColumn(bodyTextBlock, 1);
+
+            grid.Children.Add(bulletTextBlock);
+            grid.Children.Add(bodyTextBlock);
+            CognitiveContextOverviewPanel.Children.Add(grid);
+        }
+
+        private static TextBlock CreateOverviewTextBlock(string text)
+        {
+            return new TextBlock
+            {
+                Text = text,
+                FontFamily = new System.Windows.Media.FontFamily("Meiryo UI"),
+                TextWrapping = TextWrapping.Wrap,
+                LineHeight = 21,
+            };
         }
 
         private void AppendEvidenceResolutionOverview(StringBuilder builder, JsonElement evidenceResolutionTrace)

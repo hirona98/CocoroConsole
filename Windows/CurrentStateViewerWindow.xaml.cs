@@ -1,12 +1,14 @@
 using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using System;
+using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 
 namespace CocoroConsole.Windows
@@ -116,7 +118,7 @@ namespace CocoroConsole.Windows
 
                 var snapshot = await client.GetCurrentStateInspectionAsync(_loadCts.Token).ConfigureAwait(true);
 
-                OverviewTextBox.Text = BuildOverview(snapshot);
+                UpdateOverview(snapshot);
                 CurrentStateTextBox.Text = PrettyJson(snapshot.CurrentState);
                 RuntimeDetailTextBox.Text = JsonSerializer.Serialize(
                     new
@@ -167,7 +169,7 @@ namespace CocoroConsole.Windows
 
         private void ClearView(string message)
         {
-            OverviewTextBox.Text = message;
+            SetOverviewMessage(message);
             CurrentStateTextBox.Text = string.Empty;
             RuntimeDetailTextBox.Text = string.Empty;
             CapabilityInspectionTextBox.Text = string.Empty;
@@ -188,20 +190,23 @@ namespace CocoroConsole.Windows
             return IsAutoRefreshEnabled() ? "3秒" : "停止";
         }
 
-        private string BuildOverview(OtomeKairoCurrentStateSnapshot snapshot)
+        private void UpdateOverview(OtomeKairoCurrentStateSnapshot snapshot)
         {
             var builder = new StringBuilder();
+            var currentState = snapshot.CurrentState;
+            var visionCaptureCapability = FindCapability(snapshot.CapabilityInspection, "vision.capture");
+
             builder.AppendLine($"生成時刻: {snapshot.GeneratedAt}");
             builder.AppendLine($"選択中人格設定ID: {GetString(snapshot.SettingsSnapshot, "selected_persona_id")}");
             builder.AppendLine($"選択中記憶集合ID: {GetString(snapshot.SettingsSnapshot, "selected_memory_set_id")}");
             builder.AppendLine($"選択中モデルプリセットID: {GetString(snapshot.SettingsSnapshot, "selected_model_preset_id")}");
             builder.AppendLine($"起床ポリシーモード: {GetString(TryGetProperty(snapshot.SettingsSnapshot, "wake_policy"), "mode")}");
-            var visionCaptureCapability = FindCapability(snapshot.CapabilityInspection, "vision.capture");
             builder.AppendLine($"視覚機能利用可: {GetString(visionCaptureCapability, "available")}");
             builder.AppendLine($"視覚source数: {GetArrayLength(TryGetProperty(visionCaptureCapability, "vision_sources"))}");
-            builder.AppendLine();
+            CurrentSummaryTextBlock.Text = CleanOverviewText(builder);
 
-            builder.AppendLine("実行要約:");
+            builder.Clear();
+            builder.AppendLine("実行要約");
             builder.AppendLine($"  接続状態={GetString(snapshot.RuntimeSummary, "connection_state")}");
             builder.AppendLine($"  定期起床スケジューラ稼働={GetString(snapshot.RuntimeSummary, "wake_scheduler_active")}");
             builder.AppendLine($"  進行中アクションあり={GetString(snapshot.RuntimeSummary, "ongoing_action_exists")}");
@@ -209,8 +214,7 @@ namespace CocoroConsole.Windows
             builder.AppendLine($"  保留中記憶ジョブ数={GetString(snapshot.RuntimeSummary, "pending_memory_job_count")}");
             builder.AppendLine($"  記憶ジョブ実行中={GetString(snapshot.RuntimeSummary, "memory_job_in_progress")}");
             builder.AppendLine();
-
-            builder.AppendLine("実行詳細:");
+            builder.AppendLine("実行詳細");
             builder.AppendLine(
                 $"  起床状態 最終起床={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_wake_at")} " +
                 $"最終自発発話={GetString(TryGetProperty(snapshot.RuntimeDetail, "wake_runtime_state"), "last_spontaneous_at")} " +
@@ -222,11 +226,10 @@ namespace CocoroConsole.Windows
             builder.AppendLine(
                 $"  保留中能力要求数={GetArrayLength(TryGetProperty(snapshot.RuntimeDetail, "pending_capability_requests"))}"
             );
-            builder.AppendLine();
+            RuntimeOverviewTextBlock.Text = CleanOverviewText(builder);
 
-            var currentState = snapshot.CurrentState;
+            builder.Clear();
             var ongoingAction = TryGetProperty(currentState, "ongoing_action");
-            builder.AppendLine("進行中アクション:");
             if (ongoingAction.ValueKind != JsonValueKind.Object)
             {
                 builder.AppendLine("  （なし）");
@@ -240,14 +243,14 @@ namespace CocoroConsole.Windows
                 builder.AppendLine($"  目標={GetString(ongoingAction, "goal_summary")}");
                 builder.AppendLine($"  ステップ={GetString(ongoingAction, "step_summary")}");
             }
-            builder.AppendLine();
+            CurrentActionTextBlock.Text = CleanOverviewText(builder);
 
-            builder.AppendLine("気分状態:");
+            builder.Clear();
+            builder.AppendLine("気分状態");
             builder.AppendLine($"  信頼度={GetString(TryGetProperty(currentState, "mood_state"), "confidence")}");
             builder.AppendLine($"  現在VAD={BuildVadLine(TryGetProperty(TryGetProperty(currentState, "mood_state"), "current_vad"))}");
             builder.AppendLine();
-
-            builder.AppendLine("活動状態:");
+            builder.AppendLine("活動状態");
             var activityContext = TryGetProperty(currentState, "activity_context");
             var currentActivity = TryGetProperty(activityContext, "current_activity");
             var previousActivity = TryGetProperty(activityContext, "previous_activity");
@@ -260,9 +263,18 @@ namespace CocoroConsole.Windows
                 AppendActivityLine(builder, "  現在", currentActivity);
                 AppendActivityLine(builder, "  直前", previousActivity);
             }
-            builder.AppendLine();
+            AppendArraySection(
+                builder,
+                "感情状態",
+                TryGetProperty(currentState, "affect_states"),
+                element =>
+                    $"ラベル={GetString(element, "affect_label")} 強度={GetString(element, "intensity")} " +
+                    $"対象={GetString(element, "target_scope_type")}:{GetString(element, "target_scope_key")} " +
+                    $"要約={GetString(element, "summary_text")}"
+            );
+            SetOverviewPanel(MoodActivityPanel, builder);
 
-            builder.AppendLine("視覚日次要約:");
+            builder.Clear();
             var visualDailySummary = TryGetProperty(currentState, "visual_daily_summary");
             if (visualDailySummary.ValueKind != JsonValueKind.Object)
             {
@@ -280,8 +292,9 @@ namespace CocoroConsole.Windows
                     $"記憶候補={GetString(visualDailySummary, "memory_candidate_count")}"
                 );
             }
-            builder.AppendLine();
+            VisualSummaryTextBlock.Text = CleanOverviewText(builder);
 
+            builder.Clear();
             AppendArraySection(
                 builder,
                 "前景世界状態",
@@ -306,6 +319,18 @@ namespace CocoroConsole.Windows
                     $"種別={GetString(element, "intent_kind")} 実行開始以降={GetString(element, "not_before")} " +
                     $"失効時刻={GetString(element, "expires_at")} 要約={GetString(element, "intent_summary")}"
             );
+            SetOverviewPanel(WorldDriveIntentPanel, builder);
+
+            builder.Clear();
+            AppendArraySection(
+                builder,
+                "能力一覧",
+                TryGetProperty(snapshot.CapabilityInspection, "capabilities"),
+                element =>
+                    $"能力ID={GetString(element, "capability_id")} 利用可能={GetString(element, "available")} " +
+                    $"理由={GetString(element, "unavailable_reason")} 実行中={GetString(TryGetProperty(element, "state"), "busy")} " +
+                    $"一時停止={GetString(TryGetProperty(element, "state"), "paused")}"
+            );
             AppendArraySection(
                 builder,
                 "保留中能力要求",
@@ -324,26 +349,86 @@ namespace CocoroConsole.Windows
                     $"最終実行={GetString(element, "last_run_at")} source={FirstNonEmpty(GetString(element, "last_vision_source_id"), GetString(element, "vision_source_id"))} " +
                     $"画像数={GetString(element, "last_image_count")} 要約={GetString(element, "last_summary")}"
             );
-            AppendArraySection(
-                builder,
-                "感情状態",
-                TryGetProperty(currentState, "affect_states"),
-                element =>
-                    $"ラベル={GetString(element, "affect_label")} 強度={GetString(element, "intensity")} " +
-                    $"対象={GetString(element, "target_scope_type")}:{GetString(element, "target_scope_key")} " +
-                    $"要約={GetString(element, "summary_text")}"
-            );
-            AppendArraySection(
-                builder,
-                "能力一覧",
-                TryGetProperty(snapshot.CapabilityInspection, "capabilities"),
-                element =>
-                    $"能力ID={GetString(element, "capability_id")} 利用可能={GetString(element, "available")} " +
-                    $"理由={GetString(element, "unavailable_reason")} 実行中={GetString(TryGetProperty(element, "state"), "busy")} " +
-                    $"一時停止={GetString(TryGetProperty(element, "state"), "paused")}"
-            );
+            SetOverviewPanel(CapabilityObservationPanel, builder);
+        }
 
-            return builder.ToString();
+        private void SetOverviewMessage(string message)
+        {
+            CurrentSummaryTextBlock.Text = message;
+            RuntimeOverviewTextBlock.Text = string.Empty;
+            CurrentActionTextBlock.Text = string.Empty;
+            MoodActivityPanel.Children.Clear();
+            VisualSummaryTextBlock.Text = string.Empty;
+            WorldDriveIntentPanel.Children.Clear();
+            CapabilityObservationPanel.Children.Clear();
+        }
+
+        private static string CleanOverviewText(StringBuilder builder)
+        {
+            var text = builder.ToString().Trim();
+            return string.IsNullOrWhiteSpace(text) ? "（なし）" : text;
+        }
+
+        private void SetOverviewPanel(StackPanel panel, StringBuilder builder)
+        {
+            panel.Children.Clear();
+
+            var lines = builder
+                .ToString()
+                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+                .Select(line => line.TrimStart())
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .ToList();
+
+            if (lines.Count == 0)
+            {
+                panel.Children.Add(CreateOverviewTextBlock("（なし）"));
+                return;
+            }
+
+            foreach (var line in lines)
+            {
+                if (line.StartsWith("- ", StringComparison.Ordinal))
+                {
+                    AddBulletOverviewLine(panel, line.Substring(2).TrimStart());
+                }
+                else
+                {
+                    panel.Children.Add(CreateOverviewTextBlock(line));
+                }
+            }
+        }
+
+        private void AddBulletOverviewLine(StackPanel panel, string text)
+        {
+            var grid = new Grid
+            {
+                Margin = new Thickness(0, 0, 0, 2),
+            };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var bulletTextBlock = CreateOverviewTextBlock("-");
+            bulletTextBlock.Margin = new Thickness(0, 0, 6, 0);
+            Grid.SetColumn(bulletTextBlock, 0);
+
+            var bodyTextBlock = CreateOverviewTextBlock(text);
+            Grid.SetColumn(bodyTextBlock, 1);
+
+            grid.Children.Add(bulletTextBlock);
+            grid.Children.Add(bodyTextBlock);
+            panel.Children.Add(grid);
+        }
+
+        private static TextBlock CreateOverviewTextBlock(string text)
+        {
+            return new TextBlock
+            {
+                Text = text,
+                FontFamily = new System.Windows.Media.FontFamily("Meiryo UI"),
+                TextWrapping = TextWrapping.Wrap,
+                LineHeight = 21,
+            };
         }
 
         private void AppendArraySection(StringBuilder builder, string title, JsonElement array, Func<JsonElement, string> formatter)
@@ -356,9 +441,22 @@ namespace CocoroConsole.Windows
                 return;
             }
 
+            var shownCount = 0;
             foreach (var item in array.EnumerateArray())
             {
+                if (shownCount >= 5)
+                {
+                    break;
+                }
+
                 builder.AppendLine($"  - {formatter(item)}");
+                shownCount++;
+            }
+
+            var remainingCount = array.GetArrayLength() - shownCount;
+            if (remainingCount > 0)
+            {
+                builder.AppendLine($"  他 {remainingCount} 件は詳細タブにあります。");
             }
             builder.AppendLine();
         }

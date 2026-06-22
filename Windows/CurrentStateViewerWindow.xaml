@@ -42,15 +42,74 @@
                 <TabControl Grid.Row="1"
                             Margin="8">
                         <TabItem Header="概要">
-                                <Grid Margin="8">
-                                        <TextBox x:Name="OverviewTextBox"
-                                                 IsReadOnly="True"
-                                                 AcceptsReturn="True"
-                                                 VerticalScrollBarVisibility="Auto"
-                                                 HorizontalScrollBarVisibility="Auto"
-                                                 FontFamily="Consolas"
-                                                 TextWrapping="Wrap"/>
-                                </Grid>
+                                <ScrollViewer Margin="8"
+                                              VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Disabled">
+                                        <StackPanel>
+                                                <StackPanel.Resources>
+                                                        <Style x:Key="OverviewSection" TargetType="Border">
+                                                                <Setter Property="BorderBrush" Value="#DDDDDD"/>
+                                                                <Setter Property="BorderThickness" Value="1"/>
+                                                                <Setter Property="Padding" Value="10"/>
+                                                                <Setter Property="Margin" Value="0,0,0,8"/>
+                                                                <Setter Property="Background" Value="#FFFFFF"/>
+                                                        </Style>
+                                                        <Style x:Key="OverviewTitle" TargetType="TextBlock">
+                                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                                <Setter Property="FontSize" Value="14"/>
+                                                                <Setter Property="Margin" Value="0,0,0,6"/>
+                                                        </Style>
+                                                        <Style x:Key="OverviewBody" TargetType="TextBlock">
+                                                                <Setter Property="FontFamily" Value="Meiryo UI"/>
+                                                                <Setter Property="TextWrapping" Value="Wrap"/>
+                                                                <Setter Property="LineHeight" Value="21"/>
+                                                        </Style>
+                                                </StackPanel.Resources>
+
+                                                <Border Style="{StaticResource OverviewSection}" Background="#F7FAFF">
+                                                        <StackPanel>
+                                                                <TextBlock Text="現在の要点" Style="{StaticResource OverviewTitle}"/>
+                                                                <TextBlock x:Name="CurrentSummaryTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                        </StackPanel>
+                                                </Border>
+                                                <Border Style="{StaticResource OverviewSection}">
+                                                        <StackPanel>
+                                                                <TextBlock Text="実行状態" Style="{StaticResource OverviewTitle}"/>
+                                                                <TextBlock x:Name="RuntimeOverviewTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                        </StackPanel>
+                                                </Border>
+                                                <Border Style="{StaticResource OverviewSection}">
+                                                        <StackPanel>
+                                                                <TextBlock Text="進行中アクション" Style="{StaticResource OverviewTitle}"/>
+                                                                <TextBlock x:Name="CurrentActionTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                        </StackPanel>
+                                                </Border>
+                                                <Border Style="{StaticResource OverviewSection}">
+                                                        <StackPanel>
+                                                                <TextBlock Text="気分・活動" Style="{StaticResource OverviewTitle}"/>
+                                                                <StackPanel x:Name="MoodActivityPanel"/>
+                                                        </StackPanel>
+                                                </Border>
+                                                <Border Style="{StaticResource OverviewSection}">
+                                                        <StackPanel>
+                                                                <TextBlock Text="視覚日次要約" Style="{StaticResource OverviewTitle}"/>
+                                                                <TextBlock x:Name="VisualSummaryTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                        </StackPanel>
+                                                </Border>
+                                                <Border Style="{StaticResource OverviewSection}">
+                                                        <StackPanel>
+                                                                <TextBlock Text="世界状態・ドライブ・意図" Style="{StaticResource OverviewTitle}"/>
+                                                                <StackPanel x:Name="WorldDriveIntentPanel"/>
+                                                        </StackPanel>
+                                                </Border>
+                                                <Border Style="{StaticResource OverviewSection}">
+                                                        <StackPanel>
+                                                                <TextBlock Text="能力・定期観測" Style="{StaticResource OverviewTitle}"/>
+                                                                <StackPanel x:Name="CapabilityObservationPanel"/>
+                                                        </StackPanel>
+                                                </Border>
+                                        </StackPanel>
+                                </ScrollViewer>
                         </TabItem>
                         <TabItem Header="現在状態">
                                 <Grid Margin="8">

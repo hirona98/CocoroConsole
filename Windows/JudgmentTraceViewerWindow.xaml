@@ -112,15 +112,86 @@
 
                                 <TabControl Grid.Row="1">
                                         <TabItem Header="要点">
-                                                <Grid Margin="8">
-                                                        <TextBox x:Name="OverviewTextBox"
-                                                                 IsReadOnly="True"
-                                                                 AcceptsReturn="True"
-                                                                 VerticalScrollBarVisibility="Auto"
-                                                                 HorizontalScrollBarVisibility="Auto"
-                                                                 FontFamily="Meiryo UI"
-                                                                 TextWrapping="Wrap"/>
-                                                </Grid>
+                                                <ScrollViewer Margin="8"
+                                                              VerticalScrollBarVisibility="Auto"
+                                                              HorizontalScrollBarVisibility="Disabled">
+                                                        <StackPanel>
+                                                                <StackPanel.Resources>
+                                                                        <Style x:Key="OverviewSection" TargetType="Border">
+                                                                                <Setter Property="BorderBrush" Value="#DDDDDD"/>
+                                                                                <Setter Property="BorderThickness" Value="1"/>
+                                                                                <Setter Property="Padding" Value="10"/>
+                                                                                <Setter Property="Margin" Value="0,0,0,8"/>
+                                                                                <Setter Property="Background" Value="#FFFFFF"/>
+                                                                        </Style>
+                                                                        <Style x:Key="OverviewTitle" TargetType="TextBlock">
+                                                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                                                <Setter Property="FontSize" Value="14"/>
+                                                                                <Setter Property="Margin" Value="0,0,0,6"/>
+                                                                        </Style>
+                                                                        <Style x:Key="OverviewBody" TargetType="TextBlock">
+                                                                                <Setter Property="FontFamily" Value="Meiryo UI"/>
+                                                                                <Setter Property="TextWrapping" Value="Wrap"/>
+                                                                                <Setter Property="LineHeight" Value="21"/>
+                                                                        </Style>
+                                                                </StackPanel.Resources>
+
+                                                                <Border Style="{StaticResource OverviewSection}" Background="#F7FAFF">
+                                                                        <StackPanel>
+                                                                                <TextBlock Text="この判断の結論" Style="{StaticResource OverviewTitle}"/>
+                                                                                <TextBlock x:Name="JudgmentSummaryTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                                        </StackPanel>
+                                                                </Border>
+                                                                <Border Style="{StaticResource OverviewSection}">
+                                                                        <StackPanel>
+                                                                                <TextBlock Text="入力と状況" Style="{StaticResource OverviewTitle}"/>
+                                                                                <TextBlock x:Name="InputContextOverviewTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                                        </StackPanel>
+                                                                </Border>
+                                                                <Border Style="{StaticResource OverviewSection}">
+                                                                        <StackPanel>
+                                                                                <TextBlock Text="判断理由" Style="{StaticResource OverviewTitle}"/>
+                                                                                <TextBlock x:Name="DecisionReasonOverviewTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                                        </StackPanel>
+                                                                </Border>
+                                                                <Border Style="{StaticResource OverviewSection}">
+                                                                        <StackPanel>
+                                                                                <TextBlock Text="根拠" Style="{StaticResource OverviewTitle}"/>
+                                                                                <TextBlock x:Name="EvidenceOverviewTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                                        </StackPanel>
+                                                                </Border>
+                                                                <Border Style="{StaticResource OverviewSection}">
+                                                                        <StackPanel>
+                                                                                <TextBlock Text="想起" Style="{StaticResource OverviewTitle}"/>
+                                                                                <TextBlock x:Name="RecallOverviewTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                                        </StackPanel>
+                                                                </Border>
+                                                                <Border Style="{StaticResource OverviewSection}">
+                                                                        <StackPanel>
+                                                                                <TextBlock Text="前景化と派生 view" Style="{StaticResource OverviewTitle}"/>
+                                                                                <StackPanel x:Name="CognitiveContextOverviewPanel"/>
+                                                                        </StackPanel>
+                                                                </Border>
+                                                                <Border Style="{StaticResource OverviewSection}">
+                                                                        <StackPanel>
+                                                                                <TextBlock Text="世界状態" Style="{StaticResource OverviewTitle}"/>
+                                                                                <TextBlock x:Name="WorldStateOverviewTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                                        </StackPanel>
+                                                                </Border>
+                                                                <Border Style="{StaticResource OverviewSection}">
+                                                                        <StackPanel>
+                                                                                <TextBlock Text="活動" Style="{StaticResource OverviewTitle}"/>
+                                                                                <TextBlock x:Name="ActivityOverviewTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                                        </StackPanel>
+                                                                </Border>
+                                                                <Border Style="{StaticResource OverviewSection}">
+                                                                        <StackPanel>
+                                                                                <TextBlock Text="記憶反映" Style="{StaticResource OverviewTitle}"/>
+                                                                                <TextBlock x:Name="MemoryOverviewTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                                        </StackPanel>
+                                                                </Border>
+                                                        </StackPanel>
+                                                </ScrollViewer>
                                         </TabItem>
                                         <TabItem Header="根拠の詳細">
                                                 <Grid Margin="8">
