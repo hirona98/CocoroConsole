@@ -19,7 +19,8 @@ namespace CocoroConsole.Windows
         private ObservableCollection<LogMessage> _allLogs = new ObservableCollection<LogMessage>();
         public ObservableCollection<ComponentFilterItem> ComponentFilters { get; } = new ObservableCollection<ComponentFilterItem>();
         private ICollectionView? _filteredLogs;
-        private string _levelFilter = "INFO";
+        private const string DefaultLevelFilter = "INFO";
+        private string _levelFilter = DefaultLevelFilter;
         private const int MaxDisplayedLogs = 200;
         private readonly List<LogMessage> _pendingLogsWhileAutoScrollPaused = new List<LogMessage>();
         public bool IsClosed { get; private set; } = false;
@@ -32,6 +33,7 @@ namespace CocoroConsole.Windows
             InitializeComponent();
             ComponentFilterItemsControl.ItemsSource = ComponentFilters;
             InitializeLogView();
+            InitializeLevelFilter();
             UpdateComponentFilterSummary();
 
             // 初期UI状態を設定
@@ -52,6 +54,26 @@ namespace CocoroConsole.Windows
 
             LogDataGrid.ItemsSource = _filteredLogs;
 
+            UpdateLogCount();
+        }
+
+        /// <summary>
+        /// レベルフィルターの初期値をUIと実フィルターの両方に適用する
+        /// </summary>
+        private void InitializeLevelFilter()
+        {
+            _levelFilter = DefaultLevelFilter;
+
+            foreach (var item in LevelFilterComboBox.Items.OfType<ComboBoxItem>())
+            {
+                if (string.Equals(item.Tag?.ToString(), DefaultLevelFilter, StringComparison.Ordinal))
+                {
+                    LevelFilterComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+
+            _filteredLogs?.Refresh();
             UpdateLogCount();
         }
 
