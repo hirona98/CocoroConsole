@@ -19,7 +19,7 @@ namespace CocoroConsole.Windows
         private ObservableCollection<LogMessage> _allLogs = new ObservableCollection<LogMessage>();
         public ObservableCollection<ComponentFilterItem> ComponentFilters { get; } = new ObservableCollection<ComponentFilterItem>();
         private ICollectionView? _filteredLogs;
-        private string _levelFilter = "";
+        private string _levelFilter = "INFO";
         private const int MaxDisplayedLogs = 200;
         private readonly List<LogMessage> _pendingLogsWhileAutoScrollPaused = new List<LogMessage>();
         public bool IsClosed { get; private set; } = false;

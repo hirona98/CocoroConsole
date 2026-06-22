@@ -138,9 +138,9 @@
                                           Margin="0,0,16,0"
                                           SelectionChanged="LevelFilterComboBox_SelectionChanged">
                                         <ComboBoxItem Content="全て"
-                                                      IsSelected="True"
                                                       Tag=""/>
                                         <ComboBoxItem Content="INFO以上"
+                                                      IsSelected="True"
                                                       Tag="INFO"/>
                                         <ComboBoxItem Content="WARNING以上"
                                                       Tag="WARNING"/>
