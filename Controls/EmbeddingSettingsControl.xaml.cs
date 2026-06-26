@@ -130,7 +130,7 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void DuplicateMemorySetButton_Click(object sender, RoutedEventArgs e)
+        private void CloneMemorySetButton_Click(object sender, RoutedEventArgs e)
         {
             if (_currentMemorySetIndex < 0 || _currentMemorySetIndex >= _memorySets.Count)
             {
@@ -140,12 +140,45 @@ namespace CocoroConsole.Controls
 
             SyncCurrentMemorySetFromUi();
             var source = _memorySets[_currentMemorySetIndex];
+            var cloneSourceMemorySetId = ResolveCloneSourceMemorySetId(source);
+            if (string.IsNullOrWhiteSpace(cloneSourceMemorySetId))
+            {
+                MessageBox.Show("未保存の記憶集合は複製できません。先に適用するか、設定の複製を使ってください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             var item = CloneMemorySet(source);
             item.MemorySetId = $"memory_set:{Guid.NewGuid():N}";
-            item.DisplayName = GenerateUniqueName(_memorySets.Select(p => p.DisplayName), $"{source.DisplayName} (コピー)");
+            item.DisplayName = GenerateUniqueName(_memorySets.Select(p => p.DisplayName), $"{source.DisplayName} (クローン)");
             item.ServerBackedMemorySetId = null;
-            item.CloneSourceMemorySetId = ResolveCloneSourceMemorySetId(source);
+            item.CloneSourceMemorySetId = cloneSourceMemorySetId;
 
+            AddMemorySetAndSelect(item);
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void DuplicateMemorySetSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentMemorySetIndex < 0 || _currentMemorySetIndex >= _memorySets.Count)
+            {
+                MessageBox.Show("設定を複製する記憶集合を選択してください。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            SyncCurrentMemorySetFromUi();
+            var source = _memorySets[_currentMemorySetIndex];
+            var item = CloneMemorySet(source);
+            item.MemorySetId = $"memory_set:{Guid.NewGuid():N}";
+            item.DisplayName = GenerateUniqueName(_memorySets.Select(p => p.DisplayName), $"{source.DisplayName} (設定コピー)");
+            item.ServerBackedMemorySetId = null;
+            item.CloneSourceMemorySetId = null;
+
+            AddMemorySetAndSelect(item);
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void AddMemorySetAndSelect(MemorySetEditorItem item)
+        {
             _isInitializing = true;
             try
             {
@@ -159,8 +192,6 @@ namespace CocoroConsole.Controls
             {
                 _isInitializing = false;
             }
-
-            SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void DeleteMemorySetButton_Click(object sender, RoutedEventArgs e)

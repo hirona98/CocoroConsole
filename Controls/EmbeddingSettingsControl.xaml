@@ -45,20 +45,20 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
                                 <Grid Margin="0,0,20,0"
-                                      HorizontalAlignment="Left">
+                                      HorizontalAlignment="Stretch">
                                         <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="80"/>
-                                                <ColumnDefinition Width="80"/>
-                                                <ColumnDefinition Width="85"/>
+                                                <ColumnDefinition Width="70"/>
+                                                <ColumnDefinition Width="90"/>
+                                                <ColumnDefinition Width="90"/>
+                                                <ColumnDefinition Width="70"/>
                                         </Grid.ColumnDefinitions>
 
                                         <ComboBox x:Name="MemorySetSelectComboBox"
                                                   Grid.Column="0"
                                                   Margin="0,5,10,5"
                                                   SelectionChanged="MemorySetSelectComboBox_SelectionChanged"
-                                                  Width="500"
-                                                  HorizontalAlignment="Left"/>
+                                                  HorizontalAlignment="Stretch"/>
 
                                         <Button Grid.Column="1"
                                                 Content="追加"
@@ -72,9 +72,16 @@
                                                 Margin="5,5,0,5"
                                                 Padding="10,5"
                                                 Style="{StaticResource PresetButtonStyle}"
-                                                Click="DuplicateMemorySetButton_Click"/>
+                                                Click="CloneMemorySetButton_Click"/>
 
                                         <Button Grid.Column="3"
+                                                Content="設定複製"
+                                                Margin="5,5,0,5"
+                                                Padding="10,5"
+                                                Style="{StaticResource PresetButtonStyle}"
+                                                Click="DuplicateMemorySetSettingsButton_Click"/>
+
+                                        <Button Grid.Column="4"
                                                 Content="削除"
                                                 Margin="5,5,0,5"
                                                 Padding="10,5"
