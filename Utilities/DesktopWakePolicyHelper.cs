@@ -11,7 +11,6 @@ namespace CocoroConsole.Utilities
         public const string DesktopWakeObservationId = "observation:main_desktop";
 
         private const int DefaultWakeIntervalSeconds = 300;
-        private const double DefaultVisualObservationSimilarityThreshold = 0.3;
 
         public static bool HasDesktopWakeObservation(Dictionary<string, object?> wakePolicy, string? clientId)
         {
@@ -22,7 +21,6 @@ namespace CocoroConsole.Utilities
         public static Dictionary<string, object?> BuildWakePolicyRequest(
             string mode,
             int? intervalSeconds,
-            double visualObservationSimilarityThreshold,
             string? clientId,
             bool desktopObservationEnabled,
             IEnumerable<Dictionary<string, object?>>? currentObservations = null)
@@ -33,7 +31,6 @@ namespace CocoroConsole.Utilities
             var request = new Dictionary<string, object?>
             {
                 ["mode"] = normalizedMode,
-                ["visual_observation_similarity_threshold"] = ClampSimilarityThreshold(visualObservationSimilarityThreshold),
             };
 
             if (normalizedMode == "interval")
@@ -60,14 +57,9 @@ namespace CocoroConsole.Utilities
         {
             var mode = ReadString(currentWakePolicy, "mode") ?? "disabled";
             var intervalSeconds = ReadPositiveInt(currentWakePolicy, "interval_seconds");
-            var threshold = ReadDouble(
-                currentWakePolicy,
-                "visual_observation_similarity_threshold",
-                DefaultVisualObservationSimilarityThreshold);
             return BuildWakePolicyRequest(
                 mode,
                 intervalSeconds,
-                threshold,
                 clientId,
                 desktopObservationEnabled,
                 ReadWakeObservations(currentWakePolicy.GetValueOrDefault("observations")));
@@ -143,26 +135,6 @@ namespace CocoroConsole.Utilities
                     ["mode"] = "still",
                 },
             };
-        }
-
-        private static double ClampSimilarityThreshold(double value)
-        {
-            if (double.IsNaN(value) || double.IsInfinity(value))
-            {
-                return DefaultVisualObservationSimilarityThreshold;
-            }
-
-            if (value < 0)
-            {
-                return 0;
-            }
-
-            if (value > 1)
-            {
-                return 1;
-            }
-
-            return value;
         }
 
         private static string NormalizeVisionSourceToken(string? value)
@@ -296,38 +268,6 @@ namespace CocoroConsole.Utilities
             }
 
             return int.TryParse(value.ToString(), out var parsed) && parsed > 0 ? parsed : null;
-        }
-
-        private static double ReadDouble(Dictionary<string, object?> values, string key, double defaultValue)
-        {
-            if (!values.TryGetValue(key, out var value) || value == null)
-            {
-                return defaultValue;
-            }
-
-            if (value is JsonElement element)
-            {
-                return element.ValueKind == JsonValueKind.Number && element.TryGetDouble(out var jsonDouble)
-                    ? jsonDouble
-                    : defaultValue;
-            }
-
-            if (value is double doubleValue)
-            {
-                return doubleValue;
-            }
-
-            if (value is float floatValue)
-            {
-                return floatValue;
-            }
-
-            if (value is int intValue)
-            {
-                return intValue;
-            }
-
-            return double.TryParse(value.ToString(), out var parsed) ? parsed : defaultValue;
         }
 
         private static bool? ReadBool(Dictionary<string, object?> values, string key)

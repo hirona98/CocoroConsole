@@ -15,8 +15,6 @@ namespace CocoroConsole.Controls
     {
         public event EventHandler? SettingsChanged;
 
-        private const double DefaultVisualObservationSimilarityThreshold = 0.3;
-
         private bool _isInitialized;
         private Dictionary<string, object?> _wakePolicy = new Dictionary<string, object?>();
 
@@ -69,10 +67,6 @@ namespace CocoroConsole.Controls
             var mode = ReadString(wakePolicy, "mode");
             WakePolicyEnabledCheckBox.IsChecked = string.Equals(mode, "interval", StringComparison.OrdinalIgnoreCase);
             WakeIntervalSecondsTextBox.Text = ReadInt(wakePolicy, "interval_seconds", 300).ToString(CultureInfo.InvariantCulture);
-            DesktopSceneSimilarityThresholdTextBox.Text = ReadDouble(
-                wakePolicy,
-                "visual_observation_similarity_threshold",
-                DefaultVisualObservationSimilarityThreshold).ToString("0.###", CultureInfo.InvariantCulture);
             WakeDesktopObservationCheckBox.IsChecked = DesktopWakePolicyHelper.HasDesktopWakeObservation(wakePolicy, AppSettings.Instance.ClientId);
         }
 
@@ -93,7 +87,6 @@ namespace CocoroConsole.Controls
             WakePolicyEnabledCheckBox.IsChecked = false;
             WakeDesktopObservationCheckBox.IsChecked = false;
             WakeIntervalSecondsTextBox.Text = "300";
-            DesktopSceneSimilarityThresholdTextBox.Text = DefaultVisualObservationSimilarityThreshold.ToString("0.###", CultureInfo.InvariantCulture);
         }
 
         private void SetupEventHandlers()
@@ -105,7 +98,6 @@ namespace CocoroConsole.Controls
             WakeDesktopObservationCheckBox.Checked += OnSettingsChanged;
             WakeDesktopObservationCheckBox.Unchecked += OnSettingsChanged;
             WakeIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
-            DesktopSceneSimilarityThresholdTextBox.TextChanged += OnSettingsChanged;
             MicThresholdSlider.ValueChanged += OnSettingsChanged;
         }
 
@@ -128,36 +120,15 @@ namespace CocoroConsole.Controls
                 intervalSeconds = parsed;
             }
 
-            return DesktopWakePolicyHelper.BuildWakePolicyRequest(
-                mode,
-                intervalSeconds,
-                ReadDesktopSceneSimilarityThreshold(),
+            var wakePolicy = new Dictionary<string, object?>(_wakePolicy)
+            {
+                ["mode"] = mode,
+                ["interval_seconds"] = intervalSeconds,
+            };
+            return DesktopWakePolicyHelper.BuildWakePolicyRequestFromCurrent(
+                wakePolicy,
                 AppSettings.Instance.ClientId,
                 WakeDesktopObservationCheckBox.IsChecked ?? false);
-        }
-
-        private double ReadDesktopSceneSimilarityThreshold()
-        {
-            if (!double.TryParse(
-                DesktopSceneSimilarityThresholdTextBox.Text,
-                NumberStyles.Float,
-                CultureInfo.InvariantCulture,
-                out var threshold))
-            {
-                return DefaultVisualObservationSimilarityThreshold;
-            }
-
-            if (threshold < 0)
-            {
-                return 0;
-            }
-
-            if (threshold > 1)
-            {
-                return 1;
-            }
-
-            return threshold;
         }
 
         public int GetVisualCaptureIdleTimeoutMinutes()
@@ -223,39 +194,5 @@ namespace CocoroConsole.Controls
             return fallback;
         }
 
-        private static double ReadDouble(Dictionary<string, object?> values, string key, double fallback)
-        {
-            if (!values.TryGetValue(key, out var value) || value == null)
-            {
-                return fallback;
-            }
-
-            if (value is double doubleValue)
-            {
-                return doubleValue;
-            }
-
-            if (value is float floatValue)
-            {
-                return floatValue;
-            }
-
-            if (value is decimal decimalValue)
-            {
-                return (double)decimalValue;
-            }
-
-            if (value is int intValue)
-            {
-                return intValue;
-            }
-
-            if (double.TryParse(value.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
-            {
-                return parsed;
-            }
-
-            return fallback;
-        }
     }
 }
