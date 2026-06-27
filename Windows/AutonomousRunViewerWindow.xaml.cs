@@ -366,7 +366,7 @@ namespace CocoroConsole.Windows
             return originKind.Trim() switch
             {
                 "user_message" => "ユーザー依頼",
-                "background_wake" => "定期起床",
+                "background_thinking" => "定期思考",
                 "wake" => "手動起床",
                 "capability_result" => "能力結果",
                 _ => originKind.Trim(),

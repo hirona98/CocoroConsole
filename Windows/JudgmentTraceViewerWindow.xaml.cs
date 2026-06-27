@@ -1005,7 +1005,7 @@ namespace CocoroConsole.Windows
                 "user_message" => "ユーザー入力",
                 "capability_result" => "能力の実行結果",
                 "wake" => "API起床",
-                "background_wake" => "定期起床",
+                "background_thinking" => "定期思考",
                 "" => string.Empty,
                 _ => value,
             };

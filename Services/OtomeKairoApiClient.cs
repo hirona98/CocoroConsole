@@ -558,9 +558,9 @@ namespace CocoroConsole.Services
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? SelectedModelPresetId { get; set; }
 
-        [JsonPropertyName("background_wake_speech_frequency_level")]
+        [JsonPropertyName("thinking_speech_level")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public int? BackgroundWakeSpeechFrequencyLevel { get; set; }
+        public int? ThinkingSpeechLevel { get; set; }
 
         [JsonPropertyName("wake_policy")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

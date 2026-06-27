@@ -1174,7 +1174,7 @@ namespace CocoroConsole.Services
                 return false;
             }
 
-            return string.Equals(sourceKind, "background_wake", StringComparison.OrdinalIgnoreCase)
+            return string.Equals(sourceKind, "background_thinking", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(sourceKind, "capability_result", StringComparison.OrdinalIgnoreCase);
         }
 

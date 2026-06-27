@@ -38,8 +38,8 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("selected_model_preset_id")]
         public string SelectedModelPresetId { get; set; } = string.Empty;
 
-        [JsonPropertyName("background_wake_speech_frequency_level")]
-        public int BackgroundWakeSpeechFrequencyLevel { get; set; } = 5;
+        [JsonPropertyName("thinking_speech_level")]
+        public int ThinkingSpeechLevel { get; set; } = 5;
 
         [JsonPropertyName("wake_policy")]
         public Dictionary<string, object?> WakePolicy { get; set; } = new Dictionary<string, object?>();
