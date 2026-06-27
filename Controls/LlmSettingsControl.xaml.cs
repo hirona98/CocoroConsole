@@ -949,7 +949,7 @@ namespace CocoroConsole.Controls
                 ModelPresetId = modelPresetId,
                 DisplayName = displayName,
                 PromptWindow = CreateDefaultPromptWindow(),
-                ObservationRole = CreateDefaultRole(DefaultObservationMaxOutputTokens, reasoningEffort: "low"),
+                ObservationRole = CreateDefaultRole(DefaultObservationMaxOutputTokens, reasoningEffort: ""),
                 DecisionRole = CreateDefaultRole(DefaultDecisionMaxOutputTokens),
                 ExpressionRole = CreateDefaultRole(DefaultExpressionMaxOutputTokens),
                 MemoryRole = CreateDefaultRole(DefaultMemoryMaxOutputTokens),

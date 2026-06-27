@@ -149,7 +149,7 @@ namespace CocoroConsole.Controls
 
             var item = CloneMemorySet(source);
             item.MemorySetId = $"memory_set:{Guid.NewGuid():N}";
-            item.DisplayName = GenerateUniqueName(_memorySets.Select(p => p.DisplayName), $"{source.DisplayName} (クローン)");
+            item.DisplayName = GenerateUniqueName(_memorySets.Select(p => p.DisplayName), $"{source.DisplayName} (記憶複製)");
             item.ServerBackedMemorySetId = null;
             item.CloneSourceMemorySetId = cloneSourceMemorySetId;
 

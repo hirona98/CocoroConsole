@@ -69,8 +69,9 @@
                           Padding="10">
                     <StackPanel>
                         <TextBlock
-                                       Text="登録済みカメラ:"
-                                       Width="140" HorizontalAlignment="Left"/>
+                            Text="登録済みカメラ:"
+                            Width="140"
+                                HorizontalAlignment="Left"/>
                         <Grid Margin="0,0,0,12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -298,7 +299,9 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="MCP server ID:"
-                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                           Style="{StaticResource SettingLabelStyle}"
+                                        VerticalAlignment="Top"
+                                        Margin="0,5,10,0"/>
                                 <StackPanel Grid.Column="1">
                                     <TextBox x:Name="McpServerIdTextBox"
                                              Style="{StaticResource SettingTextBoxStyle}"
@@ -314,7 +317,9 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="command:"
-                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                           Style="{StaticResource SettingLabelStyle}"
+                                        VerticalAlignment="Top"
+                                        Margin="0,5,10,0"/>
                                 <StackPanel Grid.Column="1">
                                     <TextBox x:Name="McpCommandTextBox"
                                              Style="{StaticResource SettingTextBoxStyle}"
@@ -330,7 +335,9 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="args:"
-                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                           Style="{StaticResource SettingLabelStyle}"
+                                        VerticalAlignment="Top"
+                                        Margin="0,5,10,0"/>
                                 <StackPanel Grid.Column="1">
                                     <TextBox x:Name="McpArgsTextBox"
                                              MinHeight="70"
@@ -350,7 +357,9 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="cwd:"
-                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                           Style="{StaticResource SettingLabelStyle}"
+                                        VerticalAlignment="Top"
+                                        Margin="0,5,10,0"/>
                                 <StackPanel Grid.Column="1">
                                     <TextBox x:Name="McpCwdTextBox"
                                              Style="{StaticResource SettingTextBoxStyle}"
@@ -366,7 +375,9 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="接続クライアント:"
-                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                           Style="{StaticResource SettingLabelStyle}"
+                                        VerticalAlignment="Top"
+                                        Margin="0,5,10,0"/>
                                 <StackPanel Grid.Column="1">
                                     <TextBox x:Name="McpClientIdTextBox"
                                              Style="{StaticResource SettingTextBoxStyle}"
@@ -382,7 +393,9 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="transport:"
-                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                           Style="{StaticResource SettingLabelStyle}"
+                                        VerticalAlignment="Top"
+                                        Margin="0,5,10,0"/>
                                 <StackPanel Grid.Column="1">
                                     <TextBox x:Name="McpTransportTextBox"
                                              Style="{StaticResource SettingTextBoxStyle}"
@@ -399,7 +412,9 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="env:"
-                                           Style="{StaticResource SettingLabelStyle}" VerticalAlignment="Top" Margin="0,5,10,0"/>
+                                           Style="{StaticResource SettingLabelStyle}"
+                                        VerticalAlignment="Top"
+                                        Margin="0,5,10,0"/>
                                 <StackPanel Grid.Column="1">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -446,8 +461,6 @@
                                                 Style="{StaticResource CapabilityButtonStyle}"
                                                 Click="AddMcpEnvButton_Click"/>
                                     </Grid>
-                                    <TextBlock Text="MCP server 起動時に渡す環境変数。API key や token はここに設定し、値は設定DBに保存する。"
-                                               Style="{StaticResource SettingDescriptionStyle}"/>
                                 </StackPanel>
                             </Grid>
                         </StackPanel>

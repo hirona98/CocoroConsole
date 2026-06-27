@@ -68,7 +68,7 @@
                                                 Click="AddMemorySetButton_Click"/>
 
                                         <Button Grid.Column="2"
-                                                Content="クローン"
+                                                Content="記憶複製"
                                                 Margin="5,5,0,5"
                                                 Padding="10,5"
                                                 Style="{StaticResource PresetButtonStyle}"

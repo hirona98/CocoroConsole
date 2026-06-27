@@ -29,14 +29,17 @@
     "idleTimeoutMinutes": 10,
     "excludePatterns": [
       ".*CocoroAI.*",
+      ".*支払.*",
+      ".*決済.*",
       ".*パスワード.*",
-      ".*ログイン.*",
-      ".*プライベート.*",
-      ".*シークレット.*",
-      ".*incognito.*",
-      ".*Private.*",
       ".*Password.*",
-      ".*Login.*"
+      ".*ログイン.*",
+      ".*Login.*",
+      ".*プライベート.*",
+      ".*Private.*",
+      ".*シークレット.*",
+      ".*Secret.*",
+      ".*incognito.*"
     ]
   },
   "microphoneSettings": {
