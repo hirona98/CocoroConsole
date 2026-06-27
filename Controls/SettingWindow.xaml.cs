@@ -717,6 +717,7 @@ namespace CocoroConsole.Controls
                     SelectedPersonaId = activePersonaId,
                     SelectedMemorySetId = activeMemorySetId,
                     SelectedModelPresetId = activeModelPresetId,
+                    BackgroundWakeSpeechFrequencyLevel = SystemSettingsControl.GetBackgroundWakeSpeechFrequencyLevel(),
                     WakePolicy = SystemSettingsControl.GetWakePolicy(),
                 },
                 Personas = ClonePersonas(personas),

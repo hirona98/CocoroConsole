@@ -15,6 +15,8 @@ namespace CocoroConsole.Controls
     {
         public event EventHandler? SettingsChanged;
 
+        private const int DefaultBackgroundWakeSpeechFrequencyLevel = 5;
+
         private bool _isInitialized;
         private Dictionary<string, object?> _wakePolicy = new Dictionary<string, object?>();
 
@@ -68,6 +70,8 @@ namespace CocoroConsole.Controls
             WakePolicyEnabledCheckBox.IsChecked = string.Equals(mode, "interval", StringComparison.OrdinalIgnoreCase);
             WakeIntervalSecondsTextBox.Text = ReadInt(wakePolicy, "interval_seconds", 300).ToString(CultureInfo.InvariantCulture);
             WakeDesktopObservationCheckBox.IsChecked = DesktopWakePolicyHelper.HasDesktopWakeObservation(wakePolicy, AppSettings.Instance.ClientId);
+            BackgroundWakeSpeechFrequencyLevelTextBox.Text = ClampBackgroundWakeSpeechFrequencyLevel(
+                current?.BackgroundWakeSpeechFrequencyLevel ?? DefaultBackgroundWakeSpeechFrequencyLevel).ToString(CultureInfo.InvariantCulture);
         }
 
         public void SetWakeDesktopObservationEnabled(bool enabled)
@@ -87,6 +91,7 @@ namespace CocoroConsole.Controls
             WakePolicyEnabledCheckBox.IsChecked = false;
             WakeDesktopObservationCheckBox.IsChecked = false;
             WakeIntervalSecondsTextBox.Text = "300";
+            BackgroundWakeSpeechFrequencyLevelTextBox.Text = DefaultBackgroundWakeSpeechFrequencyLevel.ToString(CultureInfo.InvariantCulture);
         }
 
         private void SetupEventHandlers()
@@ -98,6 +103,7 @@ namespace CocoroConsole.Controls
             WakeDesktopObservationCheckBox.Checked += OnSettingsChanged;
             WakeDesktopObservationCheckBox.Unchecked += OnSettingsChanged;
             WakeIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
+            BackgroundWakeSpeechFrequencyLevelTextBox.TextChanged += OnSettingsChanged;
             MicThresholdSlider.ValueChanged += OnSettingsChanged;
         }
 
@@ -129,6 +135,31 @@ namespace CocoroConsole.Controls
                 wakePolicy,
                 AppSettings.Instance.ClientId,
                 WakeDesktopObservationCheckBox.IsChecked ?? false);
+        }
+
+        public int GetBackgroundWakeSpeechFrequencyLevel()
+        {
+            if (!int.TryParse(BackgroundWakeSpeechFrequencyLevelTextBox.Text, out var level))
+            {
+                return DefaultBackgroundWakeSpeechFrequencyLevel;
+            }
+
+            return ClampBackgroundWakeSpeechFrequencyLevel(level);
+        }
+
+        private static int ClampBackgroundWakeSpeechFrequencyLevel(int level)
+        {
+            if (level < 1)
+            {
+                return 1;
+            }
+
+            if (level > 10)
+            {
+                return 10;
+            }
+
+            return level;
         }
 
         public int GetVisualCaptureIdleTimeoutMinutes()
