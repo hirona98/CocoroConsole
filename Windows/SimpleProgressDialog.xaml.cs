@@ -1,4 +1,4 @@
-﻿using CocoroConsole.Utilities;
+using CocoroConsole.Utilities;
 using System.Windows;
 
 namespace CocoroConsole.Windows

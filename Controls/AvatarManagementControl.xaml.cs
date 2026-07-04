@@ -1,4 +1,4 @@
-﻿using CocoroConsole.Communication;
+using CocoroConsole.Communication;
 using CocoroConsole.Services;
 using CocoroConsole.Utilities;
 using Microsoft.Win32;

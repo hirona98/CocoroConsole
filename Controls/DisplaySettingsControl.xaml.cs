@@ -1,4 +1,4 @@
-﻿using CocoroConsole.Services;
+using CocoroConsole.Services;
 using CocoroConsole.Communication;
 using CocoroConsole.Utilities;
 using System;

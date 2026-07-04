@@ -1,23 +1,12 @@
-## プロジェクト概要
-
-CocoroConsoleは、CocoroAIの設定およびチャットを行うUIを備えたWPFアプリです
-
-CocoroAI は、OtomeKairo、CocoroShell、CocoroConsole からなるAI人格のシステムです。
-
-
-## ディレクトリ構成
-
-- ../OtomeKairo: LLM/記憶処理（Python）: Gitリポジトリ
-- CocoroConsole: チャット/設定アプリ（WPF）: Gitリポジトリ
-- ../CocoroShell: VRM表示プログラム（Unity）: Gitリポジトリ
-- ../UserData: CocoroConsole/CocoroShell用設定ファイル
-
-
-## コマンドについて
-
-- PowerShellコマンドは `powershell.exe` 経由で実行すること（dotnetなど）
-
-
-## その他
-
-- 改行コードはCRLFです
+- シンプルさを優先すること
+- 修正時は、本来あるべき姿への修正を行うこと（最小限の修正にしない、ガードするのではなく根本から変更する）
+- 旧仕様との互換レイヤーや移行用コードを入れないこと
+- フォールバック処理を入れないこと
+- テストコードを書かないこと
+- ユーザーとのコミュニケーションには日本語を使う
+- WSLからWindows 側のコマンドを実行する場合は .exe をつけること
+- WSLからPowerShellコマンドを実行するときは `powershell.exe` 経由で実行すること（dotnetなど）
+- 改行コードはLFとする
+- 文字コードはUTF-8とする
+- Gitのユーザ名とメールアドレスを変更しない
+- ユーザーが明示的に指示するまでコミットしない
