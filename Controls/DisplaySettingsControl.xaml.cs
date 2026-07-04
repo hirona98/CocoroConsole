@@ -105,7 +105,7 @@ namespace CocoroConsole.Controls
 
             // メッセージウィンドウ設定の初期化
             MaxMessageCountTextBox.Text = appSettings.MessageWindowSettings.maxMessageCount.ToString();
-            MaxTotalCharactersTextBox.Text = appSettings.MessageWindowSettings.maxTotalCharacters.ToString();
+            MaxTotalAvatarsTextBox.Text = appSettings.MessageWindowSettings.maxTotalAvatars.ToString();
             MinWindowSizeTextBox.Text = appSettings.MessageWindowSettings.minWindowSize.ToString();
             MaxWindowSizeTextBox.Text = appSettings.MessageWindowSettings.maxWindowSize.ToString();
             FontSizeTextBox.Text = appSettings.MessageWindowSettings.fontSize.ToString();
@@ -184,7 +184,7 @@ namespace CocoroConsole.Controls
             var messageWindowSettings = new Dictionary<string, object>
             {
                 ["maxMessageCount"] = int.TryParse(MaxMessageCountTextBox.Text, out int maxCount) ? maxCount : 3,
-                ["maxTotalCharacters"] = int.TryParse(MaxTotalCharactersTextBox.Text, out int maxChars) ? maxChars : 300,
+                ["maxTotalAvatars"] = int.TryParse(MaxTotalAvatarsTextBox.Text, out int maxChars) ? maxChars : 300,
                 ["minWindowSize"] = float.TryParse(MinWindowSizeTextBox.Text, out float minSize) ? minSize : 200f,
                 ["maxWindowSize"] = float.TryParse(MaxWindowSizeTextBox.Text, out float maxSize) ? maxSize : 600f,
                 ["fontSize"] = float.TryParse(FontSizeTextBox.Text, out float fontSize) ? fontSize : 14f,
@@ -248,8 +248,8 @@ namespace CocoroConsole.Controls
             {
                 if (msgSettings.ContainsKey("maxMessageCount"))
                     appSettings.MessageWindowSettings.maxMessageCount = Convert.ToInt32(msgSettings["maxMessageCount"]);
-                if (msgSettings.ContainsKey("maxTotalCharacters"))
-                    appSettings.MessageWindowSettings.maxTotalCharacters = Convert.ToInt32(msgSettings["maxTotalCharacters"]);
+                if (msgSettings.ContainsKey("maxTotalAvatars"))
+                    appSettings.MessageWindowSettings.maxTotalAvatars = Convert.ToInt32(msgSettings["maxTotalAvatars"]);
                 if (msgSettings.ContainsKey("minWindowSize"))
                     appSettings.MessageWindowSettings.minWindowSize = Convert.ToSingle(msgSettings["minWindowSize"]);
                 if (msgSettings.ContainsKey("maxWindowSize"))

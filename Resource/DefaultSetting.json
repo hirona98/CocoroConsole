@@ -48,7 +48,7 @@
   },
   "messageWindowSettings": {
     "maxMessageCount": 3,
-    "maxTotalCharacters": 300,
+    "maxTotalAvatars": 300,
     "minWindowSize": 200,
     "maxWindowSize": 600,
     "fontSize": 14,

@@ -222,7 +222,7 @@ namespace CocoroConsole.Communication
     public class MessageWindowSettings
     {
         public int maxMessageCount { get; set; }
-        public int maxTotalCharacters { get; set; }
+        public int maxTotalAvatars { get; set; }
         public float minWindowSize { get; set; }
         public float maxWindowSize { get; set; }
         public float fontSize { get; set; }
@@ -372,7 +372,7 @@ namespace CocoroConsole.Communication
                 messageWindowSettings = new MessageWindowSettings
                 {
                     maxMessageCount = this.messageWindowSettings.maxMessageCount,
-                    maxTotalCharacters = this.messageWindowSettings.maxTotalCharacters,
+                    maxTotalAvatars = this.messageWindowSettings.maxTotalAvatars,
                     minWindowSize = this.messageWindowSettings.minWindowSize,
                     maxWindowSize = this.messageWindowSettings.maxWindowSize,
                     fontSize = this.messageWindowSettings.fontSize,

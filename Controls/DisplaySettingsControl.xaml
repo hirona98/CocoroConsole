@@ -264,7 +264,7 @@
                                        VerticalAlignment="Center"
                                        Foreground="#FF4873CF"
                                        Width="180"/>
-                            <TextBox x:Name="MaxTotalCharactersTextBox"
+                            <TextBox x:Name="MaxTotalAvatarsTextBox"
                                      Width="60"
                                      Text="300"
                                      Foreground="#FF0078D7"
