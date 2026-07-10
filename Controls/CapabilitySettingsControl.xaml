@@ -137,11 +137,16 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="表示名:"
-                                           Style="{StaticResource SettingLabelStyle}"/>
-                                <TextBox x:Name="CameraLabelTextBox"
-                                         Grid.Column="1"
-                                         Style="{StaticResource SettingTextBoxStyle}"
-                                         TextChanged="OnTextChanged"/>
+                                           Style="{StaticResource SettingLabelStyle}"
+                                           VerticalAlignment="Top"
+                                           Margin="0,5,10,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBox x:Name="CameraLabelTextBox"
+                                             Style="{StaticResource SettingTextBoxStyle}"
+                                             TextChanged="OnTextChanged"/>
+                                    <TextBlock Text="LLMが理解しやすい名前にしてください。"
+                                               Style="{StaticResource SettingDescriptionStyle}"/>
+                                </StackPanel>
                             </Grid>
 
                             <Grid Margin="0,5">
@@ -219,6 +224,19 @@
                                 <TextBlock Text="視覚ソースID:"
                                            Style="{StaticResource SettingLabelStyle}"/>
                                 <TextBox x:Name="CameraVisionSourceIdTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         IsEnabled="False"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="watcher ID:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="CameraWatcherIdTextBox"
                                          Grid.Column="1"
                                          Style="{StaticResource SettingTextBoxStyle}"
                                          IsEnabled="False"/>

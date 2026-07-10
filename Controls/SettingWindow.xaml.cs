@@ -178,6 +178,7 @@ namespace CocoroConsole.Controls
                 EmbeddingSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 PromptSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 CapabilitySettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
+                WatcherSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
             }
             catch (Exception ex)
             {
@@ -197,11 +198,13 @@ namespace CocoroConsole.Controls
             {
                 _loadedCameraSourcesEditorState = await _apiClient.GetCameraSourcesEditorStateAsync();
                 CapabilitySettingsControl.LoadCameraSources(_loadedCameraSourcesEditorState);
+                WatcherSettingsControl.LoadCameraSources(_loadedCameraSourcesEditorState);
             }
             catch (Exception ex)
             {
                 _loadedCameraSourcesEditorState = null;
                 CapabilitySettingsControl.LoadCameraSources(null);
+                WatcherSettingsControl.LoadCameraSources(null);
                 Debug.WriteLine($"カメラ視覚初期化エラー: {ex.Message}");
             }
         }
@@ -283,6 +286,27 @@ namespace CocoroConsole.Controls
             if (ApplyButton != null && !ApplyButton.IsEnabled)
             {
                 ApplyButton.IsEnabled = true;
+            }
+        }
+
+        private void AdminTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!ReferenceEquals(e.Source, AdminTabControl))
+            {
+                return;
+            }
+
+            if (AdminTabControl.SelectedItem == WatcherTabItem)
+            {
+                var cameraSources = CapabilitySettingsControl.GetCameraSourcesEditorState();
+                WatcherSettingsControl.ApplyWatcherSettingsTo(cameraSources);
+                WatcherSettingsControl.LoadCameraSources(cameraSources);
+            }
+            else if (AdminTabControl.SelectedItem == CapabilityTabItem)
+            {
+                var cameraSources = CapabilitySettingsControl.GetCameraSourcesEditorState();
+                WatcherSettingsControl.ApplyWatcherSettingsTo(cameraSources);
+                CapabilitySettingsControl.LoadCameraSources(cameraSources);
             }
         }
 
@@ -541,9 +565,11 @@ namespace CocoroConsole.Controls
             }
 
             var request = CapabilitySettingsControl.GetCameraSourcesEditorState();
+            WatcherSettingsControl.ApplyWatcherSettingsTo(request);
             var updated = await _apiClient.ReplaceCameraSourcesEditorStateAsync(request);
             _loadedCameraSourcesEditorState = updated;
             CapabilitySettingsControl.LoadCameraSources(updated);
+            WatcherSettingsControl.LoadCameraSources(updated);
             Debug.WriteLine("[SettingWindow] camera-sources editor-state saved to API");
         }
 

@@ -22,11 +22,12 @@ namespace CocoroConsole.Controls
             public string ConnectorKind { get; set; } = DefaultConnectorKind;
             public string ClientId { get; set; } = DefaultClientId;
             public bool Enabled { get; set; }
-            public string Label { get; set; } = string.Empty;
+            public string DisplayNameText { get; set; } = string.Empty;
             public string Host { get; set; } = string.Empty;
             public string CameraUsername { get; set; } = string.Empty;
             public string CameraPassword { get; set; } = string.Empty;
-            public string DisplayName => string.IsNullOrWhiteSpace(Label) ? "名称なし" : Label.Trim();
+            public OtomeKairoCameraWatcherDefinition Watcher { get; set; } = new();
+            public string DisplayName => string.IsNullOrWhiteSpace(DisplayNameText) ? "名称なし" : DisplayNameText.Trim();
             public string HostDisplay => string.IsNullOrWhiteSpace(Host) ? "IP未設定" : Host.Trim();
         }
 
@@ -101,6 +102,7 @@ namespace CocoroConsole.Controls
         public OtomeKairoCameraSourcesEditorState GetCameraSourcesEditorState()
         {
             SyncCurrentCameraSourceFromUi();
+            NormalizeCameraSourceIds();
             return new OtomeKairoCameraSourcesEditorState
             {
                 CameraSources = _cameraSources.Select(ToDefinition).ToList(),
@@ -160,8 +162,9 @@ namespace CocoroConsole.Controls
 
             var item = new CameraSourceEditorItem
             {
-                Label = GenerateUniqueName(_cameraSources.Select(source => source.Label), "新しいカメラ"),
+                DisplayNameText = GenerateUniqueName(_cameraSources.Select(source => source.DisplayNameText), "新しいカメラ"),
             };
+            UpdateCameraIdentity(item);
 
             _isInitializing = true;
             try
@@ -456,10 +459,13 @@ namespace CocoroConsole.Controls
             }
 
             var current = _cameraSources[_currentCameraSourceIndex];
-            current.Label = CameraLabelTextBox.Text;
+            current.DisplayNameText = CameraLabelTextBox.Text;
             current.Host = CameraHostTextBox.Text;
             current.CameraUsername = CameraUsernameTextBox.Text;
             current.CameraPassword = CameraPasswordBox.Password;
+            UpdateCameraIdentity(current);
+            CameraVisionSourceIdTextBox.Text = current.VisionSourceId ?? string.Empty;
+            CameraWatcherIdTextBox.Text = current.Watcher.WatcherId;
         }
 
         private void SyncCurrentMcpServerFromUi()
@@ -482,13 +488,15 @@ namespace CocoroConsole.Controls
 
         private void LoadCameraSourceToUi(CameraSourceEditorItem item)
         {
-            CameraLabelTextBox.Text = item.Label;
+            UpdateCameraIdentity(item);
+            CameraLabelTextBox.Text = item.DisplayNameText;
             CameraHostTextBox.Text = item.Host;
             CameraUsernameTextBox.Text = item.CameraUsername;
             CameraPasswordBox.Password = item.CameraPassword;
             CameraConnectorKindTextBox.Text = NormalizeConnectorKind(item.ConnectorKind);
             CameraClientIdTextBox.Text = NormalizeClientId(item.ClientId);
             CameraVisionSourceIdTextBox.Text = item.VisionSourceId ?? string.Empty;
+            CameraWatcherIdTextBox.Text = item.Watcher.WatcherId;
         }
 
         private void LoadMcpServerToUi(McpServerEditorItem item)
@@ -511,6 +519,7 @@ namespace CocoroConsole.Controls
             CameraConnectorKindTextBox.Text = DefaultConnectorKind;
             CameraClientIdTextBox.Text = DefaultClientId;
             CameraVisionSourceIdTextBox.Text = string.Empty;
+            CameraWatcherIdTextBox.Text = string.Empty;
         }
 
         private void ClearMcpServerUi()
@@ -580,16 +589,18 @@ namespace CocoroConsole.Controls
 
         private static CameraSourceEditorItem ToEditorItem(OtomeKairoCameraSourceDefinition cameraSource)
         {
+            var visionSourceId = WatcherDefaults.BuildVisionSourceId(cameraSource.DisplayName);
             return new CameraSourceEditorItem
             {
-                VisionSourceId = string.IsNullOrWhiteSpace(cameraSource.VisionSourceId) ? null : cameraSource.VisionSourceId,
+                VisionSourceId = visionSourceId,
                 ConnectorKind = NormalizeConnectorKind(cameraSource.ConnectorKind),
                 ClientId = NormalizeClientId(cameraSource.ClientId),
                 Enabled = cameraSource.Enabled,
-                Label = cameraSource.Label,
+                DisplayNameText = cameraSource.DisplayName,
                 Host = cameraSource.Connection?.Host ?? string.Empty,
                 CameraUsername = cameraSource.Connection?.CameraUsername ?? string.Empty,
                 CameraPassword = cameraSource.Connection?.CameraPassword ?? string.Empty,
+                Watcher = BuildCameraWatcher(cameraSource.Watcher, visionSourceId),
             };
         }
 
@@ -637,20 +648,57 @@ namespace CocoroConsole.Controls
 
         private static OtomeKairoCameraSourceDefinition ToDefinition(CameraSourceEditorItem item)
         {
+            var displayName = NormalizedCameraDisplayName(item);
+            var visionSourceId = WatcherDefaults.BuildVisionSourceId(displayName);
             return new OtomeKairoCameraSourceDefinition
             {
-                VisionSourceId = string.IsNullOrWhiteSpace(item.VisionSourceId) ? null : item.VisionSourceId.Trim(),
+                VisionSourceId = visionSourceId,
                 ConnectorKind = NormalizeConnectorKind(item.ConnectorKind),
                 ClientId = NormalizeClientId(item.ClientId),
                 Enabled = item.Enabled,
-                Label = string.IsNullOrWhiteSpace(item.Label) ? "Camera" : item.Label.Trim(),
+                DisplayName = displayName,
                 Connection = new OtomeKairoCameraSourceConnection
                 {
                     Host = item.Host?.Trim() ?? string.Empty,
                     CameraUsername = item.CameraUsername ?? string.Empty,
                     CameraPassword = item.CameraPassword ?? string.Empty,
                 },
+                Watcher = BuildCameraWatcher(item.Watcher, visionSourceId),
             };
+        }
+
+        private static OtomeKairoCameraWatcherDefinition BuildCameraWatcher(OtomeKairoCameraWatcherDefinition? watcher, string? visionSourceId)
+        {
+            return new OtomeKairoCameraWatcherDefinition
+            {
+                Enabled = watcher?.Enabled == true,
+                WatcherId = WatcherDefaults.BuildDefaultWatcherId(visionSourceId),
+                Kind = "tapo_c220_motion",
+                PollIntervalSeconds = watcher?.PollIntervalSeconds > 0 ? watcher.PollIntervalSeconds : 60,
+                MinWakeIntervalSeconds = watcher?.MinWakeIntervalSeconds > 0 ? watcher.MinWakeIntervalSeconds : 60,
+                MotionRatioThreshold = watcher?.MotionRatioThreshold > 0 ? watcher.MotionRatioThreshold : 0.03,
+                PixelDiffThreshold = watcher?.PixelDiffThreshold > 0 ? watcher.PixelDiffThreshold : 25,
+                ResizeWidth = watcher?.ResizeWidth > 0 ? watcher.ResizeWidth : 320,
+            };
+        }
+
+        private void NormalizeCameraSourceIds()
+        {
+            foreach (var item in _cameraSources)
+            {
+                UpdateCameraIdentity(item);
+            }
+        }
+
+        private static void UpdateCameraIdentity(CameraSourceEditorItem item)
+        {
+            item.VisionSourceId = WatcherDefaults.BuildVisionSourceId(NormalizedCameraDisplayName(item));
+            item.Watcher = BuildCameraWatcher(item.Watcher, item.VisionSourceId);
+        }
+
+        private static string NormalizedCameraDisplayName(CameraSourceEditorItem item)
+        {
+            return string.IsNullOrWhiteSpace(item.DisplayNameText) ? "Camera" : item.DisplayNameText.Trim();
         }
 
         private static OtomeKairoMcpServerDefinition ToDefinition(McpServerEditorItem item)

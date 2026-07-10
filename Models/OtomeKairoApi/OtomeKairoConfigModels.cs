@@ -141,11 +141,14 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("enabled")]
         public bool Enabled { get; set; }
 
-        [JsonPropertyName("label")]
-        public string Label { get; set; } = string.Empty;
+        [JsonPropertyName("display_name")]
+        public string DisplayName { get; set; } = string.Empty;
 
         [JsonPropertyName("connection")]
         public OtomeKairoCameraSourceConnection Connection { get; set; } = new OtomeKairoCameraSourceConnection();
+
+        [JsonPropertyName("watcher")]
+        public OtomeKairoCameraWatcherDefinition Watcher { get; set; } = new OtomeKairoCameraWatcherDefinition();
     }
 
     public class OtomeKairoCameraSourceConnection
@@ -158,6 +161,33 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
         [JsonPropertyName("camera_password")]
         public string CameraPassword { get; set; } = string.Empty;
+    }
+
+    public class OtomeKairoCameraWatcherDefinition
+    {
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; }
+
+        [JsonPropertyName("watcher_id")]
+        public string WatcherId { get; set; } = string.Empty;
+
+        [JsonPropertyName("kind")]
+        public string Kind { get; set; } = "tapo_c220_motion";
+
+        [JsonPropertyName("poll_interval_seconds")]
+        public double PollIntervalSeconds { get; set; } = 60;
+
+        [JsonPropertyName("min_wake_interval_seconds")]
+        public double MinWakeIntervalSeconds { get; set; } = 60;
+
+        [JsonPropertyName("motion_ratio_threshold")]
+        public double MotionRatioThreshold { get; set; } = 0.03;
+
+        [JsonPropertyName("pixel_diff_threshold")]
+        public int PixelDiffThreshold { get; set; } = 25;
+
+        [JsonPropertyName("resize_width")]
+        public int ResizeWidth { get; set; } = 320;
     }
 
     public class OtomeKairoMcpServersEditorState

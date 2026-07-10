@@ -102,7 +102,8 @@
         <TabControl x:Name="AdminTabControl"
                     BorderThickness="0"
                     Background="White"
-                    Grid.Row="0">
+                    Grid.Row="0"
+                    SelectionChanged="AdminTabControl_SelectionChanged">
 
             <TabItem Header="表示"
                      Style="{StaticResource AdminTabItemStyle}"
@@ -158,11 +159,21 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="能力"
+            <TabItem x:Name="CapabilityTabItem"
+                     Header="能力"
                      Style="{StaticResource AdminTabItemStyle}"
                      ToolTip="Capability setting">
                 <Grid Margin="20,20,0,20">
                     <local:CapabilitySettingsControl x:Name="CapabilitySettingsControl"/>
+                </Grid>
+            </TabItem>
+
+            <TabItem x:Name="WatcherTabItem"
+                     Header="Watcher"
+                     Style="{StaticResource AdminTabItemStyle}"
+                     ToolTip="Watcher setting">
+                <Grid Margin="20,20,0,20">
+                    <local:WatcherSettingsControl x:Name="WatcherSettingsControl"/>
                 </Grid>
             </TabItem>
 
