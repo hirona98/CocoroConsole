@@ -24,8 +24,8 @@ namespace CocoroConsole.Services
         /// </summary>
         public static event EventHandler? SettingsSaved;
 
-        // UserDataディレクトリのパスを取得
-        public string UserDataDirectory => FindUserDataDirectory();
+        // UserDataディレクトリのパス
+        public string UserDataDirectory { get; }
 
         // アプリケーション設定ファイルのパス
         private string AppSettingsFilePath => Path.Combine(UserDataDirectory, "Setting.json");
@@ -93,6 +93,8 @@ namespace CocoroConsole.Services
         // コンストラクタはprivate（シングルトンパターン）
         private AppSettings()
         {
+            UserDataDirectory = FindUserDataDirectory();
+
             // 設定ファイルから読み込み
             LoadSettings();
         }
@@ -121,14 +123,14 @@ namespace CocoroConsole.Services
                 var fullPath = Path.GetFullPath(path);
                 if (Directory.Exists(fullPath))
                 {
-                    Debug.WriteLine($"UserDataディレクトリ: {fullPath}");
+                    Debug.WriteLine($"UserDataディレクトリを解決しました: {fullPath}");
                     return fullPath;
                 }
             }
 
             // 見つからない場合は、最初のパスを使用してディレクトリを作成
             var defaultPath = Path.GetFullPath(searchPaths[0]);
-            Debug.WriteLine($"UserDataが見つからないため作成: {defaultPath}");
+            Debug.WriteLine($"UserDataディレクトリを作成しました: {defaultPath}");
             Directory.CreateDirectory(defaultPath);
             return defaultPath;
         }
@@ -346,7 +348,7 @@ namespace CocoroConsole.Services
             catch (Exception ex)
             {
                 // エラーが発生した場合はデフォルト設定を使用
-                Debug.WriteLine($"設定ファイル読み込みエラー: {ex.Message}");
+                Debug.WriteLine($"設定の読み込みに失敗しました: {ex.Message}");
             }
         }
 
@@ -371,12 +373,12 @@ namespace CocoroConsole.Services
                     var defaultSettings = LoadDefaultSettings();
                     UpdateSettings(defaultSettings);
                     SaveAppSettings();
-                    Debug.WriteLine($"デフォルト設定をファイルに保存しました: {AppSettingsFilePath}");
+                    Debug.WriteLine($"デフォルトのアプリ設定を保存しました: {AppSettingsFilePath}");
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"アプリケーション設定ファイル読み込みエラー: {ex.Message}");
+                Debug.WriteLine($"アプリ設定の読み込みに失敗しました: {ex.Message}");
             }
         }
 
@@ -438,7 +440,7 @@ namespace CocoroConsole.Services
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"デフォルト設定ファイル読み込みエラー: {ex.Message}");
+                    Debug.WriteLine($"デフォルトのアプリ設定の読み込みに失敗しました: {ex.Message}");
                 }
             }
 
@@ -485,14 +487,14 @@ namespace CocoroConsole.Services
                 // ファイルに保存
                 File.WriteAllText(AppSettingsFilePath, json);
 
-                Debug.WriteLine($"設定をファイルに保存しました: {AppSettingsFilePath}");
+                Debug.WriteLine($"アプリ設定を保存しました: {AppSettingsFilePath}");
 
                 // イベント発生
                 SettingsSaved?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"アプリケーション設定ファイル保存エラー: {ex.Message}");
+                Debug.WriteLine($"アプリ設定の保存に失敗しました: {ex.Message}");
             }
         }
 
@@ -530,7 +532,7 @@ namespace CocoroConsole.Services
                     {
                         // デフォルト設定をファイルに保存
                         SaveAnimationSettingsData(animationData);
-                        Debug.WriteLine($"デフォルトアニメーション設定をファイルに保存しました: {AnimationSettingsFilePath}");
+                        Debug.WriteLine($"デフォルトのアニメーション設定を保存しました: {AnimationSettingsFilePath}");
                     }
                 }
 
@@ -543,7 +545,7 @@ namespace CocoroConsole.Services
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"アニメーション設定ファイル読み込みエラー: {ex.Message}");
+                Debug.WriteLine($"アニメーション設定の読み込みに失敗しました: {ex.Message}");
                 // エラーが発生した場合はデフォルト設定を使用
                 var defaultData = LoadDefaultAnimationSettings();
                 if (defaultData != null)
@@ -568,11 +570,11 @@ namespace CocoroConsole.Services
                 };
 
                 SaveAnimationSettingsData(animationData);
-                Debug.WriteLine($"アニメーション設定をファイルに保存しました: {AnimationSettingsFilePath}");
+                Debug.WriteLine($"アニメーション設定を保存しました: {AnimationSettingsFilePath}");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"アニメーション設定ファイル保存エラー: {ex.Message}");
+                Debug.WriteLine($"アニメーション設定の保存に失敗しました: {ex.Message}");
             }
         }
 
@@ -595,7 +597,7 @@ namespace CocoroConsole.Services
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"デフォルトアニメーション設定ファイル読み込みエラー: {ex.Message}");
+                    Debug.WriteLine($"デフォルトのアニメーション設定の読み込みに失敗しました: {ex.Message}");
                 }
             }
 
