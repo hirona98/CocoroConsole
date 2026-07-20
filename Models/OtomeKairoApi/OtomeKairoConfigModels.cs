@@ -107,8 +107,28 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("prompt_window")]
         public OtomeKairoPromptWindowDefinition PromptWindow { get; set; } = new OtomeKairoPromptWindowDefinition();
 
-        [JsonPropertyName("roles")]
-        public Dictionary<string, Dictionary<string, object?>> Roles { get; set; } = new Dictionary<string, Dictionary<string, object?>>();
+        [JsonPropertyName("model")]
+        public string Model { get; set; } = string.Empty;
+
+        [JsonPropertyName("api_base")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? ApiBase { get; set; }
+
+        [JsonPropertyName("api_key")]
+        public string ApiKey { get; set; } = string.Empty;
+
+        [JsonPropertyName("reasoning_effort")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? ReasoningEffort { get; set; }
+
+        [JsonPropertyName("max_output_tokens")]
+        public int MaxOutputTokens { get; set; } = 4000;
+
+        [JsonPropertyName("timeout_seconds")]
+        public double TimeoutSeconds { get; set; } = 90;
+
+        [JsonPropertyName("web_search_enabled")]
+        public bool WebSearchEnabled { get; set; }
     }
 
     public class OtomeKairoPromptWindowDefinition
