@@ -66,46 +66,52 @@
                                                         </Style>
                                                 </StackPanel.Resources>
 
-                                                <Border Style="{StaticResource OverviewSection}" Background="#F7FAFF">
+                                                <Border Style="{StaticResource OverviewSection}">
                                                         <StackPanel>
-                                                                <TextBlock Text="現在の要点" Style="{StaticResource OverviewTitle}"/>
-                                                                <TextBlock x:Name="CurrentSummaryTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                                <TextBlock Text="外界・活動" Style="{StaticResource OverviewTitle}"/>
+                                                                <StackPanel x:Name="WorldActivityPanel"/>
                                                         </StackPanel>
                                                 </Border>
                                                 <Border Style="{StaticResource OverviewSection}">
                                                         <StackPanel>
-                                                                <TextBlock Text="実行状態" Style="{StaticResource OverviewTitle}"/>
-                                                                <TextBlock x:Name="RuntimeOverviewTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                                <TextBlock Text="内面状態" Style="{StaticResource OverviewTitle}"/>
+                                                                <StackPanel x:Name="InnerStatePanel"/>
                                                         </StackPanel>
                                                 </Border>
                                                 <Border Style="{StaticResource OverviewSection}">
                                                         <StackPanel>
-                                                                <TextBlock Text="進行中アクション" Style="{StaticResource OverviewTitle}"/>
-                                                                <TextBlock x:Name="CurrentActionTextBlock" Style="{StaticResource OverviewBody}"/>
+                                                                <TextBlock Text="行動・意図" Style="{StaticResource OverviewTitle}"/>
+                                                                <StackPanel x:Name="ActionIntentPanel"/>
                                                         </StackPanel>
                                                 </Border>
                                                 <Border Style="{StaticResource OverviewSection}">
                                                         <StackPanel>
-                                                                <TextBlock Text="気分・活動" Style="{StaticResource OverviewTitle}"/>
-                                                                <StackPanel x:Name="MoodActivityPanel"/>
+                                                                <TextBlock Text="対象・関係" Style="{StaticResource OverviewTitle}"/>
+                                                                <StackPanel x:Name="EntityRelationPanel"/>
                                                         </StackPanel>
                                                 </Border>
                                                 <Border Style="{StaticResource OverviewSection}">
                                                         <StackPanel>
-                                                                <TextBlock Text="視覚日次要約" Style="{StaticResource OverviewTitle}"/>
+                                                                <TextBlock Text="視覚記録の集計" Style="{StaticResource OverviewTitle}"/>
                                                                 <TextBlock x:Name="VisualSummaryTextBlock" Style="{StaticResource OverviewBody}"/>
                                                         </StackPanel>
                                                 </Border>
                                                 <Border Style="{StaticResource OverviewSection}">
                                                         <StackPanel>
-                                                                <TextBlock Text="世界状態・ドライブ・意図" Style="{StaticResource OverviewTitle}"/>
-                                                                <StackPanel x:Name="WorldDriveIntentPanel"/>
+                                                                <TextBlock Text="実行基盤" Style="{StaticResource OverviewTitle}"/>
+                                                                <StackPanel x:Name="RuntimeOverviewPanel"/>
                                                         </StackPanel>
                                                 </Border>
                                                 <Border Style="{StaticResource OverviewSection}">
                                                         <StackPanel>
-                                                                <TextBlock Text="能力・定期観測" Style="{StaticResource OverviewTitle}"/>
-                                                                <StackPanel x:Name="CapabilityObservationPanel"/>
+                                                                <TextBlock Text="能力・要求" Style="{StaticResource OverviewTitle}"/>
+                                                                <StackPanel x:Name="CapabilityPanel"/>
+                                                        </StackPanel>
+                                                </Border>
+                                                <Border Style="{StaticResource OverviewSection}">
+                                                        <StackPanel>
+                                                                <TextBlock Text="定期観測結果" Style="{StaticResource OverviewTitle}"/>
+                                                                <StackPanel x:Name="ObservationPanel"/>
                                                         </StackPanel>
                                                 </Border>
                                         </StackPanel>
@@ -122,7 +128,7 @@
                                                  TextWrapping="NoWrap"/>
                                 </Grid>
                         </TabItem>
-                        <TabItem Header="実行詳細">
+                        <TabItem Header="実行状態">
                                 <Grid Margin="8">
                                         <TextBox x:Name="RuntimeDetailTextBox"
                                                  IsReadOnly="True"
