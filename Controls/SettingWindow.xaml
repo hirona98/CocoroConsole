@@ -11,19 +11,20 @@
         Width="1120"
         MinHeight="700"
         MinWidth="1000"
+        FontSize="14"
         WindowStartupLocation="CenterOwner">
 
     <Window.Resources>
         <Style x:Key="NavigationCategoryStyle"
                TargetType="TextBlock">
             <Setter Property="Foreground"
-                    Value="#777777"/>
+                    Value="#222222"/>
             <Setter Property="FontSize"
-                    Value="12"/>
+                    Value="15"/>
             <Setter Property="FontWeight"
-                    Value="SemiBold"/>
+                    Value="Bold"/>
             <Setter Property="Margin"
-                    Value="14,18,14,5"/>
+                    Value="14,20,14,6"/>
         </Style>
 
         <Style x:Key="NavigationItemStyle"
@@ -136,7 +137,7 @@
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0"
-                    Background="#F5F7FA"
+                    Background="White"
                     BorderBrush="#E1E4E8"
                     BorderThickness="0,0,1,0">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -294,7 +295,7 @@
                                 BorderThickness="1"
                                 CornerRadius="5">
                             <TextBox x:Name="LicenseTextBox"
-                                     Foreground="#FF0078D7"
+
                                      Padding="8"
                                      BorderThickness="0"
                                      AcceptsReturn="True"

@@ -19,8 +19,6 @@
                 </Style>
                 <Style x:Key="SettingTextBoxStyle"
                        TargetType="TextBox">
-                        <Setter Property="Foreground"
-                                Value="#FF0078D7"/>
                         <Setter Property="Padding"
                                 Value="2"/>
                         <Setter Property="BorderBrush"
@@ -156,7 +154,7 @@
                                                     Orientation="Horizontal"
                                                     VerticalAlignment="Center">
                                                 <TextBox x:Name="EmbeddingApiKeyTextBox"
-                                                         Foreground="#FF0078D7"
+
                                                          Padding="2"
                                                          Width="50"
                                                          HorizontalAlignment="Left"

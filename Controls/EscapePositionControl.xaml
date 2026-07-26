@@ -71,7 +71,7 @@
                                         <!-- X座標入力 -->
                                         <TextBox Grid.Column="2"
                                                  Text="{Binding X, UpdateSourceTrigger=PropertyChanged}"
-                                                 Foreground="#FF0078D7"
+
                                                  BorderBrush="#CCCCCC"
                                                  BorderThickness="1"
                                                  Padding="2"
@@ -88,7 +88,7 @@
                                         <!-- Y座標入力 -->
                                         <TextBox Grid.Column="4"
                                                  Text="{Binding Y, UpdateSourceTrigger=PropertyChanged}"
-                                                 Foreground="#FF0078D7"
+
                                                  BorderBrush="#CCCCCC"
                                                  BorderThickness="1"
                                                  Padding="2"

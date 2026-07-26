@@ -16,13 +16,9 @@
                                 Value="0,0,10,0"/>
                         <Setter Property="Width"
                                 Value="150"/>
-                        <Setter Property="Foreground"
-                                Value="#4873CF"/>
                 </Style>
                 <Style x:Key="SettingTextBoxStyle"
                        TargetType="TextBox">
-                        <Setter Property="Foreground"
-                                Value="#FF0078D7"/>
                         <Setter Property="Padding"
                                 Value="2"/>
                         <Setter Property="BorderBrush"
@@ -117,7 +113,7 @@
 
                                 <TextBlock Text="人格本文"
                                            Margin="0,20,20,5"
-                                           Foreground="#4873CF"/>
+/>
                                 <TextBlock Text="役割、距離感、価値観、話し方、強い原則を自由文でまとめて書きます。"
                                            Foreground="#666666"
                                            Margin="0,0,20,5"/>
@@ -127,14 +123,14 @@
                                          VerticalScrollBarVisibility="Auto"
                                          Height="400"
                                          Margin="0,0,20,0"
-                                         Foreground="#FF0078D7"
+
                                          BorderBrush="#CCCCCC"
                                          BorderThickness="1"
                                          TextChanged="OnSettingChanged"/>
 
                                 <TextBlock Text="表現補助"
                                            Margin="0,20,20,5"
-                                           Foreground="#4873CF"/>
+/>
                                 <TextBlock Text="会話時の表現生成でだけ使う補助指示を入れます。表情指定や出力補助に使えます。"
                                            Foreground="#666666"
                                            Margin="0,0,20,5"/>
@@ -144,7 +140,7 @@
                                          VerticalScrollBarVisibility="Auto"
                                          Height="160"
                                          Margin="0,0,20,0"
-                                         Foreground="#FF0078D7"
+
                                          BorderBrush="#CCCCCC"
                                          BorderThickness="1"
                                          TextChanged="OnSettingChanged"/>

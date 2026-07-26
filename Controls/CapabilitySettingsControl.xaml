@@ -19,8 +19,6 @@
         </Style>
         <Style x:Key="SettingTextBoxStyle"
                TargetType="TextBox">
-            <Setter Property="Foreground"
-                    Value="#FF0078D7"/>
             <Setter Property="Padding"
                     Value="2"/>
             <Setter Property="BorderBrush"
@@ -30,8 +28,6 @@
         </Style>
         <Style x:Key="SettingPasswordBoxStyle"
                TargetType="PasswordBox">
-            <Setter Property="Foreground"
-                    Value="#FF0078D7"/>
             <Setter Property="Padding"
                     Value="2"/>
             <Setter Property="BorderBrush"
@@ -114,7 +110,7 @@
                                             <TextBlock Grid.Column="3"
                                                        Text="定期思考で観測"
                                                        VerticalAlignment="Center"
-                                                       Foreground="#4873CF"
+
                                                        HorizontalAlignment="Right"
                                                        Margin="10,0"/>
                                             <Button Grid.Column="4"
@@ -307,7 +303,7 @@
                                             <TextBlock Grid.Column="3"
                                                        Text="即時wake"
                                                        VerticalAlignment="Center"
-                                                       Foreground="#4873CF"
+
                                                        HorizontalAlignment="Right"
                                                        Margin="10,0"/>
                                         </Grid>
@@ -321,7 +317,7 @@
                             <CheckBox x:Name="SelectedWatcherEnabledCheckBox"
                                       Content="変化検出による即時wakeを有効にする"
                                       Margin="0,0,0,12"
-                                      Foreground="#4873CF"
+
                                       Checked="SelectedWatcherEnabledCheckBox_Changed"
                                       Unchecked="SelectedWatcherEnabledCheckBox_Changed"/>
 

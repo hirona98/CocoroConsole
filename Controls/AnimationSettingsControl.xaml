@@ -23,8 +23,6 @@
                     Value="10"/>
             <Setter Property="FontSize"
                     Value="14"/>
-            <Setter Property="Foreground"
-                    Value="#4873CF"/>
             <Setter Property="SnapsToDevicePixels"
                     Value="True"/>
         </Style>
@@ -46,7 +44,7 @@
                     <ComboBox Grid.Column="0"
                               x:Name="AnimationSetComboBox"
                               Margin="0,5,10,5"
-                              Foreground="#FF4873CF"
+
                               IsEditable="False"
                               DisplayMemberPath="animeSetName"
                               SelectedValuePath="animeSetName" Width="500"/>
@@ -93,7 +91,7 @@
                     <TextBox Grid.Column="1"
                              x:Name="AnimationSetNameTextBox"
                              VerticalAlignment="Center"
-                             Foreground="#FF0078D7"
+
                              Padding="2"
                              TextChanged="AnimationSetNameTextBox_TextChanged"
                              LostFocus="AnimationSetNameTextBox_LostFocus" Width="500" HorizontalAlignment="Left"/>
@@ -111,7 +109,7 @@
                     <TextBox Grid.Column="1"
                                      x:Name="PostureChangeLoopCountStandingTextBox"
                                      VerticalAlignment="Center"
-                                     Foreground="#FF0078D7"
+
                                      Padding="2"
                                      TextChanged="PostureChangeLoopCountStandingTextBox_TextChanged"
                                      ToolTip="立ち姿勢の変更ループ回数を設定します"/>
@@ -129,7 +127,7 @@
                     <TextBox Grid.Column="1"
                                      x:Name="PostureChangeLoopCountSittingFloorTextBox"
                                      VerticalAlignment="Center"
-                                     Foreground="#FF0078D7"
+
                                      Padding="2"
                                      TextChanged="PostureChangeLoopCountSittingFloorTextBox_TextChanged"
                                      ToolTip="座り姿勢の変更ループ回数を設定します"/>

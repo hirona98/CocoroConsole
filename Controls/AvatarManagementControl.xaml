@@ -64,7 +64,7 @@
                                ToolTip="Name"/>
                     <TextBox Grid.Column="1"
                              x:Name="AvatarNameTextBox"
-                             Foreground="#FF0078D7"
+
                              Padding="2"
                              TextChanged="AvatarNameTextBox_TextChanged" Width="500" HorizontalAlignment="Left"/>
                 </Grid>
@@ -87,7 +87,7 @@
                                        VerticalAlignment="Center"/>
                             <TextBox Grid.Column="1"
                                      x:Name="VRMFilePathTextBox"
-                                     Foreground="#FF0078D7"
+
                                      Padding="2"
                                      IsReadOnly="False"/>
                             <Button Grid.Column="2"
@@ -103,12 +103,12 @@
                         <!-- MToon変換設定 -->
                         <CheckBox x:Name="ConvertMToonCheckBox"
                                   Content="UnlitをMToonに変換する（正常に表示されないときに有効にしてみてください）"
-                                  Foreground="#FF4873CF" Margin="0,10,0,0"/>
+ Margin="0,10,0,0"/>
 
                         <!-- 影オフメッシュ設定 -->
                         <CheckBox x:Name="EnableShadowOffCheckBox"
                                   Content="指定したメッシュに影を落とさない（顔などを想定）"
-                                  Foreground="#FF4873CF"
+
                                   Checked="EnableShadowOffCheckBox_Checked"
                                   Unchecked="EnableShadowOffCheckBox_Unchecked"
                                   Margin="0,10,0,0"/>
@@ -125,7 +125,7 @@
                                        Margin="20,0,0,0"/>
                             <TextBox Grid.Column="1"
                                      x:Name="ShadowOffMeshTextBox"
-                                     Foreground="#FF0078D7"
+
                                      Padding="2"
                                      ToolTip="カンマ区切りでメッシュ名を入力 (例: Face, U_Char_1)"/>
                         </Grid>
@@ -140,7 +140,7 @@
                         <Grid>
                             <CheckBox x:Name="IsUseTTSCheckBox"
                                       Content="TTSを使用する"
-                                      Foreground="#FF4873CF"
+
                                       ToolTip="Use TTS"/>
                         </Grid>
 
@@ -178,7 +178,7 @@
                                            VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="1"
                                          x:Name="VoicevoxEndpointUrlTextBox"
-                                         Foreground="#FF0078D7"
+
                                          Padding="2"
                                          Text=""/>
                             </Grid>
@@ -194,7 +194,7 @@
                                            VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="1"
                                          x:Name="VoicevoxSpeakerIdTextBox"
-                                         Foreground="#FF0078D7"
+
                                          Padding="2"
                                          Text=""/>
                             </Grid>
@@ -205,7 +205,7 @@
                                       IsExpanded="False">
                                 <Expander.Header>
                                     <TextBlock Text="VOICEVOX詳細設定"
-                                               Foreground="#FF4873CF"/>
+/>
                                 </Expander.Header>
                                 <StackPanel>
                                     <!-- Speed Scale -->
@@ -218,7 +218,7 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="話速:"
                                                    VerticalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                         <Slider Grid.Column="1"
                                                 x:Name="VoicevoxSpeedScaleSlider"
                                                 Minimum="0.5"
@@ -231,7 +231,7 @@
                                                    Text="{Binding ElementName=VoicevoxSpeedScaleSlider, Path=Value, StringFormat=F1}"
                                                    VerticalAlignment="Center"
                                                    HorizontalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                     </Grid>
                                     <!-- Pitch Scale -->
                                     <Grid Margin="0,10,0,0">
@@ -243,7 +243,7 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="音高:"
                                                    VerticalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                         <Slider Grid.Column="1"
                                                 x:Name="VoicevoxPitchScaleSlider"
                                                 Minimum="-0.15"
@@ -256,7 +256,7 @@
                                                    Text="{Binding ElementName=VoicevoxPitchScaleSlider, Path=Value, StringFormat=F2}"
                                                    VerticalAlignment="Center"
                                                    HorizontalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                     </Grid>
                                     <!-- Intonation Scale -->
                                     <Grid Margin="0,10,0,0">
@@ -268,7 +268,7 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="抑揚:"
                                                    VerticalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                         <Slider Grid.Column="1"
                                                 x:Name="VoicevoxIntonationScaleSlider"
                                                 Minimum="0.0"
@@ -281,7 +281,7 @@
                                                    Text="{Binding ElementName=VoicevoxIntonationScaleSlider, Path=Value, StringFormat=F1}"
                                                    VerticalAlignment="Center"
                                                    HorizontalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                     </Grid>
                                     <!-- Volume Scale -->
                                     <Grid Margin="0,10,0,0">
@@ -293,7 +293,7 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="音量:"
                                                    VerticalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                         <Slider Grid.Column="1"
                                                 x:Name="VoicevoxVolumeScaleSlider"
                                                 Minimum="0.0"
@@ -306,7 +306,7 @@
                                                    Text="{Binding ElementName=VoicevoxVolumeScaleSlider, Path=Value, StringFormat=F1}"
                                                    VerticalAlignment="Center"
                                                    HorizontalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                     </Grid>
                                     <!-- Pre Phoneme Length -->
                                     <Grid Margin="0,10,0,0">
@@ -318,7 +318,7 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="前無音:"
                                                    VerticalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                         <Slider Grid.Column="1"
                                                 x:Name="VoicevoxPrePhonemeLengthSlider"
                                                 Minimum="0.0"
@@ -331,7 +331,7 @@
                                                    Text="{Binding ElementName=VoicevoxPrePhonemeLengthSlider, Path=Value, StringFormat=F2}"
                                                    VerticalAlignment="Center"
                                                    HorizontalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                     </Grid>
                                     <!-- Post Phoneme Length -->
                                     <Grid Margin="0,10,0,0">
@@ -343,7 +343,7 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="後無音:"
                                                    VerticalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                         <Slider Grid.Column="1"
                                                 x:Name="VoicevoxPostPhonemeLengthSlider"
                                                 Minimum="0.0"
@@ -356,7 +356,7 @@
                                                    Text="{Binding ElementName=VoicevoxPostPhonemeLengthSlider, Path=Value, StringFormat=F2}"
                                                    VerticalAlignment="Center"
                                                    HorizontalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                     </Grid>
                                     <!-- Output Sampling Rate -->
                                     <Grid Margin="0,10,0,0">
@@ -367,7 +367,7 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="サンプリング:"
                                                    VerticalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                         <ComboBox Grid.Column="1"
                                                   x:Name="VoicevoxOutputSamplingRateComboBox"
                                                   SelectedValue="24000">
@@ -388,7 +388,7 @@
                                         <CheckBox Grid.Column="1"
                                                   x:Name="VoicevoxOutputStereoCheckBox"
                                                   Content="ステレオ出力を有効にする"
-                                                  Foreground="#FF4873CF"
+
                                                   VerticalAlignment="Center"/>
                                     </Grid>
                                 </StackPanel>
@@ -407,10 +407,10 @@
                                 <TextBlock Grid.Column="0"
                                            Text="Endpoint URL:"
                                            VerticalAlignment="Center"
-                                           Foreground="#FF4873CF"/>
+/>
                                 <TextBox Grid.Column="1"
                                          x:Name="SBV2EndpointUrlTextBox"
-                                         Foreground="#FF0078D7"
+
                                          Padding="2"/>
                             </Grid>
 
@@ -423,10 +423,10 @@
                                 <TextBlock Grid.Column="0"
                                            Text="Model Name:"
                                            VerticalAlignment="Center"
-                                           Foreground="#FF4873CF"/>
+/>
                                 <TextBox Grid.Column="1"
                                          x:Name="SBV2ModelNameTextBox"
-                                         Foreground="#FF0078D7"
+
                                          Padding="2"/>
                             </Grid>
 
@@ -439,10 +439,10 @@
                                 <TextBlock Grid.Column="0"
                                            Text="Model ID:"
                                            VerticalAlignment="Center"
-                                           Foreground="#FF4873CF"/>
+/>
                                 <TextBox Grid.Column="1"
                                          x:Name="SBV2ModelIdTextBox"
-                                         Foreground="#FF0078D7"
+
                                          Padding="2"/>
                             </Grid>
 
@@ -455,10 +455,10 @@
                                 <TextBlock Grid.Column="0"
                                            Text="Speaker Name:"
                                            VerticalAlignment="Center"
-                                           Foreground="#FF4873CF"/>
+/>
                                 <TextBox Grid.Column="1"
                                          x:Name="SBV2SpeakerNameTextBox"
-                                         Foreground="#FF0078D7"
+
                                          Padding="2"/>
                             </Grid>
 
@@ -471,10 +471,10 @@
                                 <TextBlock Grid.Column="0"
                                            Text="Speaker ID:"
                                            VerticalAlignment="Center"
-                                           Foreground="#FF4873CF"/>
+/>
                                 <TextBox Grid.Column="1"
                                          x:Name="SBV2SpeakerIdTextBox"
-                                         Foreground="#FF0078D7"
+
                                          Padding="2"/>
                             </Grid>
                         </StackPanel>
@@ -485,7 +485,7 @@
                                   IsExpanded="False">
                             <Expander.Header>
                                 <TextBlock Text="Style-Bert-VITS2 詳細設定"
-                                           Foreground="#FF4873CF"/>
+/>
                             </Expander.Header>
                             <StackPanel>
                                 <!-- Style -->
@@ -497,10 +497,10 @@
                                     <TextBlock Grid.Column="0"
                                                Text="Style:"
                                                VerticalAlignment="Center"
-                                               Foreground="#FF4873CF"/>
+/>
                                     <TextBox Grid.Column="1"
                                              x:Name="SBV2StyleTextBox"
-                                             Foreground="#FF0078D7"
+
                                              Padding="2"/>
                                 </Grid>
 
@@ -513,10 +513,10 @@
                                     <TextBlock Grid.Column="0"
                                                Text="Style Weight:"
                                                VerticalAlignment="Center"
-                                               Foreground="#FF4873CF"/>
+/>
                                     <TextBox Grid.Column="1"
                                              x:Name="SBV2StyleWeightTextBox"
-                                             Foreground="#FF0078D7"
+
                                              Padding="2"/>
                                 </Grid>
 
@@ -529,10 +529,10 @@
                                     <TextBlock Grid.Column="0"
                                                Text="Language:"
                                                VerticalAlignment="Center"
-                                               Foreground="#FF4873CF"/>
+/>
                                     <TextBox Grid.Column="1"
                                              x:Name="SBV2LanguageTextBox"
-                                             Foreground="#FF0078D7"
+
                                              Padding="2"/>
                                 </Grid>
 
@@ -545,10 +545,10 @@
                                     <TextBlock Grid.Column="0"
                                                Text="SDP Ratio:"
                                                VerticalAlignment="Center"
-                                               Foreground="#FF4873CF"/>
+/>
                                     <TextBox Grid.Column="1"
                                              x:Name="SBV2SdpRatioTextBox"
-                                             Foreground="#FF0078D7"
+
                                              Padding="2"/>
                                 </Grid>
 
@@ -561,10 +561,10 @@
                                     <TextBlock Grid.Column="0"
                                                Text="Noise:"
                                                VerticalAlignment="Center"
-                                               Foreground="#FF4873CF"/>
+/>
                                     <TextBox Grid.Column="1"
                                              x:Name="SBV2NoiseTextBox"
-                                             Foreground="#FF0078D7"
+
                                              Padding="2"/>
                                 </Grid>
 
@@ -577,10 +577,10 @@
                                     <TextBlock Grid.Column="0"
                                                Text="Noise W:"
                                                VerticalAlignment="Center"
-                                               Foreground="#FF4873CF"/>
+/>
                                     <TextBox Grid.Column="1"
                                              x:Name="SBV2NoiseWTextBox"
-                                             Foreground="#FF0078D7"
+
                                              Padding="2"/>
                                 </Grid>
 
@@ -593,10 +593,10 @@
                                     <TextBlock Grid.Column="0"
                                                Text="Length:"
                                                VerticalAlignment="Center"
-                                               Foreground="#FF4873CF"/>
+/>
                                     <TextBox Grid.Column="1"
                                              x:Name="SBV2LengthTextBox"
-                                             Foreground="#FF0078D7"
+
                                              Padding="2"/>
                                 </Grid>
 
@@ -604,7 +604,7 @@
                                 <Grid Margin="0,10,0,0">
                                     <CheckBox x:Name="SBV2AutoSplitCheckBox"
                                               Content="Auto Split"
-                                              Foreground="#FF4873CF"/>
+/>
                                 </Grid>
 
                                 <!-- Split Interval -->
@@ -616,10 +616,10 @@
                                     <TextBlock Grid.Column="0"
                                                Text="Split Interval:"
                                                VerticalAlignment="Center"
-                                               Foreground="#FF4873CF"/>
+/>
                                     <TextBox Grid.Column="1"
                                              x:Name="SBV2SplitIntervalTextBox"
-                                             Foreground="#FF0078D7"
+
                                              Padding="2"/>
                                 </Grid>
                             </StackPanel>
@@ -636,12 +636,12 @@
                                 <TextBlock Grid.Column="0"
                                            Text="API Key:"
                                            VerticalAlignment="Center"
-                                           Foreground="#FF4873CF"/>
+/>
                                 <StackPanel Grid.Column="1"
                                             Orientation="Horizontal"
                                             VerticalAlignment="Center">
                                     <TextBox x:Name="AivisCloudApiKeyPasswordBox"
-                                             Foreground="#FF0078D7"
+
                                              Padding="2"
                                              ToolTip="Aivis Cloud APIキー"
                                              Width="50"
@@ -668,10 +668,10 @@
                                 <TextBlock Grid.Column="0"
                                            Text="Model UUID:"
                                            VerticalAlignment="Center"
-                                           Foreground="#FF4873CF"/>
+/>
                                 <TextBox Grid.Column="1"
                                          x:Name="AivisCloudModelUuidTextBox"
-                                         Foreground="#FF0078D7"
+
                                          Padding="2"
                                          ToolTip="音声合成モデルのUUID"/>
                             </Grid>
@@ -685,10 +685,10 @@
                                 <TextBlock Grid.Column="0"
                                            Text="Speaker UUID:"
                                            VerticalAlignment="Center"
-                                           Foreground="#FF4873CF"/>
+/>
                                 <TextBox Grid.Column="1"
                                          x:Name="AivisCloudSpeakerUuidTextBox"
-                                         Foreground="#FF0078D7"
+
                                          Padding="2"
                                          ToolTip="スピーカーUUID（オプション）"/>
                             </Grid>
@@ -702,10 +702,10 @@
                                 <TextBlock Grid.Column="0"
                                            Text="Style ID:"
                                            VerticalAlignment="Center"
-                                           Foreground="#FF4873CF"/>
+/>
                                 <TextBox Grid.Column="1"
                                          x:Name="AivisCloudStyleIdTextBox"
-                                         Foreground="#FF0078D7"
+
                                          Padding="2"
                                          ToolTip="スタイルID"/>
                             </Grid>
@@ -716,7 +716,7 @@
                                       IsExpanded="False">
                                 <Expander.Header>
                                     <TextBlock Text="Aivis Cloud API詳細設定"
-                                               Foreground="#FF4873CF"/>
+/>
                                 </Expander.Header>
                                 <StackPanel>
                                     <!-- Speaking Rate -->
@@ -728,10 +728,10 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="話速:"
                                                    VerticalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                         <TextBox Grid.Column="1"
                                                  x:Name="AivisCloudSpeakingRateTextBox"
-                                                 Foreground="#FF0078D7"
+
                                                  Padding="2"
                                                  ToolTip="話速 (0.5-2.0)"/>
                                     </Grid>
@@ -745,10 +745,10 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="感情強度:"
                                                    VerticalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                         <TextBox Grid.Column="1"
                                                  x:Name="AivisCloudEmotionalIntensityTextBox"
-                                                 Foreground="#FF0078D7"
+
                                                  Padding="2"
                                                  ToolTip="感情表現の強さ (0.0-2.0)"/>
                                     </Grid>
@@ -762,10 +762,10 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="テンポ変化:"
                                                    VerticalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                         <TextBox Grid.Column="1"
                                                  x:Name="AivisCloudTempoDynamicsTextBox"
-                                                 Foreground="#FF0078D7"
+
                                                  Padding="2"
                                                  ToolTip="テンポの緩急 (0.0-2.0)"/>
                                     </Grid>
@@ -779,10 +779,10 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="音量:"
                                                    VerticalAlignment="Center"
-                                                   Foreground="#FF4873CF"/>
+/>
                                         <TextBox Grid.Column="1"
                                                  x:Name="AivisCloudVolumeTextBox"
-                                                 Foreground="#FF0078D7"
+
                                                  Padding="2"
                                                  ToolTip="音量 (0.0-2.0)"/>
                                     </Grid>
@@ -806,7 +806,7 @@
                         <Grid>
                             <CheckBox x:Name="IsUseSTTCheckBox"
                                       Content="STTを使用する"
-                                      Foreground="#FF4873CF"
+
                                       ToolTip="Use STT"/>
                         </Grid>
 
@@ -821,7 +821,7 @@
                                        VerticalAlignment="Center"/>
                             <ComboBox Grid.Column="1"
                                       x:Name="STTEngineComboBox"
-                                      Foreground="#FF4873CF">
+>
                                 <ComboBoxItem Content="AmiVoice"
                                               Tag="amivoice"/>
                                 <!-- TODO: Whisper対応時
@@ -842,7 +842,7 @@
                                        VerticalAlignment="Center"/>
                             <TextBox Grid.Column="1"
                                      x:Name="STTWakeWordTextBox"
-                                     Foreground="#FF0078D7"
+
                                      Padding="2"
                                      ToolTip="STT用の音声起動ワード"/>
                         </Grid>
@@ -866,7 +866,7 @@
                                        VerticalAlignment="Center"/>
                             <TextBox Grid.Column="1"
                                      x:Name="STTProfileIdTextBox"
-                                     Foreground="#FF0078D7"
+
                                      Padding="2"
                                      ToolTip="AmiVoice profileId（マイページ単語登録の場合は {サービスID}）。本アプリは grammarFileNames=-a-general 固定。"/>
                         </Grid>
@@ -890,7 +890,7 @@
                                         Orientation="Horizontal"
                                         VerticalAlignment="Center">
                                 <TextBox x:Name="STTApiKeyPasswordBox"
-                                         Foreground="#FF0078D7"
+
                                          Padding="2"
                                          Width="50"
                                          HorizontalAlignment="Left"/>
