@@ -46,6 +46,7 @@ namespace CocoroConsole.Controls
         public SettingWindow(ICommunicationService? communicationService)
         {
             InitializeComponent();
+            ShowSettingsPage("display");
             EmbeddingSettingsControl.ResolveLlmApiKey = () => LlmSettingsControl.GetPreferredApiKeyForEmbeddingPaste();
 
             _communicationService = communicationService;
@@ -178,7 +179,6 @@ namespace CocoroConsole.Controls
                 EmbeddingSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 PromptSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
                 CapabilitySettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
-                WatcherSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
             }
             catch (Exception ex)
             {
@@ -198,13 +198,11 @@ namespace CocoroConsole.Controls
             {
                 _loadedCameraSourcesEditorState = await _apiClient.GetCameraSourcesEditorStateAsync();
                 CapabilitySettingsControl.LoadCameraSources(_loadedCameraSourcesEditorState);
-                WatcherSettingsControl.LoadCameraSources(_loadedCameraSourcesEditorState);
             }
             catch (Exception ex)
             {
                 _loadedCameraSourcesEditorState = null;
                 CapabilitySettingsControl.LoadCameraSources(null);
-                WatcherSettingsControl.LoadCameraSources(null);
                 Debug.WriteLine($"カメラ視覚初期化エラー: {ex.Message}");
             }
         }
@@ -289,25 +287,95 @@ namespace CocoroConsole.Controls
             }
         }
 
-        private void AdminTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void NavigationButton_Checked(object sender, RoutedEventArgs e)
         {
-            if (!ReferenceEquals(e.Source, AdminTabControl))
+            if (SettingsContentHost == null
+                || sender is not RadioButton { Tag: string pageId })
             {
                 return;
             }
 
-            if (AdminTabControl.SelectedItem == WatcherTabItem)
+            ShowSettingsPage(pageId);
+        }
+
+        /// <summary>
+        /// 左ナビで選択した責務だけを右ペインへ表示する。
+        /// </summary>
+        private void ShowSettingsPage(string pageId)
+        {
+            DisplaySettingsControl.Visibility = Visibility.Collapsed;
+            AvatarManagementControl.Visibility = Visibility.Collapsed;
+            PromptSettingsControl.Visibility = Visibility.Collapsed;
+            LlmSettingsControl.Visibility = Visibility.Collapsed;
+            EmbeddingSettingsControl.Visibility = Visibility.Collapsed;
+            AnimationSettingsControl.Visibility = Visibility.Collapsed;
+            SystemSettingsControl.Visibility = Visibility.Collapsed;
+            CapabilitySettingsControl.Visibility = Visibility.Collapsed;
+            ApiDocumentationControl.Visibility = Visibility.Collapsed;
+            LicensePage.Visibility = Visibility.Collapsed;
+
+            switch (pageId)
             {
-                var cameraSources = CapabilitySettingsControl.GetCameraSourcesEditorState();
-                WatcherSettingsControl.ApplyWatcherSettingsTo(cameraSources);
-                WatcherSettingsControl.LoadCameraSources(cameraSources);
+                case "persona":
+                    ShowPage(PromptSettingsControl, "人格設定", "考え方や振る舞いの基底となる人格を設定します。");
+                    break;
+                case "model":
+                    ShowPage(LlmSettingsControl, "モデル", "判断に使用するモデルプリセットを設定します。");
+                    break;
+                case "memory":
+                    ShowPage(EmbeddingSettingsControl, "記憶", "現在の個が使用する記憶集合を設定します。");
+                    break;
+                case "avatar":
+                    ShowPage(AvatarManagementControl, "アバター", "アバター、音声合成、音声認識のプリセットを設定します。");
+                    break;
+                case "motion":
+                    ShowPage(AnimationSettingsControl, "モーション", "アバターのモーションを設定します。");
+                    break;
+                case "conversation":
+                    SystemSettingsControl.ShowSection(SystemSettingsSection.ConversationInput);
+                    ShowPage(SystemSettingsControl, "会話入力", "テキスト入力者、マイク、話者識別を設定します。");
+                    break;
+                case "periodic-thinking":
+                    SystemSettingsControl.ShowSection(SystemSettingsSection.PeriodicThinking);
+                    ShowPage(SystemSettingsControl, "定期思考", "OtomeKairoサーバー内部で発生する定期思考を設定します。");
+                    break;
+                case "desktop":
+                    SystemSettingsControl.ShowSection(SystemSettingsSection.DesktopObservation);
+                    ShowPage(SystemSettingsControl, "デスクトップ", "デスクトップ観測のキャプチャ条件を設定します。");
+                    break;
+                case "camera":
+                    CapabilitySettingsControl.ShowSection(CapabilitySettingsSection.Camera);
+                    ShowPage(CapabilitySettingsControl, "カメラ", "OtomeKairoが観測に使用するカメラを設定します。");
+                    break;
+                case "watcher":
+                    CapabilitySettingsControl.ShowSection(CapabilitySettingsSection.Watcher);
+                    ShowPage(CapabilitySettingsControl, "Watcher", "外部変化の検出と即時wakeを設定します。");
+                    break;
+                case "connection":
+                    SystemSettingsControl.ShowSection(SystemSettingsSection.Connection);
+                    ShowPage(SystemSettingsControl, "OtomeKairo接続", "CocoroConsoleからOtomeKairoへ接続するための認証情報を設定します。");
+                    break;
+                case "mcp":
+                    CapabilitySettingsControl.ShowSection(CapabilitySettingsSection.Mcp);
+                    ShowPage(CapabilitySettingsControl, "ツール（MCP）", "OtomeKairoが使用するMCP serverを設定します。");
+                    break;
+                case "api":
+                    ShowPage(ApiDocumentationControl, "API説明", "CocoroConsole連携APIの使用方法を確認します。");
+                    break;
+                case "license":
+                    ShowPage(LicensePage, "ライセンス", "利用しているライブラリのライセンスを確認します。");
+                    break;
+                default:
+                    ShowPage(DisplaySettingsControl, "表示", "CocoroConsoleの表示方法を設定します。");
+                    break;
             }
-            else if (AdminTabControl.SelectedItem == CapabilityTabItem)
-            {
-                var cameraSources = CapabilitySettingsControl.GetCameraSourcesEditorState();
-                WatcherSettingsControl.ApplyWatcherSettingsTo(cameraSources);
-                CapabilitySettingsControl.LoadCameraSources(cameraSources);
-            }
+        }
+
+        private void ShowPage(FrameworkElement page, string title, string description)
+        {
+            PageTitleTextBlock.Text = title;
+            PageDescriptionTextBlock.Text = description;
+            page.Visibility = Visibility.Visible;
         }
 
 
@@ -567,11 +635,9 @@ namespace CocoroConsole.Controls
             }
 
             var request = CapabilitySettingsControl.GetCameraSourcesEditorState();
-            WatcherSettingsControl.ApplyWatcherSettingsTo(request);
             var updated = await _apiClient.ReplaceCameraSourcesEditorStateAsync(request);
             _loadedCameraSourcesEditorState = updated;
             CapabilitySettingsControl.LoadCameraSources(updated);
-            WatcherSettingsControl.LoadCameraSources(updated);
             Debug.WriteLine("[SettingWindow] camera-sources editor-state saved to API");
         }
 

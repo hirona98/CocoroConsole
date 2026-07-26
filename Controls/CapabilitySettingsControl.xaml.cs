@@ -1,12 +1,20 @@
 using CocoroConsole.Models.OtomeKairoApi;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace CocoroConsole.Controls
 {
+    public enum CapabilitySettingsSection
+    {
+        Camera,
+        Watcher,
+        Mcp,
+    }
+
     public partial class CapabilitySettingsControl : UserControl
     {
         private const string DefaultConnectorKind = "tapo_c220";
@@ -29,6 +37,7 @@ namespace CocoroConsole.Controls
             public OtomeKairoCameraWatcherDefinition Watcher { get; set; } = new();
             public string DisplayName => string.IsNullOrWhiteSpace(DisplayNameText) ? "名称なし" : DisplayNameText.Trim();
             public string HostDisplay => string.IsNullOrWhiteSpace(Host) ? "IP未設定" : Host.Trim();
+            public string WatcherIdentityDisplay => $"カメラモーション / {VisionSourceId}";
         }
 
         private sealed class McpEnvEditorItem
@@ -55,6 +64,7 @@ namespace CocoroConsole.Controls
         private readonly List<McpServerEditorItem> _mcpServers = new();
         private bool _isInitializing;
         private int _currentCameraSourceIndex = -1;
+        private int _currentWatcherCameraSourceIndex = -1;
         private int _currentMcpServerIndex = -1;
 
         public event EventHandler? SettingsChanged;
@@ -62,6 +72,30 @@ namespace CocoroConsole.Controls
         public CapabilitySettingsControl()
         {
             InitializeComponent();
+            ShowSection(CapabilitySettingsSection.Camera);
+        }
+
+        /// <summary>
+        /// カメラ、Watcher、MCPを同一の編集状態から責務別に表示する。
+        /// </summary>
+        public void ShowSection(CapabilitySettingsSection section)
+        {
+            SyncCurrentCameraSourceFromUi();
+            SyncCurrentWatcherFromUi();
+            SyncCurrentMcpServerFromUi();
+
+            CameraSettingsGroup.Visibility =
+                section == CapabilitySettingsSection.Camera ? Visibility.Visible : Visibility.Collapsed;
+            WatcherSettingsGroup.Visibility =
+                section == CapabilitySettingsSection.Watcher ? Visibility.Visible : Visibility.Collapsed;
+            McpSettingsGroup.Visibility =
+                section == CapabilitySettingsSection.Mcp ? Visibility.Visible : Visibility.Collapsed;
+
+            if (section == CapabilitySettingsSection.Watcher)
+            {
+                RefreshCameraWatcherListBox();
+                EnsureWatcherSelection();
+            }
         }
 
         public void LoadCameraSources(OtomeKairoCameraSourcesEditorState? editorState)
@@ -71,13 +105,17 @@ namespace CocoroConsole.Controls
             {
                 _cameraSources.Clear();
                 _currentCameraSourceIndex = -1;
+                _currentWatcherCameraSourceIndex = -1;
                 RefreshCameraSourceListBox();
+                RefreshCameraWatcherListBox();
 
                 if (editorState?.CameraSources == null || editorState.CameraSources.Count == 0)
                 {
                     _currentCameraSourceIndex = -1;
                     ClearCameraSourceUi();
                     UpdateCameraEditorEnabled();
+                    ClearWatcherUi();
+                    UpdateWatcherEditorEnabled();
                     return;
                 }
 
@@ -88,10 +126,15 @@ namespace CocoroConsole.Controls
                 }
 
                 _currentCameraSourceIndex = 0;
+                _currentWatcherCameraSourceIndex = 0;
                 RefreshCameraSourceListBox();
+                RefreshCameraWatcherListBox();
                 CameraSourcesListBox.SelectedIndex = _currentCameraSourceIndex;
                 LoadCameraSourceToUi(_cameraSources[_currentCameraSourceIndex]);
                 UpdateCameraEditorEnabled();
+                CameraWatchersListBox.SelectedIndex = _currentWatcherCameraSourceIndex;
+                LoadWatcherToUi(_cameraSources[_currentWatcherCameraSourceIndex]);
+                UpdateWatcherEditorEnabled();
             }
             finally
             {
@@ -102,6 +145,7 @@ namespace CocoroConsole.Controls
         public OtomeKairoCameraSourcesEditorState GetCameraSourcesEditorState()
         {
             SyncCurrentCameraSourceFromUi();
+            SyncCurrentWatcherFromUi();
             NormalizeCameraSourceIds();
             return new OtomeKairoCameraSourcesEditorState
             {
@@ -171,10 +215,15 @@ namespace CocoroConsole.Controls
             {
                 _cameraSources.Add(item);
                 _currentCameraSourceIndex = _cameraSources.Count - 1;
+                _currentWatcherCameraSourceIndex = _currentCameraSourceIndex;
                 RefreshCameraSourceListBox();
+                RefreshCameraWatcherListBox();
                 CameraSourcesListBox.SelectedIndex = _currentCameraSourceIndex;
                 LoadCameraSourceToUi(item);
                 UpdateCameraEditorEnabled();
+                CameraWatchersListBox.SelectedIndex = _currentWatcherCameraSourceIndex;
+                LoadWatcherToUi(item);
+                UpdateWatcherEditorEnabled();
             }
             finally
             {
@@ -193,6 +242,13 @@ namespace CocoroConsole.Controls
                 return;
             }
 
+            var selectedWatcherItem =
+                _currentWatcherCameraSourceIndex >= 0
+                && _currentWatcherCameraSourceIndex < _cameraSources.Count
+                    ? _cameraSources[_currentWatcherCameraSourceIndex]
+                    : null;
+            var deletedItem = _cameraSources[deleteIndex];
+
             _isInitializing = true;
             try
             {
@@ -200,17 +256,29 @@ namespace CocoroConsole.Controls
                 if (_cameraSources.Count == 0)
                 {
                     _currentCameraSourceIndex = -1;
+                    _currentWatcherCameraSourceIndex = -1;
                     RefreshCameraSourceListBox();
+                    RefreshCameraWatcherListBox();
                     ClearCameraSourceUi();
                     UpdateCameraEditorEnabled();
+                    ClearWatcherUi();
+                    UpdateWatcherEditorEnabled();
                 }
                 else
                 {
                     _currentCameraSourceIndex = Math.Min(deleteIndex, _cameraSources.Count - 1);
+                    _currentWatcherCameraSourceIndex =
+                        selectedWatcherItem != null && !ReferenceEquals(selectedWatcherItem, deletedItem)
+                            ? _cameraSources.IndexOf(selectedWatcherItem)
+                            : _currentCameraSourceIndex;
                     RefreshCameraSourceListBox();
+                    RefreshCameraWatcherListBox();
                     CameraSourcesListBox.SelectedIndex = _currentCameraSourceIndex;
                     LoadCameraSourceToUi(_cameraSources[_currentCameraSourceIndex]);
                     UpdateCameraEditorEnabled();
+                    CameraWatchersListBox.SelectedIndex = _currentWatcherCameraSourceIndex;
+                    LoadWatcherToUi(_cameraSources[_currentWatcherCameraSourceIndex]);
+                    UpdateWatcherEditorEnabled();
                 }
             }
             finally
@@ -318,6 +386,34 @@ namespace CocoroConsole.Controls
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private void CameraWatchersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            SyncCurrentWatcherFromUi();
+
+            var selectedIndex = CameraWatchersListBox.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= _cameraSources.Count)
+            {
+                return;
+            }
+
+            _isInitializing = true;
+            try
+            {
+                _currentWatcherCameraSourceIndex = selectedIndex;
+                LoadWatcherToUi(_cameraSources[selectedIndex]);
+                UpdateWatcherEditorEnabled();
+            }
+            finally
+            {
+                _isInitializing = false;
+            }
+        }
+
         private void McpServersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isInitializing)
@@ -359,6 +455,7 @@ namespace CocoroConsole.Controls
             {
                 SyncCurrentCameraSourceFromUi();
                 RefreshCameraSourceListBox();
+                RefreshCameraWatcherListBox();
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
@@ -393,6 +490,57 @@ namespace CocoroConsole.Controls
             }
 
             RefreshCameraSourceListBox();
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void WatcherEnabledCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            if (sender is CheckBox { Tag: CameraSourceEditorItem item })
+            {
+                item.Watcher.Enabled = ((CheckBox)sender).IsChecked ?? false;
+                if (_currentWatcherCameraSourceIndex >= 0
+                    && _currentWatcherCameraSourceIndex < _cameraSources.Count
+                    && ReferenceEquals(_cameraSources[_currentWatcherCameraSourceIndex], item))
+                {
+                    var wasInitializing = _isInitializing;
+                    _isInitializing = true;
+                    SelectedWatcherEnabledCheckBox.IsChecked = item.Watcher.Enabled;
+                    _isInitializing = wasInitializing;
+                }
+            }
+
+            RefreshCameraWatcherListBox();
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void SelectedWatcherEnabledCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing
+                || _currentWatcherCameraSourceIndex < 0
+                || _currentWatcherCameraSourceIndex >= _cameraSources.Count)
+            {
+                return;
+            }
+
+            _cameraSources[_currentWatcherCameraSourceIndex].Watcher.Enabled =
+                SelectedWatcherEnabledCheckBox.IsChecked ?? false;
+            RefreshCameraWatcherListBox();
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void OnWatcherTextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isInitializing)
+            {
+                return;
+            }
+
+            SyncCurrentWatcherFromUi();
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
@@ -468,6 +616,25 @@ namespace CocoroConsole.Controls
             CameraWatcherIdTextBox.Text = current.Watcher.WatcherId;
         }
 
+        private void SyncCurrentWatcherFromUi()
+        {
+            if (_currentWatcherCameraSourceIndex < 0
+                || _currentWatcherCameraSourceIndex >= _cameraSources.Count)
+            {
+                return;
+            }
+
+            var current = _cameraSources[_currentWatcherCameraSourceIndex];
+            current.Watcher.Enabled = SelectedWatcherEnabledCheckBox.IsChecked ?? false;
+            current.Watcher.WatcherId = WatcherDefaults.BuildDefaultWatcherId(current.VisionSourceId);
+            current.Watcher.Kind = "tapo_c220_motion";
+            current.Watcher.PollIntervalSeconds = ParseDoubleOrDefault(PollIntervalTextBox.Text, 60);
+            current.Watcher.MinWakeIntervalSeconds = ParseDoubleOrDefault(MinWakeIntervalTextBox.Text, 60);
+            current.Watcher.MotionRatioThreshold = ParseDoubleOrDefault(MotionRatioThresholdTextBox.Text, 0.03);
+            current.Watcher.PixelDiffThreshold = ParseIntOrDefault(PixelDiffThresholdTextBox.Text, 25);
+            current.Watcher.ResizeWidth = ParseIntOrDefault(ResizeWidthTextBox.Text, 320);
+        }
+
         private void SyncCurrentMcpServerFromUi()
         {
             if (_currentMcpServerIndex < 0 || _currentMcpServerIndex >= _mcpServers.Count)
@@ -499,6 +666,21 @@ namespace CocoroConsole.Controls
             CameraWatcherIdTextBox.Text = item.Watcher.WatcherId;
         }
 
+        private void LoadWatcherToUi(CameraSourceEditorItem item)
+        {
+            UpdateCameraIdentity(item);
+            SelectedWatcherEnabledCheckBox.IsChecked = item.Watcher.Enabled;
+            WatcherDisplayNameTextBox.Text = item.DisplayName;
+            WatcherVisionSourceIdTextBox.Text = item.VisionSourceId ?? string.Empty;
+            WatcherIdTextBox.Text = item.Watcher.WatcherId;
+            WatcherKindTextBox.Text = $"カメラモーション ({item.Watcher.Kind})";
+            PollIntervalTextBox.Text = item.Watcher.PollIntervalSeconds.ToString(CultureInfo.InvariantCulture);
+            MinWakeIntervalTextBox.Text = item.Watcher.MinWakeIntervalSeconds.ToString(CultureInfo.InvariantCulture);
+            MotionRatioThresholdTextBox.Text = item.Watcher.MotionRatioThreshold.ToString(CultureInfo.InvariantCulture);
+            PixelDiffThresholdTextBox.Text = item.Watcher.PixelDiffThreshold.ToString(CultureInfo.InvariantCulture);
+            ResizeWidthTextBox.Text = item.Watcher.ResizeWidth.ToString(CultureInfo.InvariantCulture);
+        }
+
         private void LoadMcpServerToUi(McpServerEditorItem item)
         {
             McpServerIdTextBox.Text = item.McpServerId;
@@ -522,6 +704,20 @@ namespace CocoroConsole.Controls
             CameraWatcherIdTextBox.Text = string.Empty;
         }
 
+        private void ClearWatcherUi()
+        {
+            SelectedWatcherEnabledCheckBox.IsChecked = false;
+            WatcherDisplayNameTextBox.Text = string.Empty;
+            WatcherVisionSourceIdTextBox.Text = string.Empty;
+            WatcherIdTextBox.Text = string.Empty;
+            WatcherKindTextBox.Text = "カメラモーション (tapo_c220_motion)";
+            PollIntervalTextBox.Text = "60";
+            MinWakeIntervalTextBox.Text = "60";
+            MotionRatioThresholdTextBox.Text = "0.03";
+            PixelDiffThresholdTextBox.Text = "25";
+            ResizeWidthTextBox.Text = "320";
+        }
+
         private void ClearMcpServerUi()
         {
             McpServerIdTextBox.Text = string.Empty;
@@ -536,6 +732,13 @@ namespace CocoroConsole.Controls
         private void UpdateCameraEditorEnabled()
         {
             CameraEditorPanel.IsEnabled = _currentCameraSourceIndex >= 0 && _currentCameraSourceIndex < _cameraSources.Count;
+        }
+
+        private void UpdateWatcherEditorEnabled()
+        {
+            WatcherEditorPanel.IsEnabled =
+                _currentWatcherCameraSourceIndex >= 0
+                && _currentWatcherCameraSourceIndex < _cameraSources.Count;
         }
 
         private void UpdateMcpEditorEnabled()
@@ -555,6 +758,56 @@ namespace CocoroConsole.Controls
                 CameraSourcesListBox.ItemsSource = _cameraSources;
                 CameraSourcesListBox.SelectedIndex = currentIndex >= 0 && currentIndex < _cameraSources.Count ? currentIndex : -1;
                 CameraSourcesListBox.SelectionChanged += CameraSourcesListBox_SelectionChanged;
+            }
+            finally
+            {
+                _isInitializing = wasInitializing;
+            }
+        }
+
+        private void RefreshCameraWatcherListBox()
+        {
+            var currentIndex = _currentWatcherCameraSourceIndex;
+            var wasInitializing = _isInitializing;
+            _isInitializing = true;
+            try
+            {
+                CameraWatchersListBox.SelectionChanged -= CameraWatchersListBox_SelectionChanged;
+                CameraWatchersListBox.ItemsSource = null;
+                CameraWatchersListBox.ItemsSource = _cameraSources;
+                CameraWatchersListBox.SelectedIndex =
+                    currentIndex >= 0 && currentIndex < _cameraSources.Count ? currentIndex : -1;
+                CameraWatchersListBox.SelectionChanged += CameraWatchersListBox_SelectionChanged;
+            }
+            finally
+            {
+                _isInitializing = wasInitializing;
+            }
+        }
+
+        private void EnsureWatcherSelection()
+        {
+            if (_cameraSources.Count == 0)
+            {
+                _currentWatcherCameraSourceIndex = -1;
+                ClearWatcherUi();
+                UpdateWatcherEditorEnabled();
+                return;
+            }
+
+            if (_currentWatcherCameraSourceIndex < 0
+                || _currentWatcherCameraSourceIndex >= _cameraSources.Count)
+            {
+                _currentWatcherCameraSourceIndex = 0;
+            }
+
+            var wasInitializing = _isInitializing;
+            _isInitializing = true;
+            try
+            {
+                CameraWatchersListBox.SelectedIndex = _currentWatcherCameraSourceIndex;
+                LoadWatcherToUi(_cameraSources[_currentWatcherCameraSourceIndex]);
+                UpdateWatcherEditorEnabled();
             }
             finally
             {
@@ -807,6 +1060,30 @@ namespace CocoroConsole.Controls
         private static string BuildArgsText(IEnumerable<string>? args)
         {
             return string.Join(Environment.NewLine, args ?? Array.Empty<string>());
+        }
+
+        private static double ParseDoubleOrDefault(string? text, double fallback)
+        {
+            return double.TryParse(
+                       text,
+                       NumberStyles.Float,
+                       CultureInfo.InvariantCulture,
+                       out var value)
+                   && value > 0
+                ? value
+                : fallback;
+        }
+
+        private static int ParseIntOrDefault(string? text, int fallback)
+        {
+            return int.TryParse(
+                       text,
+                       NumberStyles.Integer,
+                       CultureInfo.InvariantCulture,
+                       out var value)
+                   && value > 0
+                ? value
+                : fallback;
         }
 
         private void ValidateMcpServers()

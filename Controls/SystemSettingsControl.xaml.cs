@@ -11,6 +11,14 @@ using System.Windows.Controls;
 
 namespace CocoroConsole.Controls
 {
+    public enum SystemSettingsSection
+    {
+        Connection,
+        ConversationInput,
+        DesktopObservation,
+        PeriodicThinking,
+    }
+
     public partial class SystemSettingsControl : UserControl
     {
         public event EventHandler? SettingsChanged;
@@ -23,6 +31,24 @@ namespace CocoroConsole.Controls
         public SystemSettingsControl()
         {
             InitializeComponent();
+            ShowSection(SystemSettingsSection.Connection);
+        }
+
+        /// <summary>
+        /// 左ナビで選択された責務だけを表示する。
+        /// </summary>
+        public void ShowSection(SystemSettingsSection section)
+        {
+            ConnectionSettingsGroup.Visibility =
+                section == SystemSettingsSection.Connection ? Visibility.Visible : Visibility.Collapsed;
+            ConversationSettingsGroup.Visibility =
+                section == SystemSettingsSection.ConversationInput ? Visibility.Visible : Visibility.Collapsed;
+            VoiceInputSettingsGroup.Visibility =
+                section == SystemSettingsSection.ConversationInput ? Visibility.Visible : Visibility.Collapsed;
+            DesktopObservationSettingsGroup.Visibility =
+                section == SystemSettingsSection.DesktopObservation ? Visibility.Visible : Visibility.Collapsed;
+            PeriodicThinkingSettingsGroup.Visibility =
+                section == SystemSettingsSection.PeriodicThinking ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public System.Threading.Tasks.Task InitializeAsync()

@@ -64,7 +64,8 @@
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <GroupBox Header="視覚"
+                <GroupBox x:Name="CameraSettingsGroup"
+                          Header="カメラ"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>
@@ -91,11 +92,13 @@
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="180"/>
                                                 <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="130"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                       VerticalAlignment="Center"
                                                       Tag="{Binding}"
+                                                      ToolTip="定期思考でこのカメラを観測する"
                                                       Checked="CameraSourceEnabledCheckBox_Changed"
                                                       Unchecked="CameraSourceEnabledCheckBox_Changed"/>
                                             <TextBlock Grid.Column="1"
@@ -108,7 +111,13 @@
                                                        VerticalAlignment="Center"
                                                        Foreground="#666666"
                                                        Margin="10,0,0,0"/>
-                                            <Button Grid.Column="3"
+                                            <TextBlock Grid.Column="3"
+                                                       Text="定期思考で観測"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="#4873CF"
+                                                       HorizontalAlignment="Right"
+                                                       Margin="10,0"/>
+                                            <Button Grid.Column="4"
                                                     Content="削除"
                                                     Click="DeleteCameraSourceButton_Click"
                                                     Tag="{Binding}"
@@ -245,7 +254,199 @@
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="MCP"
+                <GroupBox x:Name="WatcherSettingsGroup"
+                          Header="Watcher"
+                          Margin="0,0,20,20"
+                          Padding="10">
+                    <StackPanel>
+                        <Border Background="#EEF4FF"
+                                BorderBrush="#B9CCF3"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="12"
+                                Margin="0,0,0,14">
+                            <TextBlock Text="Watcherは外部の変化を監視し、検出時に /api/wake を送信して即時に判断を開始します。定期思考の有効状態と実行間隔は適用されません。最小wake間隔は連続通知だけを抑制します。"
+                                       TextWrapping="Wrap"
+                                       Foreground="#334A72"/>
+                        </Border>
+
+                        <TextBlock Text="カメラモーションWatcher:"
+                                   HorizontalAlignment="Left"/>
+                        <Grid Margin="0,0,0,12">
+                            <ListBox x:Name="CameraWatchersListBox"
+                                     Height="160"
+                                     HorizontalContentAlignment="Stretch"
+                                     VerticalAlignment="Top"
+                                     Margin="0,5,0,0"
+                                     SelectionChanged="CameraWatchersListBox_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid HorizontalAlignment="Stretch">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="180"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="110"/>
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox IsChecked="{Binding Watcher.Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      VerticalAlignment="Center"
+                                                      Tag="{Binding}"
+                                                      ToolTip="変化検出による即時wakeを有効にする"
+                                                      Checked="WatcherEnabledCheckBox_Changed"
+                                                      Unchecked="WatcherEnabledCheckBox_Changed"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding DisplayName}"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="14"
+                                                       Margin="10,0,0,0"/>
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding WatcherIdentityDisplay}"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="#666666"
+                                                       Margin="10,0,0,0"/>
+                                            <TextBlock Grid.Column="3"
+                                                       Text="即時wake"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="#4873CF"
+                                                       HorizontalAlignment="Right"
+                                                       Margin="10,0"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+
+                        <StackPanel x:Name="WatcherEditorPanel"
+                                    IsEnabled="False">
+                            <CheckBox x:Name="SelectedWatcherEnabledCheckBox"
+                                      Content="変化検出による即時wakeを有効にする"
+                                      Margin="0,0,0,12"
+                                      Foreground="#4873CF"
+                                      Checked="SelectedWatcherEnabledCheckBox_Changed"
+                                      Unchecked="SelectedWatcherEnabledCheckBox_Changed"/>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="カメラ:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="WatcherDisplayNameTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         IsEnabled="False"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="視覚ソースID:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="WatcherVisionSourceIdTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         IsEnabled="False"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Watcher ID:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="WatcherIdTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         IsEnabled="False"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="種別:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="WatcherKindTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         IsEnabled="False"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="監視頻度（秒）:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="PollIntervalTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnWatcherTextChanged"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="最小wake間隔（秒）:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="MinWakeIntervalTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnWatcherTextChanged"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="差分比閾値（0～1）:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="MotionRatioThresholdTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnWatcherTextChanged"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="画素差分閾値（1～255）:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="PixelDiffThresholdTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnWatcherTextChanged"/>
+                            </Grid>
+
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="縮小幅:"
+                                           Style="{StaticResource SettingLabelStyle}"/>
+                                <TextBox x:Name="ResizeWidthTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource SettingTextBoxStyle}"
+                                         TextChanged="OnWatcherTextChanged"/>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox x:Name="McpSettingsGroup"
+                          Header="MCPツール"
                           Margin="0,0,20,20"
                           Padding="10">
                     <StackPanel>

@@ -27,7 +27,8 @@
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <GroupBox Header="OtomeKairo接続"
+                <GroupBox x:Name="ConnectionSettingsGroup"
+                          Header="OtomeKairo接続"
                           Margin="0,0,20,20"
                           Style="{StaticResource SettingsGroupBoxStyle}">
                     <Border Background="White"
@@ -53,7 +54,8 @@
                     </Border>
                 </GroupBox>
 
-                <GroupBox Header="会話人物"
+                <GroupBox x:Name="ConversationSettingsGroup"
+                          Header="会話人物"
                           Margin="0,0,20,20"
                           Style="{StaticResource SettingsGroupBoxStyle}">
                     <Border Background="White"
@@ -79,7 +81,8 @@
                     </Border>
                 </GroupBox>
 
-                <GroupBox Header="視覚キャプチャ"
+                <GroupBox x:Name="DesktopObservationSettingsGroup"
+                          Header="デスクトップキャプチャ"
                           Margin="0,0,20,20"
                           Style="{StaticResource SettingsGroupBoxStyle}">
                     <Border Background="White"
@@ -125,12 +128,17 @@
                     </Border>
                 </GroupBox>
 
-                <GroupBox Header="判断機会ポリシー"
+                <GroupBox x:Name="PeriodicThinkingSettingsGroup"
+                          Header="定期思考"
                           Margin="0,0,20,20"
                           Style="{StaticResource SettingsGroupBoxStyle}">
                     <Border Background="White"
                             Padding="10">
                         <StackPanel>
+                            <TextBlock Text="OtomeKairoサーバー内部のスケジュールで発生する定期思考を設定します。外部Watcherからのwakeには適用されません。"
+                                       TextWrapping="Wrap"
+                                       Foreground="#666666"
+                                       Margin="0,0,0,10"/>
 
                             <CheckBox x:Name="WakePolicyEnabledCheckBox"
                                       Content="定期思考を有効にする"
@@ -186,7 +194,8 @@
                     </Border>
                 </GroupBox>
 
-                <GroupBox Header="音声認識設定"
+                <GroupBox x:Name="VoiceInputSettingsGroup"
+                          Header="マイク・話者識別"
                           Margin="0,0,20,20"
                           Style="{StaticResource SettingsGroupBoxStyle}">
                     <Border Background="White"
