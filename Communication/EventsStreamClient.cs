@@ -180,6 +180,20 @@ namespace CocoroConsole.Communication
                     data.VisionSourceId = dataElement.TryGetProperty("vision_source_id", out var visionSourceId) ? visionSourceId.GetString() : null;
                     data.SourceKind = dataElement.TryGetProperty("source_kind", out var sourceKind) ? sourceKind.GetString() : null;
                     data.SourceLabel = dataElement.TryGetProperty("source_label", out var sourceLabel) ? sourceLabel.GetString() : null;
+                    data.InteractionRef = dataElement.TryGetProperty("interaction_ref", out var interactionRef)
+                        ? interactionRef.GetString()
+                        : null;
+                    if (dataElement.TryGetProperty("recipient_person_refs", out var recipientPersonRefsElement) &&
+                        recipientPersonRefsElement.ValueKind == JsonValueKind.Array)
+                    {
+                        data.RecipientPersonRefs = recipientPersonRefsElement
+                            .EnumerateArray()
+                            .Where(item => item.ValueKind == JsonValueKind.String)
+                            .Select(item => item.GetString())
+                            .Where(item => !string.IsNullOrWhiteSpace(item))
+                            .Select(item => item!)
+                            .ToList();
+                    }
                     data.Mode = dataElement.TryGetProperty("mode", out var mode) ? mode.GetString() : null;
                     data.TimeoutMs = dataElement.TryGetProperty("timeout_ms", out var timeoutMs) && timeoutMs.TryGetInt32(out var timeoutValue)
                         ? timeoutValue
@@ -225,6 +239,8 @@ namespace CocoroConsole.Communication
         public string? VisionSourceId { get; set; }
         public string? SourceKind { get; set; }
         public string? SourceLabel { get; set; }
+        public string? InteractionRef { get; set; }
+        public List<string>? RecipientPersonRefs { get; set; }
         public string? Mode { get; set; }
         public int? TimeoutMs { get; set; }
     }

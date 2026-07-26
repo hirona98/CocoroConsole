@@ -319,6 +319,8 @@ namespace CocoroConsole.Controls
             var microphoneSettings = SystemSettingsControl.GetMicrophoneSettings();
             dict["MicInputThreshold"] = microphoneSettings.inputThreshold;
             dict["SpeakerRecognitionThreshold"] = microphoneSettings.speakerRecognitionThreshold;
+            dict["OtomeKairoAccessToken"] = SystemSettingsControl.GetOtomeKairoAccessToken();
+            dict["ConversationDisplayName"] = SystemSettingsControl.GetConversationDisplayName();
 
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
             dict["WindowTitleExcludePatterns"] = SystemSettingsControl.GetWindowTitleExcludePatterns();
@@ -437,13 +439,13 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task ApplySettingsChangesAsync()
         {
-            // OtomeKairo 接続情報は専用ウィンドウで管理し、ここでは現在の保存値を参照する。
-            var bearerToken = AppSettings.Instance.OtomeKairoBearerToken;
+            // --- 登録済み接続先へ保存する前に、画面上の認証情報を確認する ---
+            var bearerToken = SystemSettingsControl.GetOtomeKairoAccessToken();
             if (string.IsNullOrWhiteSpace(bearerToken))
             {
                 var result = MessageBox.Show(
-                    "otomekairoのBearerトークンが未設定です。チャット/通知/キャプチャは送受信できません。このまま保存しますか？",
-                    "Bearerトークン未設定",
+                    "OtomeKairoのconsole_access_tokenが未設定です。登録済みの接続先ではチャット、通知、キャプチャを送受信できません。このまま保存しますか？",
+                    "アクセストークン未設定",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
                 if (result == MessageBoxResult.No)
@@ -931,6 +933,8 @@ namespace CocoroConsole.Controls
 
             appSettings.MicrophoneSettings.inputThreshold = (int)snapshot["MicInputThreshold"];
             appSettings.MicrophoneSettings.speakerRecognitionThreshold = (float)snapshot["SpeakerRecognitionThreshold"];
+            appSettings.OtomeKairoBearerToken = (string)snapshot["OtomeKairoAccessToken"];
+            appSettings.ConversationDisplayName = (string)snapshot["ConversationDisplayName"];
 
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
             appSettings.ScreenshotSettings.excludePatterns = (List<string>)snapshot["WindowTitleExcludePatterns"];

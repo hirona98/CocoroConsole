@@ -576,14 +576,55 @@ namespace CocoroConsole.Services
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<string>? Images { get; set; }
 
+        [JsonPropertyName("autonomous_run_action")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public OtomeKairoAutonomousRunAction? AutonomousRunAction { get; set; }
+
+        [JsonPropertyName("interaction_context")]
+        public OtomeKairoInteractionContext InteractionContext { get; set; } = new OtomeKairoInteractionContext();
+
         [JsonPropertyName("client_context")]
         public Dictionary<string, object?>? ClientContext { get; set; }
+    }
+
+    public class OtomeKairoAutonomousRunAction
+    {
+        [JsonPropertyName("kind")]
+        public string Kind { get; set; } = string.Empty;
+    }
+
+    public class OtomeKairoInteractionContext
+    {
+        [JsonPropertyName("interaction_ref")]
+        public string InteractionRef { get; set; } = string.Empty;
+
+        [JsonPropertyName("speaker_ref")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? SpeakerRef { get; set; }
+
+        [JsonPropertyName("participants")]
+        public List<OtomeKairoInteractionParticipant> Participants { get; set; } = new List<OtomeKairoInteractionParticipant>();
+    }
+
+    public class OtomeKairoInteractionParticipant
+    {
+        [JsonPropertyName("person_ref")]
+        public string PersonRef { get; set; } = string.Empty;
+
+        [JsonPropertyName("display_name")]
+        public string DisplayName { get; set; } = string.Empty;
     }
 
     public class OtomeKairoConversationResponse
     {
         [JsonPropertyName("cycle_id")]
         public string CycleId { get; set; } = string.Empty;
+
+        [JsonPropertyName("interaction_ref")]
+        public string InteractionRef { get; set; } = string.Empty;
+
+        [JsonPropertyName("recipient_person_refs")]
+        public List<string> RecipientPersonRefs { get; set; } = new List<string>();
 
         [JsonPropertyName("result_kind")]
         public string ResultKind { get; set; } = string.Empty;

@@ -27,6 +27,58 @@
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
+                <GroupBox Header="OtomeKairo接続"
+                          Margin="0,0,20,20"
+                          Style="{StaticResource SettingsGroupBoxStyle}">
+                    <Border Background="White"
+                            Padding="10">
+                        <StackPanel>
+                            <TextBlock Text="初回未登録の接続先では自動取得します。登録済みの接続先では発行済みのconsole_access_tokenを設定します。"
+                                       TextWrapping="Wrap"
+                                       Foreground="#666666"
+                                       Margin="0,0,0,10"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="アクセストークン:"
+                                           VerticalAlignment="Center"/>
+                                <PasswordBox x:Name="OtomeKairoAccessTokenPasswordBox"
+                                             Grid.Column="1"
+                                             Foreground="#FF0078D7"
+                                             Padding="2"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </GroupBox>
+
+                <GroupBox Header="会話人物"
+                          Margin="0,0,20,20"
+                          Style="{StaticResource SettingsGroupBoxStyle}">
+                    <Border Background="White"
+                            Padding="10">
+                        <StackPanel>
+                            <TextBlock Text="テキスト入力を行う人物の表示名です。話者識別済みの音声入力では登録した話者名を使います。"
+                                       TextWrapping="Wrap"
+                                       Foreground="#666666"
+                                       Margin="0,0,0,10"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="表示名:"
+                                           VerticalAlignment="Center"/>
+                                <TextBox x:Name="ConversationDisplayNameTextBox"
+                                         Grid.Column="1"
+                                         Foreground="#FF0078D7"
+                                         Padding="2"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </GroupBox>
+
                 <GroupBox Header="視覚キャプチャ"
                           Margin="0,0,20,20"
                           Style="{StaticResource SettingsGroupBoxStyle}">

@@ -105,12 +105,12 @@
                                                 <ColumnDefinition Width="120"/>
                                                 <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="ユーザーの呼び方:"
+                                        <TextBlock Text="発話時の二人称呼称:"
                                                    Style="{StaticResource SettingLabelStyle}"/>
-                                        <TextBox x:Name="UserNaturalReferenceTextBox"
+                                        <TextBox x:Name="InterlocutorAddressTermTextBox"
                                                  Grid.Column="1"
                                                  Style="{StaticResource SettingTextBoxStyle}"
-                                                 ToolTip="判断理由や発話本文などの自然文で、schema上の user をどう呼ぶかを指定します。"
+                                                 ToolTip="直接呼びかけるときの二人称呼称です。固定しない場合は空欄にします。"
                                                  TextChanged="OnSettingChanged"
                                                  Width="500"/>
                                 </Grid>

@@ -4,6 +4,7 @@
   "useExternalOtomeKairo": true,
   "otomeKairoHost": "127.0.0.1",
   "cocoroShellPort": 55605,
+  "conversationDisplayName": "",
   "otomeKairoBearerToken": "",
   "isUseLLM": true,
   "isRestoreWindowPosition": false,

@@ -47,6 +47,8 @@ namespace CocoroConsole.Services
         public int CocoroShellPort { get; set; }
         // /api/events/stream で hello を送るためのクライアントID（安定ID）
         public string ClientId { get; set; } = string.Empty;
+        // テキスト会話でOtomeKairoへ渡す人物表示名
+        public string ConversationDisplayName { get; set; } = string.Empty;
         // otomekairo API Bearer トークン
         public string OtomeKairoBearerToken { get; set; } = string.Empty;
         // LLMを使用するか
@@ -155,6 +157,7 @@ namespace CocoroConsole.Services
             {
                 ClientId = $"console-{Guid.NewGuid()}";
             }
+            ConversationDisplayName = config.conversationDisplayName?.Trim() ?? string.Empty;
             OtomeKairoBearerToken = config.otomeKairoBearerToken ?? string.Empty;
             IsUseLLM = config.isUseLLM;
             IsRestoreWindowPosition = config.isRestoreWindowPosition;
@@ -234,6 +237,7 @@ namespace CocoroConsole.Services
                 otomeKairoHost = OtomeKairoHost,
                 cocoroShellPort = CocoroShellPort,
                 clientId = ClientId,
+                conversationDisplayName = ConversationDisplayName,
                 otomeKairoBearerToken = OtomeKairoBearerToken,
                 isUseLLM = IsUseLLM,
                 isRestoreWindowPosition = IsRestoreWindowPosition,

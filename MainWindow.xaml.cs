@@ -1408,7 +1408,7 @@ namespace CocoroConsole
                 );
 
                 // イベント購読
-                _voiceRecognitionService.OnRecognizedText += OnVoiceRecognized;
+                _voiceRecognitionService.OnRecognizedSpeech += OnVoiceRecognized;
                 _voiceRecognitionService.OnVoiceLevel += OnVoiceLevelChanged;
 
                 // 音声認識開始
@@ -1423,18 +1423,25 @@ namespace CocoroConsole
         /// <summary>
         /// 音声認識結果を処理
         /// </summary>
-        private void OnVoiceRecognized(string text)
+        private void OnVoiceRecognized(RecognizedSpeech speech)
         {
-            if (string.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(speech.Text))
                 return;
 
             UIHelper.RunOnUIThread(() =>
             {
                 // チャットに音声認識結果を表示
-                ChatControlInstance.AddVoiceMessage(text);
+                ChatControlInstance.AddVoiceMessage(speech.Text);
 
-                // OtomeKairoに送信
-                _ = SendMessageToOtomeKairoAsync(text, null);
+                // 話者識別済みの場合は人物参照としてOtomeKairoへ渡す
+                var speaker = string.IsNullOrWhiteSpace(speech.SpeakerId)
+                    ? null
+                    : new OtomeKairoInteractionParticipant
+                    {
+                        PersonRef = $"person:console:speaker:{speech.SpeakerId.Trim()}",
+                        DisplayName = speech.SpeakerName?.Trim() ?? string.Empty,
+                    };
+                _ = SendMessageToOtomeKairoAsync(speech.Text, null, speaker);
             });
         }
 
@@ -1452,7 +1459,10 @@ namespace CocoroConsole
         /// <summary>
         /// OtomeKairoにメッセージを送信
         /// </summary>
-        private async Task SendMessageToOtomeKairoAsync(string message, string? imageData)
+        private async Task SendMessageToOtomeKairoAsync(
+            string message,
+            string? imageData,
+            OtomeKairoInteractionParticipant? speaker = null)
         {
             try
             {
@@ -1461,7 +1471,11 @@ namespace CocoroConsole
                     if (_appSettings.IsUseLLM)
                     {
                         var currentAvatar = GetStoredAvatarSetting();
-                        await _communicationService.SendConversationInputToOtomeKairoAsync(message, currentAvatar?.modelName, imageData);
+                        await _communicationService.SendConversationInputToOtomeKairoAsync(
+                            message,
+                            currentAvatar?.modelName,
+                            imageData,
+                            speaker);
                     }
                 }
             }

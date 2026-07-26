@@ -39,6 +39,11 @@ namespace CocoroConsole.Services
         string ClientId { get; set; }
 
         /// <summary>
+        /// テキスト会話で使用する人物表示名
+        /// </summary>
+        string ConversationDisplayName { get; set; }
+
+        /// <summary>
         /// otomekairo API Bearer トークン
         /// </summary>
         string OtomeKairoBearerToken { get; set; }

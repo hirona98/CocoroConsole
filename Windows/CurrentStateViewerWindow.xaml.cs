@@ -202,18 +202,38 @@ namespace CocoroConsole.Windows
                     $"種別={GetString(element, "state_type")} 対象={GetString(element, "scope")} " +
                     $"顕著度={GetString(element, "salience")} 要約={GetString(element, "summary_text")}"
             );
-            builder.AppendLine("活動状態:");
-            var activityContext = TryGetProperty(currentState, "activity_context");
-            var currentActivity = TryGetProperty(activityContext, "current_activity");
-            var previousActivity = TryGetProperty(activityContext, "previous_activity");
-            if (currentActivity.ValueKind != JsonValueKind.Object && previousActivity.ValueKind != JsonValueKind.Object)
+            builder.AppendLine("人物別活動状態:");
+            var activityContexts = TryGetProperty(currentState, "activity_contexts");
+            if (activityContexts.ValueKind != JsonValueKind.Array || activityContexts.GetArrayLength() == 0)
             {
                 builder.AppendLine("  （なし）");
             }
             else
             {
-                AppendActivityLine(builder, "  現在", currentActivity);
-                AppendActivityLine(builder, "  直前", previousActivity);
+                var shownCount = 0;
+                foreach (var activityContext in activityContexts.EnumerateArray())
+                {
+                    if (shownCount >= 5)
+                    {
+                        break;
+                    }
+
+                    var currentActivity = TryGetProperty(activityContext, "current_activity");
+                    var previousActivity = TryGetProperty(activityContext, "previous_activity");
+                    var actor = FirstNonEmpty(
+                        GetString(currentActivity, "actor"),
+                        GetString(previousActivity, "actor"));
+                    builder.AppendLine($"  - 人物={DisplayOptional(actor)}");
+                    AppendActivityLine(builder, "    現在", currentActivity);
+                    AppendActivityLine(builder, "    直前", previousActivity);
+                    shownCount++;
+                }
+
+                var remainingCount = activityContexts.GetArrayLength() - shownCount;
+                if (remainingCount > 0)
+                {
+                    builder.AppendLine($"  他 {remainingCount} 件は詳細タブにあります。");
+                }
             }
             SetOverviewPanel(WorldActivityPanel, builder);
 

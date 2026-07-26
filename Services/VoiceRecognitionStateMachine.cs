@@ -19,7 +19,6 @@ namespace CocoroConsole.Services
         private readonly object _lockObject = new object();
         private bool _isMicButtonActivated = false;  // MicButton切り替えで開始されたかどうか
 
-        public event Action<string>? OnRecognizedText;
         public event Action<VoiceRecognitionState>? OnStateChanged;
 
         public VoiceRecognitionState CurrentState
@@ -59,10 +58,10 @@ namespace CocoroConsole.Services
             }
         }
 
-        public void ProcessRecognitionResult(string text)
+        public bool ShouldForwardRecognitionResult(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
-                return;
+                return false;
 
             lock (_lockObject)
             {
@@ -74,20 +73,20 @@ namespace CocoroConsole.Services
                         if (!_wakeWordDetector.HasWakeWords || _wakeWordDetector.ContainsWakeWord(text))
                         {
                             TransitionTo(VoiceRecognitionState.ACTIVE);
-                            OnRecognizedText?.Invoke(text); // ウェイクアップワード含む発話も送信
+                            return true; // ウェイクアップワードを含む発話も送信する
                         }
-                        break;
+                        return false;
 
                     case VoiceRecognitionState.ACTIVE:
-                        OnRecognizedText?.Invoke(text); // 全て送信（ウェイクワードも含む）
                         ResetTimeoutTimer(); // タイマーリセット
-                        break;
+                        return true;
 
                     case VoiceRecognitionState.PROCESSING:
-                        // PROCESSING状態では何もしない（一時的な状態）
-                        break;
+                        return false;
                 }
             }
+
+            return false;
         }
 
         public void TransitionTo(VoiceRecognitionState newState)

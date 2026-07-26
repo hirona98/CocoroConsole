@@ -45,8 +45,16 @@ namespace CocoroConsole.Services
         Task StartServerAsync();
         Task StopServerAsync();
         ConfigSettings GetCurrentConfig();
-        Task SendConversationInputToOtomeKairoAsync(string message, string? avatarName = null, string? imageDataUrl = null);
-        Task SendConversationInputToOtomeKairoAsync(string message, string? avatarName = null, List<string>? imageDataUrls = null);
+        Task SendConversationInputToOtomeKairoAsync(
+            string message,
+            string? avatarName = null,
+            string? imageDataUrl = null,
+            OtomeKairoInteractionParticipant? speaker = null);
+        Task SendConversationInputToOtomeKairoAsync(
+            string message,
+            string? avatarName = null,
+            List<string>? imageDataUrls = null,
+            OtomeKairoInteractionParticipant? speaker = null);
         void StartNewConversation();
         Task SendAnimationToShellAsync(string animationName);
         Task SendTTSStateToShellAsync(bool isUseTTS);

@@ -32,6 +32,8 @@ namespace CocoroConsole.Controls
                 var appSettings = AppSettings.Instance;
 
                 ApplyDefaultRemoteSettings();
+                OtomeKairoAccessTokenPasswordBox.Password = appSettings.OtomeKairoBearerToken;
+                ConversationDisplayNameTextBox.Text = appSettings.ConversationDisplayName;
 
                 ExcludeWindowTitlePatternsTextBox.Text = string.Join(
                     Environment.NewLine,
@@ -96,6 +98,8 @@ namespace CocoroConsole.Controls
 
         private void SetupEventHandlers()
         {
+            OtomeKairoAccessTokenPasswordBox.PasswordChanged += OnSettingsChanged;
+            ConversationDisplayNameTextBox.TextChanged += OnSettingsChanged;
             VisualCaptureIdleTimeoutMinutesTextBox.TextChanged += OnSettingsChanged;
             ExcludeWindowTitlePatternsTextBox.TextChanged += OnSettingsChanged;
             WakePolicyEnabledCheckBox.Checked += OnSettingsChanged;
@@ -184,6 +188,16 @@ namespace CocoroConsole.Controls
                 inputThreshold = (int)MicThresholdSlider.Value,
                 speakerRecognitionThreshold = SpeakerManagementControl.GetCurrentThreshold(),
             };
+        }
+
+        public string GetOtomeKairoAccessToken()
+        {
+            return OtomeKairoAccessTokenPasswordBox.Password.Trim();
+        }
+
+        public string GetConversationDisplayName()
+        {
+            return ConversationDisplayNameTextBox.Text.Trim();
         }
 
         public List<string> GetWindowTitleExcludePatterns()

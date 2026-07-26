@@ -72,8 +72,9 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
     public class OtomeKairoPersonaReferenceStyle
     {
-        [JsonPropertyName("user_natural_reference")]
-        public string UserNaturalReference { get; set; } = "マスター";
+        [JsonPropertyName("interlocutor_address_term")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        public string? InterlocutorAddressTerm { get; set; }
     }
 
     /// <summary>

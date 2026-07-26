@@ -8,6 +8,20 @@ using NAudio.Wave;
 
 namespace CocoroConsole.Services
 {
+    public sealed class RecognizedSpeech
+    {
+        public RecognizedSpeech(string text, string? speakerId, string? speakerName)
+        {
+            Text = text;
+            SpeakerId = speakerId;
+            SpeakerName = speakerName;
+        }
+
+        public string Text { get; }
+        public string? SpeakerId { get; }
+        public string? SpeakerName { get; }
+    }
+
     public class RealtimeVoiceRecognitionService : IDisposable
     {
         private WaveInEvent? _waveIn;
@@ -28,7 +42,7 @@ namespace CocoroConsole.Services
         private bool _isDisposed = false;
 
         // イベント
-        public event Action<string>? OnRecognizedText;
+        public event Action<RecognizedSpeech>? OnRecognizedSpeech;
         public event Action<VoiceRecognitionState>? OnStateChanged;
         public event Action<float, bool>? OnVoiceLevel;  // level, isAboveThreshold
         public event Action<string, string, float>? OnSpeakerIdentified; // speakerId, speakerName, confidence
@@ -58,8 +72,7 @@ namespace CocoroConsole.Services
 
             System.Diagnostics.Debug.WriteLine($"[VoiceService] Initialized with STT: {_sttService.ServiceName}");
 
-            // イベントの転送
-            _stateMachine.OnRecognizedText += (text) => OnRecognizedText?.Invoke(text);
+            // 状態変化をUIへ転送する
             _stateMachine.OnStateChanged += (state) => OnStateChanged?.Invoke(state);
         }
 
@@ -212,15 +225,20 @@ namespace CocoroConsole.Services
                 // デバッグ用音声ファイル保存（デスクトップに保存）
                 // SaveAudioFileForDebug(audioData);
 
+                string? speakerId = null;
+                string? speakerName = null;
+
                 // 話者識別（登録済み話者がいる場合のみ実施）
                 if (_speakerRecognition.HasRegisteredSpeakers())
                 {
                     // 例外が発生した場合は上位に伝播して停止
-                    var (speakerId, speakerName, confidence) = _speakerRecognition.IdentifySpeaker(audioData);
+                    var identified = _speakerRecognition.IdentifySpeaker(audioData);
+                    speakerId = identified.speakerId;
+                    speakerName = identified.speakerName;
 
-                    OnSpeakerIdentified?.Invoke(speakerId, speakerName, confidence);
+                    OnSpeakerIdentified?.Invoke(speakerId, speakerName, identified.confidence);
 
-                    System.Diagnostics.Debug.WriteLine($"[Speaker] {speakerName} (信頼度: {confidence:F2})");
+                    System.Diagnostics.Debug.WriteLine($"[Speaker] {speakerName} (信頼度: {identified.confidence:F2})");
                 }
 
                 // STTサービス呼び出し（並列処理でブロックしない）
@@ -232,7 +250,13 @@ namespace CocoroConsole.Services
 
                 if (!string.IsNullOrEmpty(recognizedText))
                 {
-                    _stateMachine.ProcessRecognitionResult(recognizedText);
+                    if (_stateMachine.ShouldForwardRecognitionResult(recognizedText))
+                    {
+                        OnRecognizedSpeech?.Invoke(new RecognizedSpeech(
+                            recognizedText,
+                            speakerId,
+                            speakerName));
+                    }
                 }
                 else
                 {
