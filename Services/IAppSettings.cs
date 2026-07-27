@@ -39,7 +39,7 @@ namespace CocoroConsole.Services
         string ClientId { get; set; }
 
         /// <summary>
-        /// テキスト会話で使用する人物表示名
+        /// テキスト入力と音声入力で使用するあなたの名前
         /// </summary>
         string ConversationDisplayName { get; set; }
 

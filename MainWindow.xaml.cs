@@ -392,6 +392,11 @@ namespace CocoroConsole
         /// </summary>
         private void OnChatMessageSent(object? sender, string message)
         {
+            if (!TryGetConversationDisplayName(out var displayName))
+            {
+                return;
+            }
+
             // APIサーバーが起動している場合のみ送信
             if (_communicationService == null || !_communicationService.IsServerRunning)
             {
@@ -411,7 +416,7 @@ namespace CocoroConsole
             var imageDataUrls = ChatControlInstance.GetAndClearAttachedImages();
 
             // ユーザーメッセージとしてチャットウィンドウに表示（送信前に表示）
-            ChatControlInstance.AddUserMessage(message, imageSources);
+            ChatControlInstance.AddUserMessage(displayName, message, imageSources);
 
             // --- 送信開始と同時に送信ボタンを無効化（連打を防ぐ） ---
             ChatControlInstance.UpdateSendButtonEnabled(false);
@@ -556,7 +561,10 @@ namespace CocoroConsole
 
                 if (request.role == "user")
                 {
-                    ChatControlInstance.AddUserMessage(request.content);
+                    if (TryGetConversationDisplayName(out var displayName))
+                    {
+                        ChatControlInstance.AddUserMessage(displayName, request.content);
+                    }
                 }
                 else if (request.role == "assistant")
                 {
@@ -1430,19 +1438,31 @@ namespace CocoroConsole
 
             UIHelper.RunOnUIThread(() =>
             {
-                // チャットに音声認識結果を表示
-                ChatControlInstance.AddVoiceMessage(speech.Text);
+                if (!TryGetConversationDisplayName(out var displayName))
+                {
+                    return;
+                }
 
-                // 話者識別済みの場合は人物参照としてOtomeKairoへ渡す
-                var speaker = string.IsNullOrWhiteSpace(speech.SpeakerId)
-                    ? null
-                    : new OtomeKairoInteractionParticipant
-                    {
-                        PersonRef = $"person:console:speaker:{speech.SpeakerId.Trim()}",
-                        DisplayName = speech.SpeakerName?.Trim() ?? string.Empty,
-                    };
-                _ = SendMessageToOtomeKairoAsync(speech.Text, null, speaker);
+                // チャットに音声認識結果を表示
+                ChatControlInstance.AddUserMessage(displayName, speech.Text);
+                _ = SendMessageToOtomeKairoAsync(speech.Text, null);
             });
+        }
+
+        /// <summary>
+        /// テキスト入力と音声入力で共通する、現在のユーザー名を取得する。
+        /// </summary>
+        private bool TryGetConversationDisplayName(out string displayName)
+        {
+            displayName = _appSettings.ConversationDisplayName.Trim();
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                return true;
+            }
+
+            ChatControlInstance.AddSystemErrorMessage(
+                "「あなたの名前」が未設定です。設定の入力から「会話入力」を開いて設定してください。");
+            return false;
         }
 
         /// <summary>
@@ -1461,8 +1481,7 @@ namespace CocoroConsole
         /// </summary>
         private async Task SendMessageToOtomeKairoAsync(
             string message,
-            string? imageData,
-            OtomeKairoInteractionParticipant? speaker = null)
+            string? imageData)
         {
             try
             {
@@ -1474,8 +1493,7 @@ namespace CocoroConsole
                         await _communicationService.SendConversationInputToOtomeKairoAsync(
                             message,
                             currentAvatar?.modelName,
-                            imageData,
-                            speaker);
+                            imageData);
                     }
                 }
             }

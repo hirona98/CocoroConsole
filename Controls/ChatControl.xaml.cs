@@ -88,10 +88,19 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// ユーザーメッセージをUIに追加
         /// </summary>
+        /// <param name="displayName">あなたの名前</param>
         /// <param name="message">メッセージ</param>
         /// <param name="imageSources">画像リスト（オプション）</param>
-        public void AddUserMessage(string message, List<BitmapSource>? imageSources = null)
+        public void AddUserMessage(
+            string displayName,
+            string message,
+            List<BitmapSource>? imageSources = null)
         {
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                throw new ArgumentException("「あなたの名前」が未設定です。", nameof(displayName));
+            }
+
             // --- 時刻（バブル表示用） ---
             var timestamp = DateTime.Now;
 
@@ -104,6 +113,13 @@ namespace CocoroConsole.Controls
             AttachCopyOnRightClick(bubble);
 
             var messageContent = new StackPanel();
+
+            // テキスト入力と音声入力に共通する人物名をバブル内へ表示する。
+            messageContent.Children.Add(new TextBlock
+            {
+                Style = (Style)Resources["UserDisplayNameTextStyle"],
+                Text = displayName.Trim()
+            });
 
             // 添付画像がある場合は先に表示
             if (imageSources != null && imageSources.Count > 0)
@@ -1118,48 +1134,6 @@ namespace CocoroConsole.Controls
         {
             SendButton.IsEnabled = isEnabled;
             // テキストボックスとマイク入力も止めたほうが良いけど面倒なので保留
-        }
-
-        /// <summary>
-        /// 音声認識結果をチャットに追加
-        /// </summary>
-        /// <param name="text">認識されたテキスト</param>
-        public void AddVoiceMessage(string text)
-        {
-            // --- 時刻（バブル表示用） ---
-            var timestamp = DateTime.Now;
-
-            var bubble = new Border
-            {
-                Style = (Style)Resources["UserBubbleStyle"]  // テキスト入力と同じスタイル
-            };
-
-            // 右クリックでコピー
-            AttachCopyOnRightClick(bubble);
-
-            var messageContent = new StackPanel();
-
-            var messageText = new TextBox
-            {
-                Style = (Style)Resources["UserMessageTextStyle"],
-                Text = text  // 🎤アイコンを削除してテキストのみ
-            };
-
-            messageContent.Children.Add(messageText);
-
-            // --- 本文をバブルに設定 ---
-            bubble.Child = messageContent;
-
-            // --- 時刻をLINE風にバブルの隣へ配置 ---
-            var timestampText = CreateTimestampTextBlock(timestamp, "UserTimestampTextStyle");
-            var messageRow = CreateMessageRowWithTimestamp(bubble, timestampText, isUser: true);
-            ChatMessagesPanel.Children.Add(messageRow);
-
-            // 自動スクロール
-            ChatScrollViewer.ScrollToEnd();
-
-            // 最後のメッセージ情報を更新
-            UpdateLastMessageInfo(MessageType.User);
         }
 
         /// <summary>

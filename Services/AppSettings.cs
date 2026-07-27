@@ -47,7 +47,7 @@ namespace CocoroConsole.Services
         public int CocoroShellPort { get; set; }
         // /api/events/stream で hello を送るためのクライアントID（安定ID）
         public string ClientId { get; set; } = string.Empty;
-        // テキスト会話でOtomeKairoへ渡す人物表示名
+        // テキスト入力と音声入力でOtomeKairoへ渡すあなたの名前
         public string ConversationDisplayName { get; set; } = string.Empty;
         // otomekairo API Bearer トークン
         public string OtomeKairoBearerToken { get; set; } = string.Empty;

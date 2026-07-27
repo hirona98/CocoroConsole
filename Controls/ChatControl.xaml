@@ -105,6 +105,19 @@
                 </Style>
 
                 <!-- メッセージテキストスタイル -->
+                <Style x:Key="UserDisplayNameTextStyle"
+                       TargetType="TextBlock">
+                        <Setter Property="FontSize"
+                                Value="11"/>
+                        <Setter Property="FontWeight"
+                                Value="SemiBold"/>
+                        <Setter Property="Foreground"
+                                Value="WhiteSmoke"/>
+                        <Setter Property="Opacity"
+                                Value="0.85"/>
+                        <Setter Property="Margin"
+                                Value="0,0,0,3"/>
+                </Style>
                 <Style x:Key="UserMessageTextStyle"
                        TargetType="TextBox">
                         <Setter Property="TextWrapping"

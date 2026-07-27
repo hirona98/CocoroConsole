@@ -53,13 +53,13 @@
                 </GroupBox>
 
                 <GroupBox x:Name="ConversationSettingsGroup"
-                          Header="会話人物"
+                          Header="会話入力"
                           Margin="0,0,20,20"
                           Style="{StaticResource SettingsGroupBoxStyle}">
                     <Border Background="White"
                             Padding="10">
                         <StackPanel>
-                            <TextBlock Text="テキスト入力を行う人物の表示名です。話者識別済みの音声入力では登録した話者名を使います。"
+                            <TextBlock Text="テキスト入力と音声入力で、あなたを表す名前として使います。"
                                        TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10"/>
@@ -68,7 +68,7 @@
                                     <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="表示名:"
+                                <TextBlock Text="あなたの名前:"
                                            VerticalAlignment="Center"/>
                                 <TextBox x:Name="ConversationDisplayNameTextBox"
                                          Grid.Column="1"
