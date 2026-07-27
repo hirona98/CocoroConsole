@@ -95,22 +95,6 @@
                                                  Width="500"/>
                                 </Grid>
 
-                                <Grid Margin="0,15,20,0"
-                                      HorizontalAlignment="Left">
-                                        <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="120"/>
-                                                <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="発話時の二人称呼称:"
-                                                   Style="{StaticResource SettingLabelStyle}"/>
-                                        <TextBox x:Name="InterlocutorAddressTermTextBox"
-                                                 Grid.Column="1"
-                                                 Style="{StaticResource SettingTextBoxStyle}"
-                                                 ToolTip="直接呼びかけるときの二人称呼称です。固定しない場合は空欄にします。"
-                                                 TextChanged="OnSettingChanged"
-                                                 Width="500"/>
-                                </Grid>
-
                                 <TextBlock Text="人格本文"
                                            Margin="0,20,20,5"
 />

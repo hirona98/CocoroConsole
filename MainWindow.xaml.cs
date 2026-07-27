@@ -427,7 +427,10 @@ namespace CocoroConsole
                 try
                 {
                     // OtomeKairoにメッセージを送信（API使用、画像付きの場合は画像データも送信）
-                    await _communicationService.SendConversationInputToOtomeKairoAsync(message, null, imageDataUrls);
+                    await _communicationService.SendConversationInputToOtomeKairoAsync(
+                        message,
+                        null,
+                        imageDataUrls);
                 }
                 catch (TimeoutException)
                 {
@@ -1398,17 +1401,17 @@ namespace CocoroConsole
                 const int silenceTimeoutMs = 500; // 高速化のため短縮
                 const int activeTimeoutMs = 60000;
 
-                // 話者識別サービス初期化（常に有効）
-                var dbPath = System.IO.Path.Combine(AppSettings.Instance.UserDataDirectory, "SpeakerRecognition.db");
+                var dbPath = System.IO.Path.Combine(
+                    AppSettings.Instance.UserDataDirectory,
+                    "SpeakerRecognition.db");
                 var speakerService = new SpeakerRecognitionService(
                     dbPath,
-                    threshold: AppSettings.Instance.MicrophoneSettings.speakerRecognitionThreshold
-                );
+                    AppSettings.Instance.MicrophoneSettings.speakerRecognitionThreshold);
 
                 _voiceRecognitionService = new RealtimeVoiceRecognitionService(
                     new AmiVoiceSpeechToTextService(currentAvatar.sttApiKey, currentAvatar.sttProfileId),
                     currentAvatar.sttWakeWord,
-                    speakerService, // 話者識別サービスを追加
+                    speakerService,
                     voiceThreshold,
                     silenceTimeoutMs,
                     activeTimeoutMs,
@@ -1438,19 +1441,25 @@ namespace CocoroConsole
 
             UIHelper.RunOnUIThread(() =>
             {
-                if (!TryGetConversationDisplayName(out var displayName))
+                var displayName = speech.SpeakerName;
+                if (string.IsNullOrWhiteSpace(displayName) &&
+                    !TryGetConversationDisplayName(out displayName))
                 {
                     return;
                 }
 
                 // チャットに音声認識結果を表示
                 ChatControlInstance.AddUserMessage(displayName, speech.Text);
-                _ = SendMessageToOtomeKairoAsync(speech.Text, null);
+                _ = SendMessageToOtomeKairoAsync(
+                    speech.Text,
+                    null,
+                    speech.SpeakerId,
+                    speech.SpeakerName);
             });
         }
 
         /// <summary>
-        /// テキスト入力と音声入力で共通する、現在のユーザー名を取得する。
+        /// テキスト入力で participants[].display_name に渡す呼び名を取得する。
         /// </summary>
         private bool TryGetConversationDisplayName(out string displayName)
         {
@@ -1461,7 +1470,7 @@ namespace CocoroConsole
             }
 
             ChatControlInstance.AddSystemErrorMessage(
-                "「あなたの名前」が未設定です。設定の入力から「会話入力」を開いて設定してください。");
+                "呼び名が未設定です。設定の入力から「会話入力」を開いて設定してください。");
             return false;
         }
 
@@ -1481,7 +1490,9 @@ namespace CocoroConsole
         /// </summary>
         private async Task SendMessageToOtomeKairoAsync(
             string message,
-            string? imageData)
+            string? imageData,
+            string? speakerId = null,
+            string? speakerDisplayName = null)
         {
             try
             {
@@ -1493,7 +1504,9 @@ namespace CocoroConsole
                         await _communicationService.SendConversationInputToOtomeKairoAsync(
                             message,
                             currentAvatar?.modelName,
-                            imageData);
+                            imageData,
+                            speakerId,
+                            speakerDisplayName);
                     }
                 }
             }

@@ -45,7 +45,7 @@ namespace CocoroConsole.Services
         public event Action<RecognizedSpeech>? OnRecognizedSpeech;
         public event Action<VoiceRecognitionState>? OnStateChanged;
         public event Action<float, bool>? OnVoiceLevel;  // level, isAboveThreshold
-        public event Action<string, string, float>? OnSpeakerIdentified; // speakerId, speakerName, confidence
+        public event Action<string, string, float>? OnSpeakerIdentified;
 
         public VoiceRecognitionState CurrentState => _stateMachine.CurrentState;
         public bool IsListening { get; private set; }
@@ -64,7 +64,8 @@ namespace CocoroConsole.Services
             bool startActive = false)
         {
             _sttService = sttService ?? throw new ArgumentNullException(nameof(sttService));
-            _speakerRecognition = speakerRecognition ?? throw new ArgumentNullException(nameof(speakerRecognition));
+            _speakerRecognition = speakerRecognition
+                ?? throw new ArgumentNullException(nameof(speakerRecognition));
             _stateMachine = new VoiceRecognitionStateMachine(wakeWords, activeTimeoutMs, startActive);
 
             // 新しいSileroVAD設計：個別インスタンス作成（プール管理付き）
@@ -227,18 +228,17 @@ namespace CocoroConsole.Services
 
                 string? speakerId = null;
                 string? speakerName = null;
-
-                // 話者識別（登録済み話者がいる場合のみ実施）
                 if (_speakerRecognition.HasRegisteredSpeakers())
                 {
-                    // 例外が発生した場合は上位に伝播して停止
                     var identified = _speakerRecognition.IdentifySpeaker(audioData);
                     speakerId = identified.speakerId;
                     speakerName = identified.speakerName;
-
-                    OnSpeakerIdentified?.Invoke(speakerId, speakerName, identified.confidence);
-
-                    System.Diagnostics.Debug.WriteLine($"[Speaker] {speakerName} (信頼度: {identified.confidence:F2})");
+                    OnSpeakerIdentified?.Invoke(
+                        speakerId,
+                        speakerName,
+                        identified.confidence);
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[Speaker] {speakerName} (信頼度: {identified.confidence:F2})");
                 }
 
                 // STTサービス呼び出し（並列処理でブロックしない）
@@ -465,7 +465,7 @@ namespace CocoroConsole.Services
             _stateMachine?.Dispose();
             _sttService?.Dispose();
             _sileroVad?.Dispose(); // 新しい設計では個別インスタンスなのでDispose必要
-            _speakerRecognition?.Dispose(); // 話者識別サービスのリソース解放
+            _speakerRecognition.Dispose();
 
             System.Diagnostics.Debug.WriteLine("[VoiceService] Disposed");
         }

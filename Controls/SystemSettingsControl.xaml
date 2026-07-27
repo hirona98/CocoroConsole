@@ -59,7 +59,7 @@
                     <Border Background="White"
                             Padding="10">
                         <StackPanel>
-                            <TextBlock Text="テキスト入力と音声入力で、あなたを表す名前として使います。"
+                            <TextBlock Text="テキスト入力で participants[].display_name として送る呼び名です。"
                                        TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10"/>
@@ -68,11 +68,10 @@
                                     <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="あなたの名前:"
+                                <TextBlock Text="呼び名:"
                                            VerticalAlignment="Center"/>
                                 <TextBox x:Name="ConversationDisplayNameTextBox"
                                          Grid.Column="1"
-
                                          Padding="2"/>
                             </Grid>
                         </StackPanel>
@@ -202,7 +201,7 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                                マイクと話者識別の設定を行います。話者登録すると特定の人物の声だけを認識します。
+                                マイクと話者識別を設定します。識別した話者名は participants[].display_name として送ります。
                             </TextBlock>
                             <Grid Margin="0,5,0,5">
                                 <Grid.ColumnDefinitions>

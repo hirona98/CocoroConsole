@@ -29,6 +29,7 @@ namespace CocoroConsole.Services
     /// </summary>
     public class CommunicationService : ICommunicationService
     {
+        private const string RequiredOtomeKairoApiVersion = "0.2.0";
         // CocoroConsole 側の HTTP API サーバー（外部クライアントからの受信）
         private CocoroConsoleApiServer _apiServer;
 
@@ -183,6 +184,18 @@ namespace CocoroConsole.Services
             await _otomeKairoBootstrapSemaphore.WaitAsync().ConfigureAwait(false);
             try
             {
+                var serverIdentity = await _otomeKairoApiClient
+                    .GetServerIdentityAsync()
+                    .ConfigureAwait(false);
+                if (!string.Equals(
+                        serverIdentity.ApiVersion,
+                        RequiredOtomeKairoApiVersion,
+                        StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"OtomeKairo API {RequiredOtomeKairoApiVersion} が必要です。接続先は {serverIdentity.ApiVersion} です。");
+                }
+
                 // --- 既存トークンがあれば、まず有効性を確認する ---
                 var bearerToken = (_appSettings.OtomeKairoBearerToken ?? string.Empty).Trim();
                 if (!string.IsNullOrWhiteSpace(bearerToken))
@@ -516,11 +529,18 @@ namespace CocoroConsole.Services
         public async Task SendConversationInputToOtomeKairoAsync(
             string message,
             string? avatarName = null,
-            string? imageDataUrl = null)
+            string? imageDataUrl = null,
+            string? speakerId = null,
+            string? speakerDisplayName = null)
         {
             // 単一画像を配列に変換して複数画像対応版を呼び出し
             var imageDataUrls = imageDataUrl != null ? new List<string> { imageDataUrl } : null;
-            await SendConversationInputToOtomeKairoAsync(message, avatarName, imageDataUrls);
+            await SendConversationInputToOtomeKairoAsync(
+                message,
+                avatarName,
+                imageDataUrls,
+                speakerId,
+                speakerDisplayName);
         }
 
         /// <summary>
@@ -532,7 +552,9 @@ namespace CocoroConsole.Services
         public async Task SendConversationInputToOtomeKairoAsync(
             string message,
             string? avatarName = null,
-            List<string>? imageDataUrls = null)
+            List<string>? imageDataUrls = null,
+            string? speakerId = null,
+            string? speakerDisplayName = null)
         {
             if (_otomeKairoApiClient == null)
             {
@@ -540,12 +562,18 @@ namespace CocoroConsole.Services
                 return;
             }
 
-            await SendConversationInputViaHttpAsync(message, imageDataUrls);
+            await SendConversationInputViaHttpAsync(
+                message,
+                imageDataUrls,
+                speakerId,
+                speakerDisplayName);
         }
 
         private async Task SendConversationInputViaHttpAsync(
             string message,
-            List<string>? imageDataUrls)
+            List<string>? imageDataUrls,
+            string? speakerId,
+            string? speakerDisplayName)
         {
             // --- 同時送信を直列化する ---
             await _conversationInputSendSemaphore.WaitAsync().ConfigureAwait(false);
@@ -614,7 +642,9 @@ namespace CocoroConsole.Services
                 }
 
                 // --- Consoleが確定した人物と会話の参照をAPIへ渡す ---
-                var interactionContext = BuildConversationInteractionContext();
+                var interactionContext = BuildConversationInteractionContext(
+                    speakerId,
+                    speakerDisplayName);
 
                 // --- OtomeKairo の会話入力 API を呼ぶ ---
                 var request = new OtomeKairoConversationRequest
@@ -693,7 +723,7 @@ namespace CocoroConsole.Services
                     "invalid_token" => "OtomeKairo の認証に失敗しました。接続設定を確認してください。",
                     "bootstrap_required" => "OtomeKairo の初回登録がまだ完了していません。",
                     "invalid_images" => "添付画像は Data URI 1枚まで送信できます。",
-                    "invalid_person_display_name" => "「あなたの名前」が不正です。設定の入力から「会話入力」を確認してください。",
+                    "invalid_person_display_name" => "呼び名が不正です。設定の入力を確認してください。",
                     _ => ex.Message,
                 };
                 Debug.WriteLine($"OtomeKairo APIエラー: {errorMessage}");
@@ -760,25 +790,40 @@ namespace CocoroConsole.Services
             }
         }
 
-        private OtomeKairoInteractionContext BuildConversationInteractionContext()
+        private OtomeKairoInteractionContext BuildConversationInteractionContext(
+            string? speakerId,
+            string? speakerDisplayName)
         {
-            var participant = BuildDefaultConversationParticipant();
-            var personRef = participant.PersonRef.Trim();
+            var hasSpeakerId = !string.IsNullOrWhiteSpace(speakerId);
+            var hasSpeakerDisplayName = !string.IsNullOrWhiteSpace(speakerDisplayName);
+            if (hasSpeakerId != hasSpeakerDisplayName)
+            {
+                throw new InvalidOperationException(
+                    "話者IDと話者名は同時に指定してください。");
+            }
+
+            var personRef = hasSpeakerId
+                ? $"person:console:speaker:{speakerId!.Trim()}"
+                : $"person:console:{_appSettings.ClientId.Trim()}";
             if (!personRef.StartsWith("person:", StringComparison.Ordinal) ||
                 personRef.Length == "person:".Length)
             {
                 throw new InvalidOperationException("会話入力の person_ref が不正です。");
             }
-            if (string.IsNullOrWhiteSpace(participant.DisplayName))
+
+            var displayName = hasSpeakerDisplayName
+                ? speakerDisplayName!.Trim()
+                : _appSettings.ConversationDisplayName.Trim();
+            if (string.IsNullOrWhiteSpace(displayName))
             {
                 throw new InvalidOperationException(
-                    "「あなたの名前」が未設定です。設定の入力から「会話入力」を開いて設定してください。");
+                    "呼び名が未設定です。設定の入力から「会話入力」を開いて設定してください。");
             }
 
             var normalizedParticipant = new OtomeKairoInteractionParticipant
             {
                 PersonRef = personRef,
-                DisplayName = participant.DisplayName.Trim(),
+                DisplayName = displayName,
             };
             var personKey = personRef.Substring("person:".Length);
             return new OtomeKairoInteractionContext
@@ -786,21 +831,6 @@ namespace CocoroConsole.Services
                 InteractionRef = $"interaction:console:direct:{personKey}",
                 SpeakerRef = personRef,
                 Participants = new List<OtomeKairoInteractionParticipant> { normalizedParticipant },
-            };
-        }
-
-        private OtomeKairoInteractionParticipant BuildDefaultConversationParticipant()
-        {
-            var clientId = _appSettings.ClientId.Trim();
-            if (string.IsNullOrWhiteSpace(clientId))
-            {
-                throw new InvalidOperationException("会話入力の client_id が未設定です。");
-            }
-
-            return new OtomeKairoInteractionParticipant
-            {
-                PersonRef = $"person:console:{clientId}",
-                DisplayName = _appSettings.ConversationDisplayName,
             };
         }
 

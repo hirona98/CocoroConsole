@@ -17,3 +17,11 @@ https://alice-encoder.booth.pm/items/6821221
 - Windows
 - C# .NET8
 - WPF
+
+## 会話入力の呼び名
+
+テキスト入力は会話入力設定の呼び名を `participants[].display_name` として送信する。
+音声入力で話者を識別した場合は、`SpeakerRecognition.db` の話者名を `participants[].display_name` として送信する。
+話者登録画面では、OtomeKairoから呼ばれる形で話者名を登録する。
+人物設定用のDBは作成しない。
+CocoroConsole は OtomeKairo API `0.2.0` へ接続する。

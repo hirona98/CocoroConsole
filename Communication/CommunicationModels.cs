@@ -293,7 +293,7 @@ namespace CocoroConsole.Communication
         public int cocoroShellPort { get; set; }
         // /api/events/stream で hello を送るためのクライアントID（安定ID）
         public string clientId { get; set; } = string.Empty;
-        // テキスト入力と音声入力でOtomeKairoへ渡すあなたの名前
+        // テキスト入力で participants[].display_name に渡す呼び名
         public string conversationDisplayName { get; set; } = string.Empty;
         public string? otomeKairoBearerToken { get; set; }
         public bool isUseLLM { get; set; }

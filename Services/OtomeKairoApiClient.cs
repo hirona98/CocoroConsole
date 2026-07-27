@@ -70,6 +70,17 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoBootstrapProbeResponse>(HttpMethod.Get, "/api/bootstrap/probe", null, cancellationToken);
         }
 
+        public Task<OtomeKairoServerIdentityResponse> GetServerIdentityAsync(
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoServerIdentityResponse>(
+                HttpMethod.Get,
+                "/api/bootstrap/server-identity",
+                null,
+                cancellationToken);
+        }
+
         public Task<OtomeKairoRegisterFirstConsoleResponse> RegisterFirstConsoleAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -485,6 +496,18 @@ namespace CocoroConsole.Services
 
         [JsonPropertyName("bootstrap_state")]
         public string BootstrapState { get; set; } = string.Empty;
+    }
+
+    public class OtomeKairoServerIdentityResponse
+    {
+        [JsonPropertyName("server_id")]
+        public string ServerId { get; set; } = string.Empty;
+
+        [JsonPropertyName("server_display_name")]
+        public string ServerDisplayName { get; set; } = string.Empty;
+
+        [JsonPropertyName("api_version")]
+        public string ApiVersion { get; set; } = string.Empty;
     }
 
     public class OtomeKairoRegisterFirstConsoleResponse

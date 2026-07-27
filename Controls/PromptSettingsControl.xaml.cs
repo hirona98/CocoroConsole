@@ -14,7 +14,6 @@ namespace CocoroConsole.Controls
             public string PersonaId { get; set; } = string.Empty;
             public string DisplayName { get; set; } = string.Empty;
             public string InitiativeBaseline { get; set; } = "medium";
-            public string InterlocutorAddressTerm { get; set; } = string.Empty;
             public string PersonaPrompt { get; set; } = string.Empty;
             public string ExpressionAddon { get; set; } = string.Empty;
         }
@@ -86,7 +85,6 @@ namespace CocoroConsole.Controls
                 PersonaId = $"persona:{Guid.NewGuid():N}",
                 DisplayName = GenerateUniqueName(_personas.Select(p => p.DisplayName), "新規人格設定"),
                 InitiativeBaseline = "medium",
-                InterlocutorAddressTerm = string.Empty,
                 PersonaPrompt = string.Empty,
                 ExpressionAddon = string.Empty,
             };
@@ -123,7 +121,6 @@ namespace CocoroConsole.Controls
                 PersonaId = $"persona:{Guid.NewGuid():N}",
                 DisplayName = GenerateUniqueName(_personas.Select(p => p.DisplayName), $"{source.DisplayName} (コピー)"),
                 InitiativeBaseline = source.InitiativeBaseline,
-                InterlocutorAddressTerm = source.InterlocutorAddressTerm,
                 PersonaPrompt = source.PersonaPrompt,
                 ExpressionAddon = source.ExpressionAddon,
             };
@@ -230,7 +227,6 @@ namespace CocoroConsole.Controls
 
             var current = _personas[_currentPersonaIndex];
             current.DisplayName = DisplayNameTextBox.Text;
-            current.InterlocutorAddressTerm = InterlocutorAddressTermTextBox.Text.Trim();
             current.PersonaPrompt = PersonaPromptTextBox.Text;
             current.ExpressionAddon = ExpressionAddonTextBox.Text;
         }
@@ -238,7 +234,6 @@ namespace CocoroConsole.Controls
         private void LoadPersonaToUi(PersonaEditorItem item)
         {
             DisplayNameTextBox.Text = item.DisplayName;
-            InterlocutorAddressTermTextBox.Text = item.InterlocutorAddressTerm;
             PersonaPromptTextBox.Text = item.PersonaPrompt;
             ExpressionAddonTextBox.Text = item.ExpressionAddon;
         }
@@ -246,7 +241,6 @@ namespace CocoroConsole.Controls
         private void ClearPersonaUi()
         {
             DisplayNameTextBox.Text = string.Empty;
-            InterlocutorAddressTermTextBox.Text = string.Empty;
             PersonaPromptTextBox.Text = string.Empty;
             ExpressionAddonTextBox.Text = string.Empty;
         }
@@ -271,7 +265,6 @@ namespace CocoroConsole.Controls
                 PersonaId = persona.PersonaId,
                 DisplayName = persona.DisplayName,
                 InitiativeBaseline = string.IsNullOrWhiteSpace(persona.InitiativeBaseline) ? "medium" : persona.InitiativeBaseline,
-                InterlocutorAddressTerm = persona.ReferenceStyle?.InterlocutorAddressTerm ?? string.Empty,
                 PersonaPrompt = persona.PersonaPrompt ?? string.Empty,
                 ExpressionAddon = persona.ExpressionAddon ?? string.Empty,
             };
@@ -284,18 +277,9 @@ namespace CocoroConsole.Controls
                 PersonaId = item.PersonaId,
                 DisplayName = item.DisplayName,
                 InitiativeBaseline = string.IsNullOrWhiteSpace(item.InitiativeBaseline) ? "medium" : item.InitiativeBaseline,
-                ReferenceStyle = new OtomeKairoPersonaReferenceStyle
-                {
-                    InterlocutorAddressTerm = NormalizeInterlocutorAddressTerm(item.InterlocutorAddressTerm),
-                },
                 PersonaPrompt = item.PersonaPrompt,
                 ExpressionAddon = item.ExpressionAddon,
             };
-        }
-
-        private static string? NormalizeInterlocutorAddressTerm(string? value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
         private static int ResolveActiveIndex(IReadOnlyList<string?> ids, string? activeId)
