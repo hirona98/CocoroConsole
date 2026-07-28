@@ -13,7 +13,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0"
-                       Text="音声人物:"
+                       Text="登録済み話者:"
                        VerticalAlignment="Top"
                        Margin="0,7,10,0"/>
             <ListBox Grid.Column="1"
@@ -76,7 +76,7 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0"
-                       Text="新しい呼び名:"
+                       Text="新規登録:"
                        VerticalAlignment="Center"
                        Margin="0,0,10,0"/>
             <TextBox Grid.Column="1"
