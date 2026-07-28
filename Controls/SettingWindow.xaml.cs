@@ -1054,21 +1054,9 @@ namespace CocoroConsole.Controls
         private void UpdateAvatarAndAnimationAppSettings()
         {
             var appSettings = AppSettings.Instance;
+            AvatarManagementControl.SyncCurrentAvatarFromUi();
             appSettings.CurrentAvatarIndex = AvatarManagementControl.GetCurrentAvatarIndex();
             appSettings.IsUseLLM = LlmSettingsControl.IsUseLlm;
-
-            var currentAvatarSetting = AvatarManagementControl.GetCurrentAvatarSettingFromUI();
-            if (currentAvatarSetting != null)
-            {
-                var currentIndex = AvatarManagementControl.GetCurrentAvatarIndex();
-                if (currentIndex >= 0 &&
-                    currentIndex < appSettings.AvatarList.Count)
-                {
-                    // 現在のアバターの設定を更新
-                    appSettings.AvatarList[currentIndex] = currentAvatarSetting;
-                    // 注: LLM/Embedding設定はAPI経由で管理される
-                }
-            }
 
             appSettings.CurrentAnimationSettingIndex = AnimationSettingsControl.GetCurrentAnimationSettingIndex();
             appSettings.AnimationSettings = AnimationSettingsControl.GetAnimationSettings();

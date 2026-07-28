@@ -119,7 +119,7 @@ namespace CocoroConsole.Models.OtomeKairoApi
         public int MaxOutputTokens { get; set; } = 4000;
 
         [JsonPropertyName("timeout_seconds")]
-        public double TimeoutSeconds { get; set; } = 90;
+        public int TimeoutSeconds { get; set; } = 90;
 
         [JsonPropertyName("web_search_enabled")]
         public bool WebSearchEnabled { get; set; }
