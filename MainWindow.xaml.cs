@@ -1134,7 +1134,7 @@ namespace CocoroConsole
             }
 
             ChatControlInstance.AddSystemErrorMessage(
-                "呼び名が未設定です。設定の入力から「会話入力」を開いて設定してください。");
+                "呼ばれ方が未設定です。設定の入力から「会話入力」を開いて設定してください。");
             return false;
         }
 

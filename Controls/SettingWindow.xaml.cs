@@ -524,7 +524,7 @@ namespace CocoroConsole.Controls
             if (string.IsNullOrWhiteSpace(conversationDisplayName))
             {
                 throw new InvalidOperationException(
-                    "呼び名が未設定です。入力の「会話入力」で設定してください。");
+                    "呼ばれ方が未設定です。入力の「会話入力」で設定してください。");
             }
 
             // --- 登録済み接続先へ保存する前に、画面上の認証情報を確認する ---

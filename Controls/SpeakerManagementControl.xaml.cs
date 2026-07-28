@@ -87,7 +87,7 @@ namespace CocoroConsole.Controls
             if (displayName.Length == 0)
             {
                 MessageBox.Show(
-                    "話者の呼び名を入力してください。",
+                    "話者の呼ばれ方を入力してください。",
                     "入力エラー",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -173,7 +173,7 @@ namespace CocoroConsole.Controls
             if (displayName.Length == 0)
             {
                 MessageBox.Show(
-                    "話者の呼び名を入力してください。",
+                    "話者の呼ばれ方を入力してください。",
                     "入力エラー",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);

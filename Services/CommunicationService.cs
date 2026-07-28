@@ -749,7 +749,7 @@ namespace CocoroConsole.Services
                     "invalid_token" => "OtomeKairo の認証に失敗しました。接続設定を確認してください。",
                     "bootstrap_required" => "OtomeKairo の初回登録がまだ完了していません。",
                     "invalid_images" => "添付画像は Data URI 1枚まで送信できます。",
-                    "invalid_person_display_name" => "呼び名が不正です。設定の入力を確認してください。",
+                    "invalid_person_display_name" => "呼ばれ方が不正です。設定の入力を確認してください。",
                     _ => ex.Message,
                 };
                 Debug.WriteLine($"OtomeKairo APIエラー: {errorMessage}");
@@ -843,7 +843,7 @@ namespace CocoroConsole.Services
             if (string.IsNullOrWhiteSpace(displayName))
             {
                 throw new InvalidOperationException(
-                    "呼び名が未設定です。設定の入力から「会話入力」を開いて設定してください。");
+                    "呼ばれ方が未設定です。設定の入力から「会話入力」を開いて設定してください。");
             }
 
             var normalizedParticipant = new OtomeKairoInteractionParticipant

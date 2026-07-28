@@ -70,16 +70,12 @@
                     <Border Background="White"
                             Padding="10">
                         <StackPanel>
-                            <TextBlock Text="テキスト入力で participants[].display_name として送る呼び名です。"
-                                       TextWrapping="Wrap"
-                                       Foreground="#666666"
-                                       Margin="0,0,0,10"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="呼び名:"
+                                <TextBlock Text="呼ばれ方:"
                                            VerticalAlignment="Center"/>
                                 <TextBox x:Name="ConversationDisplayNameTextBox"
                                          Grid.Column="1"
