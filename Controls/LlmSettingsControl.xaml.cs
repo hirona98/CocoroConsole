@@ -15,7 +15,7 @@ namespace CocoroConsole.Controls
         private const int DefaultRecentTurnLimit = 30;
         private const int DefaultRecentTurnMinutes = 30;
         private const int DefaultMaxOutputTokens = 4000;
-        private const double DefaultTimeoutSeconds = 90;
+        private const int DefaultTimeoutSeconds = 90;
 
         // 入力途中の値を保持し、プリセットを切り替えても編集内容を失わないようにする。
         private sealed class ModelPresetEditorItem
@@ -411,7 +411,7 @@ namespace CocoroConsole.Controls
                 ApiKey = item.ApiKey.Trim(),
                 ReasoningEffort = EmptyToNull(item.ReasoningEffort),
                 MaxOutputTokens = ParsePositiveInt(item.MaxOutputTokensText, "最大出力トークン"),
-                TimeoutSeconds = ParsePositiveDouble(item.TimeoutSecondsText, "タイムアウト（秒）"),
+                TimeoutSeconds = ParsePositiveInt(item.TimeoutSecondsText, "タイムアウト（秒）"),
                 WebSearchEnabled = item.WebSearchEnabled,
                 PromptWindow = new OtomeKairoPromptWindowDefinition
                 {
@@ -480,16 +480,5 @@ namespace CocoroConsole.Controls
             return parsed;
         }
 
-        private static double ParsePositiveDouble(string value, string fieldName)
-        {
-            if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
-                || !double.IsFinite(parsed)
-                || parsed <= 0)
-            {
-                throw new InvalidOperationException($"{fieldName}には0より大きい数値を入力してください。");
-            }
-
-            return parsed;
-        }
     }
 }

@@ -20,7 +20,7 @@ namespace CocoroConsole.Utilities
             var settings = appSettings ?? AppSettings.Instance;
 
             // 先に復元を実行する。
-            var restored = TryRestorePosition(window, windowKey, settings);
+            var restored = RestorePosition(window, windowKey, settings);
 
             // 移動時に最新位置を設定へ反映する。
             window.LocationChanged += (_, __) => SaveCurrentPosition(window, windowKey, settings);
@@ -38,10 +38,11 @@ namespace CocoroConsole.Utilities
         /// <param name="windowKey">設定保存用の識別子</param>
         /// <param name="appSettings">設定サービス</param>
         /// <returns>復元できた場合はtrue</returns>
-        private static bool TryRestorePosition(Window window, string windowKey, IAppSettings appSettings)
+        public static bool RestorePosition(Window window, string windowKey, IAppSettings? appSettings = null)
         {
+            var settings = appSettings ?? AppSettings.Instance;
             // 保存済み位置が無い場合は復元しない。
-            var placement = appSettings.GetWindowPlacement(windowKey);
+            var placement = settings.GetWindowPlacement(windowKey);
             if (placement == null)
             {
                 return false;

@@ -3,6 +3,7 @@ using CocoroAI.Services;
 using CocoroConsole.Models.OtomeKairoApi;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CocoroConsole.Services
@@ -66,9 +67,18 @@ namespace CocoroConsole.Services
         Task<PositionResponse> GetShellPositionAsync();
         Task SendConfigPatchToShellAsync(Dictionary<string, object> updates);
         void RefreshSettingsCache();
-        void NotifyOtomeKairoRestarting();
         void ResetShellConnectionState();
         Task RefreshOtomeKairoCurrentSettingsAsync();
         Task SetDesktopWatchEnabledAsync(bool enabled);
+
+        /// <summary>
+        /// 現在の STT / TTS 設定を OtomeKairo に保存する。
+        /// </summary>
+        Task SaveAvatarSpeechSettingsAsync();
+
+        /// <summary>
+        /// 現在の CocoroConsole 端末設定を OtomeKairo に保存する。
+        /// </summary>
+        Task SaveConsoleClientSettingsAsync(CancellationToken cancellationToken = default);
     }
 }

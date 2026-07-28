@@ -1,12 +1,15 @@
 using CocoroConsole.Communication;
 using CocoroConsole.Models;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CocoroConsole.Services
 {
@@ -15,6 +18,9 @@ namespace CocoroConsole.Services
     /// </summary>
     public class AppSettings : IAppSettings
     {
+        // CocoroConsoleとCocoroShellが組み込みモデルとして解釈するモデル指定値。
+        private const string BuiltInModel = "default";
+
         private static readonly Lazy<AppSettings> _instance = new Lazy<AppSettings>(() => new AppSettings());
 
         public static AppSettings Instance => _instance.Value;
@@ -27,22 +33,12 @@ namespace CocoroConsole.Services
         // UserDataディレクトリのパス
         public string UserDataDirectory { get; }
 
-        // アプリケーション設定ファイルのパス
-        private string AppSettingsFilePath => Path.Combine(UserDataDirectory, "Setting.json");
+        // ローカルには OtomeKairo へ接続するためのブートストラップ情報だけを保存する。
+        private string ConnectionSettingsFilePath => Path.Combine(UserDataDirectory, "Connection.json");
 
-        // デフォルト設定ファイルのパス
-        private string DefaultSettingsFilePath => Path.Combine(UserDataDirectory, "DefaultSetting.json");
-
-        // アニメーション設定ファイルのパス
-        private string AnimationSettingsFilePath => Path.Combine(UserDataDirectory, "AnimationSettings.json");
-
-        // デフォルトアニメーション設定ファイルのパス
-        private string DefaultAnimationSettingsFilePath => Path.Combine(UserDataDirectory, "DefaultAnimationSettings.json");
-
+        public string ServerUrl { get; set; } = "https://127.0.0.1:55601";
         public int CocoroConsolePort { get; set; }
-        public int OtomeKairoPort { get; set; }
-        // 外部の OtomeKairo を利用するか（true: 外部 / false: ローカル）
-        public bool UseExternalOtomeKairo { get; set; } = false;
+        public int OtomeKairoPort { get; set; } = 55601;
         public string OtomeKairoHost { get; set; } = "127.0.0.1";
         public int CocoroShellPort { get; set; }
         // /api/events/stream で hello を送るためのクライアントID（安定ID）
@@ -91,13 +87,14 @@ namespace CocoroConsole.Services
         public MessageWindowSettings MessageWindowSettings { get; set; } = new MessageWindowSettings();
 
         public bool IsLoaded { get; set; } = false;
+        public bool HasRemoteSettings { get; private set; }
 
         // コンストラクタはprivate（シングルトンパターン）
         private AppSettings()
         {
             UserDataDirectory = FindUserDataDirectory();
 
-            // 設定ファイルから読み込み
+            // 接続情報だけをローカルから読み込む。通常設定は接続後にAPIから反映する。
             LoadSettings();
         }
 
@@ -138,92 +135,6 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// 設定値を更新
-        /// </summary>
-        /// <param name="config">サーバーから受信した設定値</param>
-        public void UpdateSettings(ConfigSettings config)
-        {
-            CocoroConsolePort = config.CocoroConsolePort;
-            OtomeKairoPort = config.otomeKairoPort;
-
-            // --- 現行では OtomeKairo を外部サーバーとして扱う前提に寄せる ---
-            UseExternalOtomeKairo = config.useExternalOtomeKairo ?? true;
-            var otomeKairoHost = NormalizeOtomeKairoHost(config.otomeKairoHost);
-            OtomeKairoHost = otomeKairoHost;
-
-            CocoroShellPort = config.cocoroShellPort;
-            ClientId = config.clientId;
-            if (string.IsNullOrWhiteSpace(ClientId))
-            {
-                ClientId = $"console-{Guid.NewGuid()}";
-            }
-            ConversationDisplayName = config.conversationDisplayName?.Trim() ?? string.Empty;
-            OtomeKairoBearerToken = config.otomeKairoBearerToken ?? string.Empty;
-            IsUseLLM = config.isUseLLM;
-            IsRestoreWindowPosition = config.isRestoreWindowPosition;
-            IsTopmost = config.isTopmost;
-            IsEscapeCursor = config.isEscapeCursor;
-            EscapePositions = config.escapePositions != null ? new List<EscapePosition>(config.escapePositions) : new List<EscapePosition>();
-            IsInputVirtualKey = config.isInputVirtualKey;
-            VirtualKeyString = config.virtualKeyString ?? string.Empty;
-            IsAutoMove = config.isAutoMove;
-            ShowMessageWindow = config.showMessageWindow;
-            IsEnableAmbientOcclusion = config.isEnableAmbientOcclusion;
-            MsaaLevel = config.msaaLevel;
-            AvatarShadow = config.avatarShadow;
-            AvatarShadowResolution = config.avatarShadowResolution;
-            BackgroundShadow = config.backgroundShadow;
-            BackgroundShadowResolution = config.backgroundShadowResolution;
-            WindowSize = config.windowSize > 0 ? (int)config.windowSize : WindowSize;
-            WindowPositionX = config.windowPositionX;
-            WindowPositionY = config.windowPositionY;
-            CurrentAvatarIndex = config.currentAvatarIndex;
-
-            // アバターリストを更新（もし受信したリストが空でなければ）
-            if (config.avatarList != null && config.avatarList.Count > 0)
-            {
-                AvatarList = new List<AvatarSettings>(config.avatarList);
-            }
-
-            EnsureAvatarSchemaConsistency();
-
-
-            // スクリーンショット設定を更新
-            if (config.screenshotSettings != null)
-            {
-                ScreenshotSettings = config.screenshotSettings;
-            }
-
-            // マイク設定を更新
-            if (config.microphoneSettings != null)
-            {
-                MicrophoneSettings = config.microphoneSettings;
-            }
-
-            // メッセージウィンドウ設定を更新
-            if (config.messageWindowSettings != null)
-            {
-                MessageWindowSettings = config.messageWindowSettings;
-            }
-
-            // ウィンドウ位置一覧を更新
-            WindowPlacements = config.windowPlacements != null
-                ? new Dictionary<string, WindowPlacement>(config.windowPlacements)
-                : new Dictionary<string, WindowPlacement>();
-
-            // 設定読み込み完了フラグを設定
-            IsLoaded = true;
-        }
-
-        /// <summary>
-        /// 新規追加項目などの不足を補完
-        /// </summary>
-        private void EnsureAvatarSchemaConsistency()
-        {
-            // アバター設定の不足補完が必要になった場合はここで行う
-        }
-
-        /// <summary>
         /// 現在の設定からConfigSettingsオブジェクトを作成
         /// </summary>
         /// <returns>ConfigSettings オブジェクト</returns>
@@ -233,7 +144,7 @@ namespace CocoroConsole.Services
             {
                 CocoroConsolePort = CocoroConsolePort,
                 otomeKairoPort = OtomeKairoPort,
-                useExternalOtomeKairo = UseExternalOtomeKairo,
+                useExternalOtomeKairo = true,
                 otomeKairoHost = OtomeKairoHost,
                 cocoroShellPort = CocoroShellPort,
                 clientId = ClientId,
@@ -269,13 +180,439 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
+        /// OtomeKairo の端末設定・現在設定・音声設定を実行時モデルへ反映する。
+        /// </summary>
+        public void ApplyRemoteSettings(
+            OtomeKairoConsoleClientSettings consoleSettings,
+            OtomeKairoCurrentSettings currentSettings,
+            OtomeKairoAvatarSpeechEditorState avatarSpeech)
+        {
+            var process = consoleSettings.Process;
+            CocoroConsolePort = process.ConsoleApiPort;
+            CocoroShellPort = process.CocoroShellPort;
+            IsUseLLM = process.ConversationInputEnabled;
+            ConversationDisplayName = currentSettings.ConversationDisplayName.Trim();
+
+            var display = consoleSettings.Display;
+            IsRestoreWindowPosition = display.RestoreWindowPosition;
+            IsTopmost = display.Topmost;
+            IsEscapeCursor = display.EscapeCursor;
+            EscapePositions = display.EscapePositions.Select(position => new EscapePosition
+            {
+                x = position.X,
+                y = position.Y,
+                enabled = position.Enabled,
+            }).ToList();
+            IsInputVirtualKey = display.TouchVirtualKeyEnabled;
+            VirtualKeyString = display.VirtualKey;
+            IsAutoMove = display.AutoMove;
+            ShowMessageWindow = display.ShowMessageWindow;
+            IsEnableAmbientOcclusion = display.AmbientOcclusionEnabled;
+            MsaaLevel = display.MsaaLevel;
+            AvatarShadow = display.AvatarShadowMode;
+            AvatarShadowResolution = display.AvatarShadowResolution;
+            BackgroundShadow = display.BackgroundShadowMode;
+            BackgroundShadowResolution = display.BackgroundShadowResolution;
+            WindowSize = display.AvatarWindowSize;
+            WindowPositionX = display.AvatarPositionX;
+            WindowPositionY = display.AvatarPositionY;
+            MessageWindowSettings = new MessageWindowSettings
+            {
+                maxMessageCount = display.MessageWindow.MaxMessageCount,
+                maxTotalAvatars = display.MessageWindow.MaxTotalCharacters,
+                minWindowSize = display.MessageWindow.MinWindowSize,
+                maxWindowSize = display.MessageWindow.MaxWindowSize,
+                fontSize = display.MessageWindow.FontSize,
+                horizontalOffset = display.MessageWindow.HorizontalOffset,
+                verticalOffset = display.MessageWindow.VerticalOffset,
+            };
+            WindowPlacements = display.WindowPlacements.ToDictionary(
+                entry => entry.Key,
+                entry => new WindowPlacement
+                {
+                    left = entry.Value.Left,
+                    top = entry.Value.Top,
+                });
+
+            var desktop = consoleSettings.DesktopCapture;
+            ScreenshotSettings = new ScreenshotSettings
+            {
+                enabled = desktop.Enabled,
+                captureActiveWindowOnly = desktop.CaptureActiveWindowOnly,
+                idleTimeoutMinutes = desktop.IdleTimeoutMinutes,
+                excludePatterns = new List<string>(desktop.ExcludePatterns),
+            };
+
+            MicrophoneSettings = new MicrophoneSettings
+            {
+                inputThreshold = avatarSpeech.MicrophoneSettings.InputThresholdDb,
+                speakerRecognitionThreshold = avatarSpeech.MicrophoneSettings.SpeakerRecognitionThreshold,
+            };
+            ApplyAvatarSettings(consoleSettings.AvatarPresentations, avatarSpeech);
+            ApplyMotionSettings(consoleSettings.Motion);
+            IsLoaded = true;
+            HasRemoteSettings = true;
+        }
+
+        /// <summary>
+        /// 現在の実行時モデルから端末設定bundleを構築する。
+        /// </summary>
+        public OtomeKairoConsoleClientSettings BuildConsoleClientSettings()
+        {
+            if (AnimationSettings.Count == 0)
+            {
+                throw new InvalidOperationException("アニメーション設定がありません。");
+            }
+
+            foreach (var animationSet in AnimationSettings)
+            {
+                if (string.IsNullOrWhiteSpace(animationSet.animationSetId))
+                {
+                    animationSet.animationSetId = $"animation_set:{Guid.NewGuid():N}";
+                }
+            }
+
+            var selectedAnimationIndex = Math.Clamp(
+                CurrentAnimationSettingIndex,
+                0,
+                AnimationSettings.Count - 1);
+
+            return new OtomeKairoConsoleClientSettings
+            {
+                ClientId = ClientId,
+                Process = new OtomeKairoConsoleProcessSettings
+                {
+                    ConsoleApiPort = CocoroConsolePort,
+                    CocoroShellPort = CocoroShellPort,
+                    ConversationInputEnabled = IsUseLLM,
+                },
+                Display = new OtomeKairoConsoleDisplaySettings
+                {
+                    RestoreWindowPosition = IsRestoreWindowPosition,
+                    Topmost = IsTopmost,
+                    EscapeCursor = IsEscapeCursor,
+                    EscapePositions = EscapePositions.Select(position => new OtomeKairoConsoleEscapePosition
+                    {
+                        X = position.x,
+                        Y = position.y,
+                        Enabled = position.enabled,
+                    }).ToList(),
+                    TouchVirtualKeyEnabled = IsInputVirtualKey,
+                    VirtualKey = VirtualKeyString,
+                    AutoMove = IsAutoMove,
+                    ShowMessageWindow = ShowMessageWindow,
+                    AmbientOcclusionEnabled = IsEnableAmbientOcclusion,
+                    MsaaLevel = MsaaLevel,
+                    AvatarShadowMode = AvatarShadow,
+                    AvatarShadowResolution = AvatarShadowResolution,
+                    BackgroundShadowMode = BackgroundShadow,
+                    BackgroundShadowResolution = BackgroundShadowResolution,
+                    AvatarWindowSize = WindowSize,
+                    AvatarPositionX = WindowPositionX,
+                    AvatarPositionY = WindowPositionY,
+                    MessageWindow = new OtomeKairoConsoleMessageWindowSettings
+                    {
+                        MaxMessageCount = MessageWindowSettings.maxMessageCount,
+                        MaxTotalCharacters = MessageWindowSettings.maxTotalAvatars,
+                        MinWindowSize = MessageWindowSettings.minWindowSize,
+                        MaxWindowSize = MessageWindowSettings.maxWindowSize,
+                        FontSize = MessageWindowSettings.fontSize,
+                        HorizontalOffset = MessageWindowSettings.horizontalOffset,
+                        VerticalOffset = MessageWindowSettings.verticalOffset,
+                    },
+                    WindowPlacements = WindowPlacements.ToDictionary(
+                        entry => entry.Key,
+                        entry => new OtomeKairoConsoleWindowPlacement
+                        {
+                            Left = entry.Value.left,
+                            Top = entry.Value.top,
+                        }),
+                },
+                DesktopCapture = new OtomeKairoConsoleDesktopCaptureSettings
+                {
+                    Enabled = ScreenshotSettings.enabled,
+                    CaptureActiveWindowOnly = ScreenshotSettings.captureActiveWindowOnly,
+                    IdleTimeoutMinutes = ScreenshotSettings.idleTimeoutMinutes,
+                    ExcludePatterns = new List<string>(ScreenshotSettings.excludePatterns),
+                },
+                AvatarPresentations = BuildAvatarPresentations(),
+                Motion = new OtomeKairoConsoleMotionSettings
+                {
+                    SelectedAnimationSetId = AnimationSettings[selectedAnimationIndex].animationSetId,
+                    AnimationSets = AnimationSettings.Select(animationSet => new OtomeKairoConsoleAnimationSet
+                    {
+                        AnimationSetId = animationSet.animationSetId,
+                        DisplayName = animationSet.animeSetName,
+                        PostureChangeLoopCountStanding = animationSet.postureChangeLoopCountStanding,
+                        PostureChangeLoopCountSittingFloor = animationSet.postureChangeLoopCountSittingFloor,
+                        Animations = animationSet.animations.Select(animation => new OtomeKairoConsoleAnimation
+                        {
+                            DisplayName = animation.displayName,
+                            AnimationType = animation.animationType,
+                            AnimationName = animation.animationName,
+                            Enabled = animation.isEnabled,
+                        }).ToList(),
+                    }).ToList(),
+                },
+            };
+        }
+
+        /// <summary>
+        /// 現在の実行時モデルからアバター音声設定bundleを構築する。
+        /// </summary>
+        public OtomeKairoAvatarSpeechEditorState BuildAvatarSpeechEditorState()
+        {
+            if (AvatarList.Count == 0)
+            {
+                throw new InvalidOperationException("アバター設定がありません。");
+            }
+
+            foreach (var avatar in AvatarList)
+            {
+                if (string.IsNullOrWhiteSpace(avatar.avatarId))
+                {
+                    avatar.avatarId = $"avatar:{Guid.NewGuid():N}";
+                }
+            }
+
+            var selectedAvatarIndex = Math.Clamp(CurrentAvatarIndex, 0, AvatarList.Count - 1);
+            return new OtomeKairoAvatarSpeechEditorState
+            {
+                SelectedAvatarId = AvatarList[selectedAvatarIndex].avatarId,
+                MicrophoneSettings = new OtomeKairoMicrophoneSettings
+                {
+                    InputThresholdDb = MicrophoneSettings.inputThreshold,
+                    SpeakerRecognitionThreshold = MicrophoneSettings.speakerRecognitionThreshold,
+                },
+                Avatars = AvatarList.Select(BuildAvatarSpeechDefinition).ToList(),
+            };
+        }
+
+        private void ApplyAvatarSettings(
+            IReadOnlyCollection<OtomeKairoConsoleAvatarPresentation> presentations,
+            OtomeKairoAvatarSpeechEditorState avatarSpeech)
+        {
+            var presentationsByAvatarId = presentations.ToDictionary(item => item.AvatarId);
+            AvatarList = avatarSpeech.Avatars.Select(definition =>
+            {
+                presentationsByAvatarId.TryGetValue(definition.AvatarId, out var presentation);
+                return BuildRuntimeAvatar(definition, presentation);
+            }).ToList();
+            CurrentAvatarIndex = Math.Max(
+                0,
+                AvatarList.FindIndex(avatar => avatar.avatarId == avatarSpeech.SelectedAvatarId));
+        }
+
+        private static AvatarSettings BuildRuntimeAvatar(
+            OtomeKairoAvatarSpeechDefinition definition,
+            OtomeKairoConsoleAvatarPresentation? presentation)
+        {
+            var model = presentation?.Model ?? string.Empty;
+            var voicevox = definition.Tts.VoicevoxConfig;
+            var styleBert = definition.Tts.StyleBertVits2Config;
+            var aivis = definition.Tts.AivisCloudConfig;
+            return new AvatarSettings
+            {
+                avatarId = definition.AvatarId,
+                modelName = definition.DisplayName,
+                isReadOnly = string.Equals(model, BuiltInModel, StringComparison.OrdinalIgnoreCase),
+                vrmFilePath = model,
+                isConvertMToon = presentation?.ConvertUnlitToMtoon ?? false,
+                isEnableShadowOff = presentation?.ShadowExclusionEnabled ?? false,
+                shadowOffMesh = string.Join(",", presentation?.ShadowExcludedMeshNames ?? new List<string>()),
+                isUseSTT = definition.Stt.Enabled,
+                sttEngine = definition.Stt.Engine,
+                sttWakeWord = definition.Stt.WakeWord,
+                sttProfileId = definition.Stt.ProfileId,
+                sttApiKey = definition.Stt.ApiKey,
+                sttLanguage = definition.Stt.Language,
+                isUseTTS = definition.Tts.Enabled,
+                ttsType = definition.Tts.Engine,
+                voicevoxConfig = new VoicevoxConfig
+                {
+                    endpointUrl = voicevox.EndpointUrl,
+                    speakerId = voicevox.SpeakerId,
+                    speedScale = voicevox.SpeedScale,
+                    pitchScale = voicevox.PitchScale,
+                    intonationScale = voicevox.IntonationScale,
+                    volumeScale = voicevox.VolumeScale,
+                    prePhonemeLength = voicevox.PrePhonemeLength,
+                    postPhonemeLength = voicevox.PostPhonemeLength,
+                    outputSamplingRate = voicevox.OutputSamplingRate,
+                    outputStereo = voicevox.OutputStereo,
+                },
+                styleBertVits2Config = new StyleBertVits2Config
+                {
+                    endpointUrl = styleBert.EndpointUrl,
+                    modelName = styleBert.ModelName,
+                    modelId = styleBert.ModelId,
+                    speakerName = styleBert.SpeakerName,
+                    speakerId = styleBert.SpeakerId,
+                    style = styleBert.Style,
+                    styleWeight = styleBert.StyleWeight,
+                    sdpRatio = styleBert.SdpRatio,
+                    noise = styleBert.Noise,
+                    noiseW = styleBert.NoiseW,
+                    length = styleBert.Length,
+                    language = styleBert.Language,
+                    autoSplit = styleBert.AutoSplit,
+                    splitInterval = styleBert.SplitInterval,
+                    assistText = styleBert.AssistText,
+                    assistTextWeight = styleBert.AssistTextWeight,
+                    referenceAudioPath = styleBert.ReferenceAudioPath,
+                },
+                aivisCloudConfig = new AivisCloudConfig
+                {
+                    apiKey = aivis.ApiKey,
+                    endpointUrl = aivis.EndpointUrl,
+                    modelUuid = aivis.ModelUuid,
+                    speakerUuid = aivis.SpeakerUuid,
+                    styleId = aivis.StyleId,
+                    styleName = aivis.StyleName,
+                    useSSML = aivis.UseSsml,
+                    language = aivis.Language,
+                    speakingRate = aivis.SpeakingRate,
+                    emotionalIntensity = aivis.EmotionalIntensity,
+                    tempoDynamics = aivis.TempoDynamics,
+                    pitch = aivis.Pitch,
+                    volume = aivis.Volume,
+                    outputFormat = aivis.OutputFormat,
+                    outputBitrate = aivis.OutputBitrate,
+                    outputSamplingRate = aivis.OutputSamplingRate,
+                    outputAudioChannels = aivis.OutputAudioChannels,
+                },
+            };
+        }
+
+        private void ApplyMotionSettings(OtomeKairoConsoleMotionSettings motion)
+        {
+            AnimationSettings = motion.AnimationSets.Select(animationSet => new AnimationSetting
+            {
+                animationSetId = animationSet.AnimationSetId,
+                animeSetName = animationSet.DisplayName,
+                postureChangeLoopCountStanding = animationSet.PostureChangeLoopCountStanding,
+                postureChangeLoopCountSittingFloor = animationSet.PostureChangeLoopCountSittingFloor,
+                animations = animationSet.Animations.Select(animation => new AnimationConfig
+                {
+                    displayName = animation.DisplayName,
+                    animationType = animation.AnimationType,
+                    animationName = animation.AnimationName,
+                    isEnabled = animation.Enabled,
+                }).ToList(),
+            }).ToList();
+            CurrentAnimationSettingIndex = Math.Max(
+                0,
+                AnimationSettings.FindIndex(item => item.animationSetId == motion.SelectedAnimationSetId));
+        }
+
+        private List<OtomeKairoConsoleAvatarPresentation> BuildAvatarPresentations()
+        {
+            var presentations = new List<OtomeKairoConsoleAvatarPresentation>();
+            foreach (var avatar in AvatarList)
+            {
+                if (string.IsNullOrWhiteSpace(avatar.vrmFilePath))
+                {
+                    continue;
+                }
+
+                presentations.Add(new OtomeKairoConsoleAvatarPresentation
+                {
+                    AvatarId = avatar.avatarId,
+                    Model = avatar.vrmFilePath,
+                    ConvertUnlitToMtoon = avatar.isConvertMToon,
+                    ShadowExclusionEnabled = avatar.isEnableShadowOff,
+                    ShadowExcludedMeshNames = avatar.shadowOffMesh
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(name => name.Trim())
+                        .Where(name => name.Length > 0)
+                        .ToList(),
+                });
+            }
+            return presentations;
+        }
+
+        private static OtomeKairoAvatarSpeechDefinition BuildAvatarSpeechDefinition(AvatarSettings avatar)
+        {
+            return new OtomeKairoAvatarSpeechDefinition
+            {
+                AvatarId = avatar.avatarId,
+                DisplayName = avatar.modelName,
+                Stt = new OtomeKairoSttSettings
+                {
+                    Enabled = avatar.isUseSTT,
+                    Engine = avatar.sttEngine,
+                    WakeWord = avatar.sttWakeWord,
+                    ProfileId = avatar.sttProfileId,
+                    ApiKey = avatar.sttApiKey,
+                    Language = avatar.sttLanguage,
+                },
+                Tts = new OtomeKairoTtsSettings
+                {
+                    Enabled = avatar.isUseTTS,
+                    Engine = avatar.ttsType,
+                    VoicevoxConfig = new OtomeKairoVoicevoxSettings
+                    {
+                        EndpointUrl = avatar.voicevoxConfig.endpointUrl,
+                        SpeakerId = avatar.voicevoxConfig.speakerId,
+                        SpeedScale = avatar.voicevoxConfig.speedScale,
+                        PitchScale = avatar.voicevoxConfig.pitchScale,
+                        IntonationScale = avatar.voicevoxConfig.intonationScale,
+                        VolumeScale = avatar.voicevoxConfig.volumeScale,
+                        PrePhonemeLength = avatar.voicevoxConfig.prePhonemeLength,
+                        PostPhonemeLength = avatar.voicevoxConfig.postPhonemeLength,
+                        OutputSamplingRate = avatar.voicevoxConfig.outputSamplingRate,
+                        OutputStereo = avatar.voicevoxConfig.outputStereo,
+                    },
+                    StyleBertVits2Config = new OtomeKairoStyleBertVits2Settings
+                    {
+                        EndpointUrl = avatar.styleBertVits2Config.endpointUrl,
+                        ModelName = avatar.styleBertVits2Config.modelName,
+                        ModelId = avatar.styleBertVits2Config.modelId,
+                        SpeakerName = avatar.styleBertVits2Config.speakerName,
+                        SpeakerId = avatar.styleBertVits2Config.speakerId,
+                        Style = avatar.styleBertVits2Config.style,
+                        StyleWeight = avatar.styleBertVits2Config.styleWeight,
+                        SdpRatio = avatar.styleBertVits2Config.sdpRatio,
+                        Noise = avatar.styleBertVits2Config.noise,
+                        NoiseW = avatar.styleBertVits2Config.noiseW,
+                        Length = avatar.styleBertVits2Config.length,
+                        Language = avatar.styleBertVits2Config.language,
+                        AutoSplit = avatar.styleBertVits2Config.autoSplit,
+                        SplitInterval = avatar.styleBertVits2Config.splitInterval,
+                        AssistText = avatar.styleBertVits2Config.assistText,
+                        AssistTextWeight = avatar.styleBertVits2Config.assistTextWeight,
+                        ReferenceAudioPath = avatar.styleBertVits2Config.referenceAudioPath,
+                    },
+                    AivisCloudConfig = new OtomeKairoAivisCloudSettings
+                    {
+                        ApiKey = avatar.aivisCloudConfig.apiKey,
+                        EndpointUrl = avatar.aivisCloudConfig.endpointUrl,
+                        ModelUuid = avatar.aivisCloudConfig.modelUuid,
+                        SpeakerUuid = avatar.aivisCloudConfig.speakerUuid,
+                        StyleId = avatar.aivisCloudConfig.styleId,
+                        StyleName = avatar.aivisCloudConfig.styleName,
+                        UseSsml = avatar.aivisCloudConfig.useSSML,
+                        Language = avatar.aivisCloudConfig.language,
+                        SpeakingRate = avatar.aivisCloudConfig.speakingRate,
+                        EmotionalIntensity = avatar.aivisCloudConfig.emotionalIntensity,
+                        TempoDynamics = avatar.aivisCloudConfig.tempoDynamics,
+                        Pitch = avatar.aivisCloudConfig.pitch,
+                        Volume = avatar.aivisCloudConfig.volume,
+                        OutputFormat = avatar.aivisCloudConfig.outputFormat,
+                        OutputBitrate = avatar.aivisCloudConfig.outputBitrate,
+                        OutputSamplingRate = avatar.aivisCloudConfig.outputSamplingRate,
+                        OutputAudioChannels = avatar.aivisCloudConfig.outputAudioChannels,
+                    },
+                },
+            };
+        }
+
+        /// <summary>
         /// OtomeKairo の HTTPS ベースURLを返す。
         /// </summary>
         public string GetOtomeKairoBaseUrl()
         {
-            // --- 接続モードに応じた実効ホストで URL を組み立てる ---
-            var host = GetEffectiveOtomeKairoHost();
-            return $"https://{host}:{OtomeKairoPort}";
+            return NormalizeServerUrl(ServerUrl);
         }
 
         /// <summary>
@@ -283,107 +620,58 @@ namespace CocoroConsole.Services
         /// </summary>
         public string GetOtomeKairoWebSocketBaseUrl()
         {
-            // --- 接続モードに応じた実効ホストで URL を組み立てる ---
-            var host = GetEffectiveOtomeKairoHost();
-            return $"wss://{host}:{OtomeKairoPort}";
-        }
-
-        /// <summary>
-        /// OtomeKairo の接続先がローカルかどうかを返す。
-        /// </summary>
-        public bool IsOtomeKairoLocal()
-        {
-            // --- 外部利用フラグがOFFのときのみローカル起動対象 ---
-            return !UseExternalOtomeKairo;
-        }
-
-        /// <summary>
-        /// 接続モードに応じた実効ホストを返す。
-        /// </summary>
-        private string GetEffectiveOtomeKairoHost()
-        {
-            // --- 内部利用時は常にローカルへ接続 ---
-            if (!UseExternalOtomeKairo)
+            var serverUri = new Uri(GetOtomeKairoBaseUrl(), UriKind.Absolute);
+            var builder = new UriBuilder(serverUri)
             {
-                return "127.0.0.1";
+                Scheme = serverUri.Scheme == Uri.UriSchemeHttp ? "ws" : "wss",
+            };
+            return builder.Uri.GetLeftPart(UriPartial.Authority);
+        }
+
+        private static string NormalizeServerUrl(string? serverUrl)
+        {
+            var normalized = (serverUrl ?? string.Empty).Trim().TrimEnd('/');
+            if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri)
+                || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+            {
+                throw new InvalidOperationException("OtomeKairoのサーバーURLが不正です。");
             }
 
-            // --- 外部利用時は設定ホストを採用 ---
-            return NormalizeOtomeKairoHost(OtomeKairoHost);
+            return uri.GetLeftPart(UriPartial.Authority);
         }
 
         /// <summary>
-        /// ホストがループバックかどうかを判定する。
-        /// </summary>
-        private static bool IsLoopbackHost(string host)
-        {
-            // --- localhost / loopback をローカル扱い ---
-            return string.Equals(host, "127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(host, "::1", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(host, "[::1]", StringComparison.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// OtomeKairo ホスト文字列を正規化する。
-        /// </summary>
-        private static string NormalizeOtomeKairoHost(string? host)
-        {
-            // --- 空値はローカル既定に寄せる ---
-            var normalized = (host ?? string.Empty).Trim();
-            return string.IsNullOrWhiteSpace(normalized) ? "127.0.0.1" : normalized;
-        }
-
-
-        /// <summary>
-        /// 設定ファイルから設定を読み込む
+        /// ローカルの接続情報を読み込む。
         /// </summary>
         public void LoadSettings()
         {
-            try
-            {
-                // アプリケーション設定ファイルを読み込む
-                LoadAppSettings();
-                // アニメーション設定ファイルを読み込む
-                LoadAnimationSettings();
-                // 設定読み込み完了フラグを設定
-                IsLoaded = true;
-            }
-            catch (Exception ex)
-            {
-                // エラーが発生した場合はデフォルト設定を使用
-                Debug.WriteLine($"設定の読み込みに失敗しました: {ex.Message}");
-            }
+            LoadAppSettings();
+            IsLoaded = true;
         }
 
         /// <summary>
-        /// アプリケーション設定ファイルを読み込む
+        /// Connection.json から接続情報を読み込む。
         /// </summary>
         public void LoadAppSettings()
         {
-            try
+            EnsureUserDataDirectoryExists();
+            if (File.Exists(ConnectionSettingsFilePath))
             {
-                // ディレクトリの存在確認とない場合は作成
-                EnsureUserDataDirectoryExists();
+                var json = File.ReadAllText(ConnectionSettingsFilePath);
+                var connection = JsonSerializer.Deserialize<ConnectionSettings>(json)
+                    ?? throw new InvalidOperationException("Connection.jsonを読み込めません。");
+                ServerUrl = NormalizeServerUrl(connection.ServerUrl);
+                ClientId = connection.ClientId.Trim();
+                OtomeKairoBearerToken = connection.ConsoleAccessToken;
+            }
 
-                // 設定ファイルが存在するか確認
-                if (File.Exists(AppSettingsFilePath))
-                {
-                    LoadExistingSettingsFile();
-                }
-                else
-                {
-                    // 設定ファイルがない場合はデフォルト設定を適用して保存
-                    var defaultSettings = LoadDefaultSettings();
-                    UpdateSettings(defaultSettings);
-                    SaveAppSettings();
-                    Debug.WriteLine($"デフォルトのアプリ設定を保存しました: {AppSettingsFilePath}");
-                }
-            }
-            catch (Exception ex)
+            if (string.IsNullOrWhiteSpace(ClientId))
             {
-                Debug.WriteLine($"アプリ設定の読み込みに失敗しました: {ex.Message}");
+                ClientId = $"console-{Guid.NewGuid()}";
             }
+
+            ApplyConnectionUri();
+            SaveConnectionSettings();
         }
 
         /// <summary>
@@ -400,69 +688,14 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// 既存の設定ファイルを読み込む
-        /// </summary>
-        private void LoadExistingSettingsFile()
-        {
-            string userSettingsJson = File.ReadAllText(AppSettingsFilePath);
-            ProcessCurrentFormatSettings(userSettingsJson);
-        }
-
-        /// <summary>
-        /// 現在のフォーマットの設定ファイルを処理する
-        /// </summary>
-        private void ProcessCurrentFormatSettings(string configJson)
-        {
-            var userSettings = MessageHelper.DeserializeFromJson<ConfigSettings>(configJson);
-            if (userSettings != null)
-            {
-                var shouldPersistClientId = string.IsNullOrWhiteSpace(userSettings.clientId);
-                UpdateSettings(userSettings);
-                if (shouldPersistClientId && !string.IsNullOrWhiteSpace(ClientId))
-                {
-                    SaveAppSettings();
-                }
-            }
-        }
-
-        /// <summary>
-        /// デフォルト設定ファイルを読み込む
-        /// </summary>
-        private ConfigSettings LoadDefaultSettings()
-        {
-            if (File.Exists(DefaultSettingsFilePath))
-            {
-                try
-                {
-                    string json = File.ReadAllText(DefaultSettingsFilePath);
-                    var defaultSettings = MessageHelper.DeserializeFromJson<ConfigSettings>(json);
-
-                    if (defaultSettings != null)
-                    {
-                        return defaultSettings;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"デフォルトのアプリ設定の読み込みに失敗しました: {ex.Message}");
-                }
-            }
-
-            // 読み込みに失敗した場合は空の設定を返す
-            return new ConfigSettings();
-        }
-
-        /// <summary>
-        /// DefaultSetting.json からアバターの雛形を作成する
+        /// 新しいアバターの編集用モデルを作成する。
         /// </summary>
         public AvatarSettings CreateAvatarFromDefaults(string modelName)
         {
-            var defaults = LoadDefaultSettings();
-            var template = defaults.avatarList != null && defaults.avatarList.Count > 0
-                ? defaults.avatarList[0]
-                : new AvatarSettings();
-
-            var avatar = template.DeepCopy();
+            var source = GetCurrentAvatar()
+                ?? throw new InvalidOperationException("複製元のアバター設定がありません。");
+            var avatar = source.DeepCopy();
+            avatar.avatarId = $"avatar:{Guid.NewGuid():N}";
             avatar.modelName = modelName;
             avatar.vrmFilePath = string.Empty;
             avatar.isReadOnly = false;
@@ -470,158 +703,55 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// アプリケーション設定をファイルに保存
+        /// 接続情報だけを Connection.json に保存する。
         /// </summary>
         public void SaveAppSettings()
         {
             try
             {
-                // 現在の設定からConfigSettingsオブジェクトを取得
-                var settings = GetConfigSettings();
-
-                // JSONにシリアライズ
-                var options = new JsonSerializerOptions
-                {
-                    WriteIndented = true, // 整形されたJSONを出力
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // 日本語などの非ASCII文字をエスケープせずに出力
-                };
-                string json = JsonSerializer.Serialize(settings, options);
-
-                // ファイルに保存
-                File.WriteAllText(AppSettingsFilePath, json);
-
-                Debug.WriteLine($"アプリ設定を保存しました: {AppSettingsFilePath}");
-
-                // イベント発生
+                SaveConnectionSettings();
                 SettingsSaved?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"アプリ設定の保存に失敗しました: {ex.Message}");
+                Debug.WriteLine($"接続情報の保存に失敗しました: {ex.Message}");
+                throw;
             }
         }
 
         /// <summary>
-        /// 全設定をファイルに保存
+        /// ローカル接続情報を保存する。
         /// </summary>
         public void SaveSettings()
         {
             SaveAppSettings();
-            SaveAnimationSettings();
         }
 
-        /// <summary>
-        /// アニメーション設定をファイルから読み込む
-        /// </summary>
-        public void LoadAnimationSettings()
+        private void ApplyConnectionUri()
         {
-            try
-            {
-                AnimationSettingsData? animationData = null;
-
-                // 設定ファイルが存在するか確認
-                if (File.Exists(AnimationSettingsFilePath))
-                {
-                    string json = File.ReadAllText(AnimationSettingsFilePath);
-                    animationData = MessageHelper.DeserializeFromJson<AnimationSettingsData>(json);
-                }
-
-                // 設定ファイルがない場合やデシリアライズに失敗した場合は、デフォルト設定を読み込む
-                if (animationData == null)
-                {
-                    animationData = LoadDefaultAnimationSettings();
-
-                    if (animationData != null)
-                    {
-                        // デフォルト設定をファイルに保存
-                        SaveAnimationSettingsData(animationData);
-                        Debug.WriteLine($"デフォルトのアニメーション設定を保存しました: {AnimationSettingsFilePath}");
-                    }
-                }
-
-                // 読み込んだ設定を適用
-                if (animationData != null)
-                {
-                    CurrentAnimationSettingIndex = animationData.currentAnimationSettingIndex;
-                    AnimationSettings = new List<AnimationSetting>(animationData.animationSettings);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"アニメーション設定の読み込みに失敗しました: {ex.Message}");
-                // エラーが発生した場合はデフォルト設定を使用
-                var defaultData = LoadDefaultAnimationSettings();
-                if (defaultData != null)
-                {
-                    CurrentAnimationSettingIndex = defaultData.currentAnimationSettingIndex;
-                    AnimationSettings = new List<AnimationSetting>(defaultData.animationSettings);
-                }
-            }
+            var uri = new Uri(NormalizeServerUrl(ServerUrl), UriKind.Absolute);
+            OtomeKairoHost = uri.Host;
+            OtomeKairoPort = uri.Port;
         }
 
-        /// <summary>
-        /// アニメーション設定をファイルに保存
-        /// </summary>
-        public void SaveAnimationSettings()
+        private void SaveConnectionSettings()
         {
-            try
+            EnsureUserDataDirectoryExists();
+            ServerUrl = NormalizeServerUrl(ServerUrl);
+            ApplyConnectionUri();
+            var connection = new ConnectionSettings
             {
-                var animationData = new AnimationSettingsData
-                {
-                    currentAnimationSettingIndex = CurrentAnimationSettingIndex,
-                    animationSettings = new List<AnimationSetting>(AnimationSettings)
-                };
-
-                SaveAnimationSettingsData(animationData);
-                Debug.WriteLine($"アニメーション設定を保存しました: {AnimationSettingsFilePath}");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"アニメーション設定の保存に失敗しました: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// デフォルトアニメーション設定を読み込む
-        /// </summary>
-        private AnimationSettingsData LoadDefaultAnimationSettings()
-        {
-            if (File.Exists(DefaultAnimationSettingsFilePath))
-            {
-                try
-                {
-                    string json = File.ReadAllText(DefaultAnimationSettingsFilePath);
-                    var defaultData = MessageHelper.DeserializeFromJson<AnimationSettingsData>(json);
-
-                    if (defaultData != null)
-                    {
-                        return defaultData;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"デフォルトのアニメーション設定の読み込みに失敗しました: {ex.Message}");
-                }
-            }
-
-            // 読み込みに失敗した場合は空の設定を返す
-            return new AnimationSettingsData();
-        }
-
-        /// <summary>
-        /// アニメーション設定データをファイルに保存する
-        /// </summary>
-        private void SaveAnimationSettingsData(AnimationSettingsData animationData)
-        {
+                ServerUrl = ServerUrl,
+                ClientId = ClientId.Trim(),
+                ConsoleAccessToken = OtomeKairoBearerToken ?? string.Empty,
+            };
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             };
-            string json = JsonSerializer.Serialize(animationData, options);
-            File.WriteAllText(AnimationSettingsFilePath, json);
+            File.WriteAllText(ConnectionSettingsFilePath, JsonSerializer.Serialize(connection, options));
+            Debug.WriteLine($"接続情報を保存しました: {ConnectionSettingsFilePath}");
         }
 
         /// <summary>
@@ -681,11 +811,17 @@ namespace CocoroConsole.Services
     }
 
     /// <summary>
-    /// アニメーション設定データクラス
+    /// OtomeKairo へ接続するために端末内へ保持する最小設定。
     /// </summary>
-    public class AnimationSettingsData
+    public class ConnectionSettings
     {
-        public int currentAnimationSettingIndex { get; set; } = 0;
-        public List<AnimationSetting> animationSettings { get; set; } = new List<AnimationSetting>();
+        [JsonPropertyName("server_url")]
+        public string ServerUrl { get; set; } = "https://127.0.0.1:55601";
+
+        [JsonPropertyName("client_id")]
+        public string ClientId { get; set; } = string.Empty;
+
+        [JsonPropertyName("console_access_token")]
+        public string ConsoleAccessToken { get; set; } = string.Empty;
     }
 }

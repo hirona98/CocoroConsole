@@ -63,6 +63,9 @@ namespace CocoroConsole.Services
 
         // OtomeKairo の bootstrap と認証確認を直列化するためのセマフォ
         private readonly SemaphoreSlim _otomeKairoBootstrapSemaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _apiServerLifecycleSemaphore = new SemaphoreSlim(1, 1);
+        private bool _remoteSettingsApplied;
+        private bool _apiServerStartRequested;
 
         // 対話入力送信中フラグ（0/1）
         // UI 側の送信ボタン無効化・二重送信抑止に使う。
@@ -270,16 +273,24 @@ namespace CocoroConsole.Services
         /// </summary>
         public async Task StartServerAsync()
         {
+            _apiServerStartRequested = true;
+            await _apiServerLifecycleSemaphore.WaitAsync().ConfigureAwait(false);
             try
             {
-                // CocoroConsole APIサーバーを起動
-                await _apiServer.StartAsync();
+                if (_remoteSettingsApplied && !_apiServer.IsRunning)
+                {
+                    await _apiServer.StartAsync().ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"CommunicationService: サーバー起動エラー: {ex.Message}");
                 ErrorOccurred?.Invoke(this, $"サーバー起動に失敗しました: {ex.Message}");
                 throw;
+            }
+            finally
+            {
+                _apiServerLifecycleSemaphore.Release();
             }
         }
 
@@ -288,6 +299,7 @@ namespace CocoroConsole.Services
         /// </summary>
         public async Task StopServerAsync()
         {
+            _apiServerStartRequested = false;
             try
             {
                 // CocoroConsole APIサーバーを停止
@@ -316,15 +328,6 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// OtomeKairo再起動開始を通知して起動待ち状態に戻す
-        /// </summary>
-        public void NotifyOtomeKairoRestarting()
-        {
-            // 再起動の切り替えを即時に反映し、ヘルスチェックを短周期に戻す
-            _statusPollingService.SetWaitingForStartup();
-        }
-
-        /// <summary>
         /// AppSettings保存イベントハンドラー
         /// </summary>
         private void OnSettingsSaved(object? sender, EventArgs e)
@@ -336,7 +339,10 @@ namespace CocoroConsole.Services
 
         private CocoroConsoleApiServer CreateApiServer(int port)
         {
-            var server = new CocoroConsoleApiServer(port, _appSettings);
+            var server = new CocoroConsoleApiServer(
+                port,
+                _appSettings,
+                SaveConsoleClientSettingsAsync);
             server.UiMessageReceived += (sender, request) => UiMessageReceived?.Invoke(this, request);
             server.ControlCommandReceived += (sender, request) => ControlCommandReceived?.Invoke(this, request);
             server.StatusUpdateReceived += (sender, request) =>
@@ -497,7 +503,25 @@ namespace CocoroConsole.Services
                 await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
                 Debug.WriteLine("[CommunicationService] OtomeKairo への接続初期化を完了しました");
 
-                await _otomeKairoApiClient.GetOtomeKairoConfigAsync().ConfigureAwait(false);
+                var config = await _otomeKairoApiClient
+                    .GetOtomeKairoConfigAsync()
+                    .ConfigureAwait(false);
+                var consoleClient = await _otomeKairoApiClient
+                    .ConnectConsoleClientAsync(_appSettings.ClientId)
+                    .ConfigureAwait(false);
+                var avatarSpeech = await _otomeKairoApiClient
+                    .GetAvatarSpeechEditorStateAsync()
+                    .ConfigureAwait(false);
+                _appSettings.ApplyRemoteSettings(
+                    consoleClient.Settings,
+                    config.SettingsSnapshot,
+                    avatarSpeech);
+                _appSettings.SaveAppSettings();
+                _remoteSettingsApplied = true;
+                if (_apiServerStartRequested)
+                {
+                    await StartServerAsync().ConfigureAwait(false);
+                }
                 await StartEventsStreamAsync().ConfigureAwait(false);
                 await SyncDesktopWatchCapabilityStateAsync().ConfigureAwait(false);
             }
@@ -878,8 +902,10 @@ namespace CocoroConsole.Services
                 return;
             }
 
+            var previousEnabled = _appSettings.ScreenshotSettings.enabled;
             try
             {
+                _appSettings.ScreenshotSettings.enabled = enabled;
                 await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
                 await StartEventsStreamAsync().ConfigureAwait(false);
                 var configResponse = await _otomeKairoApiClient
@@ -899,16 +925,51 @@ namespace CocoroConsole.Services
                 await _otomeKairoApiClient
                     .PatchCapabilityStateAsync("vision.capture", paused: !enabled)
                     .ConfigureAwait(false);
+                await _otomeKairoApiClient
+                    .ReplaceConsoleClientEditorStateAsync(
+                        _appSettings.ClientId,
+                        _appSettings.BuildConsoleClientSettings())
+                    .ConfigureAwait(false);
 
-                _appSettings.ScreenshotSettings.enabled = enabled;
                 _appSettings.SaveAppSettings();
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, enabled ? "デスクトップウォッチを有効にしました" : "デスクトップウォッチを無効にしました"));
             }
             catch (Exception ex)
             {
+                _appSettings.ScreenshotSettings.enabled = previousEnabled;
                 Debug.WriteLine($"[DesktopWatch] 切り替え失敗: {ex.Message}");
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"デスクトップウォッチ設定変更に失敗しました: {ex.Message}"));
             }
+        }
+
+        public async Task SaveAvatarSpeechSettingsAsync()
+        {
+            if (_otomeKairoApiClient == null)
+            {
+                throw new InvalidOperationException("OtomeKairo APIクライアントが初期化されていません。");
+            }
+
+            await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
+            await _otomeKairoApiClient
+                .ReplaceAvatarSpeechEditorStateAsync(_appSettings.BuildAvatarSpeechEditorState())
+                .ConfigureAwait(false);
+            _appSettings.SaveAppSettings();
+        }
+
+        public async Task SaveConsoleClientSettingsAsync(CancellationToken cancellationToken = default)
+        {
+            if (_otomeKairoApiClient == null)
+            {
+                throw new InvalidOperationException("OtomeKairo APIクライアントが初期化されていません。");
+            }
+
+            await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
+            await _otomeKairoApiClient
+                .ReplaceConsoleClientEditorStateAsync(
+                    _appSettings.ClientId,
+                    _appSettings.BuildConsoleClientSettings(),
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
 
 
@@ -1643,6 +1704,7 @@ namespace CocoroConsole.Services
             _logStreamClient?.Dispose();
             _eventsStreamClient?.Dispose();
             _otomeKairoBootstrapSemaphore?.Dispose();
+            _apiServerLifecycleSemaphore.Dispose();
             _conversationInputSendSemaphore?.Dispose();
         }
     }

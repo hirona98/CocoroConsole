@@ -74,12 +74,6 @@ namespace CocoroConsole.Controls
             {
                 var appSettings = AppSettings.Instance;
 
-                // アニメーション設定が空の場合、強制的に読み込みを実行
-                if (appSettings.AnimationSettings.Count == 0)
-                {
-                    appSettings.LoadAnimationSettings();
-                }
-
                 // 現在の設定をコピー
                 _animationSettings = new List<AnimationSetting>(appSettings.AnimationSettings);
 
@@ -107,7 +101,10 @@ namespace CocoroConsole.Controls
             {
                 var newAnimSetting = new AnimationSetting
                 {
+                    animationSetId = animSetting.animationSetId,
                     animeSetName = animSetting.animeSetName,
+                    postureChangeLoopCountStanding = animSetting.postureChangeLoopCountStanding,
+                    postureChangeLoopCountSittingFloor = animSetting.postureChangeLoopCountSittingFloor,
                     animations = new List<AnimationConfig>()
                 };
 
@@ -434,6 +431,7 @@ namespace CocoroConsole.Controls
 
                 var newAnimationSet = new AnimationSetting
                 {
+                    animationSetId = $"animation_set:{Guid.NewGuid():N}",
                     animeSetName = $"New Animation Set {_animationSettings.Count + 1}",
                     animations = new List<AnimationConfig>()
                 };
@@ -504,6 +502,7 @@ namespace CocoroConsole.Controls
 
                 var newAnimationSet = new AnimationSetting
                 {
+                    animationSetId = $"animation_set:{Guid.NewGuid():N}",
                     animeSetName = newName,
                     animations = new List<AnimationConfig>(),
                     postureChangeLoopCountStanding = sourceSet.postureChangeLoopCountStanding,

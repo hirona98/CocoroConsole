@@ -1,4 +1,5 @@
 using CocoroConsole.Models.OtomeKairoApi;
+using CocoroConsole.Services;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -72,6 +73,11 @@ namespace CocoroConsole.Controls
         public CapabilitySettingsControl()
         {
             InitializeComponent();
+            // 外部Watcherが呼び出す実際のOtomeKairo接続先を表示する。
+            var wakeApiUrl = $"{AppSettings.Instance.GetOtomeKairoBaseUrl()}/api/wake";
+            WatcherDescriptionTextBlock.Text =
+                $"Watcherは外部の変化を監視し、検出時に {wakeApiUrl} へwakeを送信して即時に判断を開始します。"
+                + "定期思考の有効状態と実行間隔は適用されません。最小wake間隔は連続通知だけを抑制します。";
             ShowSection(CapabilitySettingsSection.Camera);
         }
 
@@ -628,11 +634,21 @@ namespace CocoroConsole.Controls
             current.Watcher.Enabled = SelectedWatcherEnabledCheckBox.IsChecked ?? false;
             current.Watcher.WatcherId = WatcherDefaults.BuildDefaultWatcherId(current.VisionSourceId);
             current.Watcher.Kind = "tapo_c220_motion";
-            current.Watcher.PollIntervalSeconds = ParseDoubleOrDefault(PollIntervalTextBox.Text, 60);
-            current.Watcher.MinWakeIntervalSeconds = ParseDoubleOrDefault(MinWakeIntervalTextBox.Text, 60);
-            current.Watcher.MotionRatioThreshold = ParseDoubleOrDefault(MotionRatioThresholdTextBox.Text, 0.03);
-            current.Watcher.PixelDiffThreshold = ParseIntOrDefault(PixelDiffThresholdTextBox.Text, 25);
-            current.Watcher.ResizeWidth = ParseIntOrDefault(ResizeWidthTextBox.Text, 320);
+            current.Watcher.PollIntervalSeconds = ParseDoubleOrDefault(
+                PollIntervalTextBox.Text,
+                OtomeKairoCameraWatcherDefaults.PollIntervalSeconds);
+            current.Watcher.MinWakeIntervalSeconds = ParseDoubleOrDefault(
+                MinWakeIntervalTextBox.Text,
+                OtomeKairoCameraWatcherDefaults.MinWakeIntervalSeconds);
+            current.Watcher.MotionRatioThreshold = ParseDoubleOrDefault(
+                MotionRatioThresholdTextBox.Text,
+                OtomeKairoCameraWatcherDefaults.MotionRatioThreshold);
+            current.Watcher.PixelDiffThreshold = ParseIntOrDefault(
+                PixelDiffThresholdTextBox.Text,
+                OtomeKairoCameraWatcherDefaults.PixelDiffThreshold);
+            current.Watcher.ResizeWidth = ParseIntOrDefault(
+                ResizeWidthTextBox.Text,
+                OtomeKairoCameraWatcherDefaults.ResizeWidth);
         }
 
         private void SyncCurrentMcpServerFromUi()
@@ -711,11 +727,16 @@ namespace CocoroConsole.Controls
             WatcherVisionSourceIdTextBox.Text = string.Empty;
             WatcherIdTextBox.Text = string.Empty;
             WatcherKindTextBox.Text = "カメラモーション (tapo_c220_motion)";
-            PollIntervalTextBox.Text = "60";
-            MinWakeIntervalTextBox.Text = "60";
-            MotionRatioThresholdTextBox.Text = "0.03";
-            PixelDiffThresholdTextBox.Text = "25";
-            ResizeWidthTextBox.Text = "320";
+            PollIntervalTextBox.Text =
+                OtomeKairoCameraWatcherDefaults.PollIntervalSeconds.ToString(CultureInfo.InvariantCulture);
+            MinWakeIntervalTextBox.Text =
+                OtomeKairoCameraWatcherDefaults.MinWakeIntervalSeconds.ToString(CultureInfo.InvariantCulture);
+            MotionRatioThresholdTextBox.Text =
+                OtomeKairoCameraWatcherDefaults.MotionRatioThreshold.ToString(CultureInfo.InvariantCulture);
+            PixelDiffThresholdTextBox.Text =
+                OtomeKairoCameraWatcherDefaults.PixelDiffThreshold.ToString(CultureInfo.InvariantCulture);
+            ResizeWidthTextBox.Text =
+                OtomeKairoCameraWatcherDefaults.ResizeWidth.ToString(CultureInfo.InvariantCulture);
         }
 
         private void ClearMcpServerUi()
@@ -927,11 +948,21 @@ namespace CocoroConsole.Controls
                 Enabled = watcher?.Enabled == true,
                 WatcherId = WatcherDefaults.BuildDefaultWatcherId(visionSourceId),
                 Kind = "tapo_c220_motion",
-                PollIntervalSeconds = watcher?.PollIntervalSeconds > 0 ? watcher.PollIntervalSeconds : 60,
-                MinWakeIntervalSeconds = watcher?.MinWakeIntervalSeconds > 0 ? watcher.MinWakeIntervalSeconds : 60,
-                MotionRatioThreshold = watcher?.MotionRatioThreshold > 0 ? watcher.MotionRatioThreshold : 0.03,
-                PixelDiffThreshold = watcher?.PixelDiffThreshold > 0 ? watcher.PixelDiffThreshold : 25,
-                ResizeWidth = watcher?.ResizeWidth > 0 ? watcher.ResizeWidth : 320,
+                PollIntervalSeconds = watcher?.PollIntervalSeconds > 0
+                    ? watcher.PollIntervalSeconds
+                    : OtomeKairoCameraWatcherDefaults.PollIntervalSeconds,
+                MinWakeIntervalSeconds = watcher?.MinWakeIntervalSeconds > 0
+                    ? watcher.MinWakeIntervalSeconds
+                    : OtomeKairoCameraWatcherDefaults.MinWakeIntervalSeconds,
+                MotionRatioThreshold = watcher?.MotionRatioThreshold > 0
+                    ? watcher.MotionRatioThreshold
+                    : OtomeKairoCameraWatcherDefaults.MotionRatioThreshold,
+                PixelDiffThreshold = watcher?.PixelDiffThreshold > 0
+                    ? watcher.PixelDiffThreshold
+                    : OtomeKairoCameraWatcherDefaults.PixelDiffThreshold,
+                ResizeWidth = watcher?.ResizeWidth > 0
+                    ? watcher.ResizeWidth
+                    : OtomeKairoCameraWatcherDefaults.ResizeWidth,
             };
         }
 

@@ -58,6 +58,7 @@ namespace CocoroConsole.Controls
                 var appSettings = AppSettings.Instance;
 
                 ApplyDefaultRemoteSettings();
+                OtomeKairoServerUrlTextBox.Text = appSettings.ServerUrl;
                 OtomeKairoAccessTokenPasswordBox.Password = appSettings.OtomeKairoBearerToken;
                 ConversationDisplayNameTextBox.Text = appSettings.ConversationDisplayName;
 
@@ -106,6 +107,23 @@ namespace CocoroConsole.Controls
                 current?.ThinkingSpeechLevel ?? DefaultThinkingSpeechLevel).ToString(CultureInfo.InvariantCulture);
         }
 
+        public void ReloadFromAppSettings()
+        {
+            var previousInitialized = _isInitialized;
+            _isInitialized = false;
+            var appSettings = AppSettings.Instance;
+            OtomeKairoServerUrlTextBox.Text = appSettings.ServerUrl;
+            OtomeKairoAccessTokenPasswordBox.Password = appSettings.OtomeKairoBearerToken;
+            ConversationDisplayNameTextBox.Text = appSettings.ConversationDisplayName;
+            ExcludeWindowTitlePatternsTextBox.Text = string.Join(
+                Environment.NewLine,
+                appSettings.ScreenshotSettings.excludePatterns);
+            VisualCaptureIdleTimeoutMinutesTextBox.Text =
+                appSettings.ScreenshotSettings.idleTimeoutMinutes.ToString(CultureInfo.InvariantCulture);
+            MicThresholdSlider.Value = appSettings.MicrophoneSettings.inputThreshold;
+            _isInitialized = previousInitialized;
+        }
+
         public void SetWakeDesktopObservationEnabled(bool enabled)
         {
             var previousInitialized = _isInitialized;
@@ -128,6 +146,7 @@ namespace CocoroConsole.Controls
 
         private void SetupEventHandlers()
         {
+            OtomeKairoServerUrlTextBox.TextChanged += OnSettingsChanged;
             OtomeKairoAccessTokenPasswordBox.PasswordChanged += OnSettingsChanged;
             ConversationDisplayNameTextBox.TextChanged += OnSettingsChanged;
             VisualCaptureIdleTimeoutMinutesTextBox.TextChanged += OnSettingsChanged;
@@ -223,6 +242,20 @@ namespace CocoroConsole.Controls
         public string GetOtomeKairoAccessToken()
         {
             return OtomeKairoAccessTokenPasswordBox.Password.Trim();
+        }
+
+        public void SetOtomeKairoAccessToken(string accessToken)
+        {
+            // 自動取得した接続情報の反映をユーザー編集として扱わない。
+            var previousInitialized = _isInitialized;
+            _isInitialized = false;
+            OtomeKairoAccessTokenPasswordBox.Password = accessToken;
+            _isInitialized = previousInitialized;
+        }
+
+        public string GetOtomeKairoServerUrl()
+        {
+            return OtomeKairoServerUrlTextBox.Text.Trim();
         }
 
         public string GetConversationDisplayName()

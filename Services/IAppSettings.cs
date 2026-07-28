@@ -1,4 +1,5 @@
 using CocoroConsole.Communication;
+using CocoroConsole.Models.OtomeKairoApi;
 using System.Collections.Generic;
 
 namespace CocoroConsole.Services
@@ -8,6 +9,11 @@ namespace CocoroConsole.Services
     /// </summary>
     public interface IAppSettings
     {
+        /// <summary>
+        /// OtomeKairoサーバーURL
+        /// </summary>
+        string ServerUrl { get; set; }
+
         /// <summary>
         /// CocoroConsoleポート
         /// </summary>
@@ -22,11 +28,6 @@ namespace CocoroConsole.Services
         /// OtomeKairo接続先ホスト
         /// </summary>
         string OtomeKairoHost { get; set; }
-
-        /// <summary>
-        /// 外部の OtomeKairo を使用するか
-        /// </summary>
-        bool UseExternalOtomeKairo { get; set; }
 
         /// <summary>
         /// CocoroShellポート
@@ -179,10 +180,9 @@ namespace CocoroConsole.Services
         bool IsLoaded { get; set; }
 
         /// <summary>
-        /// 設定値を更新
+        /// OtomeKairo の通常設定を反映済みかを表す。
         /// </summary>
-        /// <param name="config">サーバーから受信した設定値</param>
-        void UpdateSettings(ConfigSettings config);
+        bool HasRemoteSettings { get; }
 
         /// <summary>
         /// 現在の設定からConfigSettingsオブジェクトを作成
@@ -191,34 +191,42 @@ namespace CocoroConsole.Services
         ConfigSettings GetConfigSettings();
 
         /// <summary>
-        /// 設定ファイルから設定を読み込む
+        /// OtomeKairo から取得した通常設定を実行時モデルへ反映する。
+        /// </summary>
+        void ApplyRemoteSettings(
+            OtomeKairoConsoleClientSettings consoleSettings,
+            OtomeKairoCurrentSettings currentSettings,
+            OtomeKairoAvatarSpeechEditorState avatarSpeech);
+
+        /// <summary>
+        /// 現在の実行時モデルから端末設定bundleを構築する。
+        /// </summary>
+        OtomeKairoConsoleClientSettings BuildConsoleClientSettings();
+
+        /// <summary>
+        /// 現在の実行時モデルからアバター音声設定bundleを構築する。
+        /// </summary>
+        OtomeKairoAvatarSpeechEditorState BuildAvatarSpeechEditorState();
+
+        /// <summary>
+        /// Connection.json から接続情報を読み込む。
         /// </summary>
         void LoadSettings();
 
         /// <summary>
-        /// アプリケーション設定ファイルを読み込む
+        /// Connection.json から接続情報を読み込む。
         /// </summary>
         void LoadAppSettings();
 
         /// <summary>
-        /// アプリケーション設定をファイルに保存
+        /// 接続情報を Connection.json に保存する。
         /// </summary>
         void SaveAppSettings();
 
         /// <summary>
-        /// 全設定をファイルに保存
+        /// 接続情報を Connection.json に保存する。
         /// </summary>
         void SaveSettings();
-
-        /// <summary>
-        /// アニメーション設定をファイルから読み込む
-        /// </summary>
-        void LoadAnimationSettings();
-
-        /// <summary>
-        /// アニメーション設定をファイルに保存
-        /// </summary>
-        void SaveAnimationSettings();
 
         /// <summary>
         /// ユーザーデータディレクトリを取得
@@ -233,11 +241,6 @@ namespace CocoroConsole.Services
         /// OtomeKairo の WSS ベースURLを取得
         /// </summary>
         string GetOtomeKairoWebSocketBaseUrl();
-
-        /// <summary>
-        /// OtomeKairo 接続先がローカルかどうか
-        /// </summary>
-        bool IsOtomeKairoLocal();
 
         /// <summary>
         /// 現在選択されているアバター設定を取得

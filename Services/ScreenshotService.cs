@@ -78,7 +78,7 @@ namespace CocoroAI.Services
         }
 
         private bool _isDisposed;
-        private int _idleTimeoutMinutes = 10; // DefaultSetting.json と合わせて 10 分
+        private int _idleTimeoutMinutes = 10; // OtomeKairo の端末設定を受け取るまでの初期値
         private List<Regex>? _compiledExcludePatterns;
 
 

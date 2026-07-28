@@ -261,7 +261,8 @@
                                 CornerRadius="4"
                                 Padding="12"
                                 Margin="0,0,0,14">
-                            <TextBlock Text="Watcherは外部の変化を監視し、検出時に /api/wake を送信して即時に判断を開始します。定期思考の有効状態と実行間隔は適用されません。最小wake間隔は連続通知だけを抑制します。"
+                            <TextBlock x:Name="WatcherDescriptionTextBlock"
+                                       Text="Watcherは外部の変化を監視し、検出時にOtomeKairoのAPIへwakeを送信して即時に判断を開始します。"
                                        TextWrapping="Wrap"
                                        Foreground="#334A72"/>
                         </Border>

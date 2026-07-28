@@ -411,14 +411,6 @@ namespace CocoroConsole.Utilities
                 // 同名の実行中プロセスをチェックして終了または再起動
                 string processName = Path.GetFileNameWithoutExtension(exeName);
 
-                // --- OtomeKairo が外部利用設定の場合、ローカル起動/終了は行わない ---
-                if (processName.Equals("OtomeKairo", StringComparison.OrdinalIgnoreCase) &&
-                    !AppSettings.Instance.IsOtomeKairoLocal())
-                {
-                    Debug.WriteLine("[ProcessHelper] OtomeKairo は外部利用設定のため、ローカルプロセス操作をスキップします。");
-                    return;
-                }
-
                 // 再起動の場合は、既存プロセスを終了して完全に終了するまで待機
                 if (operation == ProcessOperation.RestartIfRunning)
                 {

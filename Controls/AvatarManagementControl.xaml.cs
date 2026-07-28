@@ -4,6 +4,7 @@ using CocoroConsole.Utilities;
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -116,12 +117,12 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// UI上の現在のアバター設定を取得（UIから値を読み取ってディープコピーを返却）
+        /// UI上の現在のアバター設定をAppSettingsへ同期
         /// </summary>
-        public AvatarSettings? GetCurrentAvatarSettingFromUI()
+        public void SyncCurrentAvatarFromUi()
         {
             if (_currentAvatarIndex < 0 || _currentAvatarIndex >= AppSettings.Instance.AvatarList.Count)
-                return null;
+                return;
 
             // 既存のアバター設定のディープコピーを作成
             var originalAvatar = AppSettings.Instance.AvatarList[_currentAvatarIndex];
@@ -170,38 +171,51 @@ namespace CocoroConsole.Controls
             if (int.TryParse(SBV2SpeakerIdTextBox.Text, out int speakerId))
                 avatar.styleBertVits2Config.speakerId = speakerId;
             avatar.styleBertVits2Config.style = SBV2StyleTextBox.Text;
-            if (float.TryParse(SBV2StyleWeightTextBox.Text, out float styleWeight))
+            if (TryParseInvariantFloat(SBV2StyleWeightTextBox.Text, out float styleWeight))
                 avatar.styleBertVits2Config.styleWeight = styleWeight;
             avatar.styleBertVits2Config.language = SBV2LanguageTextBox.Text;
-            if (float.TryParse(SBV2SdpRatioTextBox.Text, out float sdpRatio))
+            if (TryParseInvariantFloat(SBV2SdpRatioTextBox.Text, out float sdpRatio))
                 avatar.styleBertVits2Config.sdpRatio = sdpRatio;
-            if (float.TryParse(SBV2NoiseTextBox.Text, out float noise))
+            if (TryParseInvariantFloat(SBV2NoiseTextBox.Text, out float noise))
                 avatar.styleBertVits2Config.noise = noise;
-            if (float.TryParse(SBV2NoiseWTextBox.Text, out float noiseW))
+            if (TryParseInvariantFloat(SBV2NoiseWTextBox.Text, out float noiseW))
                 avatar.styleBertVits2Config.noiseW = noiseW;
-            if (float.TryParse(SBV2LengthTextBox.Text, out float length))
+            if (TryParseInvariantFloat(SBV2LengthTextBox.Text, out float length))
                 avatar.styleBertVits2Config.length = length;
             avatar.styleBertVits2Config.autoSplit = SBV2AutoSplitCheckBox.IsChecked ?? true;
-            if (float.TryParse(SBV2SplitIntervalTextBox.Text, out float splitInterval))
+            if (TryParseInvariantFloat(SBV2SplitIntervalTextBox.Text, out float splitInterval))
                 avatar.styleBertVits2Config.splitInterval = splitInterval;
 
             // AivisCloud設定
-            avatar.aivisCloudConfig.endpointUrl = String.Empty; // AivisCloudのエンドポイントURLはCocoroShellで設定
             avatar.aivisCloudConfig.apiKey = AivisCloudApiKeyPasswordBox.Text;
             avatar.aivisCloudConfig.modelUuid = AivisCloudModelUuidTextBox.Text;
             avatar.aivisCloudConfig.speakerUuid = AivisCloudSpeakerUuidTextBox.Text;
             if (int.TryParse(AivisCloudStyleIdTextBox.Text, out int styleId))
                 avatar.aivisCloudConfig.styleId = styleId;
-            if (float.TryParse(AivisCloudSpeakingRateTextBox.Text, out float speakingRate))
+            if (TryParseInvariantFloat(AivisCloudSpeakingRateTextBox.Text, out float speakingRate))
                 avatar.aivisCloudConfig.speakingRate = speakingRate;
-            if (float.TryParse(AivisCloudEmotionalIntensityTextBox.Text, out float emotionalIntensity))
+            if (TryParseInvariantFloat(AivisCloudEmotionalIntensityTextBox.Text, out float emotionalIntensity))
                 avatar.aivisCloudConfig.emotionalIntensity = emotionalIntensity;
-            if (float.TryParse(AivisCloudTempoDynamicsTextBox.Text, out float tempoDynamics))
+            if (TryParseInvariantFloat(AivisCloudTempoDynamicsTextBox.Text, out float tempoDynamics))
                 avatar.aivisCloudConfig.tempoDynamics = tempoDynamics;
-            if (float.TryParse(AivisCloudVolumeTextBox.Text, out float volume))
+            if (TryParseInvariantFloat(AivisCloudVolumeTextBox.Text, out float volume))
                 avatar.aivisCloudConfig.volume = volume;
 
-            return avatar;
+            AppSettings.Instance.AvatarList[_currentAvatarIndex] = avatar;
+        }
+
+        private static bool TryParseInvariantFloat(string value, out float parsed)
+        {
+            return float.TryParse(
+                value,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out parsed);
+        }
+
+        private static string FormatInvariantFloat(float value)
+        {
+            return value.ToString("R", CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -220,6 +234,7 @@ namespace CocoroConsole.Controls
             if (!_isInitialized || AvatarSelectComboBox.SelectedIndex < 0)
                 return;
 
+            SyncCurrentAvatarFromUi();
             _currentAvatarIndex = AvatarSelectComboBox.SelectedIndex;
             UpdateAvatarUI();
 
@@ -303,24 +318,24 @@ namespace CocoroConsole.Controls
             SBV2SpeakerNameTextBox.Text = avatar.styleBertVits2Config.speakerName;
             SBV2SpeakerIdTextBox.Text = avatar.styleBertVits2Config.speakerId.ToString();
             SBV2StyleTextBox.Text = avatar.styleBertVits2Config.style;
-            SBV2StyleWeightTextBox.Text = avatar.styleBertVits2Config.styleWeight.ToString("F1");
+            SBV2StyleWeightTextBox.Text = FormatInvariantFloat(avatar.styleBertVits2Config.styleWeight);
             SBV2LanguageTextBox.Text = avatar.styleBertVits2Config.language;
-            SBV2SdpRatioTextBox.Text = avatar.styleBertVits2Config.sdpRatio.ToString("F1");
-            SBV2NoiseTextBox.Text = avatar.styleBertVits2Config.noise.ToString("F1");
-            SBV2NoiseWTextBox.Text = avatar.styleBertVits2Config.noiseW.ToString("F1");
-            SBV2LengthTextBox.Text = avatar.styleBertVits2Config.length.ToString("F1");
+            SBV2SdpRatioTextBox.Text = FormatInvariantFloat(avatar.styleBertVits2Config.sdpRatio);
+            SBV2NoiseTextBox.Text = FormatInvariantFloat(avatar.styleBertVits2Config.noise);
+            SBV2NoiseWTextBox.Text = FormatInvariantFloat(avatar.styleBertVits2Config.noiseW);
+            SBV2LengthTextBox.Text = FormatInvariantFloat(avatar.styleBertVits2Config.length);
             SBV2AutoSplitCheckBox.IsChecked = avatar.styleBertVits2Config.autoSplit;
-            SBV2SplitIntervalTextBox.Text = avatar.styleBertVits2Config.splitInterval.ToString("F1");
+            SBV2SplitIntervalTextBox.Text = FormatInvariantFloat(avatar.styleBertVits2Config.splitInterval);
 
             // AivisCloud設定の読み込み
             AivisCloudApiKeyPasswordBox.Text = avatar.aivisCloudConfig.apiKey;
             AivisCloudModelUuidTextBox.Text = avatar.aivisCloudConfig.modelUuid;
             AivisCloudSpeakerUuidTextBox.Text = avatar.aivisCloudConfig.speakerUuid;
             AivisCloudStyleIdTextBox.Text = avatar.aivisCloudConfig.styleId.ToString();
-            AivisCloudSpeakingRateTextBox.Text = avatar.aivisCloudConfig.speakingRate.ToString("F1");
-            AivisCloudEmotionalIntensityTextBox.Text = avatar.aivisCloudConfig.emotionalIntensity.ToString("F1");
-            AivisCloudTempoDynamicsTextBox.Text = avatar.aivisCloudConfig.tempoDynamics.ToString("F1");
-            AivisCloudVolumeTextBox.Text = avatar.aivisCloudConfig.volume.ToString("F1");
+            AivisCloudSpeakingRateTextBox.Text = FormatInvariantFloat(avatar.aivisCloudConfig.speakingRate);
+            AivisCloudEmotionalIntensityTextBox.Text = FormatInvariantFloat(avatar.aivisCloudConfig.emotionalIntensity);
+            AivisCloudTempoDynamicsTextBox.Text = FormatInvariantFloat(avatar.aivisCloudConfig.tempoDynamics);
+            AivisCloudVolumeTextBox.Text = FormatInvariantFloat(avatar.aivisCloudConfig.volume);
 
             // TTSパネルの表示を更新
             UpdateTTSPanelVisibility(avatar.ttsType);
@@ -338,6 +353,8 @@ namespace CocoroConsole.Controls
         {
             try
             {
+                SyncCurrentAvatarFromUi();
+
                 // 新規アバターの名前を生成
                 var newName = "新規アバター";
 
@@ -379,6 +396,7 @@ namespace CocoroConsole.Controls
                 if (_currentAvatarIndex < 0 || _currentAvatarIndex >= AppSettings.Instance.AvatarList.Count)
                     return;
 
+                SyncCurrentAvatarFromUi();
                 var avatar = AppSettings.Instance.AvatarList[_currentAvatarIndex];
                 if (avatar.isReadOnly)
                 {
@@ -386,6 +404,7 @@ namespace CocoroConsole.Controls
                 }
 
                 AppSettings.Instance.AvatarList.RemoveAt(_currentAvatarIndex);
+                _currentAvatarIndex = -1;
 
                 // ComboBoxのItemsSourceを更新
                 AvatarSelectComboBox.ItemsSource = null;
@@ -416,6 +435,7 @@ namespace CocoroConsole.Controls
                 if (_currentAvatarIndex < 0 || _currentAvatarIndex >= AppSettings.Instance.AvatarList.Count)
                     return;
 
+                SyncCurrentAvatarFromUi();
                 var sourceAvatar = AppSettings.Instance.AvatarList[_currentAvatarIndex];
 
                 // 複製するアバターの名前を生成
@@ -432,6 +452,7 @@ namespace CocoroConsole.Controls
                 // アバター設定をコピー
                 var newAvatar = new AvatarSettings
                 {
+                    avatarId = $"avatar:{Guid.NewGuid():N}",
                     modelName = newName,
                     vrmFilePath = sourceAvatar.vrmFilePath,
                     isUseTTS = sourceAvatar.isUseTTS,
@@ -694,6 +715,7 @@ namespace CocoroConsole.Controls
         /// </summary>
         public void RefreshAvatarList()
         {
+            AvatarSelectComboBox.SelectionChanged -= AvatarSelectComboBox_SelectionChanged;
             try
             {
                 AvatarSelectComboBox.ItemsSource = null;
@@ -718,6 +740,10 @@ namespace CocoroConsole.Controls
             catch (Exception ex)
             {
                 Debug.WriteLine($"アバターリスト復元エラー: {ex.Message}");
+            }
+            finally
+            {
+                AvatarSelectComboBox.SelectionChanged += AvatarSelectComboBox_SelectionChanged;
             }
         }
     }
