@@ -27,6 +27,7 @@ namespace CocoroConsole.Controls
 
         private bool _isInitialized;
         private Dictionary<string, object?> _wakePolicy = new Dictionary<string, object?>();
+        private List<OtomeKairoAudioInputDevice> _audioInputDevices = new List<OtomeKairoAudioInputDevice>();
 
         public SystemSettingsControl()
         {
@@ -51,48 +52,39 @@ namespace CocoroConsole.Controls
                 section == SystemSettingsSection.PeriodicThinking ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        public System.Threading.Tasks.Task InitializeAsync()
+        public async System.Threading.Tasks.Task InitializeAsync(
+            OtomeKairoApiClient? apiClient,
+            ICommunicationService? communicationService,
+            string clientId)
         {
             try
             {
                 var appSettings = AppSettings.Instance;
 
                 ApplyDefaultRemoteSettings();
-                OtomeKairoServerUrlTextBox.Text = appSettings.ServerUrl;
-                OtomeKairoAccessTokenPasswordBox.Password = appSettings.OtomeKairoBearerToken;
-                ConversationDisplayNameTextBox.Text = appSettings.ConversationDisplayName;
-
-                ExcludeWindowTitlePatternsTextBox.Text = string.Join(
-                    Environment.NewLine,
-                    appSettings.ScreenshotSettings.excludePatterns ?? new List<string>());
-
-                var idleTimeoutMinutes = appSettings.ScreenshotSettings.idleTimeoutMinutes;
-                if (idleTimeoutMinutes < 0)
-                {
-                    idleTimeoutMinutes = 10;
-                }
-                VisualCaptureIdleTimeoutMinutesTextBox.Text = idleTimeoutMinutes.ToString(CultureInfo.InvariantCulture);
-
-                MicThresholdSlider.Value = appSettings.MicrophoneSettings.inputThreshold;
-
-                var dbPath = System.IO.Path.Combine(appSettings.UserDataDirectory, "SpeakerRecognition.db");
-                var speakerService = new SpeakerRecognitionService(
-                    dbPath,
-                    appSettings.MicrophoneSettings.speakerRecognitionThreshold);
-                SpeakerManagementControl.Initialize(
-                    speakerService,
-                    appSettings.MicrophoneSettings.speakerRecognitionThreshold);
-
+                ApplyAppSettingsToControls(appSettings);
                 SetupEventHandlers();
                 _isInitialized = true;
+
+                if (apiClient == null || communicationService == null)
+                {
+                    InputDeviceStatusText.Text = "OtomeKairo APIへ接続すると入力デバイスを取得します。";
+                    SpeakerManagementControl.SetUnavailable("OtomeKairo APIへ接続すると話者を管理できます。");
+                    return;
+                }
+
+                await LoadAudioInputDevicesAsync(apiClient);
+                await SpeakerManagementControl.InitializeAsync(
+                    apiClient,
+                    communicationService,
+                    clientId,
+                    appSettings.MicrophoneSettings.speakerRecognitionThreshold);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"システム設定の初期化エラー: {ex.Message}", "エラー",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
-            return System.Threading.Tasks.Task.CompletedTask;
         }
 
         public void ApplyOtomeKairoCurrentSettings(OtomeKairoCurrentSettings current)
@@ -111,17 +103,68 @@ namespace CocoroConsole.Controls
         {
             var previousInitialized = _isInitialized;
             _isInitialized = false;
-            var appSettings = AppSettings.Instance;
+            ApplyAppSettingsToControls(AppSettings.Instance);
+            _isInitialized = previousInitialized;
+        }
+
+        private void ApplyAppSettingsToControls(AppSettings appSettings)
+        {
             OtomeKairoServerUrlTextBox.Text = appSettings.ServerUrl;
             OtomeKairoAccessTokenPasswordBox.Password = appSettings.OtomeKairoBearerToken;
             ConversationDisplayNameTextBox.Text = appSettings.ConversationDisplayName;
             ExcludeWindowTitlePatternsTextBox.Text = string.Join(
                 Environment.NewLine,
-                appSettings.ScreenshotSettings.excludePatterns);
+                appSettings.ScreenshotSettings.excludePatterns ?? new List<string>());
+
+            var idleTimeoutMinutes = appSettings.ScreenshotSettings.idleTimeoutMinutes;
             VisualCaptureIdleTimeoutMinutesTextBox.Text =
-                appSettings.ScreenshotSettings.idleTimeoutMinutes.ToString(CultureInfo.InvariantCulture);
-            MicThresholdSlider.Value = appSettings.MicrophoneSettings.inputThreshold;
-            _isInitialized = previousInitialized;
+                idleTimeoutMinutes.ToString(CultureInfo.InvariantCulture);
+
+            var microphoneSettings = appSettings.MicrophoneSettings;
+            PhysicalInputEnabledCheckBox.IsChecked = microphoneSettings.physicalInputEnabled;
+            ResponseClientIdTextBox.Text = microphoneSettings.responseClientId;
+            VadProbabilityThresholdSlider.Value = microphoneSettings.vadProbabilityThreshold;
+            SpeakerManagementControl.SetThreshold(microphoneSettings.speakerRecognitionThreshold);
+            SelectConfiguredAudioInputDevice(microphoneSettings.inputDevice);
+        }
+
+        private async System.Threading.Tasks.Task LoadAudioInputDevicesAsync(OtomeKairoApiClient apiClient)
+        {
+            var response = await apiClient.GetAudioInputDevicesAsync();
+            _audioInputDevices = response.Devices;
+            InputDeviceComboBox.ItemsSource = _audioInputDevices;
+            SelectConfiguredAudioInputDevice(AppSettings.Instance.MicrophoneSettings.inputDevice);
+
+            InputDeviceStatusText.Text = response.ConnectorConnected
+                ? $"connector: {response.ConnectorClientId} / {_audioInputDevices.Count}件"
+                : "microphone connectorは未接続です。";
+        }
+
+        private void SelectConfiguredAudioInputDevice(MicrophoneInputDevice? configuredDevice)
+        {
+            if (configuredDevice == null)
+            {
+                InputDeviceComboBox.SelectedItem = null;
+                return;
+            }
+
+            var selectedDevice = _audioInputDevices.FirstOrDefault(device =>
+                string.Equals(device.HostApi, configuredDevice.hostApi, StringComparison.Ordinal) &&
+                string.Equals(device.Name, configuredDevice.name, StringComparison.Ordinal));
+            if (selectedDevice == null)
+            {
+                selectedDevice = new OtomeKairoAudioInputDevice
+                {
+                    HostApi = configuredDevice.hostApi,
+                    Name = configuredDevice.name,
+                };
+                _audioInputDevices = new[] { selectedDevice }
+                    .Concat(_audioInputDevices)
+                    .ToList();
+                InputDeviceComboBox.ItemsSource = _audioInputDevices;
+            }
+
+            InputDeviceComboBox.SelectedItem = selectedDevice;
         }
 
         public void SetWakeDesktopObservationEnabled(bool enabled)
@@ -157,7 +200,12 @@ namespace CocoroConsole.Controls
             WakeDesktopObservationCheckBox.Unchecked += OnSettingsChanged;
             WakeIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
             ThinkingSpeechLevelTextBox.TextChanged += OnSettingsChanged;
-            MicThresholdSlider.ValueChanged += OnSettingsChanged;
+            PhysicalInputEnabledCheckBox.Checked += OnSettingsChanged;
+            PhysicalInputEnabledCheckBox.Unchecked += OnSettingsChanged;
+            InputDeviceComboBox.SelectionChanged += OnSettingsChanged;
+            ResponseClientIdTextBox.TextChanged += OnSettingsChanged;
+            VadProbabilityThresholdSlider.ValueChanged += OnSettingsChanged;
+            SpeakerManagementControl.ThresholdChanged += OnSpeakerThresholdChanged;
         }
 
         private void OnSettingsChanged(object sender, RoutedEventArgs e)
@@ -168,6 +216,14 @@ namespace CocoroConsole.Controls
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void OnSpeakerThresholdChanged(object? sender, EventArgs e)
+        {
+            if (_isInitialized)
+            {
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         public Dictionary<string, object?> GetWakePolicy()
@@ -232,9 +288,19 @@ namespace CocoroConsole.Controls
 
         public MicrophoneSettings GetMicrophoneSettings()
         {
+            var selectedDevice = InputDeviceComboBox.SelectedItem as OtomeKairoAudioInputDevice;
             return new MicrophoneSettings
             {
-                inputThreshold = (int)MicThresholdSlider.Value,
+                physicalInputEnabled = PhysicalInputEnabledCheckBox.IsChecked ?? false,
+                inputDevice = selectedDevice == null
+                    ? null
+                    : new MicrophoneInputDevice
+                    {
+                        hostApi = selectedDevice.HostApi,
+                        name = selectedDevice.Name,
+                    },
+                responseClientId = ResponseClientIdTextBox.Text.Trim(),
+                vadProbabilityThreshold = (float)VadProbabilityThresholdSlider.Value,
                 speakerRecognitionThreshold = SpeakerManagementControl.GetCurrentThreshold(),
             };
         }

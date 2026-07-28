@@ -34,10 +34,6 @@
     <None Remove="Resource\logo.png" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Silero VAD ONNXモデル（exe内に組み込み） -->
-    <EmbeddedResource Include="Resource\silero_vad.onnx" />
-    <!-- WeSpeaker 話者識別ONNXモデル（exe内に組み込み） -->
-    <EmbeddedResource Include="Resource\wespeaker_resnet34.onnx" />
     <EmbeddedResource Include="Resource\License.txt" />
 
     <!-- wwwrootをEmbeddedResourceとしてexe内に組み込み -->
@@ -47,15 +43,11 @@
     <Resource Include="Resource/logo.ico" />
     <Resource Include="Resource\logo.png" />
     <Resource Include="Resource\icon\Config.png" />
-    <Resource Include="Resource\icon\MicOFF.png" />
-    <Resource Include="Resource\icon\MicON.png" />
     <Resource Include="Resource\icon\ScreenShotOFF.png" />
     <Resource Include="Resource\icon\ScreenShotON.png" />
     <Resource Include="Resource\icon\SpeakerOFF.png" />
     <Resource Include="Resource\icon\SpeakerON.png" />
     <Resource Include="Resource\icon\Config.svg" />
-    <Resource Include="Resource\icon\MicOFF.svg" />
-    <Resource Include="Resource\icon\MicON.svg" />
     <Resource Include="Resource\icon\ScreenShotOFF.svg" />
     <Resource Include="Resource\icon\ScreenShotON.svg" />
     <Resource Include="Resource\icon\SpeakerOFF.svg" />
@@ -77,8 +69,6 @@
     <PackageReference Include="SharpVectors" Version="1.8.4" />
     <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="System.Text.Json" Version="8.0.6" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.19.2" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
   </ItemGroup>
 
 

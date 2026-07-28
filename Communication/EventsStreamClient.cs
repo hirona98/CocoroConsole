@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using CocoroConsole.Models.OtomeKairoApi;
 
 namespace CocoroConsole.Communication
 {
@@ -68,7 +69,12 @@ namespace CocoroConsole.Communication
                     Type = "hello",
                     ClientId = _clientId!,
                     Caps = _caps?.ToArray() ?? new[] { new OtomeKairoCapabilityOffer("vision.capture", "1") },
-                    EventSubscriptions = new[] { "assistant_message" },
+                    EventSubscriptions = new[]
+                    {
+                        "conversation_input",
+                        "assistant_message",
+                        "audio_runtime_state",
+                    },
                     VisionSources = _visionSources?.ToArray() ?? Array.Empty<OtomeKairoVisionSourceOffer>(),
                 };
 
@@ -183,6 +189,27 @@ namespace CocoroConsole.Communication
                     data.InteractionRef = dataElement.TryGetProperty("interaction_ref", out var interactionRef)
                         ? interactionRef.GetString()
                         : null;
+                    data.SpeakerRef = dataElement.TryGetProperty("speaker_ref", out var speakerRef)
+                        ? speakerRef.GetString()
+                        : null;
+                    data.DisplayName = dataElement.TryGetProperty("display_name", out var displayName)
+                        ? displayName.GetString()
+                        : null;
+                    data.UtteranceSeq = dataElement.TryGetProperty("utterance_seq", out var utteranceSeq) &&
+                        utteranceSeq.TryGetInt32(out var utteranceSeqValue)
+                            ? utteranceSeqValue
+                            : null;
+                    if (dataElement.TryGetProperty("participant_refs", out var participantRefsElement) &&
+                        participantRefsElement.ValueKind == JsonValueKind.Array)
+                    {
+                        data.ParticipantRefs = participantRefsElement
+                            .EnumerateArray()
+                            .Where(item => item.ValueKind == JsonValueKind.String)
+                            .Select(item => item.GetString())
+                            .Where(item => !string.IsNullOrWhiteSpace(item))
+                            .Select(item => item!)
+                            .ToList();
+                    }
                     if (dataElement.TryGetProperty("recipient_person_refs", out var recipientPersonRefsElement) &&
                         recipientPersonRefsElement.ValueKind == JsonValueKind.Array)
                     {
@@ -198,6 +225,11 @@ namespace CocoroConsole.Communication
                     data.TimeoutMs = dataElement.TryGetProperty("timeout_ms", out var timeoutMs) && timeoutMs.TryGetInt32(out var timeoutValue)
                         ? timeoutValue
                         : null;
+                    if (string.Equals(type, "audio_runtime_state", StringComparison.Ordinal))
+                    {
+                        data.AudioRuntimeState =
+                            JsonSerializer.Deserialize<OtomeKairoAudioRuntimeState>(dataElement.GetRawText());
+                    }
                 }
 
                 ev = new OtomeKairoEvent
@@ -240,9 +272,14 @@ namespace CocoroConsole.Communication
         public string? SourceKind { get; set; }
         public string? SourceLabel { get; set; }
         public string? InteractionRef { get; set; }
+        public string? SpeakerRef { get; set; }
+        public List<string>? ParticipantRefs { get; set; }
+        public string? DisplayName { get; set; }
+        public int? UtteranceSeq { get; set; }
         public List<string>? RecipientPersonRefs { get; set; }
         public string? Mode { get; set; }
         public int? TimeoutMs { get; set; }
+        public OtomeKairoAudioRuntimeState? AudioRuntimeState { get; set; }
     }
 
     public sealed class OtomeKairoCapabilityOffer

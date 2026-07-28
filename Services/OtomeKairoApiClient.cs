@@ -230,6 +230,80 @@ namespace CocoroConsole.Services
                 cancellationToken);
         }
 
+        public Task<OtomeKairoAudioInputDevicesResponse> GetAudioInputDevicesAsync(
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoAudioInputDevicesResponse>(
+                HttpMethod.Get,
+                "/api/audio/input-devices",
+                null,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoAudioSpeakersResponse> GetAudioSpeakersAsync(
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoAudioSpeakersResponse>(
+                HttpMethod.Get,
+                "/api/audio/speakers",
+                null,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoSpeakerEnrollment> StartSpeakerEnrollmentAsync(
+            OtomeKairoSpeakerEnrollmentRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoSpeakerEnrollment>(
+                HttpMethod.Post,
+                "/api/audio/speaker-enrollments",
+                request,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoSpeakerEnrollment> CancelSpeakerEnrollmentAsync(
+            string enrollmentId,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            var path = BuildAudioResourcePath("/api/audio/speaker-enrollments", enrollmentId);
+            return SendOtomeKairoAsync<OtomeKairoSpeakerEnrollment>(
+                HttpMethod.Delete,
+                path,
+                null,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoAudioSpeaker> RenameAudioSpeakerAsync(
+            string personRef,
+            string displayName,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            var path = BuildAudioResourcePath("/api/audio/speakers", personRef) + "/display-name";
+            return SendOtomeKairoAsync<OtomeKairoAudioSpeaker>(
+                HttpMethod.Put,
+                path,
+                new OtomeKairoRenameSpeakerRequest { DisplayName = displayName },
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoAudioSpeaker> UnregisterAudioSpeakerAsync(
+            string personRef,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            var path = BuildAudioResourcePath("/api/audio/speakers", personRef) + "/registration";
+            return SendOtomeKairoAsync<OtomeKairoAudioSpeaker>(
+                HttpMethod.Delete,
+                path,
+                null,
+                cancellationToken);
+        }
+
         public Task ReplaceMemorySetAsync(OtomeKairoMemorySetDefinition request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -487,6 +561,16 @@ namespace CocoroConsole.Services
             // OtomeKairo の設定 ID は `memory_set:default` のように `:` を含み、
             // サーバーは最終 path segment をそのまま比較するためここでは URL エンコードしない。
             return $"{collectionPath}/{resourceId}";
+        }
+
+        private static string BuildAudioResourcePath(string collectionPath, string resourceId)
+        {
+            if (string.IsNullOrWhiteSpace(resourceId))
+            {
+                throw new ArgumentException("音声資源IDを指定してください", nameof(resourceId));
+            }
+
+            return $"{collectionPath}/{Uri.EscapeDataString(resourceId.Trim())}";
         }
 
         public void Dispose()

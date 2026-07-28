@@ -267,11 +267,29 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
     public class OtomeKairoMicrophoneSettings
     {
-        [JsonPropertyName("input_threshold_db")]
-        public int InputThresholdDb { get; set; }
+        [JsonPropertyName("physical_input_enabled")]
+        public bool PhysicalInputEnabled { get; set; }
+
+        [JsonPropertyName("input_device")]
+        public OtomeKairoSelectedAudioInputDevice? InputDevice { get; set; }
+
+        [JsonPropertyName("response_client_id")]
+        public string ResponseClientId { get; set; } = string.Empty;
+
+        [JsonPropertyName("vad_probability_threshold")]
+        public float VadProbabilityThreshold { get; set; }
 
         [JsonPropertyName("speaker_recognition_threshold")]
         public float SpeakerRecognitionThreshold { get; set; }
+    }
+
+    public class OtomeKairoSelectedAudioInputDevice
+    {
+        [JsonPropertyName("host_api")]
+        public string HostApi { get; set; } = string.Empty;
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
     }
 
     public class OtomeKairoAvatarSpeechDefinition
@@ -297,8 +315,8 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("engine")]
         public string Engine { get; set; } = string.Empty;
 
-        [JsonPropertyName("wake_word")]
-        public string WakeWord { get; set; } = string.Empty;
+        [JsonPropertyName("wake_words")]
+        public List<string> WakeWords { get; set; } = new List<string>();
 
         [JsonPropertyName("profile_id")]
         public string ProfileId { get; set; } = string.Empty;
@@ -306,8 +324,6 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("api_key")]
         public string ApiKey { get; set; } = string.Empty;
 
-        [JsonPropertyName("language")]
-        public string Language { get; set; } = string.Empty;
     }
 
     public class OtomeKairoTtsSettings

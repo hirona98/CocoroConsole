@@ -212,34 +212,65 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                                マイクと話者識別を設定します。識別した話者名は participants[].display_name として送ります。
+                                OtomeKairo動作PCの物理マイクと話者識別を設定します。
                             </TextBlock>
+                            <CheckBox x:Name="PhysicalInputEnabledCheckBox"
+                                      Content="物理マイク入力を有効にする"
+                                      Margin="0,0,0,10"/>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="入力デバイス:"
+                                           VerticalAlignment="Center"/>
+                                <ComboBox x:Name="InputDeviceComboBox"
+                                          Grid.Column="1"
+                                          Padding="2"/>
+                            </Grid>
+                            <TextBlock x:Name="InputDeviceStatusText"
+                                       TextWrapping="Wrap"
+                                       Foreground="#666666"
+                                       Margin="140,0,0,10"/>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="応答先client ID:"
+                                           VerticalAlignment="Center"/>
+                                <TextBox x:Name="ResponseClientIdTextBox"
+                                         Grid.Column="1"
+                                         Padding="2"
+                                         ToolTip="物理マイクのconversation_inputとassistant_messageを受信するCocoroConsoleのclient ID"/>
+                            </Grid>
                             <Grid Margin="0,5,0,5">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="60"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0"
-                                           Text="入力しきい値:"
+                                           Text="VADしきい値:"
                                            VerticalAlignment="Center"/>
                                 <Slider Grid.Column="1"
-                                        x:Name="MicThresholdSlider"
-                                        Minimum="-50"
-                                        Maximum="0"
-                                        Value="-45"
-                                        TickFrequency="10"
+                                        x:Name="VadProbabilityThresholdSlider"
+                                        Minimum="0.1"
+                                        Maximum="0.9"
+                                        Value="0.5"
+                                        TickFrequency="0.05"
+                                        IsSnapToTickEnabled="True"
                                         TickPlacement="BottomRight"
                                         Margin="10,0,10,0"/>
                                 <TextBlock Grid.Column="2"
-                                           Text="{Binding ElementName=MicThresholdSlider, Path=Value, StringFormat='{}{0:0} dB'}"
+                                           Text="{Binding ElementName=VadProbabilityThresholdSlider, Path=Value, StringFormat='{}{0:0.00}'}"
                                            VerticalAlignment="Center"
                                            HorizontalAlignment="Center"/>
                             </Grid>
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                                ※値が低いほど（-50dBに近いほど）音声を拾いやすくなりますが、環境音も拾いやすくなります。
+                                値を下げると音声を拾いやすくなり、環境音による誤検出も増えます。
                             </TextBlock>
 
                             <local:SpeakerManagementControl x:Name="SpeakerManagementControl"
