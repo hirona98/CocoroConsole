@@ -3,6 +3,7 @@ using CocoroConsole.Services;
 using CocoroConsole.Utilities;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -136,7 +137,12 @@ namespace CocoroConsole.Controls
             avatar.shadowOffMesh = ShadowOffMeshTextBox.Text;
             avatar.isUseSTT = IsUseSTTCheckBox.IsChecked ?? false;
             avatar.sttEngine = STTEngineComboBox.SelectedItem is ComboBoxItem selectedSttEngine ? selectedSttEngine.Tag?.ToString() ?? "amivoice" : "amivoice";
-            avatar.sttWakeWord = STTWakeWordTextBox.Text;
+            avatar.sttWakeWords = STTWakeWordTextBox.Text
+                .Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(wakeWord => wakeWord.Trim())
+                .Where(wakeWord => wakeWord.Length > 0)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
             avatar.sttProfileId = STTProfileIdTextBox.Text;
             avatar.sttApiKey = STTApiKeyPasswordBox.Text;
             avatar.isUseTTS = IsUseTTSCheckBox.IsChecked ?? false;
@@ -273,7 +279,7 @@ namespace CocoroConsole.Controls
                 }
             }
 
-            STTWakeWordTextBox.Text = avatar.sttWakeWord;
+            STTWakeWordTextBox.Text = string.Join(Environment.NewLine, avatar.sttWakeWords);
             STTProfileIdTextBox.Text = avatar.sttProfileId;
             STTApiKeyPasswordBox.Text = avatar.sttApiKey;
 
@@ -514,10 +520,9 @@ namespace CocoroConsole.Controls
                     },
                     isUseSTT = sourceAvatar.isUseSTT,
                     sttEngine = sourceAvatar.sttEngine,
-                    sttWakeWord = sourceAvatar.sttWakeWord,
+                    sttWakeWords = new List<string>(sourceAvatar.sttWakeWords),
                     sttProfileId = sourceAvatar.sttProfileId,
                     sttApiKey = sourceAvatar.sttApiKey,
-                    sttLanguage = sourceAvatar.sttLanguage,
                     isConvertMToon = sourceAvatar.isConvertMToon,
                     isEnableShadowOff = sourceAvatar.isEnableShadowOff,
                     shadowOffMesh = sourceAvatar.shadowOffMesh,

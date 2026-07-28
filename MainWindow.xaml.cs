@@ -27,8 +27,6 @@ namespace CocoroConsole
         private ICommunicationService? _communicationService;
         private readonly IAppSettings _appSettings;
         private bool _isDesktopWatchEnabled;
-        private RealtimeVoiceRecognitionService? _voiceRecognitionService;
-        private VoiceRecognitionSettingsSnapshot? _voiceRecognitionSettingsSnapshot;
         private SettingWindow? _settingWindow;
         private LogViewerWindow? _logViewerWindow;
         private JudgmentTraceViewerWindow? _judgmentTraceViewerWindow;
@@ -68,18 +66,6 @@ namespace CocoroConsole
         // WPF の Shutdown 中に Closing をキャンセルすると、Dispatcher が Shutdown 開始状態のまま残って
         // UI が固まることがあるため、明示的終了時はキャンセルしない判定に使う。
         private int _isShutdownInProgress;
-
-        private sealed record VoiceRecognitionSettingsSnapshot(
-            int CurrentAvatarIndex,
-            bool IsUseSTT,
-            string SttEngine,
-            string SttWakeWord,
-            string SttProfileId,
-            string SttApiKey,
-            string SttLanguage,
-            int InputThreshold,
-            float SpeakerRecognitionThreshold);
-
 
         public MainWindow()
         {
@@ -190,11 +176,6 @@ namespace CocoroConsole
                 // CommunicationServiceが初回Normal時にotomekairo設定を取得・反映する
                 InitializeCommunicationService();
 
-                // 音声認識サービスを初期化
-                // 起動時はウェイクワードの有無に応じてVoiceRecognitionStateMachine内で状態が決定される
-                InitializeVoiceRecognitionService(startActive: false);
-                _voiceRecognitionSettingsSnapshot = CreateVoiceRecognitionSettingsSnapshot();
-
                 // UIコントロールのイベントハンドラを登録
                 RegisterEventHandlers();
 
@@ -232,20 +213,6 @@ namespace CocoroConsole
             var currentAvatar = GetStoredAvatarSetting();
             if (currentAvatar != null)
             {
-                // STTの状態を反映
-                if (MicButtonImage != null)
-                {
-                    MicButtonImage.Source = new Uri(currentAvatar.isUseSTT ?
-                        "pack://application:,,,/Resource/icon/MicON.svg" :
-                        "pack://application:,,,/Resource/icon/MicOFF.svg",
-                        UriKind.Absolute);
-                }
-                if (MicButton != null)
-                {
-                    MicButton.ToolTip = currentAvatar.isUseSTT ? "STTを無効にする" : "STTを有効にする";
-                    MicButton.Opacity = currentAvatar.isUseSTT ? 1.0 : 0.6;
-                }
-
                 // TTSの状態を反映
                 if (MuteButtonImage != null)
                 {
@@ -288,6 +255,7 @@ namespace CocoroConsole
             _communicationService = new CommunicationService(_appSettings);            // 通信サービスのイベントハンドラを設定
             _communicationService.UiMessageReceived += OnUiMessageReceived;
             _communicationService.ConversationOutputReceived += OnConversationOutputReceived;
+            _communicationService.VoiceConversationInputReceived += OnVoiceConversationInputReceived;
             _communicationService.ConversationInputBusyChanged += OnConversationInputBusyChanged;
             _communicationService.ControlCommandReceived += OnControlCommandReceived;
             _communicationService.ErrorOccurred += OnErrorOccurred;
@@ -441,24 +409,6 @@ namespace CocoroConsole
         /// </summary>
         private void OnSettingsSaved(object? sender, EventArgs e)
         {
-            var previousVoiceSettings = _voiceRecognitionSettingsSnapshot;
-            var currentVoiceSettings = CreateVoiceRecognitionSettingsSnapshot();
-            if (!Equals(previousVoiceSettings, currentVoiceSettings))
-            {
-                var startActive = previousVoiceSettings != null
-                    && !previousVoiceSettings.IsUseSTT
-                    && currentVoiceSettings.IsUseSTT;
-
-                RestartVoiceRecognitionService(currentVoiceSettings, startActive);
-            }
-            else if (!currentVoiceSettings.IsUseSTT || string.IsNullOrEmpty(currentVoiceSettings.SttApiKey))
-            {
-                UIHelper.RunOnUIThread(() =>
-                {
-                    ChatControlInstance.UpdateVoiceLevel(0, false);
-                });
-            }
-
             // UI側の設定反映（ボタン状態とLLM表示）
             UIHelper.RunOnUIThread(() =>
             {
@@ -476,49 +426,6 @@ namespace CocoroConsole
                 var currentStatus = _communicationService?.CurrentStatus ?? OtomeKairoStatus.WaitingForStartup;
                 UpdateOtomeKairoStatusDisplay(currentStatus);
             });
-        }
-
-        private VoiceRecognitionSettingsSnapshot CreateVoiceRecognitionSettingsSnapshot()
-        {
-            var currentAvatar = GetStoredAvatarSetting();
-            var microphoneSettings = _appSettings.MicrophoneSettings;
-
-            return new VoiceRecognitionSettingsSnapshot(
-                _appSettings.CurrentAvatarIndex,
-                currentAvatar?.isUseSTT ?? false,
-                currentAvatar?.sttEngine ?? string.Empty,
-                currentAvatar?.sttWakeWord ?? string.Empty,
-                currentAvatar?.sttProfileId ?? string.Empty,
-                currentAvatar?.sttApiKey ?? string.Empty,
-                currentAvatar?.sttLanguage ?? string.Empty,
-                microphoneSettings?.inputThreshold ?? -45,
-                microphoneSettings?.speakerRecognitionThreshold ?? 0.7f);
-        }
-
-        private void RestartVoiceRecognitionService(VoiceRecognitionSettingsSnapshot currentVoiceSettings, bool startActive)
-        {
-            if (_voiceRecognitionService != null)
-            {
-                _voiceRecognitionService.StopListening();
-                _voiceRecognitionService.Dispose();
-                _voiceRecognitionService = null;
-            }
-
-            if (currentVoiceSettings.IsUseSTT && !string.IsNullOrEmpty(currentVoiceSettings.SttApiKey))
-            {
-                InitializeVoiceRecognitionService(startActive);
-                Debug.WriteLine("[CocoroConsole] 音声認識サービスを開始しました");
-            }
-            else
-            {
-                UIHelper.RunOnUIThread(() =>
-                {
-                    ChatControlInstance.UpdateVoiceLevel(0, false);
-                });
-                Debug.WriteLine("[CocoroConsole] 音声認識サービスを停止しました");
-            }
-
-            _voiceRecognitionSettingsSnapshot = currentVoiceSettings;
         }
 
         #endregion
@@ -556,6 +463,16 @@ namespace CocoroConsole
                     // サーバー側処理済みメッセージをそのまま新規追加
                     ChatControlInstance.AddAiMessage(request.content, request.forceNewBubble);
                 }
+            });
+        }
+
+        private void OnVoiceConversationInputReceived(
+            object? sender,
+            VoiceConversationInputEventArgs input)
+        {
+            UIHelper.RunOnUIThread(() =>
+            {
+                ChatControlInstance.AddUserMessage(input.DisplayName, input.Message);
             });
         }
 
@@ -1105,51 +1022,6 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// マイクボタンクリック時のイベントハンドラ
-        /// </summary>
-        private async void MicButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_communicationService == null)
-            {
-                return;
-            }
-
-            // 現在のキャラクターのSTT設定をトグル
-            var currentAvatar = GetStoredAvatarSetting();
-            if (currentAvatar != null)
-            {
-                currentAvatar.isUseSTT = !currentAvatar.isUseSTT;
-                try
-                {
-                    await _communicationService.SaveAvatarSpeechSettingsAsync();
-                }
-                catch (Exception ex)
-                {
-                    currentAvatar.isUseSTT = !currentAvatar.isUseSTT;
-                    UIHelper.ShowError("STT設定エラー", ex.Message);
-                    return;
-                }
-
-                // ボタンの画像を更新
-                if (MicButtonImage != null)
-                {
-                    MicButtonImage.Source = new Uri(currentAvatar.isUseSTT ?
-                        "pack://application:,,,/Resource/icon/MicON.svg" :
-                        "pack://application:,,,/Resource/icon/MicOFF.svg",
-                        UriKind.Absolute);
-                }
-
-                // ツールチップを更新
-                if (MicButton != null)
-                {
-                    MicButton.ToolTip = currentAvatar.isUseSTT ? "STTを無効にする" : "STTを有効にする";
-                    MicButton.Opacity = currentAvatar.isUseSTT ? 1.0 : 0.6;
-                }
-
-            }
-        }
-
-        /// <summary>
         /// 保存済みの現在のキャラクター設定を取得（AppSettingsから直接読み取り）
         /// </summary>
         private AvatarSettings? GetStoredAvatarSetting()
@@ -1251,110 +1123,6 @@ namespace CocoroConsole
 
 
         /// <summary>
-        /// 音声認識サービスを初期化
-        /// </summary>
-        /// <param name="startActive">ACTIVE状態から開始するかどうか（MicButton切り替え時はtrue）</param>
-        private void InitializeVoiceRecognitionService(bool startActive = false)
-        {
-            try
-            {
-                // 現在のキャラクター設定を取得
-                var currentAvatar = GetStoredAvatarSetting();
-                if (currentAvatar == null)
-                {
-                    Debug.WriteLine("[CocoroConsole] 現在のキャラクター設定が見つかりません");
-                    return;
-                }
-
-                // 音声認識が有効でAPIキーが設定されている場合のみ初期化
-                if (!currentAvatar.isUseSTT || string.IsNullOrEmpty(currentAvatar.sttApiKey))
-                {
-                    Debug.WriteLine("[CocoroConsole] 音声認識機能が無効、またはAPIキーが未設定");
-                    // 音量バーを0にリセット（UIスレッドで確実に実行）
-                    UIHelper.RunOnUIThread(() =>
-                    {
-                        ChatControlInstance.UpdateVoiceLevel(0, false);
-                    });
-                    return;
-                }
-
-                // if (string.IsNullOrEmpty(currentAvatar.sttWakeWord))
-                // {
-                //     Debug.WriteLine("[CocoroConsole] ウェイクアップワードが未設定");
-                //     // 音量バーを0にリセット（UIスレッドで確実に実行）
-                //     UIHelper.RunOnUIThread(() =>
-                //     {
-                //         ChatControlInstance.UpdateVoiceLevel(0, false);
-                //     });
-                //     return;
-                // }
-
-                // 音声処理パラメータ
-                // 無音区間判定用の閾値（dB値）
-                float inputThresholdDb = _appSettings.MicrophoneSettings?.inputThreshold ?? -45.0f;
-                // 音声検出用の閾値（振幅比率に変換）
-                float voiceThreshold = (float)(Math.Pow(10, inputThresholdDb / 20.0));
-                const int silenceTimeoutMs = 500; // 高速化のため短縮
-                const int activeTimeoutMs = 60000;
-
-                var dbPath = System.IO.Path.Combine(
-                    AppSettings.Instance.UserDataDirectory,
-                    "SpeakerRecognition.db");
-                var speakerService = new SpeakerRecognitionService(
-                    dbPath,
-                    AppSettings.Instance.MicrophoneSettings.speakerRecognitionThreshold);
-
-                _voiceRecognitionService = new RealtimeVoiceRecognitionService(
-                    new AmiVoiceSpeechToTextService(currentAvatar.sttApiKey, currentAvatar.sttProfileId),
-                    currentAvatar.sttWakeWord,
-                    speakerService,
-                    voiceThreshold,
-                    silenceTimeoutMs,
-                    activeTimeoutMs,
-                    startActive
-                );
-
-                // イベント購読
-                _voiceRecognitionService.OnRecognizedSpeech += OnVoiceRecognized;
-                _voiceRecognitionService.OnVoiceLevel += OnVoiceLevelChanged;
-
-                // 音声認識開始
-                _voiceRecognitionService.StartListening();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[CocoroConsole] 音声認識サービス初期化エラー: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// 音声認識結果を処理
-        /// </summary>
-        private void OnVoiceRecognized(RecognizedSpeech speech)
-        {
-            if (string.IsNullOrEmpty(speech.Text))
-                return;
-
-            UIHelper.RunOnUIThread(() =>
-            {
-                var displayName = speech.SpeakerName;
-                if (string.IsNullOrWhiteSpace(displayName) &&
-                    !TryGetConversationDisplayName(out displayName))
-                {
-                    return;
-                }
-
-                // チャットに音声認識結果を表示
-                ChatControlInstance.AddUserMessage(displayName, speech.Text);
-                _ = SendMessageToOtomeKairoAsync(
-                    speech.Text,
-                    null,
-                    speech.SpeakerId,
-                    speech.SpeakerName);
-            });
-        }
-
-        /// <summary>
         /// テキスト入力で participants[].display_name に渡す呼び名を取得する。
         /// </summary>
         private bool TryGetConversationDisplayName(out string displayName)
@@ -1366,50 +1134,8 @@ namespace CocoroConsole
             }
 
             ChatControlInstance.AddSystemErrorMessage(
-                "呼び名が未設定です。設定の入力から「会話入力」を開いて設定してください。");
+                "呼ばれ方が未設定です。設定の入力から「会話入力」を開いて設定してください。");
             return false;
-        }
-
-        /// <summary>
-        /// 音声レベル変更を処理
-        /// </summary>
-        private void OnVoiceLevelChanged(float level, bool isAboveThreshold)
-        {
-            UIHelper.RunOnUIThread(() =>
-            {
-                ChatControlInstance.UpdateVoiceLevel(level, isAboveThreshold);
-            });
-        }
-
-        /// <summary>
-        /// OtomeKairoにメッセージを送信
-        /// </summary>
-        private async Task SendMessageToOtomeKairoAsync(
-            string message,
-            string? imageData,
-            string? speakerId = null,
-            string? speakerDisplayName = null)
-        {
-            try
-            {
-                if (_communicationService != null)
-                {
-                    if (_appSettings.IsUseLLM)
-                    {
-                        var currentAvatar = GetStoredAvatarSetting();
-                        await _communicationService.SendConversationInputToOtomeKairoAsync(
-                            message,
-                            currentAvatar?.modelName,
-                            imageData,
-                            speakerId,
-                            speakerDisplayName);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[CocoroConsole] OtomeKairo送信エラー: {ex.Message}");
-            }
         }
 
         /// <summary>
@@ -1433,12 +1159,6 @@ namespace CocoroConsole
                 WindowState = WindowState.Minimized;
                 Hide();
                 return;
-            }
-
-            // --- アプリケーション終了時のクリーンアップ ---
-            if (_voiceRecognitionService != null)
-            {
-                _voiceRecognitionService.Dispose();
             }
 
             base.OnClosing(e);

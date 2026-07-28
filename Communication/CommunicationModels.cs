@@ -95,11 +95,10 @@ namespace CocoroConsole.Communication
         public AivisCloudConfig aivisCloudConfig { get; set; } = new AivisCloudConfig();
 
         public bool isUseSTT { get; set; } // STT（音声認識）機能の有効/無効
-        public string sttEngine { get; set; } = string.Empty; // STTエンジン ("amivoice" | "openai")
-        public string sttWakeWord { get; set; } = string.Empty; // STT起動ワード
+        public string sttEngine { get; set; } = string.Empty; // STTエンジン ("amivoice")
+        public List<string> sttWakeWords { get; set; } = new List<string>(); // STT起動ワード
         public string sttProfileId { get; set; } = string.Empty; // AmiVoice profileId（マイページ登録の場合は :{サービスID}）
         public string sttApiKey { get; set; } = string.Empty; // AmiVoice APPKEY（recognize の u）
-        public string sttLanguage { get; set; } = string.Empty; // STT言語設定
         public bool isConvertMToon { get; set; } // UnlitをMToonに変換するかどうか
         public bool isEnableShadowOff { get; set; } // 影オフ機能の有効/無効
         public string shadowOffMesh { get; set; } = string.Empty; // 影を落とさないメッシュ名
@@ -181,10 +180,9 @@ namespace CocoroConsole.Communication
 
                 isUseSTT = this.isUseSTT,
                 sttEngine = this.sttEngine,
-                sttWakeWord = this.sttWakeWord,
+                sttWakeWords = new List<string>(this.sttWakeWords),
                 sttProfileId = this.sttProfileId,
                 sttApiKey = this.sttApiKey,
-                sttLanguage = this.sttLanguage,
                 isConvertMToon = this.isConvertMToon,
                 isEnableShadowOff = this.isEnableShadowOff,
                 shadowOffMesh = this.shadowOffMesh
@@ -215,8 +213,41 @@ namespace CocoroConsole.Communication
     /// </summary>
     public class MicrophoneSettings
     {
-        public int inputThreshold { get; set; }
-        public float speakerRecognitionThreshold { get; set; }
+        public bool physicalInputEnabled { get; set; } = true;
+        public MicrophoneInputDevice? inputDevice { get; set; }
+        public string responseClientId { get; set; } = string.Empty;
+        public float vadProbabilityThreshold { get; set; } = 0.5f;
+        public float speakerRecognitionThreshold { get; set; } = 0.6f;
+
+        public MicrophoneSettings DeepCopy()
+        {
+            return new MicrophoneSettings
+            {
+                physicalInputEnabled = physicalInputEnabled,
+                inputDevice = inputDevice?.DeepCopy(),
+                responseClientId = responseClientId,
+                vadProbabilityThreshold = vadProbabilityThreshold,
+                speakerRecognitionThreshold = speakerRecognitionThreshold,
+            };
+        }
+    }
+
+    /// <summary>
+    /// OtomeKairo の物理マイク選択値。
+    /// </summary>
+    public class MicrophoneInputDevice
+    {
+        public string hostApi { get; set; } = string.Empty;
+        public string name { get; set; } = string.Empty;
+
+        public MicrophoneInputDevice DeepCopy()
+        {
+            return new MicrophoneInputDevice
+            {
+                hostApi = hostApi,
+                name = name,
+            };
+        }
     }
 
     /// <summary>
@@ -369,11 +400,7 @@ namespace CocoroConsole.Communication
                     excludePatterns = new List<string>(this.screenshotSettings.excludePatterns)
                 },
 
-                microphoneSettings = new MicrophoneSettings
-                {
-                    inputThreshold = this.microphoneSettings.inputThreshold,
-                    speakerRecognitionThreshold = this.microphoneSettings.speakerRecognitionThreshold
-                },
+                microphoneSettings = this.microphoneSettings.DeepCopy(),
 
                 messageWindowSettings = new MessageWindowSettings
                 {

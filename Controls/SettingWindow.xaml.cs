@@ -84,7 +84,10 @@ namespace CocoroConsole.Controls
 
         private async Task InitializeSystemSettingsAsync()
         {
-            await SystemSettingsControl.InitializeAsync();
+            await SystemSettingsControl.InitializeAsync(
+                _apiClient,
+                _communicationService,
+                AppSettings.Instance.ClientId);
         }
 
         public void SetWakeDesktopObservationEnabled(bool enabled)
@@ -396,8 +399,7 @@ namespace CocoroConsole.Controls
             var dict = new Dictionary<string, object>();
 
             var microphoneSettings = SystemSettingsControl.GetMicrophoneSettings();
-            dict["MicInputThreshold"] = microphoneSettings.inputThreshold;
-            dict["SpeakerRecognitionThreshold"] = microphoneSettings.speakerRecognitionThreshold;
+            dict["MicrophoneSettings"] = microphoneSettings.DeepCopy();
             dict["OtomeKairoServerUrl"] = SystemSettingsControl.GetOtomeKairoServerUrl();
             dict["OtomeKairoAccessToken"] = otomeKairoAccessToken;
             dict["ConversationDisplayName"] = SystemSettingsControl.GetConversationDisplayName();
@@ -522,7 +524,7 @@ namespace CocoroConsole.Controls
             if (string.IsNullOrWhiteSpace(conversationDisplayName))
             {
                 throw new InvalidOperationException(
-                    "呼び名が未設定です。入力の「会話入力」で設定してください。");
+                    "呼ばれ方が未設定です。入力の「会話入力」で設定してください。");
             }
 
             // --- 登録済み接続先へ保存する前に、画面上の認証情報を確認する ---
@@ -1010,10 +1012,9 @@ namespace CocoroConsole.Controls
                 },
                 isUseSTT = source.isUseSTT,
                 sttEngine = source.sttEngine,
-                sttWakeWord = source.sttWakeWord,
+                sttWakeWords = new List<string>(source.sttWakeWords),
                 sttProfileId = source.sttProfileId,
                 sttApiKey = source.sttApiKey,
-                sttLanguage = source.sttLanguage,
                 isConvertMToon = source.isConvertMToon,
                 isEnableShadowOff = source.isEnableShadowOff,
                 shadowOffMesh = source.shadowOffMesh,
@@ -1035,8 +1036,8 @@ namespace CocoroConsole.Controls
         {
             var appSettings = AppSettings.Instance;
 
-            appSettings.MicrophoneSettings.inputThreshold = (int)snapshot["MicInputThreshold"];
-            appSettings.MicrophoneSettings.speakerRecognitionThreshold = (float)snapshot["SpeakerRecognitionThreshold"];
+            appSettings.MicrophoneSettings =
+                ((MicrophoneSettings)snapshot["MicrophoneSettings"]).DeepCopy();
             appSettings.ServerUrl = (string)snapshot["OtomeKairoServerUrl"];
             appSettings.OtomeKairoBearerToken = (string)snapshot["OtomeKairoAccessToken"];
             appSettings.ConversationDisplayName = (string)snapshot["ConversationDisplayName"];

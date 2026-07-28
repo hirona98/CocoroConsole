@@ -842,8 +842,10 @@
                                        VerticalAlignment="Center"/>
                             <TextBox Grid.Column="1"
                                      x:Name="STTWakeWordTextBox"
-
                                      Padding="2"
+                                     MinHeight="70"
+                                     AcceptsReturn="True"
+                                     VerticalScrollBarVisibility="Auto"
                                      ToolTip="STT用の音声起動ワード"/>
                         </Grid>
                         <!-- STT起動ワード説明テキスト -->
@@ -852,7 +854,7 @@
                                    Margin="130,0,0,0">
                             音声認識を開始するキーワードです。空欄の場合は常に有効です。
                             <LineBreak/>
-                            複数設定する場合はカンマ区切りにしてください。（例: こんにちは, ハロー, ミク）
+                            複数設定する場合は1行に1つ入力します。
                         </TextBlock>
 
                         <!-- STT profileId の設定 -->

@@ -24,6 +24,20 @@ namespace CocoroConsole.Services
     }
 
     /// <summary>
+    /// OtomeKairo で確定した音声会話入力を表します。
+    /// </summary>
+    public class VoiceConversationInputEventArgs : EventArgs
+    {
+        public int UtteranceSeq { get; init; }
+        public string SourceKind { get; init; } = string.Empty;
+        public string Message { get; init; } = string.Empty;
+        public string InteractionRef { get; init; } = string.Empty;
+        public string SpeakerRef { get; init; } = string.Empty;
+        public IReadOnlyList<string> ParticipantRefs { get; init; } = Array.Empty<string>();
+        public string DisplayName { get; init; } = string.Empty;
+    }
+
+    /// <summary>
     /// 通信サービスのインターフェース
     /// </summary>
     public interface ICommunicationService : IDisposable
@@ -38,6 +52,8 @@ namespace CocoroConsole.Services
         event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
         event EventHandler<bool>? LogStreamConnectionChanged;
         event EventHandler<string>? LogStreamError;
+        event EventHandler<VoiceConversationInputEventArgs>? VoiceConversationInputReceived;
+        event EventHandler<OtomeKairoAudioRuntimeState>? AudioRuntimeStateChanged;
 
         bool IsServerRunning { get; }
         OtomeKairoStatus CurrentStatus { get; }

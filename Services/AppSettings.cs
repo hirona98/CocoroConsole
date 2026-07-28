@@ -245,7 +245,16 @@ namespace CocoroConsole.Services
 
             MicrophoneSettings = new MicrophoneSettings
             {
-                inputThreshold = avatarSpeech.MicrophoneSettings.InputThresholdDb,
+                physicalInputEnabled = avatarSpeech.MicrophoneSettings.PhysicalInputEnabled,
+                inputDevice = avatarSpeech.MicrophoneSettings.InputDevice == null
+                    ? null
+                    : new MicrophoneInputDevice
+                    {
+                        hostApi = avatarSpeech.MicrophoneSettings.InputDevice.HostApi,
+                        name = avatarSpeech.MicrophoneSettings.InputDevice.Name,
+                    },
+                responseClientId = avatarSpeech.MicrophoneSettings.ResponseClientId,
+                vadProbabilityThreshold = avatarSpeech.MicrophoneSettings.VadProbabilityThreshold,
                 speakerRecognitionThreshold = avatarSpeech.MicrophoneSettings.SpeakerRecognitionThreshold,
             };
             ApplyAvatarSettings(consoleSettings.AvatarPresentations, avatarSpeech);
@@ -381,7 +390,16 @@ namespace CocoroConsole.Services
                 SelectedAvatarId = AvatarList[selectedAvatarIndex].avatarId,
                 MicrophoneSettings = new OtomeKairoMicrophoneSettings
                 {
-                    InputThresholdDb = MicrophoneSettings.inputThreshold,
+                    PhysicalInputEnabled = MicrophoneSettings.physicalInputEnabled,
+                    InputDevice = MicrophoneSettings.inputDevice == null
+                        ? null
+                        : new OtomeKairoSelectedAudioInputDevice
+                        {
+                            HostApi = MicrophoneSettings.inputDevice.hostApi,
+                            Name = MicrophoneSettings.inputDevice.name,
+                        },
+                    ResponseClientId = MicrophoneSettings.responseClientId,
+                    VadProbabilityThreshold = MicrophoneSettings.vadProbabilityThreshold,
                     SpeakerRecognitionThreshold = MicrophoneSettings.speakerRecognitionThreshold,
                 },
                 Avatars = AvatarList.Select(BuildAvatarSpeechDefinition).ToList(),
@@ -422,10 +440,9 @@ namespace CocoroConsole.Services
                 shadowOffMesh = string.Join(",", presentation?.ShadowExcludedMeshNames ?? new List<string>()),
                 isUseSTT = definition.Stt.Enabled,
                 sttEngine = definition.Stt.Engine,
-                sttWakeWord = definition.Stt.WakeWord,
+                sttWakeWords = new List<string>(definition.Stt.WakeWords),
                 sttProfileId = definition.Stt.ProfileId,
                 sttApiKey = definition.Stt.ApiKey,
-                sttLanguage = definition.Stt.Language,
                 isUseTTS = definition.Tts.Enabled,
                 ttsType = definition.Tts.Engine,
                 voicevoxConfig = new VoicevoxConfig
@@ -541,10 +558,9 @@ namespace CocoroConsole.Services
                 {
                     Enabled = avatar.isUseSTT,
                     Engine = avatar.sttEngine,
-                    WakeWord = avatar.sttWakeWord,
+                    WakeWords = new List<string>(avatar.sttWakeWords),
                     ProfileId = avatar.sttProfileId,
                     ApiKey = avatar.sttApiKey,
-                    Language = avatar.sttLanguage,
                 },
                 Tts = new OtomeKairoTtsSettings
                 {

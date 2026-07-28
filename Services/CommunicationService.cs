@@ -29,7 +29,7 @@ namespace CocoroConsole.Services
     /// </summary>
     public class CommunicationService : ICommunicationService
     {
-        private const string RequiredOtomeKairoApiVersion = "0.2.0";
+        private const string RequiredOtomeKairoApiVersion = "0.3.0";
         // CocoroConsole 側の HTTP API サーバー（外部クライアントからの受信）
         private CocoroConsoleApiServer _apiServer;
 
@@ -113,6 +113,8 @@ namespace CocoroConsole.Services
         public event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
         public event EventHandler<bool>? LogStreamConnectionChanged;
         public event EventHandler<string>? LogStreamError;
+        public event EventHandler<VoiceConversationInputEventArgs>? VoiceConversationInputReceived;
+        public event EventHandler<OtomeKairoAudioRuntimeState>? AudioRuntimeStateChanged;
 
         public bool IsServerRunning => _apiServer.IsRunning;
 
@@ -747,7 +749,7 @@ namespace CocoroConsole.Services
                     "invalid_token" => "OtomeKairo の認証に失敗しました。接続設定を確認してください。",
                     "bootstrap_required" => "OtomeKairo の初回登録がまだ完了していません。",
                     "invalid_images" => "添付画像は Data URI 1枚まで送信できます。",
-                    "invalid_person_display_name" => "呼び名が不正です。設定の入力を確認してください。",
+                    "invalid_person_display_name" => "呼ばれ方が不正です。設定の入力を確認してください。",
                     _ => ex.Message,
                 };
                 Debug.WriteLine($"OtomeKairo APIエラー: {errorMessage}");
@@ -841,7 +843,7 @@ namespace CocoroConsole.Services
             if (string.IsNullOrWhiteSpace(displayName))
             {
                 throw new InvalidOperationException(
-                    "呼び名が未設定です。設定の入力から「会話入力」を開いて設定してください。");
+                    "呼ばれ方が未設定です。設定の入力から「会話入力」を開いて設定してください。");
             }
 
             var normalizedParticipant = new OtomeKairoInteractionParticipant
@@ -1320,6 +1322,48 @@ namespace CocoroConsole.Services
                     {
                         HandleAssistantSpeechFromEvent(ev, assistantSpeech);
                     }
+                    return;
+                }
+
+                if (string.Equals(ev.Type, "conversation_input", StringComparison.Ordinal))
+                {
+                    if (ev.Data.UtteranceSeq == null ||
+                        string.IsNullOrWhiteSpace(ev.Data.SourceKind) ||
+                        string.IsNullOrWhiteSpace(ev.Data.Message) ||
+                        string.IsNullOrWhiteSpace(ev.Data.InteractionRef) ||
+                        string.IsNullOrWhiteSpace(ev.Data.SpeakerRef) ||
+                        ev.Data.ParticipantRefs == null ||
+                        ev.Data.ParticipantRefs.Count == 0 ||
+                        string.IsNullOrWhiteSpace(ev.Data.DisplayName))
+                    {
+                        throw new InvalidOperationException(
+                            "conversation_input に必須フィールドがありません。");
+                    }
+
+                    VoiceConversationInputReceived?.Invoke(
+                        this,
+                        new VoiceConversationInputEventArgs
+                        {
+                            UtteranceSeq = ev.Data.UtteranceSeq.Value,
+                            SourceKind = ev.Data.SourceKind,
+                            Message = ev.Data.Message,
+                            InteractionRef = ev.Data.InteractionRef,
+                            SpeakerRef = ev.Data.SpeakerRef,
+                            ParticipantRefs = ev.Data.ParticipantRefs,
+                            DisplayName = ev.Data.DisplayName,
+                        });
+                    return;
+                }
+
+                if (string.Equals(ev.Type, "audio_runtime_state", StringComparison.Ordinal))
+                {
+                    if (ev.Data.AudioRuntimeState == null)
+                    {
+                        throw new InvalidOperationException(
+                            "audio_runtime_state の snapshot がありません。");
+                    }
+
+                    AudioRuntimeStateChanged?.Invoke(this, ev.Data.AudioRuntimeState);
                     return;
                 }
 
