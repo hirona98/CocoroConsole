@@ -122,7 +122,7 @@ namespace CocoroConsole.Controls
 
             var microphoneSettings = appSettings.MicrophoneSettings;
             PhysicalInputEnabledCheckBox.IsChecked = microphoneSettings.physicalInputEnabled;
-            ResponseClientIdTextBox.Text = microphoneSettings.responseClientId;
+            ResponseClientIdTextBox.Text = appSettings.ClientId;
             VadProbabilityThresholdSlider.Value = microphoneSettings.vadProbabilityThreshold;
             SpeakerManagementControl.SetThreshold(microphoneSettings.speakerRecognitionThreshold);
             SelectConfiguredAudioInputDevice(microphoneSettings.inputDevice);
@@ -203,7 +203,6 @@ namespace CocoroConsole.Controls
             PhysicalInputEnabledCheckBox.Checked += OnSettingsChanged;
             PhysicalInputEnabledCheckBox.Unchecked += OnSettingsChanged;
             InputDeviceComboBox.SelectionChanged += OnSettingsChanged;
-            ResponseClientIdTextBox.TextChanged += OnSettingsChanged;
             VadProbabilityThresholdSlider.ValueChanged += OnSettingsChanged;
             SpeakerManagementControl.ThresholdChanged += OnSpeakerThresholdChanged;
         }
@@ -299,7 +298,7 @@ namespace CocoroConsole.Controls
                         hostApi = selectedDevice.HostApi,
                         name = selectedDevice.Name,
                     },
-                responseClientId = ResponseClientIdTextBox.Text.Trim(),
+                responseClientId = AppSettings.Instance.ClientId,
                 vadProbabilityThreshold = (float)VadProbabilityThresholdSlider.Value,
                 speakerRecognitionThreshold = SpeakerManagementControl.GetCurrentThreshold(),
             };
