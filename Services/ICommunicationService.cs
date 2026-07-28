@@ -60,6 +60,7 @@ namespace CocoroConsole.Services
         bool IsConversationInputBusy { get; }
 
         Task StartServerAsync();
+        Task PrepareShellRuntimeAsync();
         Task StopServerAsync();
         ConfigSettings GetCurrentConfig();
         Task SendConversationInputToOtomeKairoAsync(
@@ -81,7 +82,6 @@ namespace CocoroConsole.Services
         Task StopLogStreamAsync();
         void OpenLogViewer();
         Task<PositionResponse> GetShellPositionAsync();
-        Task SendConfigPatchToShellAsync(Dictionary<string, object> updates);
         void RefreshSettingsCache();
         void ResetShellConnectionState();
         Task RefreshOtomeKairoCurrentSettingsAsync();

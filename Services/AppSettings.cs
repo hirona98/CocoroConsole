@@ -47,6 +47,8 @@ namespace CocoroConsole.Services
         public string ConversationDisplayName { get; set; } = string.Empty;
         // otomekairo API Bearer トークン
         public string OtomeKairoBearerToken { get; set; } = string.Empty;
+        // CocoroShell プロセスの起動中だけ保持する一時トークン
+        public string ShellSessionToken { get; set; } = string.Empty;
         // LLMを使用するか
         public bool IsUseLLM { get; set; } = false;
         // UI設定
@@ -177,6 +179,111 @@ namespace CocoroConsole.Services
             };
 
             return snapshot.DeepCopy();
+        }
+
+        /// <summary>
+        /// OtomeKairo 由来の設定から CocoroShell 専用の実行スナップショットを構築する。
+        /// </summary>
+        public ShellRuntimeConfig BuildShellRuntimeConfig()
+        {
+            if (!HasRemoteSettings)
+            {
+                throw new InvalidOperationException("OtomeKairoの端末設定を取得していません。");
+            }
+
+            var currentAvatar = GetCurrentAvatar()?.DeepCopy()
+                ?? throw new InvalidOperationException("選択中のアバター設定がありません。");
+            if (AnimationSettings.Count == 0)
+            {
+                throw new InvalidOperationException("アニメーション設定がありません。");
+            }
+
+            // Aivis Cloud の資格は、選択中かつ有効な場合だけ Shell が必要とする。
+            if (!currentAvatar.isUseTTS ||
+                !string.Equals(currentAvatar.ttsType, "aivis-cloud", StringComparison.Ordinal))
+            {
+                currentAvatar.aivisCloudConfig.apiKey = string.Empty;
+            }
+
+            var selectedIndex = Math.Clamp(
+                CurrentAnimationSettingIndex,
+                0,
+                AnimationSettings.Count - 1);
+            var animationSettings = AnimationSettings.Select(animationSet => new AnimationSetting
+            {
+                animationSetId = animationSet.animationSetId,
+                animeSetName = animationSet.animeSetName,
+                postureChangeLoopCountStanding = animationSet.postureChangeLoopCountStanding,
+                postureChangeLoopCountSittingFloor = animationSet.postureChangeLoopCountSittingFloor,
+                animations = animationSet.animations.Select(animation => new AnimationConfig
+                {
+                    displayName = animation.displayName,
+                    animationType = animation.animationType,
+                    animationName = animation.animationName,
+                    isEnabled = animation.isEnabled,
+                }).ToList(),
+            }).ToList();
+
+            return new ShellRuntimeConfig
+            {
+                clientId = ClientId,
+                shellApiPort = CocoroShellPort,
+                display = new ShellDisplaySettings
+                {
+                    restoreWindowPosition = IsRestoreWindowPosition,
+                    topmost = IsTopmost,
+                    escapeCursor = IsEscapeCursor,
+                    escapePositions = EscapePositions.Select(position => new EscapePosition
+                    {
+                        x = position.x,
+                        y = position.y,
+                        enabled = position.enabled,
+                    }).ToList(),
+                    touchVirtualKeyEnabled = IsInputVirtualKey,
+                    virtualKey = VirtualKeyString,
+                    autoMove = IsAutoMove,
+                    showMessageWindow = ShowMessageWindow,
+                    messageWindow = new MessageWindowSettings
+                    {
+                        maxMessageCount = MessageWindowSettings.maxMessageCount,
+                        maxTotalAvatars = MessageWindowSettings.maxTotalAvatars,
+                        minWindowSize = MessageWindowSettings.minWindowSize,
+                        maxWindowSize = MessageWindowSettings.maxWindowSize,
+                        fontSize = MessageWindowSettings.fontSize,
+                        horizontalOffset = MessageWindowSettings.horizontalOffset,
+                        verticalOffset = MessageWindowSettings.verticalOffset,
+                    },
+                    ambientOcclusionEnabled = IsEnableAmbientOcclusion,
+                    avatarWindowSize = WindowSize,
+                    avatarPositionX = WindowPositionX,
+                    avatarPositionY = WindowPositionY,
+                    msaaLevel = MsaaLevel,
+                    avatarShadowMode = AvatarShadow,
+                    avatarShadowResolution = AvatarShadowResolution,
+                    backgroundShadowMode = BackgroundShadow,
+                    backgroundShadowResolution = BackgroundShadowResolution,
+                },
+                avatar = new ShellAvatarSettings
+                {
+                    avatarId = currentAvatar.avatarId,
+                    isReadOnly = currentAvatar.isReadOnly,
+                    modelName = currentAvatar.modelName,
+                    vrmFilePath = currentAvatar.vrmFilePath,
+                    isConvertMToon = currentAvatar.isConvertMToon,
+                    isEnableShadowOff = currentAvatar.isEnableShadowOff,
+                    shadowOffMesh = currentAvatar.shadowOffMesh,
+                    isUseTTS = currentAvatar.isUseTTS,
+                    ttsType = currentAvatar.ttsType,
+                    voicevoxConfig = currentAvatar.voicevoxConfig,
+                    styleBertVits2Config = currentAvatar.styleBertVits2Config,
+                    aivisCloudConfig = currentAvatar.aivisCloudConfig,
+                },
+                motion = new ShellMotionSettings
+                {
+                    selectedAnimationSetId = animationSettings[selectedIndex].animationSetId,
+                    animationSettings = animationSettings,
+                },
+            };
         }
 
         /// <summary>

@@ -381,9 +381,19 @@ namespace CocoroConsole.Utilities
         /// <param name="relativeDir">相対ディレクトリ</param>
         /// <param name="operation">プロセス操作の種類（終了のみか再起動か）</param>
         /// <param name="createWindow">ウィンドウを作成するかどうか（デフォルトはfalse：コンソールを非表示）</param>
-        public static void LaunchExternalApplication(string exeName, string? relativeDir = null, ProcessOperation operation = ProcessOperation.RestartIfRunning, bool createWindow = false)
+        public static void LaunchExternalApplication(
+            string exeName,
+            string? relativeDir = null,
+            ProcessOperation operation = ProcessOperation.RestartIfRunning,
+            bool createWindow = false,
+            IReadOnlyDictionary<string, string>? environmentVariables = null)
         {
-            LaunchExternalApplicationAsync(exeName, relativeDir, operation, createWindow).GetAwaiter().GetResult();
+            LaunchExternalApplicationAsync(
+                exeName,
+                relativeDir,
+                operation,
+                createWindow,
+                environmentVariables).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -393,7 +403,12 @@ namespace CocoroConsole.Utilities
         /// <param name="relativeDir">相対ディレクトリ</param>
         /// <param name="operation">プロセス操作の種類（終了のみか再起動か）</param>
         /// <param name="createWindow">ウィンドウを作成するかどうか（デフォルトはfalse：コンソールを非表示）</param>
-        public static async Task LaunchExternalApplicationAsync(string exeName, string? relativeDir = null, ProcessOperation operation = ProcessOperation.RestartIfRunning, bool createWindow = false)
+        public static async Task LaunchExternalApplicationAsync(
+            string exeName,
+            string? relativeDir = null,
+            ProcessOperation operation = ProcessOperation.RestartIfRunning,
+            bool createWindow = false,
+            IReadOnlyDictionary<string, string>? environmentVariables = null)
         {
             try
             {
@@ -458,6 +473,13 @@ namespace CocoroConsole.Utilities
                     WindowStyle = createWindow ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden // ウィンドウスタイルの設定
                 };
 
+                if (environmentVariables != null)
+                {
+                    foreach (var entry in environmentVariables)
+                    {
+                        startInfo.Environment[entry.Key] = entry.Value;
+                    }
+                }
 
                 // プロセスを起動
                 var newProcess = Process.Start(startInfo);

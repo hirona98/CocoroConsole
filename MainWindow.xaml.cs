@@ -407,18 +407,30 @@ namespace CocoroConsole
         /// <summary>
         /// 設定保存時のイベントハンドラ
         /// </summary>
-        private void OnSettingsSaved(object? sender, EventArgs e)
+        private async void OnSettingsSaved(object? sender, EventArgs e)
         {
+            if (_appSettings.HasRemoteSettings && _communicationService != null)
+            {
+                try
+                {
+                    // Shell が設定取得を開始する前に、Console API の待受を確定する。
+                    await _communicationService.PrepareShellRuntimeAsync();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"CocoroShell実行設定APIの準備に失敗しました: {ex.Message}");
+                    return;
+                }
+            }
+
             // UI側の設定反映（ボタン状態とLLM表示）
             UIHelper.RunOnUIThread(() =>
             {
                 if (_appSettings.HasRemoteSettings)
                 {
-                    // 端末設定を反映した状態で CocoroShell を起動し直す。
                     LaunchCocoroShell();
                     WindowPlacementManager.RestorePosition(this, MainWindowPlacementKey, _appSettings);
                 }
-
                 // 設定変更後のボタン状態を反映
                 InitializeButtonStates();
 
@@ -541,10 +553,6 @@ namespace CocoroConsole
 
                     case "restart":
                         Debug.WriteLine("restart コマンドは現在未実装です");
-                        break;
-
-                    case "reloadConfig":
-                        Debug.WriteLine("reloadConfig コマンドは現在未実装です");
                         break;
 
                     default:

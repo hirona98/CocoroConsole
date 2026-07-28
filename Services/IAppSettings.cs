@@ -50,6 +50,11 @@ namespace CocoroConsole.Services
         string OtomeKairoBearerToken { get; set; }
 
         /// <summary>
+        /// 起動中の CocoroShell だけが使用する一時セッショントークン
+        /// </summary>
+        string ShellSessionToken { get; set; }
+
+        /// <summary>
         /// 対話機能（LLM）を使用するか
         /// </summary>
         bool IsUseLLM { get; set; }
@@ -189,6 +194,11 @@ namespace CocoroConsole.Services
         /// </summary>
         /// <returns>ConfigSettings オブジェクト</returns>
         ConfigSettings GetConfigSettings();
+
+        /// <summary>
+        /// CocoroShell に配送する実行用設定を構築する。
+        /// </summary>
+        ShellRuntimeConfig BuildShellRuntimeConfig();
 
         /// <summary>
         /// OtomeKairo から取得した通常設定を実行時モデルへ反映する。

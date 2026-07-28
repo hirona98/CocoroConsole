@@ -7,6 +7,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.IO.Pipes;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,11 +22,15 @@ namespace CocoroConsole.Communication
     /// </summary>
     public class CocoroConsoleApiServer : IDisposable
     {
+        private const string ShellEditorBootstrapPipeName = "CocoroAI.CocoroShell.EditorBootstrap.v1";
+        private const string ShellEditorBootstrapRequest = "cocoroshell-editor-bootstrap-v1";
+
         private IHost? _host;
         private readonly int _port;
         private readonly IAppSettings _appSettings;
         private readonly Func<CancellationToken, Task> _saveConsoleClientSettingsAsync;
         private CancellationTokenSource? _cts;
+        private Task? _shellEditorBootstrapTask;
 
         // イベント
         public event EventHandler<UiMessageRequest>? UiMessageReceived;
@@ -44,9 +52,12 @@ namespace CocoroConsole.Communication
         /// <summary>
         /// APIサーバーを開始
         /// </summary>
-        public Task StartAsync()
+        public async Task StartAsync()
         {
-            if (_host != null) return Task.CompletedTask;
+            if (_host != null)
+            {
+                return;
+            }
 
             try
             {
@@ -99,33 +110,22 @@ namespace CocoroConsole.Communication
                 ConfigureEndpoints(app);
 
                 _host = app;
-
-                // バックグラウンドでサーバーを起動
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await _host.RunAsync(_cts.Token);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // 正常な終了
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"APIサーバー実行エラー: {ex.Message}");
-                    }
-                });
+                await _host.StartAsync(_cts.Token).ConfigureAwait(false);
+                _shellEditorBootstrapTask = RunShellEditorBootstrapPipeAsync(_cts.Token);
 
                 Debug.WriteLine($"CocoroConsole APIサーバーを起動しました: http://127.0.0.1:{_port}");
             }
             catch (Exception ex)
             {
+                _cts?.Cancel();
+                _host?.Dispose();
+                _host = null;
+                _shellEditorBootstrapTask = null;
+                _cts?.Dispose();
+                _cts = null;
                 Debug.WriteLine($"APIサーバー起動エラー: {ex.Message}");
                 throw new InvalidOperationException($"APIサーバーの起動に失敗しました: {ex.Message}", ex);
             }
-
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -204,56 +204,56 @@ namespace CocoroConsole.Communication
                 }
             });
 
-            // GET /api/config - 設定取得
-            app.MapGet("/api/config", async (HttpContext context) =>
+            // CocoroShell に、OtomeKairo 由来の実行用設定だけを返す。
+            app.MapGet("/api/shell/runtime-config", async (HttpContext context) =>
             {
+                if (!await AuthorizeShellAsync(context))
+                {
+                    return;
+                }
+
                 try
                 {
-                    var config = _appSettings.GetConfigSettings();
+                    var config = _appSettings.BuildShellRuntimeConfig();
                     context.Response.ContentType = "application/json; charset=utf-8";
                     await context.Response.WriteAsJsonAsync(config);
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"設定取得エラー: {ex.Message}");
-                    context.Response.StatusCode = 500;
+                    Debug.WriteLine($"CocoroShell実行設定取得エラー: {ex.Message}");
+                    context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
                     await context.Response.WriteAsJsonAsync(new ErrorResponse
                     {
-                        message = "Failed to retrieve configuration",
-                        errorCode = "CONFIG_ERROR"
+                        message = "CocoroShellの実行設定を準備できません。",
+                        errorCode = "SHELL_RUNTIME_CONFIG_UNAVAILABLE"
                     });
                 }
             });
 
             // CocoroShell が確定したアバター位置だけを OtomeKairo の端末設定へ反映する。
-            app.MapPut("/api/config/patch", async (HttpContext context) =>
+            app.MapPut("/api/shell/avatar-position", async (HttpContext context) =>
             {
+                if (!await AuthorizeShellAsync(context))
+                {
+                    return;
+                }
+
                 var previousX = _appSettings.WindowPositionX;
                 var previousY = _appSettings.WindowPositionY;
                 try
                 {
-                    var patch = await context.Request.ReadFromJsonAsync<ConfigPatchRequest>();
-                    if (patch == null || patch.updates.Count == 0)
+                    var request = await context.Request.ReadFromJsonAsync<ShellAvatarPositionRequest>();
+                    if (request == null)
                     {
-                        throw new ArgumentException("updatesを指定してください。");
+                        throw new ArgumentException("位置を指定してください。");
+                    }
+                    if (!float.IsFinite(request.x) || !float.IsFinite(request.y))
+                    {
+                        throw new ArgumentException("位置は有限数値で指定してください。");
                     }
 
-                    foreach (var fieldName in patch.updates.Keys)
-                    {
-                        if (fieldName != "windowPositionX" && fieldName != "windowPositionY")
-                        {
-                            throw new ArgumentException($"未対応の設定項目です: {fieldName}");
-                        }
-                    }
-
-                    if (patch.updates.TryGetValue("windowPositionX", out var x))
-                    {
-                        _appSettings.WindowPositionX = ReadFiniteSingle(x, "windowPositionX");
-                    }
-                    if (patch.updates.TryGetValue("windowPositionY", out var y))
-                    {
-                        _appSettings.WindowPositionY = ReadFiniteSingle(y, "windowPositionY");
-                    }
+                    _appSettings.WindowPositionX = request.x;
+                    _appSettings.WindowPositionY = request.y;
 
                     await _saveConsoleClientSettingsAsync(context.RequestAborted);
                     await context.Response.WriteAsJsonAsync(new StandardResponse
@@ -270,7 +270,7 @@ namespace CocoroConsole.Communication
                     await context.Response.WriteAsJsonAsync(new ErrorResponse
                     {
                         message = ex.Message,
-                        errorCode = "INVALID_CONFIG_PATCH"
+                        errorCode = "INVALID_AVATAR_POSITION"
                     });
                 }
                 catch (JsonException)
@@ -292,8 +292,8 @@ namespace CocoroConsole.Communication
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                     await context.Response.WriteAsJsonAsync(new ErrorResponse
                     {
-                        message = "Failed to save avatar position",
-                        errorCode = "CONFIG_PATCH_ERROR"
+                        message = "アバター位置を保存できませんでした。",
+                        errorCode = "AVATAR_POSITION_SAVE_FAILED"
                     });
                 }
             });
@@ -316,7 +316,7 @@ namespace CocoroConsole.Communication
                     }
 
                     // コマンド検証
-                    var validAction = new[] { "shutdown", "restart", "reloadConfig" };
+                    var validAction = new[] { "shutdown", "restart" };
                     if (!Array.Exists(validAction, cmd => cmd == request.action))
                     {
                         context.Response.StatusCode = 400;
@@ -422,16 +422,98 @@ namespace CocoroConsole.Communication
 
         }
 
-        private static float ReadFiniteSingle(object value, string fieldName)
+        /// <summary>
+        /// Unity Editorへ、現在のConsole API URLと一時トークンを名前付きパイプで渡す。
+        /// </summary>
+        private async Task RunShellEditorBootstrapPipeAsync(CancellationToken cancellationToken)
         {
-            if (value is not JsonElement element
-                || element.ValueKind != JsonValueKind.Number
-                || !element.TryGetSingle(out var number)
-                || !float.IsFinite(number))
+            while (!cancellationToken.IsCancellationRequested)
             {
-                throw new ArgumentException($"{fieldName}には有限数値を指定してください。");
+                try
+                {
+                    using var pipe = new NamedPipeServerStream(
+                        ShellEditorBootstrapPipeName,
+                        PipeDirection.InOut,
+                        1,
+                        PipeTransmissionMode.Byte,
+                        PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+                    await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+                    using var reader = new StreamReader(pipe, Encoding.UTF8, false, 1024, true);
+                    using var writer = new StreamWriter(pipe, new UTF8Encoding(false), 1024, true)
+                    {
+                        AutoFlush = true
+                    };
+                    var request = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+
+                    string response;
+                    if (string.Equals(request, ShellEditorBootstrapRequest, StringComparison.Ordinal) &&
+                        !string.IsNullOrEmpty(_appSettings.ShellSessionToken))
+                    {
+                        response = JsonSerializer.Serialize(new
+                        {
+                            consoleApiUrl = $"http://127.0.0.1:{_port}",
+                            sessionToken = _appSettings.ShellSessionToken
+                        });
+                    }
+                    else
+                    {
+                        response = JsonSerializer.Serialize(new
+                        {
+                            error = "shell_editor_bootstrap_unavailable"
+                        });
+                    }
+
+                    await writer.WriteLineAsync(response.AsMemory(), cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"CocoroShell Editor bootstrap IPCエラー: {ex.Message}");
+                    try
+                    {
+                        await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                }
             }
-            return number;
+        }
+
+        /// <summary>
+        /// Console が起動した CocoroShell の一時トークンを検証する。
+        /// </summary>
+        private async Task<bool> AuthorizeShellAsync(HttpContext context)
+        {
+            const string bearerPrefix = "Bearer ";
+            var expectedToken = _appSettings.ShellSessionToken;
+            var authorization = context.Request.Headers["Authorization"].ToString();
+            var suppliedToken = authorization.StartsWith(bearerPrefix, StringComparison.Ordinal)
+                ? authorization.Substring(bearerPrefix.Length)
+                : string.Empty;
+
+            var authorized = !string.IsNullOrEmpty(expectedToken)
+                && expectedToken.Length == suppliedToken.Length
+                && CryptographicOperations.FixedTimeEquals(
+                    Encoding.UTF8.GetBytes(expectedToken),
+                    Encoding.UTF8.GetBytes(suppliedToken));
+            if (authorized)
+            {
+                return true;
+            }
+
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await context.Response.WriteAsJsonAsync(new ErrorResponse
+            {
+                message = "CocoroShellの認証に失敗しました。",
+                errorCode = "INVALID_SHELL_SESSION"
+            });
+            return false;
         }
 
         /// <summary>
@@ -447,6 +529,11 @@ namespace CocoroConsole.Communication
 
                 var stopTask = _host.StopAsync(TimeSpan.FromSeconds(5));
                 await stopTask.ConfigureAwait(false);
+                if (_shellEditorBootstrapTask != null)
+                {
+                    await _shellEditorBootstrapTask.ConfigureAwait(false);
+                    _shellEditorBootstrapTask = null;
+                }
 
                 _host.Dispose();
                 _host = null;
@@ -462,6 +549,7 @@ namespace CocoroConsole.Communication
                 // エラーが発生してもリソースをクリーンアップ
                 try { _host?.Dispose(); } catch { }
                 _host = null;
+                _shellEditorBootstrapTask = null;
                 try { _cts?.Dispose(); } catch { }
                 _cts = null;
             }
@@ -472,6 +560,7 @@ namespace CocoroConsole.Communication
             _cts?.Cancel();
             _host?.Dispose();
             _cts?.Dispose();
+            _shellEditorBootstrapTask = null;
         }
     }
 }

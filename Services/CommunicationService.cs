@@ -32,6 +32,7 @@ namespace CocoroConsole.Services
         private const string RequiredOtomeKairoApiVersion = "0.3.0";
         // CocoroConsole 側の HTTP API サーバー（外部クライアントからの受信）
         private CocoroConsoleApiServer _apiServer;
+        private int _apiServerPort;
 
         // CocoroShell（Unity 側）へ送るクライアント
         private CocoroShellClient _shellClient;
@@ -141,6 +142,7 @@ namespace CocoroConsole.Services
 
             // APIサーバーの初期化
             _apiServer = CreateApiServer(_appSettings.CocoroConsolePort);
+            _apiServerPort = _appSettings.CocoroConsolePort;
 
             // CocoroShellクライアントの初期化
             _shellClient = new CocoroShellClient(_appSettings.CocoroShellPort);
@@ -276,10 +278,46 @@ namespace CocoroConsole.Services
         public async Task StartServerAsync()
         {
             _apiServerStartRequested = true;
+            if (!_remoteSettingsApplied)
+            {
+                return;
+            }
+
+            await EnsureLocalApiServerReadyAsync().ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// CocoroShell を起動する前に、最新設定のポートでローカルAPIを待受状態にする。
+        /// </summary>
+        public async Task PrepareShellRuntimeAsync()
+        {
+            if (!_remoteSettingsApplied)
+            {
+                throw new InvalidOperationException("OtomeKairoの端末設定を取得していません。");
+            }
+
+            // Unity Editorも同じ認証境界を使えるよう、API待受前に一時トークンを用意する。
+            CocoroShellProcessManager.PrepareSessionToken(_appSettings, false);
+            await EnsureLocalApiServerReadyAsync().ConfigureAwait(false);
+        }
+
+        private async Task EnsureLocalApiServerReadyAsync()
+        {
             await _apiServerLifecycleSemaphore.WaitAsync().ConfigureAwait(false);
             try
             {
-                if (_remoteSettingsApplied && !_apiServer.IsRunning)
+                if (_apiServerPort != _appSettings.CocoroConsolePort)
+                {
+                    if (_apiServer.IsRunning)
+                    {
+                        await _apiServer.StopAsync().ConfigureAwait(false);
+                    }
+                    _apiServer.Dispose();
+                    _apiServer = CreateApiServer(_appSettings.CocoroConsolePort);
+                    _apiServerPort = _appSettings.CocoroConsolePort;
+                }
+
+                if (!_apiServer.IsRunning)
                 {
                     await _apiServer.StartAsync().ConfigureAwait(false);
                 }
@@ -362,7 +400,6 @@ namespace CocoroConsole.Services
                 return;
             }
 
-            bool consolePortChanged = previousSettings.CocoroConsolePort != currentSettings.CocoroConsolePort;
             bool shellPortChanged = previousSettings.cocoroShellPort != currentSettings.cocoroShellPort;
             bool otomeKairoPortChanged = previousSettings.otomeKairoPort != currentSettings.otomeKairoPort;
             bool otomeKairoHostChanged = !string.Equals(
@@ -375,11 +412,6 @@ namespace CocoroConsole.Services
             bool otomeKairoEndpointChanged = otomeKairoPortChanged || otomeKairoHostChanged || useExternalOtomeKairoChanged;
             bool bearerTokenChanged = !string.Equals(previousSettings.otomeKairoBearerToken ?? string.Empty,
                 currentSettings.otomeKairoBearerToken ?? string.Empty, StringComparison.Ordinal);
-
-            if (consolePortChanged)
-            {
-                _ = RestartApiServerAsync(currentSettings.CocoroConsolePort);
-            }
 
             if (shellPortChanged)
             {
@@ -400,42 +432,6 @@ namespace CocoroConsole.Services
 
                 _ = StopEventsStreamAsync();
                 _ = StopLogStreamAsync();
-            }
-        }
-
-        private async Task RestartApiServerAsync(int newPort)
-        {
-            var oldServer = _apiServer;
-            bool wasRunning = oldServer.IsRunning;
-            try
-            {
-                if (wasRunning)
-                {
-                    await oldServer.StopAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"CommunicationService: サーバー再起動停止エラー: {ex.Message}");
-            }
-            finally
-            {
-                oldServer.Dispose();
-            }
-
-            _apiServer = CreateApiServer(newPort);
-
-            if (wasRunning)
-            {
-                try
-                {
-                    await _apiServer.StartAsync();
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"CommunicationService: サーバー再起動起動エラー: {ex.Message}");
-                    ErrorOccurred?.Invoke(this, $"サーバー再起動に失敗しました: {ex.Message}");
-                }
             }
         }
 
@@ -518,12 +514,13 @@ namespace CocoroConsole.Services
                     consoleClient.Settings,
                     config.SettingsSnapshot,
                     avatarSpeech);
-                _appSettings.SaveAppSettings();
                 _remoteSettingsApplied = true;
                 if (_apiServerStartRequested)
                 {
-                    await StartServerAsync().ConfigureAwait(false);
+                    await PrepareShellRuntimeAsync().ConfigureAwait(false);
                 }
+                RefreshSettingsCache();
+                _appSettings.SaveAppSettings();
                 await StartEventsStreamAsync().ConfigureAwait(false);
                 await SyncDesktopWatchCapabilityStateAsync().ConfigureAwait(false);
             }
@@ -1689,39 +1686,6 @@ namespace CocoroConsole.Services
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"位置取得に失敗しました: {ex.Message}"));
 
                 throw;
-            }
-        }
-
-        /// <summary>
-        /// CocoroShellに設定の部分更新を送信
-        /// </summary>
-        /// <param name="updates">更新する設定のキーと値のペア</param>
-        public async Task SendConfigPatchToShellAsync(Dictionary<string, object> updates)
-        {
-            try
-            {
-                if (!ShouldForwardToShell())
-                {
-                    Debug.WriteLine($"[Shell Forward] VRM表示OFFのため設定部分更新をスキップ: {string.Join(", ", updates.Keys)}");
-                    return;
-                }
-
-                var changedFields = new string[updates.Count];
-                updates.Keys.CopyTo(changedFields, 0);
-
-                var patch = new ConfigPatchRequest
-                {
-                    updates = updates,
-                    changedFields = changedFields
-                };
-
-                await _shellClient.UpdateConfigPatchAsync(patch);
-                Debug.WriteLine($"設定部分更新をCocoroShellに送信しました: {string.Join(", ", changedFields)}");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"CocoroShell設定部分更新エラー: {ex.Message}");
-                throw new InvalidOperationException($"Failed to send config patch to shell: {ex.Message}", ex);
             }
         }
 

@@ -461,6 +461,81 @@ namespace CocoroConsole.Communication
         public bool isEnabled { get; set; } = true; // 有効/無効
     }
 
+    /// <summary>
+    /// CocoroShell が起動時に取得する実行用設定。
+    /// OtomeKairo への接続資格や CocoroConsole 専用設定を含めません。
+    /// </summary>
+    public class ShellRuntimeConfig
+    {
+        public string clientId { get; set; } = string.Empty;
+        public int shellApiPort { get; set; }
+        public ShellDisplaySettings display { get; set; } = new ShellDisplaySettings();
+        public ShellAvatarSettings avatar { get; set; } = new ShellAvatarSettings();
+        public ShellMotionSettings motion { get; set; } = new ShellMotionSettings();
+    }
+
+    /// <summary>
+    /// CocoroShell が表示と音声合成に使用する選択済みアバター設定。
+    /// </summary>
+    public class ShellAvatarSettings
+    {
+        public string avatarId { get; set; } = string.Empty;
+        public bool isReadOnly { get; set; }
+        public string modelName { get; set; } = string.Empty;
+        public string vrmFilePath { get; set; } = string.Empty;
+        public bool isConvertMToon { get; set; }
+        public bool isEnableShadowOff { get; set; }
+        public string shadowOffMesh { get; set; } = string.Empty;
+        public bool isUseTTS { get; set; }
+        public string ttsType { get; set; } = string.Empty;
+        public VoicevoxConfig voicevoxConfig { get; set; } = new VoicevoxConfig();
+        public StyleBertVits2Config styleBertVits2Config { get; set; } = new StyleBertVits2Config();
+        public AivisCloudConfig aivisCloudConfig { get; set; } = new AivisCloudConfig();
+    }
+
+    /// <summary>
+    /// CocoroShell の表示処理に必要な設定。
+    /// </summary>
+    public class ShellDisplaySettings
+    {
+        public bool restoreWindowPosition { get; set; }
+        public bool topmost { get; set; }
+        public bool escapeCursor { get; set; }
+        public List<EscapePosition> escapePositions { get; set; } = new List<EscapePosition>();
+        public bool touchVirtualKeyEnabled { get; set; }
+        public string virtualKey { get; set; } = string.Empty;
+        public bool autoMove { get; set; }
+        public bool showMessageWindow { get; set; }
+        public MessageWindowSettings messageWindow { get; set; } = new MessageWindowSettings();
+        public bool ambientOcclusionEnabled { get; set; }
+        public float avatarWindowSize { get; set; }
+        public float avatarPositionX { get; set; }
+        public float avatarPositionY { get; set; }
+        public int msaaLevel { get; set; }
+        public int avatarShadowMode { get; set; }
+        public int avatarShadowResolution { get; set; }
+        public int backgroundShadowMode { get; set; }
+        public int backgroundShadowResolution { get; set; }
+    }
+
+    /// <summary>
+    /// CocoroShell が使用するモーション設定。
+    /// </summary>
+    public class ShellMotionSettings
+    {
+        public string selectedAnimationSetId { get; set; } = string.Empty;
+        public List<AnimationSetting> animationSettings { get; set; } = new List<AnimationSetting>();
+    }
+
+    /// <summary>
+    /// CocoroShell が確定したアバター位置。
+    /// </summary>
+    public class ShellAvatarPositionRequest
+    {
+        public float x { get; set; }
+        public float y { get; set; }
+    }
+
     #region REST API ペイロードクラス
 
     /// <summary>
@@ -483,7 +558,7 @@ namespace CocoroConsole.Communication
     /// </summary>
     public class ControlRequest
     {
-        public string action { get; set; } = string.Empty; // "shutdown" | "restart" | "reloadConfig"
+        public string action { get; set; } = string.Empty; // "shutdown" | "restart"
         public Dictionary<string, object>? @params { get; set; }
         public string? reason { get; set; }
     }
@@ -546,15 +621,6 @@ namespace CocoroConsole.Communication
     {
         public string action { get; set; } = string.Empty;
         public Dictionary<string, object>? @params { get; set; }
-    }
-
-    /// <summary>
-    /// CocoroShell API: 設定部分更新リクエスト
-    /// </summary>
-    public class ConfigPatchRequest
-    {
-        public Dictionary<string, object> updates { get; set; } = new Dictionary<string, object>();
-        public string[] changedFields { get; set; } = Array.Empty<string>();
     }
 
     /// <summary>
