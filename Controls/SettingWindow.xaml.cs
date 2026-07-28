@@ -31,11 +31,11 @@ namespace CocoroConsole.Controls
 
         // OtomeKairo の editor-state を保持
         private OtomeKairoEditorState? _loadedOtomeKairoEditorState;
+        private OtomeKairoConsoleClientEditorState? _loadedConsoleClientEditorState;
+        private OtomeKairoAvatarSpeechEditorState? _loadedAvatarSpeechEditorState;
         private OtomeKairoCameraSourcesEditorState? _loadedCameraSourcesEditorState;
         private OtomeKairoMcpServersEditorState? _loadedMcpServersEditorState;
-
-        // OtomeKairo再起動が必要な設定の前回値を保存
-        private ConfigSettings _previousOtomeKairoSettings;
+        private string _otomeKairoAccessTokenAtLoad = string.Empty;
 
         public bool IsClosed { get; private set; } = false;
 
@@ -46,6 +46,7 @@ namespace CocoroConsole.Controls
         public SettingWindow(ICommunicationService? communicationService)
         {
             InitializeComponent();
+            _otomeKairoAccessTokenAtLoad = AppSettings.Instance.OtomeKairoBearerToken;
             ShowSettingsPage("display");
             EmbeddingSettingsControl.ResolveLlmApiKey = () => LlmSettingsControl.GetPreferredApiKeyForEmbeddingPaste();
 
@@ -79,8 +80,6 @@ namespace CocoroConsole.Controls
             // 元の設定のバックアップを作成
             BackupSettings();
 
-            // OtomeKairo再起動チェック用に現在の設定のディープコピーを保存
-            _previousOtomeKairoSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
         }
 
         private async Task InitializeSystemSettingsAsync()
@@ -155,6 +154,18 @@ namespace CocoroConsole.Controls
             try
             {
                 _loadedOtomeKairoEditorState = await _apiClient.GetEditorStateAsync();
+                _loadedConsoleClientEditorState = await _apiClient.ConnectConsoleClientAsync(
+                    AppSettings.Instance.ClientId);
+                _loadedAvatarSpeechEditorState = await _apiClient.GetAvatarSpeechEditorStateAsync();
+                AppSettings.Instance.ApplyRemoteSettings(
+                    _loadedConsoleClientEditorState.Settings,
+                    _loadedOtomeKairoEditorState.Current,
+                    _loadedAvatarSpeechEditorState);
+
+                DisplaySettingsControl.InitializeFromAppSettings();
+                AvatarManagementControl.RefreshAvatarList();
+                AnimationSettingsControl.Initialize();
+                SystemSettingsControl.ReloadFromAppSettings();
 
                 LlmSettingsControl.LoadSettingsList(
                     CloneModelPresets(_loadedOtomeKairoEditorState.ModelPresets),
@@ -380,14 +391,15 @@ namespace CocoroConsole.Controls
 
 
         // System やその他設定の収集はこのまま SettingWindow 側で実施
-        private Dictionary<string, object> CollectSystemSettings()
+        private Dictionary<string, object> CollectSystemSettings(string otomeKairoAccessToken)
         {
             var dict = new Dictionary<string, object>();
 
             var microphoneSettings = SystemSettingsControl.GetMicrophoneSettings();
             dict["MicInputThreshold"] = microphoneSettings.inputThreshold;
             dict["SpeakerRecognitionThreshold"] = microphoneSettings.speakerRecognitionThreshold;
-            dict["OtomeKairoAccessToken"] = SystemSettingsControl.GetOtomeKairoAccessToken();
+            dict["OtomeKairoServerUrl"] = SystemSettingsControl.GetOtomeKairoServerUrl();
+            dict["OtomeKairoAccessToken"] = otomeKairoAccessToken;
             dict["ConversationDisplayName"] = SystemSettingsControl.GetConversationDisplayName();
 
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
@@ -494,7 +506,6 @@ namespace CocoroConsole.Controls
 
                 // 設定のバックアップを更新（適用後の状態を新しいベースラインとする）
                 BackupSettings();
-                _previousOtomeKairoSettings = AppSettings.Instance.GetConfigSettings().DeepCopy();
             }
             catch (Exception ex)
             {
@@ -515,7 +526,7 @@ namespace CocoroConsole.Controls
             }
 
             // --- 登録済み接続先へ保存する前に、画面上の認証情報を確認する ---
-            var bearerToken = SystemSettingsControl.GetOtomeKairoAccessToken();
+            var bearerToken = ResolveOtomeKairoAccessToken();
             if (string.IsNullOrWhiteSpace(bearerToken))
             {
                 var result = MessageBox.Show(
@@ -530,28 +541,38 @@ namespace CocoroConsole.Controls
             }
 
             // すべてのタブの設定を保存（プリセットの保存・有効化を含む）
-            await SaveAllSettingsAsync();
+            await SaveAllSettingsAsync(bearerToken);
+            _otomeKairoAccessTokenAtLoad = bearerToken;
+            SystemSettingsControl.SetOtomeKairoAccessToken(bearerToken);
 
-            // 保存後の設定を取得してOtomeKairo再起動が必要かチェック
-            var currentSettings = GetCurrentUISettings();
-            bool needsOtomeKairoRestart =
-                HasOtomeKairoRestartRequiredChanges(_previousOtomeKairoSettings, currentSettings);
+            // 保存イベントを受けた MainWindow が新しい端末設定で CocoroShell を再起動する。
+        }
 
-            // CocoroShellを再起動
-            RestartCocoroShell();
+        private string ResolveOtomeKairoAccessToken()
+        {
+            var displayedToken = SystemSettingsControl.GetOtomeKairoAccessToken();
+            var currentToken = AppSettings.Instance.OtomeKairoBearerToken.Trim();
 
-            // OtomeKairoの設定変更があった場合は再起動
-            if (needsOtomeKairoRestart)
+            // 画面を開いた後に初回登録が完了した場合、未編集の古い表示値で発行結果を上書きしない。
+            if (string.Equals(
+                    displayedToken,
+                    _otomeKairoAccessTokenAtLoad,
+                    StringComparison.Ordinal)
+                && !string.Equals(
+                    currentToken,
+                    _otomeKairoAccessTokenAtLoad,
+                    StringComparison.Ordinal))
             {
-                await RestartOtomeKairoAsync();
-                Debug.WriteLine("OtomeKairo再起動処理を実行しました");
+                return currentToken;
             }
+
+            return displayedToken;
         }
 
         /// <summary>
         /// すべてのタブの設定を保存する
         /// </summary>
-        private async Task SaveAllSettingsAsync()
+        private async Task SaveAllSettingsAsync(string otomeKairoAccessToken)
         {
             try
             {
@@ -560,7 +581,7 @@ namespace CocoroConsole.Controls
                 var displaySnapshot = DisplaySettingsControl.GetSnapshot();
 
                 // System の設定を収集
-                var systemSnapshot = CollectSystemSettings();
+                var systemSnapshot = CollectSystemSettings(otomeKairoAccessToken);
 
                 // AppSettings に反映（Display）
                 DisplaySettingsControl.ApplySnapshotToAppSettings(displaySnapshot);
@@ -590,12 +611,15 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// 全設定をAPIに保存（1回のリクエストで送信）
+        /// 全設定を責務別APIへ保存する
         /// </summary>
         private async Task SaveAllSettingsToApiAsync()
         {
             InitializeApiClient();
-            if (_apiClient == null) return;
+            if (_apiClient == null)
+            {
+                throw new InvalidOperationException("OtomeKairo APIクライアントを初期化できません。");
+            }
 
             try
             {
@@ -605,9 +629,14 @@ namespace CocoroConsole.Controls
                 var request = BuildEditorStateFromUi();
                 var updated = await _apiClient.ReplaceEditorStateAsync(request);
                 _loadedOtomeKairoEditorState = updated;
+                _loadedAvatarSpeechEditorState = await _apiClient.ReplaceAvatarSpeechEditorStateAsync(
+                    AppSettings.Instance.BuildAvatarSpeechEditorState());
+                _loadedConsoleClientEditorState = await _apiClient.ReplaceConsoleClientEditorStateAsync(
+                    AppSettings.Instance.ClientId,
+                    AppSettings.Instance.BuildConsoleClientSettings());
                 await SaveCameraSourcesToApiAsync();
                 await SaveMcpServersToApiAsync();
-                Debug.WriteLine("[SettingWindow] editor-state を API に保存しました");
+                Debug.WriteLine("[SettingWindow] 全設定bundleを OtomeKairo API に保存しました");
 
                 LlmSettingsControl.LoadSettingsList(
                     CloneModelPresets(updated.ModelPresets),
@@ -629,7 +658,7 @@ namespace CocoroConsole.Controls
             catch (Exception ex)
             {
                 Debug.WriteLine($"[SettingWindow] 設定の保存に失敗しました: {ex.Message}");
-                MessageBox.Show($"設定のAPI保存に失敗しました: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
             }
         }
 
@@ -819,6 +848,7 @@ namespace CocoroConsole.Controls
                     SelectedMemorySetId = activeMemorySetId,
                     SelectedModelPresetId = activeModelPresetId,
                     ThinkingSpeechLevel = SystemSettingsControl.GetThinkingSpeechLevel(),
+                    ConversationDisplayName = SystemSettingsControl.GetConversationDisplayName(),
                     WakePolicy = SystemSettingsControl.GetWakePolicy(),
                 },
                 Personas = ClonePersonas(personas),
@@ -920,6 +950,7 @@ namespace CocoroConsole.Controls
         {
             return new AvatarSettings
             {
+                avatarId = source.avatarId,
                 modelName = source.modelName,
                 vrmFilePath = source.vrmFilePath,
                 isUseTTS = source.isUseTTS,
@@ -1006,6 +1037,7 @@ namespace CocoroConsole.Controls
 
             appSettings.MicrophoneSettings.inputThreshold = (int)snapshot["MicInputThreshold"];
             appSettings.MicrophoneSettings.speakerRecognitionThreshold = (float)snapshot["SpeakerRecognitionThreshold"];
+            appSettings.ServerUrl = (string)snapshot["OtomeKairoServerUrl"];
             appSettings.OtomeKairoBearerToken = (string)snapshot["OtomeKairoAccessToken"];
             appSettings.ConversationDisplayName = (string)snapshot["ConversationDisplayName"];
 
@@ -1134,131 +1166,5 @@ namespace CocoroConsole.Controls
             }
         }
 
-        /// <summary>
-        /// OtomeKairoを再起動する
-        /// </summary>
-        private async Task RestartOtomeKairoAsync()
-        {
-            try
-            {
-                // --- リモート接続時はローカルプロセス再起動を行わない ---
-                if (!AppSettings.Instance.IsOtomeKairoLocal())
-                {
-                    Debug.WriteLine("OtomeKairo はリモート接続設定のため、ローカル再起動をスキップします。");
-                    return;
-                }
-
-                // MainWindowのインスタンスを取得
-                var mainWindow = Application.Current.MainWindow as MainWindow;
-                if (mainWindow != null)
-                {
-                    // 再起動開始を通知して起動待ち状態に戻す
-                    _communicationService?.NotifyOtomeKairoRestarting();
-
-                    // ProcessOperation.RestartIfRunning を指定してOtomeKairoを再起動（非同期）
-                    await mainWindow.LaunchOtomeKairoAsync(ProcessOperation.RestartIfRunning);
-                    Debug.WriteLine("OtomeKairoを再起動要求をしました");
-
-                    // 再起動完了を待機
-                    await WaitForOtomeKairoRestartAsync();
-                    Debug.WriteLine("OtomeKairoの再起動が完了しました");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"OtomeKairo再起動中にエラーが発生しました: {ex.Message}");
-                throw new Exception($"OtomeKairoの再起動に失敗しました: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// OtomeKairoの再起動完了を待機
-        /// </summary>
-        private async Task WaitForOtomeKairoRestartAsync()
-        {
-            // 通信サービスがない場合は待機できない
-            if (_communicationService == null)
-            {
-                return;
-            }
-
-            await OtomeKairoStatusAwaiter
-                .WaitUntilReadyAsync(_communicationService, TimeSpan.FromSeconds(120));
-        }
-
-        /// <summary>
-        /// UI上の現在の設定を取得する（ディープコピー）
-        /// </summary>
-        /// <returns>現在のUI設定から構築したConfigSettings</returns>
-        private ConfigSettings GetCurrentUISettings()
-        {
-            // 現在の設定のディープコピーを作成
-            var config = AppSettings.Instance.GetConfigSettings().DeepCopy();
-
-            // LLM使用設定
-            config.isUseLLM = LlmSettingsControl.IsUseLlm;
-
-            // Avatar設定の取得（ディープコピーを使用）
-            config.currentAvatarIndex = AvatarManagementControl.GetCurrentAvatarIndex();
-            var currentAvatarSetting = AvatarManagementControl.GetCurrentAvatarSettingFromUI();
-            if (currentAvatarSetting != null)
-            {
-                if (config.currentAvatarIndex >= 0 && config.currentAvatarIndex < config.avatarList.Count)
-                {
-                    config.avatarList[config.currentAvatarIndex] = currentAvatarSetting;
-                }
-            }
-
-            return config;
-        }
-
-        /// <summary>
-        /// OtomeKairo再起動が必要な設定項目が変更されたかどうかをチェック
-        /// </summary>
-        /// <param name="previousSettings">以前の設定</param>
-        /// <param name="currentSettings">現在の設定</param>
-        /// <returns>OtomeKairo再起動が必要な変更があった場合true</returns>
-        private bool HasOtomeKairoRestartRequiredChanges(ConfigSettings previousSettings, ConfigSettings currentSettings)
-        {
-            // 基本設定項目の比較
-            if (currentSettings.currentAvatarIndex != previousSettings.currentAvatarIndex)
-            {
-                return true;
-            }
-
-            if (currentSettings.isUseLLM != previousSettings.isUseLLM)
-            {
-                return true;
-            }
-
-            // アバターリストの比較
-            if (currentSettings.avatarList.Count != previousSettings.avatarList.Count)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// CocoroShellを再起動する
-        /// </summary>
-        private void RestartCocoroShell()
-        {
-            try
-            {
-                CocoroShellProcessManager.Apply(AppSettings.Instance, ProcessOperation.RestartIfRunning);
-                _communicationService?.ResetShellConnectionState();
-                Debug.WriteLine("CocoroShellを再起動しました");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"CocoroShell再起動中にエラーが発生しました: {ex.Message}");
-                MessageBox.Show($"CocoroShellの再起動に失敗しました: {ex.Message}",
-                               "警告",
-                               MessageBoxButton.OK,
-                               MessageBoxImage.Warning);
-            }
-        }
     }
 }

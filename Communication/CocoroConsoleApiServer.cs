@@ -21,6 +21,7 @@ namespace CocoroConsole.Communication
         private IHost? _host;
         private readonly int _port;
         private readonly IAppSettings _appSettings;
+        private readonly Func<CancellationToken, Task> _saveConsoleClientSettingsAsync;
         private CancellationTokenSource? _cts;
 
         // イベント
@@ -30,10 +31,14 @@ namespace CocoroConsole.Communication
 
         public bool IsRunning => _host != null;
 
-        public CocoroConsoleApiServer(int port, IAppSettings appSettings)
+        public CocoroConsoleApiServer(
+            int port,
+            IAppSettings appSettings,
+            Func<CancellationToken, Task> saveConsoleClientSettingsAsync)
         {
             _port = port;
             _appSettings = appSettings;
+            _saveConsoleClientSettingsAsync = saveConsoleClientSettingsAsync;
         }
 
         /// <summary>
@@ -220,97 +225,59 @@ namespace CocoroConsole.Communication
                 }
             });
 
-            // PUT /api/config - 設定更新
-            app.MapPut("/api/config", async (HttpContext context) =>
-            {
-                try
-                {
-                    var config = await context.Request.ReadFromJsonAsync<ConfigSettings>();
-                    if (config == null)
-                    {
-                        context.Response.StatusCode = 400;
-                        await context.Response.WriteAsJsonAsync(new ErrorResponse
-                        {
-                            message = "Request body is required",
-                            errorCode = "INVALID_REQUEST"
-                        });
-                        return;
-                    }
-
-                    // 設定を更新
-                    _appSettings.UpdateSettings(config);
-                    _appSettings.SaveSettings();
-
-                    await context.Response.WriteAsJsonAsync(new StandardResponse
-                    {
-                        status = "success",
-                        message = "Configuration updated"
-                    });
-                }
-                catch (System.Text.Json.JsonException)
-                {
-                    context.Response.StatusCode = 400;
-                    await context.Response.WriteAsJsonAsync(new ErrorResponse
-                    {
-                        message = "Invalid JSON format",
-                        errorCode = "JSON_ERROR"
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"設定更新エラー: {ex.Message}");
-                    context.Response.StatusCode = 500;
-                    await context.Response.WriteAsJsonAsync(new ErrorResponse
-                    {
-                        message = "Failed to update configuration",
-                        errorCode = "CONFIG_ERROR"
-                    });
-                }
-            });
-
-            // PUT /api/config/patch - 設定部分更新
+            // CocoroShell が確定したアバター位置だけを OtomeKairo の端末設定へ反映する。
             app.MapPut("/api/config/patch", async (HttpContext context) =>
             {
+                var previousX = _appSettings.WindowPositionX;
+                var previousY = _appSettings.WindowPositionY;
                 try
                 {
-                    // PropertyNameCaseInsensitiveを有効にしてCocoroShellからのPascalCaseプロパティも受け入れる
-                    var jsonOptions = new JsonSerializerOptions
+                    var patch = await context.Request.ReadFromJsonAsync<ConfigPatchRequest>();
+                    if (patch == null || patch.updates.Count == 0)
                     {
-                        PropertyNameCaseInsensitive = true,
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                    };
-
-                    var patch = await context.Request.ReadFromJsonAsync<ConfigPatchRequest>(jsonOptions);
-                    if (patch == null || patch.updates == null)
-                    {
-                        context.Response.StatusCode = 400;
-                        await context.Response.WriteAsJsonAsync(new ErrorResponse
-                        {
-                            message = "Request body with updates is required",
-                            errorCode = "INVALID_REQUEST"
-                        });
-                        return;
+                        throw new ArgumentException("updatesを指定してください。");
                     }
 
-                    // 現在の設定を取得
-                    var currentConfig = _appSettings.GetConfigSettings();
+                    foreach (var fieldName in patch.updates.Keys)
+                    {
+                        if (fieldName != "windowPositionX" && fieldName != "windowPositionY")
+                        {
+                            throw new ArgumentException($"未対応の設定項目です: {fieldName}");
+                        }
+                    }
 
-                    // 部分更新を適用（同じJsonSerializerOptionsを使用）
-                    ApplyConfigPatch(currentConfig, patch.updates, jsonOptions);
+                    if (patch.updates.TryGetValue("windowPositionX", out var x))
+                    {
+                        _appSettings.WindowPositionX = ReadFiniteSingle(x, "windowPositionX");
+                    }
+                    if (patch.updates.TryGetValue("windowPositionY", out var y))
+                    {
+                        _appSettings.WindowPositionY = ReadFiniteSingle(y, "windowPositionY");
+                    }
 
-                    // 設定を更新・保存
-                    _appSettings.UpdateSettings(currentConfig);
-                    _appSettings.SaveSettings();
-
+                    await _saveConsoleClientSettingsAsync(context.RequestAborted);
                     await context.Response.WriteAsJsonAsync(new StandardResponse
                     {
                         status = "success",
-                        message = $"Configuration patch applied: {string.Join(", ", patch.changedFields ?? new string[0])}"
+                        message = "Avatar position saved"
                     });
                 }
-                catch (System.Text.Json.JsonException)
+                catch (ArgumentException ex)
                 {
-                    context.Response.StatusCode = 400;
+                    _appSettings.WindowPositionX = previousX;
+                    _appSettings.WindowPositionY = previousY;
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsJsonAsync(new ErrorResponse
+                    {
+                        message = ex.Message,
+                        errorCode = "INVALID_CONFIG_PATCH"
+                    });
+                }
+                catch (JsonException)
+                {
+                    _appSettings.WindowPositionX = previousX;
+                    _appSettings.WindowPositionY = previousY;
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
                     await context.Response.WriteAsJsonAsync(new ErrorResponse
                     {
                         message = "Invalid JSON format",
@@ -319,11 +286,13 @@ namespace CocoroConsole.Communication
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"設定部分更新エラー: {ex.Message}");
-                    context.Response.StatusCode = 500;
+                    _appSettings.WindowPositionX = previousX;
+                    _appSettings.WindowPositionY = previousY;
+                    Debug.WriteLine($"アバター位置保存エラー: {ex.Message}");
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                     await context.Response.WriteAsJsonAsync(new ErrorResponse
                     {
-                        message = "Failed to apply configuration patch",
+                        message = "Failed to save avatar position",
                         errorCode = "CONFIG_PATCH_ERROR"
                     });
                 }
@@ -453,6 +422,18 @@ namespace CocoroConsole.Communication
 
         }
 
+        private static float ReadFiniteSingle(object value, string fieldName)
+        {
+            if (value is not JsonElement element
+                || element.ValueKind != JsonValueKind.Number
+                || !element.TryGetSingle(out var number)
+                || !float.IsFinite(number))
+            {
+                throw new ArgumentException($"{fieldName}には有限数値を指定してください。");
+            }
+            return number;
+        }
+
         /// <summary>
         /// APIサーバーを停止
         /// </summary>
@@ -483,96 +464,6 @@ namespace CocoroConsole.Communication
                 _host = null;
                 try { _cts?.Dispose(); } catch { }
                 _cts = null;
-            }
-        }
-
-        /// <summary>
-        /// 設定に部分更新を適用
-        /// </summary>
-        private static void ApplyConfigPatch(ConfigSettings config, System.Collections.Generic.Dictionary<string, object> updates, JsonSerializerOptions jsonOptions)
-        {
-            var configType = typeof(ConfigSettings);
-
-            foreach (var kvp in updates)
-            {
-                var propertyInfo = configType.GetProperty(kvp.Key);
-                if (propertyInfo != null && propertyInfo.CanWrite)
-                {
-                    try
-                    {
-                        object convertedValue;
-
-                        // JsonElementの場合は適切に変換処理
-                        if (kvp.Value is JsonElement jsonElement)
-                        {
-                            if (propertyInfo.PropertyType == typeof(float))
-                            {
-                                convertedValue = jsonElement.GetSingle();
-                            }
-                            else if (propertyInfo.PropertyType == typeof(bool))
-                            {
-                                convertedValue = jsonElement.GetBoolean();
-                            }
-                            else if (propertyInfo.PropertyType == typeof(int))
-                            {
-                                convertedValue = jsonElement.GetInt32();
-                            }
-                            else if (propertyInfo.PropertyType == typeof(string))
-                            {
-                                convertedValue = jsonElement.GetString() ?? string.Empty;
-                            }
-                            else if (propertyInfo.PropertyType.IsGenericType &&
-                                    propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(System.Collections.Generic.List<>))
-                            {
-                                // List型の場合はJsonElementから直接デシリアライズ
-                                convertedValue = JsonSerializer.Deserialize(jsonElement.GetRawText(), propertyInfo.PropertyType, jsonOptions) ?? Activator.CreateInstance(propertyInfo.PropertyType)!;
-                            }
-                            else
-                            {
-                                // その他の型はJsonElementから直接デシリアライズ
-                                convertedValue = JsonSerializer.Deserialize(jsonElement.GetRawText(), propertyInfo.PropertyType, jsonOptions) ?? Activator.CreateInstance(propertyInfo.PropertyType) ?? throw new InvalidOperationException($"Cannot create instance of type {propertyInfo.PropertyType.Name}");
-                            }
-                        }
-                        else
-                        {
-                            // JsonElement以外の場合は従来の変換処理
-                            if (propertyInfo.PropertyType == typeof(float))
-                            {
-                                convertedValue = Convert.ToSingle(kvp.Value);
-                            }
-                            else if (propertyInfo.PropertyType == typeof(bool))
-                            {
-                                convertedValue = Convert.ToBoolean(kvp.Value);
-                            }
-                            else if (propertyInfo.PropertyType == typeof(int))
-                            {
-                                convertedValue = Convert.ToInt32(kvp.Value);
-                            }
-                            else if (propertyInfo.PropertyType.IsGenericType &&
-                                    propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof(System.Collections.Generic.List<>))
-                            {
-                                // List型の場合はJSONから直接デシリアライズ（同じオプションを使用）
-                                var json = JsonSerializer.Serialize(kvp.Value, jsonOptions);
-                                convertedValue = JsonSerializer.Deserialize(json, propertyInfo.PropertyType, jsonOptions) ?? Activator.CreateInstance(propertyInfo.PropertyType)!;
-                            }
-                            else
-                            {
-                                convertedValue = Convert.ChangeType(kvp.Value, propertyInfo.PropertyType);
-                            }
-                        }
-
-                        propertyInfo.SetValue(config, convertedValue);
-                        Debug.WriteLine($"Applied config patch: {kvp.Key} = {convertedValue}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Failed to apply patch for {kvp.Key}: {ex.Message}");
-                    }
-                }
-                else
-                {
-                    Debug.WriteLine($"Property {kvp.Key} not found or not writable in ConfigSettings");
-                }
             }
         }
 

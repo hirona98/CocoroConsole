@@ -186,7 +186,6 @@ namespace CocoroConsole.Controls
                 avatar.styleBertVits2Config.splitInterval = splitInterval;
 
             // AivisCloud設定
-            avatar.aivisCloudConfig.endpointUrl = String.Empty; // AivisCloudのエンドポイントURLはCocoroShellで設定
             avatar.aivisCloudConfig.apiKey = AivisCloudApiKeyPasswordBox.Text;
             avatar.aivisCloudConfig.modelUuid = AivisCloudModelUuidTextBox.Text;
             avatar.aivisCloudConfig.speakerUuid = AivisCloudSpeakerUuidTextBox.Text;
@@ -432,6 +431,7 @@ namespace CocoroConsole.Controls
                 // アバター設定をコピー
                 var newAvatar = new AvatarSettings
                 {
+                    avatarId = $"avatar:{Guid.NewGuid():N}",
                     modelName = newName,
                     vrmFilePath = sourceAvatar.vrmFilePath,
                     isUseTTS = sourceAvatar.isUseTTS,

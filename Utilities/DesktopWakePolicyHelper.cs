@@ -33,13 +33,11 @@ namespace CocoroConsole.Utilities
                 ["mode"] = normalizedMode,
             };
 
-            if (normalizedMode == "interval")
-            {
-                var normalizedIntervalSeconds = intervalSeconds.GetValueOrDefault(DefaultWakeIntervalSeconds);
-                request["interval_seconds"] = normalizedIntervalSeconds > 0
-                    ? normalizedIntervalSeconds
-                    : DefaultWakeIntervalSeconds;
-            }
+            // 無効中も次回有効化時の間隔を設定正本へ保持する。
+            var normalizedIntervalSeconds = intervalSeconds.GetValueOrDefault(DefaultWakeIntervalSeconds);
+            request["interval_seconds"] = normalizedIntervalSeconds > 0
+                ? normalizedIntervalSeconds
+                : DefaultWakeIntervalSeconds;
 
             var observations = BuildWakeObservationRequests(currentObservations, clientId, desktopObservationEnabled);
             if (observations.Count > 0)

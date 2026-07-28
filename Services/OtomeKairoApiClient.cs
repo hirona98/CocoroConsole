@@ -123,6 +123,29 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoEditorState>(HttpMethod.Put, "/api/config/editor-state", request, cancellationToken);
         }
 
+        public Task<OtomeKairoAvatarSpeechEditorState> GetAvatarSpeechEditorStateAsync(
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoAvatarSpeechEditorState>(
+                HttpMethod.Get,
+                "/api/config/avatar-speech/editor-state",
+                null,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoAvatarSpeechEditorState> ReplaceAvatarSpeechEditorStateAsync(
+            OtomeKairoAvatarSpeechEditorState request,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoAvatarSpeechEditorState>(
+                HttpMethod.Put,
+                "/api/config/avatar-speech/editor-state",
+                request,
+                cancellationToken);
+        }
+
         public Task<OtomeKairoCameraSourcesEditorState> GetCameraSourcesEditorStateAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -163,6 +186,46 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoMcpServersEditorState>(
                 HttpMethod.Put,
                 "/api/config/mcp-servers/editor-state",
+                request,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoConsoleClientEditorState> ConnectConsoleClientAsync(
+            string clientId,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            var path = BuildConfigResourcePath("/api/config/console-clients", clientId) + "/connect";
+            return SendOtomeKairoAsync<OtomeKairoConsoleClientEditorState>(
+                HttpMethod.Post,
+                path,
+                new { },
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoConsoleClientEditorState> GetConsoleClientEditorStateAsync(
+            string clientId,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            var path = BuildConfigResourcePath("/api/config/console-clients", clientId) + "/editor-state";
+            return SendOtomeKairoAsync<OtomeKairoConsoleClientEditorState>(
+                HttpMethod.Get,
+                path,
+                null,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoConsoleClientEditorState> ReplaceConsoleClientEditorStateAsync(
+            string clientId,
+            OtomeKairoConsoleClientSettings request,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            var path = BuildConfigResourcePath("/api/config/console-clients", clientId) + "/editor-state";
+            return SendOtomeKairoAsync<OtomeKairoConsoleClientEditorState>(
+                HttpMethod.Put,
+                path,
                 request,
                 cancellationToken);
         }
@@ -588,6 +651,10 @@ namespace CocoroConsole.Services
         [JsonPropertyName("wake_policy")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, object?>? WakePolicy { get; set; }
+
+        [JsonPropertyName("conversation_display_name")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? ConversationDisplayName { get; set; }
     }
 
     public class OtomeKairoConversationRequest

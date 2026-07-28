@@ -388,10 +388,6 @@ namespace CocoroConsole.Controls
                 appSettings.WindowPositionY = float.MinValue;
                 appSettings.IsRestoreWindowPosition = false;
                 RestoreWindowPositionCheckBox.IsChecked = false;
-                appSettings.SaveAppSettings();
-#if !DEBUG
-                CocoroShellProcessManager.Apply(appSettings, ProcessOperation.RestartIfRunning);
-#endif
             }
             catch (Exception ex)
             {

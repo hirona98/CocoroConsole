@@ -80,6 +80,8 @@ namespace CocoroConsole.Communication
 
     public class AvatarSettings
     {
+        // OtomeKairo のアバター資源と表示資源を結び付ける安定ID
+        public string avatarId { get; set; } = string.Empty;
         public bool isReadOnly { get; set; }
         public string modelName { get; set; } = string.Empty;
         public string vrmFilePath { get; set; } = string.Empty;
@@ -111,6 +113,7 @@ namespace CocoroConsole.Communication
         {
             return new AvatarSettings
             {
+                avatarId = this.avatarId,
                 isReadOnly = this.isReadOnly,
                 modelName = this.modelName,
                 vrmFilePath = this.vrmFilePath,
@@ -412,6 +415,8 @@ namespace CocoroConsole.Communication
     /// </summary>
     public class AnimationSetting
     {
+        // OtomeKairo のアニメーションセットを識別する安定ID
+        public string animationSetId { get; set; } = string.Empty;
         public string animeSetName { get; set; } = "デフォルト"; // 設定セット名
         public int postureChangeLoopCountStanding { get; set; } = 30; // 立ち姿勢の変更ループ回数
         public int postureChangeLoopCountSittingFloor { get; set; } = 30; // 座り姿勢の変更ループ回数

@@ -39,15 +39,12 @@ namespace CocoroConsole
         private bool _skipNextAssistantMessage;
         private string? _skipNextAssistantMessageContent;
         private bool _isLogStreamHandlersAttached;
-        private CancellationTokenSource? _otomeKairoStartupMonitorCts;
-        private Task? _otomeKairoStartupMonitorTask;
         private const string MainWindowPlacementKey = "MainWindow";
         private const string SettingWindowPlacementKey = "SettingWindow";
         private const string LogViewerWindowPlacementKey = "LogViewerWindow";
         private const string JudgmentTraceViewerWindowPlacementKey = "JudgmentTraceViewerWindow";
         private const string CurrentStateViewerWindowPlacementKey = "CurrentStateViewerWindow";
         private const string AutonomousRunViewerWindowPlacementKey = "AutonomousRunViewerWindow";
-        private static readonly TimeSpan OtomeKairoStartupTimeout = TimeSpan.FromMinutes(2);
 
         // --- OtomeKairo の最新ステータス（ステータスバー復帰先） ---
         // ログ表示で一時的に上書きしても、指定時間後「その時点の最新状態」に戻すために保持する。
@@ -189,9 +186,6 @@ namespace CocoroConsole
         {
             try
             {
-                // 外部プロセスの起動
-                InitializeExternalProcesses();
-
                 // 通信サービスを初期化
                 // CommunicationServiceが初回Normal時にotomekairo設定を取得・反映する
                 InitializeCommunicationService();
@@ -282,25 +276,6 @@ namespace CocoroConsole
             {
                 PauseScreenshotButton.ToolTip = isPaused ? "デスクトップウォッチを有効にする" : "デスクトップウォッチを無効にする";
                 PauseScreenshotButton.Opacity = isPaused ? 0.6 : 1.0;
-            }
-        }
-
-        /// <summary>
-        /// 外部プロセスを初期化
-        /// </summary>
-        private void InitializeExternalProcesses()
-        {
-            // CocoroShell.exeを起動（既に起動していれば終了してから再起動）
-            LaunchCocoroShell();
-
-            // OtomeKairo.exeはローカル接続時のみ起動（リモート接続時は別PC運用）
-            if (_appSettings.IsOtomeKairoLocal())
-            {
-                LaunchOtomeKairo();
-            }
-            else
-            {
-                Debug.WriteLine("[CocoroConsole] OtomeKairo はリモート接続設定のため、ローカル起動をスキップします。");
             }
         }
 
@@ -487,6 +462,13 @@ namespace CocoroConsole
             // UI側の設定反映（ボタン状態とLLM表示）
             UIHelper.RunOnUIThread(() =>
             {
+                if (_appSettings.HasRemoteSettings)
+                {
+                    // 端末設定を反映した状態で CocoroShell を起動し直す。
+                    LaunchCocoroShell();
+                    WindowPlacementManager.RestorePosition(this, MainWindowPlacementKey, _appSettings);
+                }
+
                 // 設定変更後のボタン状態を反映
                 InitializeButtonStates();
 
@@ -1026,8 +1008,6 @@ namespace CocoroConsole
         {
             try
             {
-                CancelOtomeKairoStartupMonitor();
-
                 // イベントハンドラの購読解除
                 AppSettings.SettingsSaved -= OnSettingsSaved;
 
@@ -1047,8 +1027,23 @@ namespace CocoroConsole
                 // 接続中ならリソース解放
                 if (_communicationService != null)
                 {
-                    _communicationService.Dispose();
-                    _communicationService = null;
+                    try
+                    {
+                        using var saveTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                        _communicationService
+                            .SaveConsoleClientSettingsAsync(saveTimeout.Token)
+                            .GetAwaiter()
+                            .GetResult();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"終了時の端末設定保存に失敗しました: {ex.Message}");
+                    }
+                    finally
+                    {
+                        _communicationService.Dispose();
+                        _communicationService = null;
+                    }
                 }
             }
             catch (Exception)
@@ -1112,13 +1107,28 @@ namespace CocoroConsole
         /// <summary>
         /// マイクボタンクリック時のイベントハンドラ
         /// </summary>
-        private void MicButton_Click(object sender, RoutedEventArgs e)
+        private async void MicButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_communicationService == null)
+            {
+                return;
+            }
+
             // 現在のキャラクターのSTT設定をトグル
             var currentAvatar = GetStoredAvatarSetting();
             if (currentAvatar != null)
             {
                 currentAvatar.isUseSTT = !currentAvatar.isUseSTT;
+                try
+                {
+                    await _communicationService.SaveAvatarSpeechSettingsAsync();
+                }
+                catch (Exception ex)
+                {
+                    currentAvatar.isUseSTT = !currentAvatar.isUseSTT;
+                    UIHelper.ShowError("STT設定エラー", ex.Message);
+                    return;
+                }
 
                 // ボタンの画像を更新
                 if (MicButtonImage != null)
@@ -1136,8 +1146,6 @@ namespace CocoroConsole
                     MicButton.Opacity = currentAvatar.isUseSTT ? 1.0 : 0.6;
                 }
 
-                // 設定を保存（OnSettingsSavedで音声認識サービスが制御される）
-                _appSettings.SaveSettings();
             }
         }
 
@@ -1168,16 +1176,28 @@ namespace CocoroConsole
         /// <summary>
         /// TTSボタンクリック時のイベントハンドラ
         /// </summary>
-        private void TTSButton_Click(object sender, RoutedEventArgs e)
+        private async void TTSButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_communicationService == null)
+            {
+                return;
+            }
+
             // 現在のキャラクターのTTS設定をトグル
             var currentAvatar = GetStoredAvatarSetting();
             if (currentAvatar != null)
             {
                 currentAvatar.isUseTTS = !currentAvatar.isUseTTS;
-
-                // 設定を保存
-                _appSettings.SaveSettings();
+                try
+                {
+                    await _communicationService.SaveAvatarSpeechSettingsAsync();
+                }
+                catch (Exception ex)
+                {
+                    currentAvatar.isUseTTS = !currentAvatar.isUseTTS;
+                    UIHelper.ShowError("TTS設定エラー", ex.Message);
+                    return;
+                }
 
                 // ボタンの画像を更新
                 if (MuteButtonImage != null)
@@ -1227,130 +1247,6 @@ namespace CocoroConsole
         {
             CocoroShellProcessManager.Apply(_appSettings, operation);
             _communicationService?.ResetShellConnectionState();
-        }
-
-        /// <summary>
-        /// OtomeKairo.exeを起動する（既に起動している場合は終了してから再起動）
-        /// </summary>
-        /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
-        private void LaunchOtomeKairo(ProcessOperation operation = ProcessOperation.RestartIfRunning)
-        {
-            // --- リモート接続時はローカルプロセスを起動/終了しない ---
-            if (!_appSettings.IsOtomeKairoLocal())
-            {
-                CancelOtomeKairoStartupMonitor();
-                Debug.WriteLine("[CocoroConsole] OtomeKairo はリモート接続設定のため、ローカルプロセス操作をスキップします。");
-                return;
-            }
-
-            if (operation != ProcessOperation.Terminate)
-            {
-#if !DEBUG
-                // プロセス起動
-                ProcessHelper.LaunchExternalApplication("OtomeKairo.exe", "OtomeKairo", operation, false);
-#endif
-                StartOtomeKairoStartupMonitor();
-            }
-            else
-            {
-                CancelOtomeKairoStartupMonitor();
-                ProcessHelper.LaunchExternalApplication("OtomeKairo.exe", "OtomeKairo", operation, false);
-            }
-        }
-
-        /// <summary>
-        /// OtomeKairo.exeを起動する（既に起動している場合は終了してから再起動）（非同期版）
-        /// </summary>
-        /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
-        internal async Task LaunchOtomeKairoAsync(ProcessOperation operation = ProcessOperation.RestartIfRunning)
-        {
-            // --- リモート接続時はローカルプロセスを起動/終了しない ---
-            if (!_appSettings.IsOtomeKairoLocal())
-            {
-                CancelOtomeKairoStartupMonitor();
-                Debug.WriteLine("[CocoroConsole] OtomeKairo はリモート接続設定のため、ローカルプロセス操作をスキップします。");
-                return;
-            }
-
-            if (operation != ProcessOperation.Terminate)
-            {
-#if !DEBUG
-                // プロセス起動（非同期）
-                await ProcessHelper.LaunchExternalApplicationAsync("OtomeKairo.exe", "OtomeKairo", operation, false);
-#endif
-                StartOtomeKairoStartupMonitor();
-            }
-            else
-            {
-                CancelOtomeKairoStartupMonitor();
-                await ProcessHelper.LaunchExternalApplicationAsync("OtomeKairo.exe", "OtomeKairo", operation, false);
-            }
-        }
-
-        private void StartOtomeKairoStartupMonitor()
-        {
-            if (_communicationService == null)
-            {
-                return;
-            }
-
-            CancelOtomeKairoStartupMonitor();
-
-            var monitorCts = new CancellationTokenSource();
-            _otomeKairoStartupMonitorCts = monitorCts;
-            _otomeKairoStartupMonitorTask = MonitorOtomeKairoStartupAsync(monitorCts);
-        }
-
-        private async Task MonitorOtomeKairoStartupAsync(CancellationTokenSource monitorCts)
-        {
-            try
-            {
-                await WaitForOtomeKairoStartupAsync(monitorCts.Token).ConfigureAwait(false);
-                Debug.WriteLine("[CocoroConsole] OtomeKairo起動完了");
-            }
-            catch (OperationCanceledException)
-            {
-                Debug.WriteLine("[CocoroConsole] OtomeKairo起動監視をキャンセルしました。");
-            }
-            catch (TimeoutException ex)
-            {
-                Debug.WriteLine($"[CocoroConsole] {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[CocoroConsole] OtomeKairo起動監視エラー: {ex.Message}");
-            }
-            finally
-            {
-                if (ReferenceEquals(_otomeKairoStartupMonitorCts, monitorCts))
-                {
-                    _otomeKairoStartupMonitorTask = null;
-                    _otomeKairoStartupMonitorCts = null;
-                }
-
-                monitorCts.Dispose();
-            }
-        }
-
-        private void CancelOtomeKairoStartupMonitor()
-        {
-            var monitorCts = _otomeKairoStartupMonitorCts;
-            _otomeKairoStartupMonitorCts = null;
-            _otomeKairoStartupMonitorTask = null;
-
-            if (monitorCts == null)
-            {
-                return;
-            }
-
-            try
-            {
-                monitorCts.Cancel();
-            }
-            finally
-            {
-                monitorCts.Dispose();
-            }
         }
 
 
@@ -1517,21 +1413,6 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// OtomeKairoのAPI起動完了を監視
-        /// </summary>
-        private async Task WaitForOtomeKairoStartupAsync(CancellationToken cancellationToken)
-        {
-            if (_communicationService == null)
-            {
-                return;
-            }
-
-            await OtomeKairoStatusAwaiter
-                .WaitUntilReadyAsync(_communicationService, OtomeKairoStartupTimeout, cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        /// <summary>
         /// ウィンドウのクローズイベントをキャンセルし、代わりに最小化する
         /// </summary>
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -1564,68 +1445,6 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// 指定されたポート番号を使用しているプロセスIDを取得します
-        /// </summary>
-        /// <param name="port">ポート番号</param>
-        /// <returns>プロセスID（見つからない場合はnull）</returns>
-        private static int? GetProcessIdByPort(int port)
-        {
-            try
-            {
-                var processInfo = new ProcessStartInfo("netstat", "-ano")
-                {
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                };
-
-                using var process = Process.Start(processInfo);
-                if (process == null) return null;
-
-                using var reader = process.StandardOutput;
-                string? line;
-
-                while ((line = reader.ReadLine()) != null)
-                {
-                    // ポート番号を含む行でLISTENING状態のものを探す
-                    if (line.Contains($":{port} ") && line.Contains("LISTENING"))
-                    {
-                        // 行の最後の数字（PID）を抽出
-                        var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        if (parts.Length > 0 && int.TryParse(parts[^1], out int pid))
-                        {
-                            return pid;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"プロセスID取得中にエラーが発生しました: {ex.Message}");
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// 指定されたプロセスIDのプロセスが実行中かどうかを確認します
-        /// </summary>
-        /// <param name="processId">プロセスID</param>
-        /// <returns>実行中の場合true、終了している場合false</returns>
-        private static bool IsProcessRunning(int processId)
-        {
-            try
-            {
-                Process.GetProcessById(processId);
-                return true;
-            }
-            catch (ArgumentException)
-            {
-                // プロセスが見つからない（終了している）場合
-                return false;
-            }
-        }
-
-        /// <summary>
         /// 正常なシャットダウン処理を実行
         /// </summary>
         public async Task PerformGracefulShutdownAsync()
@@ -1639,8 +1458,6 @@ namespace CocoroConsole
                     Debug.WriteLine("[CocoroConsole] シャットダウンは既に進行中です。");
                     return;
                 }
-
-                CancelOtomeKairoStartupMonitor();
 
                 // ウィンドウを最前面に表示
                 this.Show();
@@ -1678,34 +1495,11 @@ namespace CocoroConsole
                 // シャットダウンオーバーレイを表示
                 ShutdownOverlay.Visibility = Visibility.Visible;
 
-                // --- OtomeKairo のローカル/リモート設定に応じて終了対象を決める ---
-                var isLocalOtomeKairo = _appSettings.IsOtomeKairoLocal();
-
-                // --- OtomeKairoがローカル設定の場合のみ、ローカルプロセスIDを事前取得 ---
-                int? otomeKairoProcessId = null;
-                if (isLocalOtomeKairo)
-                {
-                    otomeKairoProcessId = GetProcessIdByPort(_appSettings.OtomeKairoPort);
-                    Debug.WriteLine($"OtomeKairo プロセスID: {otomeKairoProcessId?.ToString() ?? "見つかりません"}");
-                    Debug.WriteLine("CocoroShellとOtomeKairoに終了要求を送信中...");
-                }
-                else
-                {
-                    Debug.WriteLine("OtomeKairo はリモート接続設定のため、ローカル終了要求を送信しません。");
-                    Debug.WriteLine("CocoroShell に終了要求を送信中...");
-                }
-
-                // --- 終了要求タスクを組み立てる（CocoroShellは常に対象） ---
+                Debug.WriteLine("CocoroShell に終了要求を送信中...");
                 var shutdownTasks = new List<Task>
                 {
                     Task.Run(() => ProcessHelper.ExitProcess("CocoroShell", ProcessOperation.Terminate))
                 };
-
-                // --- OtomeKairoはローカル設定時のみ終了要求を送る ---
-                if (isLocalOtomeKairo)
-                {
-                    shutdownTasks.Add(Task.Run(() => ProcessHelper.ExitProcess("OtomeKairo", ProcessOperation.Terminate)));
-                }
 
                 // すべてのシャットダウン要求の完了を待つ（最大5秒）
                 try
@@ -1715,52 +1509,6 @@ namespace CocoroConsole
                 catch (TimeoutException)
                 {
                     Debug.WriteLine("一部のシャットダウン要求がタイムアウトしました。");
-                }
-
-                // --- OtomeKairoがローカル設定の場合のみ、停止完了を監視する ---
-                if (isLocalOtomeKairo && otomeKairoProcessId.HasValue)
-                {
-                    Debug.WriteLine("OtomeKairo プロセスの終了を監視中...");
-                    var maxWaitTime = TimeSpan.FromSeconds(30);
-                    var startTime = DateTime.Now;
-
-                    while (IsProcessRunning(otomeKairoProcessId.Value))
-                    {
-                        if (DateTime.Now - startTime > maxWaitTime)
-                        {
-                            Debug.WriteLine("OtomeKairoの終了待機がタイムアウトしました。");
-                            break;
-                        }
-
-                        await Task.Delay(500); // 0.5秒間隔でチェック
-                    }
-
-                    Debug.WriteLine("OtomeKairo プロセスの終了を確認しました。");
-                }
-                else if (isLocalOtomeKairo)
-                {
-                    Debug.WriteLine("OtomeKairo プロセスが見つからなかったため、通常の監視を実行します。");
-
-                    // プロセスIDが取得できない場合は疎通確認で監視
-                    var maxWaitTime = TimeSpan.FromSeconds(30);
-                    var startTime = DateTime.Now;
-
-                    while (_communicationService != null && _communicationService.CurrentStatus != OtomeKairoStatus.WaitingForStartup)
-                    {
-                        if (DateTime.Now - startTime > maxWaitTime)
-                        {
-                            Debug.WriteLine("OtomeKairoの終了待機がタイムアウトしました。");
-                            break;
-                        }
-
-                        await Task.Delay(100);
-                    }
-
-                    Debug.WriteLine("OtomeKairoの動作停止を確認しました。");
-                }
-                else
-                {
-                    Debug.WriteLine("OtomeKairo はリモート接続設定のため、ローカル停止監視をスキップします。");
                 }
 
                 // オーバーレイを非表示

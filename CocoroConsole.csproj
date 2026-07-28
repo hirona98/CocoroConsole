@@ -31,24 +31,9 @@
     <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Resource\DefaultSetting.json" />
-    <None Remove="Resource\DefaultAnimationSettings.json" />
     <None Remove="Resource\logo.png" />
   </ItemGroup>
   <ItemGroup>
-    <!-- SingleFile発行でも外部ファイルとして配置する設定 -->
-    <None Include="Resource\DefaultSetting.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <TargetPath>UserData\DefaultSetting.json</TargetPath>
-    </None>
-    <None Include="Resource\DefaultAnimationSettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <TargetPath>UserData\DefaultAnimationSettings.json</TargetPath>
-    </None>
     <!-- Silero VAD ONNXモデル（exe内に組み込み） -->
     <EmbeddedResource Include="Resource\silero_vad.onnx" />
     <!-- WeSpeaker 話者識別ONNXモデル（exe内に組み込み） -->
