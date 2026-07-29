@@ -114,12 +114,12 @@ namespace CocoroConsole.Controls
 
             var messageContent = new StackPanel();
 
-            // テキスト入力と音声入力に共通する人物名をバブル内へ表示する。
-            messageContent.Children.Add(new TextBlock
+            // テキスト入力と音声入力に共通する人物名をバルーンの直上へ表示する。
+            var displayNameText = new TextBlock
             {
                 Style = (Style)Resources["UserDisplayNameTextStyle"],
                 Text = displayName.Trim()
-            });
+            };
 
             // 添付画像がある場合は先に表示
             if (imageSources != null && imageSources.Count > 0)
@@ -179,9 +179,18 @@ namespace CocoroConsole.Controls
             // --- 本文をバブルに設定 ---
             bubble.Child = messageContent;
 
+            // 人物名とバルーンを同じ右寄せの列にまとめる。
+            var userMessage = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+            bubble.HorizontalAlignment = HorizontalAlignment.Right;
+            userMessage.Children.Add(displayNameText);
+            userMessage.Children.Add(bubble);
+
             // --- 時刻をLINE風にバブルの隣へ配置 ---
             var timestampText = CreateTimestampTextBlock(timestamp, "UserTimestampTextStyle");
-            var messageRow = CreateMessageRowWithTimestamp(bubble, timestampText, isUser: true);
+            var messageRow = CreateMessageRowWithTimestamp(userMessage, timestampText, isUser: true);
             ChatMessagesPanel.Children.Add(messageRow);
 
             // 自動スクロール
@@ -1112,13 +1121,16 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// メッセージ行（バブル＋時刻）を作成
+        /// メッセージ行（メッセージ表示＋時刻）を作成
         /// </summary>
-        /// <param name="bubble">バブル</param>
+        /// <param name="messageElement">メッセージ表示</param>
         /// <param name="timestampText">時刻表示</param>
         /// <param name="isUser">ユーザーメッセージかどうか</param>
         /// <returns>メッセージ行のGrid</returns>
-        private Grid CreateMessageRowWithTimestamp(Border bubble, TextBlock timestampText, bool isUser)
+        private Grid CreateMessageRowWithTimestamp(
+            FrameworkElement messageElement,
+            TextBlock timestampText,
+            bool isUser)
         {
             // --- LINE風：時刻はバブルの外側（隣） ---
             var grid = new Grid();
@@ -1133,9 +1145,9 @@ namespace CocoroConsole.Controls
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-                bubble.VerticalAlignment = VerticalAlignment.Bottom;
+                messageElement.VerticalAlignment = VerticalAlignment.Bottom;
                 Grid.SetColumn(timestampText, 1);
-                Grid.SetColumn(bubble, 2);
+                Grid.SetColumn(messageElement, 2);
             }
             // --- AIは左寄せ（バブル / 時刻 / *） ---
             else
@@ -1144,12 +1156,12 @@ namespace CocoroConsole.Controls
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-                bubble.VerticalAlignment = VerticalAlignment.Bottom;
-                Grid.SetColumn(bubble, 0);
+                messageElement.VerticalAlignment = VerticalAlignment.Bottom;
+                Grid.SetColumn(messageElement, 0);
                 Grid.SetColumn(timestampText, 1);
             }
 
-            grid.Children.Add(bubble);
+            grid.Children.Add(messageElement);
             grid.Children.Add(timestampText);
 
             return grid;

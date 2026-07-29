@@ -108,15 +108,15 @@
                 <Style x:Key="UserDisplayNameTextStyle"
                        TargetType="TextBlock">
                         <Setter Property="FontSize"
-                                Value="11"/>
-                        <Setter Property="FontWeight"
-                                Value="SemiBold"/>
+                                Value="10"/>
                         <Setter Property="Foreground"
-                                Value="WhiteSmoke"/>
+                                Value="#FF404040"/>
                         <Setter Property="Opacity"
-                                Value="0.85"/>
+                                Value="0.80"/>
+                        <Setter Property="HorizontalAlignment"
+                                Value="Right"/>
                         <Setter Property="Margin"
-                                Value="0,0,0,3"/>
+                                Value="0,0,2,2"/>
                 </Style>
                 <Style x:Key="UserMessageTextStyle"
                        TargetType="TextBox">
