@@ -18,8 +18,10 @@ namespace CocoroConsole.Communication
         private readonly string? _clientId;
         private readonly IReadOnlyList<OtomeKairoCapabilityOffer>? _caps;
         private readonly IReadOnlyList<OtomeKairoVisionSourceOffer>? _visionSources;
+        private OtomeKairoEventData? _pendingAssistantAudio;
 
         public event EventHandler<OtomeKairoEvent>? EventReceived;
+        public event EventHandler<OtomeKairoAssistantAudioReceivedEventArgs>? AssistantAudioReceived;
         public event EventHandler<bool>? ConnectionStateChanged;
         public event EventHandler<string>? ErrorOccurred;
 
@@ -73,6 +75,7 @@ namespace CocoroConsole.Communication
                     {
                         "conversation_input",
                         "assistant_message",
+                        "assistant_audio",
                         "audio_runtime_state",
                     },
                     VisionSources = _visionSources?.ToArray() ?? Array.Empty<OtomeKairoVisionSourceOffer>(),
@@ -92,6 +95,22 @@ namespace CocoroConsole.Communication
             HandleMessage(json);
         }
 
+        protected override void HandleBinaryMessage(byte[] payload)
+        {
+            var metadata = _pendingAssistantAudio
+                ?? throw new InvalidOperationException("assistant_audio metadataより先にbinary messageを受信しました。");
+            _pendingAssistantAudio = null;
+            if (!string.Equals(metadata.Status, "succeeded", StringComparison.Ordinal) ||
+                !string.Equals(metadata.MediaType, "audio/wav", StringComparison.Ordinal) ||
+                metadata.ByteCount != payload.Length)
+            {
+                throw new InvalidOperationException("assistant_audio binaryがmetadataと一致しません。");
+            }
+            AssistantAudioReceived?.Invoke(
+                this,
+                new OtomeKairoAssistantAudioReceivedEventArgs(metadata, payload));
+        }
+
         private void HandleMessage(string json)
         {
             try
@@ -105,6 +124,7 @@ namespace CocoroConsole.Communication
                     {
                         if (TryParseEvent(element, out var ev))
                         {
+                            PrepareAssistantAudio(ev);
                             EventReceived?.Invoke(this, ev);
                         }
                     }
@@ -113,6 +133,7 @@ namespace CocoroConsole.Communication
 
                 if (TryParseEvent(root, out var singleEvent))
                 {
+                    PrepareAssistantAudio(singleEvent);
                     EventReceived?.Invoke(this, singleEvent);
                 }
             }
@@ -121,6 +142,17 @@ namespace CocoroConsole.Communication
                 Debug.WriteLine($"[EventsStream] JSON parse error: {ex.Message}");
                 ErrorOccurred?.Invoke(this, $"イベントパースエラー: {ex.Message}");
             }
+        }
+
+        private void PrepareAssistantAudio(OtomeKairoEvent ev)
+        {
+            if (!string.Equals(ev.Type, "assistant_audio", StringComparison.Ordinal))
+            {
+                return;
+            }
+            _pendingAssistantAudio = string.Equals(ev.Data.Status, "succeeded", StringComparison.Ordinal)
+                ? ev.Data
+                : null;
         }
 
         private static bool TryParseEvent(JsonElement element, out OtomeKairoEvent ev)
@@ -155,6 +187,13 @@ namespace CocoroConsole.Communication
                 {
                     data.SystemText = dataElement.TryGetProperty("system_text", out var systemText) ? systemText.GetString() : null;
                     data.Message = dataElement.TryGetProperty("message", out var message) ? message.GetString() : null;
+                    data.DeliveryId = dataElement.TryGetProperty("delivery_id", out var deliveryId) ? deliveryId.GetString() : null;
+                    data.Status = dataElement.TryGetProperty("status", out var status) ? status.GetString() : null;
+                    data.MediaType = dataElement.TryGetProperty("media_type", out var mediaType) ? mediaType.GetString() : null;
+                    data.ErrorCode = dataElement.TryGetProperty("error_code", out var errorCode) ? errorCode.GetString() : null;
+                    data.ByteCount = dataElement.TryGetProperty("byte_count", out var byteCount) && byteCount.TryGetInt32(out var parsedByteCount)
+                        ? parsedByteCount
+                        : null;
 
                     if (dataElement.TryGetProperty("images", out var imagesElement) && imagesElement.ValueKind == JsonValueKind.Array)
                     {
@@ -258,6 +297,11 @@ namespace CocoroConsole.Communication
 
     public sealed class OtomeKairoEventData
     {
+        public string? DeliveryId { get; set; }
+        public string? Status { get; set; }
+        public string? MediaType { get; set; }
+        public string? ErrorCode { get; set; }
+        public int? ByteCount { get; set; }
         public string? SystemText { get; set; }
         public string? Message { get; set; }
 
@@ -280,6 +324,20 @@ namespace CocoroConsole.Communication
         public string? Mode { get; set; }
         public int? TimeoutMs { get; set; }
         public OtomeKairoAudioRuntimeState? AudioRuntimeState { get; set; }
+    }
+
+    public sealed class OtomeKairoAssistantAudioReceivedEventArgs : EventArgs
+    {
+        public OtomeKairoAssistantAudioReceivedEventArgs(
+            OtomeKairoEventData metadata,
+            byte[] audioBytes)
+        {
+            Metadata = metadata;
+            AudioBytes = audioBytes;
+        }
+
+        public OtomeKairoEventData Metadata { get; }
+        public byte[] AudioBytes { get; }
     }
 
     public sealed class OtomeKairoCapabilityOffer

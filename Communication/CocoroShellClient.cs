@@ -1,9 +1,10 @@
 using System;
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CocoroConsole.Communication
@@ -39,42 +40,63 @@ namespace CocoroConsole.Communication
         }
 
         /// <summary>
-        /// 発話を送信
+        /// CocoroShellが応答可能な状態か確認
         /// </summary>
-        public async Task<StandardResponse> SendSpeechAsync(ShellSpeechRequest request)
+        public async Task<bool> IsRunningAsync()
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("/api/chat", request);
+                using var response = await _httpClient.GetAsync("/api/status").ConfigureAwait(false);
+                // HTTP応答が返ればShellのloopback API processは存在する。
+                // status codeの異常は後続のWAV配送でエラーとして扱う。
+                return true;
+            }
+            catch (Exception ex) when (ex is TaskCanceledException || ex is HttpRequestException)
+            {
+                return false;
+            }
+        }
 
-                if (response.IsSuccessStatusCode)
-                {
-                    var result = await response.Content.ReadFromJsonAsync<StandardResponse>();
-                    return result ?? new StandardResponse
-                    {
-                        status = "success",
-                        message = "Speech sent"
-                    };
-                }
-                else
-                {
-                    var errorResponse = await TryReadErrorResponse(response);
-                    throw new HttpRequestException($"API error: {errorResponse?.message ?? response.ReasonPhrase}");
-                }
-            }
-            catch (TaskCanceledException)
+        /// <summary>
+        /// OtomeKairoで合成済みのWAVをCocoroShellへ送信
+        /// </summary>
+        public async Task<StandardResponse> SendAudioAsync(
+            byte[] wavBytes,
+            string sessionToken,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(wavBytes);
+            if (wavBytes.Length == 0)
             {
-                throw new TimeoutException("Request to CocoroShell timed out");
+                throw new ArgumentException("WAVが空です。", nameof(wavBytes));
             }
-            catch (HttpRequestException)
+            if (string.IsNullOrEmpty(sessionToken))
             {
-                throw; // そのまま再スロー
+                throw new InvalidOperationException("CocoroShellのセッショントークンがありません。");
             }
-            catch (Exception ex)
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/api/audio/playback");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", sessionToken);
+            request.Content = new ByteArrayContent(wavBytes);
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
+
+            using var response = await _httpClient
+                .SendAsync(request, cancellationToken)
+                .ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
             {
-                Debug.WriteLine($"発話送信エラー: {ex.Message}");
-                throw new InvalidOperationException($"Failed to send speech: {ex.Message}", ex);
+                var errorResponse = await TryReadErrorResponse(response).ConfigureAwait(false);
+                throw new HttpRequestException(
+                    $"API error: {errorResponse?.message ?? response.ReasonPhrase}");
             }
+            var result = await response.Content
+                .ReadFromJsonAsync<StandardResponse>(cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            return result ?? new StandardResponse
+            {
+                status = "success",
+                message = "Audio accepted"
+            };
         }
 
         /// <summary>

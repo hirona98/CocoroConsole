@@ -475,7 +475,7 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// CocoroShell が表示と音声合成に使用する選択済みアバター設定。
+    /// CocoroShell が表示に使用する選択済みアバター設定。
     /// </summary>
     public class ShellAvatarSettings
     {
@@ -486,11 +486,6 @@ namespace CocoroConsole.Communication
         public bool isConvertMToon { get; set; }
         public bool isEnableShadowOff { get; set; }
         public string shadowOffMesh { get; set; } = string.Empty;
-        public bool isUseTTS { get; set; }
-        public string ttsType { get; set; } = string.Empty;
-        public VoicevoxConfig voicevoxConfig { get; set; } = new VoicevoxConfig();
-        public StyleBertVits2Config styleBertVits2Config { get; set; } = new StyleBertVits2Config();
-        public AivisCloudConfig aivisCloudConfig { get; set; } = new AivisCloudConfig();
     }
 
     /// <summary>
@@ -582,28 +577,6 @@ namespace CocoroConsole.Communication
         public string message { get; set; } = string.Empty;
         public string? errorCode { get; set; }
         public DateTime timestamp { get; set; } = DateTime.UtcNow;
-    }
-
-    /// <summary>
-    /// CocoroShell API: 発話要求
-    /// </summary>
-    public class ShellSpeechRequest
-    {
-        public string content { get; set; } = string.Empty;
-        public VoiceParams? voiceParams { get; set; }
-        public string? animation { get; set; } // "talk" | "idle" | null
-        public string? avatarName { get; set; }
-    }
-
-    /// <summary>
-    /// 音声パラメータ
-    /// </summary>
-    public class VoiceParams
-    {
-        public int speaker_id { get; set; } = 1;
-        public float speed { get; set; } = 1.0f;
-        public float pitch { get; set; } = 0.0f;
-        public float volume { get; set; } = 1.0f;
     }
 
     /// <summary>

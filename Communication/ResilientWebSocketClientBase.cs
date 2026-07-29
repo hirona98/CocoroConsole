@@ -102,6 +102,10 @@ namespace CocoroConsole.Communication
         }
 
         protected abstract void HandleTextMessage(string json);
+        protected virtual void HandleBinaryMessage(byte[] payload)
+        {
+            throw new InvalidOperationException("このWebSocketクライアントはbinary messageを受理しません。");
+        }
         protected abstract void RaiseConnectionStateChanged(bool isConnected);
         protected abstract void RaiseError(string message);
 
@@ -227,6 +231,7 @@ namespace CocoroConsole.Communication
             {
                 var messageBuffer = new List<byte>();
                 WebSocketReceiveResult result;
+                WebSocketMessageType? messageType = null;
 
                 do
                 {
@@ -237,10 +242,12 @@ namespace CocoroConsole.Communication
                         return result.CloseStatus;
                     }
 
-                    if (result.MessageType == WebSocketMessageType.Text)
+                    messageType ??= result.MessageType;
+                    if (messageType != result.MessageType)
                     {
-                        messageBuffer.AddRange(buffer.AsSpan(0, result.Count).ToArray());
+                        throw new InvalidOperationException("一つのWebSocket message内でmessage typeが変化しました。");
                     }
+                    messageBuffer.AddRange(buffer.AsSpan(0, result.Count).ToArray());
                 } while (!result.EndOfMessage);
 
                 if (messageBuffer.Count == 0)
@@ -248,8 +255,15 @@ namespace CocoroConsole.Communication
                     continue;
                 }
 
-                var json = Encoding.UTF8.GetString(messageBuffer.ToArray());
-                HandleTextMessage(json);
+                var payload = messageBuffer.ToArray();
+                if (messageType == WebSocketMessageType.Text)
+                {
+                    HandleTextMessage(Encoding.UTF8.GetString(payload));
+                }
+                else if (messageType == WebSocketMessageType.Binary)
+                {
+                    HandleBinaryMessage(payload);
+                }
             }
 
             return null;

@@ -77,13 +77,11 @@ namespace CocoroConsole.Services
             string? speakerDisplayName = null);
         void StartNewConversation();
         Task SendAnimationToShellAsync(string animationName);
-        Task SendTTSStateToShellAsync(bool isUseTTS);
         Task StartLogStreamAsync();
         Task StopLogStreamAsync();
         void OpenLogViewer();
         Task<PositionResponse> GetShellPositionAsync();
         void RefreshSettingsCache();
-        void ResetShellConnectionState();
         Task RefreshOtomeKairoCurrentSettingsAsync();
         Task SetDesktopWatchEnabledAsync(bool enabled);
 

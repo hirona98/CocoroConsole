@@ -1097,24 +1097,6 @@ namespace CocoroConsole
                     MuteButton.Opacity = currentAvatar.isUseTTS ? 1.0 : 0.6;
                 }
 
-                // CocoroShellにTTS状態を送信
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        if (_communicationService != null)
-                        {
-                            // TTS設定をCocoroShellに送信
-                            await _communicationService.SendTTSStateToShellAsync(currentAvatar.isUseTTS);
-
-                            // TTS状態変更完了（ログ出力は既にある）
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"TTS状態の送信エラー: {ex.Message}");
-                    }
-                });
             }
         }
 
@@ -1126,7 +1108,6 @@ namespace CocoroConsole
         private void LaunchCocoroShell(ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
             CocoroShellProcessManager.Apply(_appSettings, operation);
-            _communicationService?.ResetShellConnectionState();
         }
 
 

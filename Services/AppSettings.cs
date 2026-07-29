@@ -198,13 +198,6 @@ namespace CocoroConsole.Services
                 throw new InvalidOperationException("アニメーション設定がありません。");
             }
 
-            // Aivis Cloud の資格は、選択中かつ有効な場合だけ Shell が必要とする。
-            if (!currentAvatar.isUseTTS ||
-                !string.Equals(currentAvatar.ttsType, "aivis-cloud", StringComparison.Ordinal))
-            {
-                currentAvatar.aivisCloudConfig.apiKey = string.Empty;
-            }
-
             var selectedIndex = Math.Clamp(
                 CurrentAnimationSettingIndex,
                 0,
@@ -272,11 +265,6 @@ namespace CocoroConsole.Services
                     isConvertMToon = currentAvatar.isConvertMToon,
                     isEnableShadowOff = currentAvatar.isEnableShadowOff,
                     shadowOffMesh = currentAvatar.shadowOffMesh,
-                    isUseTTS = currentAvatar.isUseTTS,
-                    ttsType = currentAvatar.ttsType,
-                    voicevoxConfig = currentAvatar.voicevoxConfig,
-                    styleBertVits2Config = currentAvatar.styleBertVits2Config,
-                    aivisCloudConfig = currentAvatar.aivisCloudConfig,
                 },
                 motion = new ShellMotionSettings
                 {

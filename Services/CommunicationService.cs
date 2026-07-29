@@ -29,7 +29,7 @@ namespace CocoroConsole.Services
     /// </summary>
     public class CommunicationService : ICommunicationService
     {
-        private const string RequiredOtomeKairoApiVersion = "0.3.0";
+        private const string RequiredOtomeKairoApiVersion = "0.4.0";
         // CocoroConsole 側の HTTP API サーバー（外部クライアントからの受信）
         private CocoroConsoleApiServer _apiServer;
         private int _apiServerPort;
@@ -37,8 +37,8 @@ namespace CocoroConsole.Services
         // CocoroShell（Unity 側）へ送るクライアント
         private CocoroShellClient _shellClient;
 
-        // CocoroShellを経由できない場合の直接TTS実行サービス
-        private readonly DirectTtsService _directTtsService;
+        // CocoroShellが起動していない場合のWAV再生サービス
+        private readonly DirectAudioPlaybackService _directAudioPlaybackService;
 
         private readonly IAppSettings _appSettings;
 
@@ -81,9 +81,6 @@ namespace CocoroConsole.Services
         // OtomeKairo が Normal になった後、現在設定と event stream を初期化済みかを表す。
         private bool _initialSettingsFetched = false;
 
-        // 一度CocoroShellへの接続に失敗したら、明示的な再起動通知まで直接TTSに切り替える。
-        private bool _isShellUnavailable = false;
-
         private static bool IsVrmDisplayEnabled(AvatarSettings? currentAvatar)
         {
             // MainWindow.LaunchCocoroShell と同じ判定: パスがあれば有効 / readOnlyキャラは常に有効
@@ -98,10 +95,20 @@ namespace CocoroConsole.Services
             return IsVrmDisplayEnabled(currentAvatar);
         }
 
-        public void ResetShellConnectionState()
+        private static bool IsCocoroShellProcessRunning()
         {
-            _isShellUnavailable = false;
-            Debug.WriteLine("[Shell Forward] CocoroShell接続状態を再試行可能に戻しました");
+            var processes = Process.GetProcessesByName("CocoroShell");
+            try
+            {
+                return processes.Length > 0;
+            }
+            finally
+            {
+                foreach (var process in processes)
+                {
+                    process.Dispose();
+                }
+            }
         }
 
         public event EventHandler<UiMessageRequest>? UiMessageReceived;
@@ -146,7 +153,7 @@ namespace CocoroConsole.Services
 
             // CocoroShellクライアントの初期化
             _shellClient = new CocoroShellClient(_appSettings.CocoroShellPort);
-            _directTtsService = new DirectTtsService();
+            _directAudioPlaybackService = new DirectAudioPlaybackService();
 
             // OtomeKairo APIクライアントを初期化する
             var bearerToken = _appSettings.OtomeKairoBearerToken;
@@ -417,7 +424,6 @@ namespace CocoroConsole.Services
             {
                 _shellClient?.Dispose();
                 _shellClient = new CocoroShellClient(currentSettings.cocoroShellPort);
-                ResetShellConnectionState();
             }
 
             if (otomeKairoEndpointChanged)
@@ -705,7 +711,6 @@ namespace CocoroConsole.Services
                         };
 
                         UiMessageReceived?.Invoke(this, uiMessage);
-                        await ForwardMessageToShellAsync(speechText, GetStoredAvatarSetting()).ConfigureAwait(false);
                     }
 
                     _statusPollingService.SetNormalStatus();
@@ -1020,124 +1025,6 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// CocoroShellにメッセージを転送（ノンブロッキング）
-        /// </summary>
-        /// <param name="content">転送するメッセージ内容</param>
-        /// <param name="currentAvatar">現在のアバター設定</param>
-        private async Task ForwardMessageToShellAsync(string content, AvatarSettings? currentAvatar)
-        {
-            await _forwardMessageSemaphore.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                if (string.IsNullOrEmpty(content))
-                {
-                    return;
-                }
-
-                if (!ShouldForwardToShell(currentAvatar))
-                {
-                    Debug.WriteLine("[Shell Forward] VRM表示OFFのため発話転送をスキップ");
-                    return;
-                }
-
-                var shellRequest = new ShellSpeechRequest
-                {
-                    content = content,
-                    animation = "talk",
-                    avatarName = currentAvatar?.modelName
-                };
-
-                if (_isShellUnavailable)
-                {
-                    Debug.WriteLine("[Shell Forward] CocoroShell接続失敗状態のため直接TTSに送信します");
-                    await ForwardMessageToDirectTtsAsync(content, currentAvatar).ConfigureAwait(false);
-                    return;
-                }
-
-                try
-                {
-                    await _shellClient.SendSpeechAsync(shellRequest).ConfigureAwait(false);
-                }
-                catch (Exception ex) when (IsShellConnectionFailure(ex))
-                {
-                    _isShellUnavailable = true;
-                    Debug.WriteLine($"[Shell Forward] CocoroShell接続失敗を保持します: {ex.Message}");
-                    await ForwardMessageToDirectTtsAsync(content, currentAvatar).ConfigureAwait(false);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[Shell Forward] CocoroShellへの転送エラー: {ex.Message}");
-            }
-            finally
-            {
-                _forwardMessageSemaphore.Release();
-            }
-        }
-
-        private async Task ForwardMessageToDirectTtsAsync(string content, AvatarSettings? currentAvatar)
-        {
-            if (currentAvatar == null || !currentAvatar.isUseTTS)
-            {
-                Debug.WriteLine("[Direct TTS] TTSが無効のため直接TTS送信をスキップ");
-                return;
-            }
-
-            await _directTtsService.SpeakAsync(content, currentAvatar).ConfigureAwait(false);
-        }
-
-        private static bool IsShellConnectionFailure(Exception ex)
-        {
-            if (ex is TimeoutException)
-            {
-                return true;
-            }
-
-            if (ex is HttpRequestException httpEx)
-            {
-                return !httpEx.Message.StartsWith("API error:", StringComparison.Ordinal);
-            }
-
-            return ex.InnerException != null && IsShellConnectionFailure(ex.InnerException);
-        }
-
-        /// <summary>
-        /// CocoroShellにTTS状態を送信
-        /// </summary>
-        /// <param name="isUseTTS">TTS使用状態</param>
-        public async Task SendTTSStateToShellAsync(bool isUseTTS)
-        {
-            try
-            {
-                if (!ShouldForwardToShell())
-                {
-                    Debug.WriteLine($"[Shell Forward] VRM表示OFFのためTTS状態転送をスキップ: enabled={isUseTTS}");
-                    return;
-                }
-
-                var request = new ShellControlRequest
-                {
-                    action = "ttsControl",
-                    @params = new Dictionary<string, object>
-                    {
-                        { "enabled", isUseTTS }
-                    }
-                };
-
-                await _shellClient.SendControlCommandAsync(request);
-
-                // 成功時のステータス更新
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, isUseTTS ? "音声合成有効" : "音声合成無効"));
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"TTS状態送信エラー: {ex.Message}");
-                StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"TTS設定通知エラー"));
-            }
-        }
-
-
-        /// <summary>
         /// ログビューアーウィンドウを開く
         /// </summary>
         public void OpenLogViewer()
@@ -1247,6 +1134,7 @@ namespace CocoroConsole.Services
                 BuildVisionSources()
             );
             _eventsStreamClient.EventReceived += OnEventsStreamEventReceived;
+            _eventsStreamClient.AssistantAudioReceived += OnAssistantAudioReceived;
             _eventsStreamClient.ConnectionStateChanged += OnEventsStreamConnectionStateChanged;
             _eventsStreamClient.ErrorOccurred += OnEventsStreamErrorOccurred;
 
@@ -1285,6 +1173,7 @@ namespace CocoroConsole.Services
             finally
             {
                 _eventsStreamClient.EventReceived -= OnEventsStreamEventReceived;
+                _eventsStreamClient.AssistantAudioReceived -= OnAssistantAudioReceived;
                 _eventsStreamClient.ConnectionStateChanged -= OnEventsStreamConnectionStateChanged;
                 _eventsStreamClient.ErrorOccurred -= OnEventsStreamErrorOccurred;
                 _eventsStreamClient.Dispose();
@@ -1318,6 +1207,18 @@ namespace CocoroConsole.Services
                     if (!string.IsNullOrWhiteSpace(assistantSpeech))
                     {
                         HandleAssistantSpeechFromEvent(ev, assistantSpeech);
+                    }
+                    return;
+                }
+
+                if (string.Equals(ev.Type, "assistant_audio", StringComparison.Ordinal))
+                {
+                    if (string.Equals(ev.Data.Status, "failed", StringComparison.Ordinal))
+                    {
+                        var errorCode = ev.Data.ErrorCode ?? "tts_request_failed";
+                        StatusUpdateRequested?.Invoke(
+                            this,
+                            new StatusUpdateEventArgs(false, $"音声合成エラー: {errorCode}"));
                     }
                     return;
                 }
@@ -1392,9 +1293,49 @@ namespace CocoroConsole.Services
             };
 
             UiMessageReceived?.Invoke(this, uiMessage);
+        }
 
-            var currentAvatar = GetStoredAvatarSetting();
-            _ = ForwardMessageToShellAsync(assistantSpeech, currentAvatar);
+        private void OnAssistantAudioReceived(
+            object? sender,
+            OtomeKairoAssistantAudioReceivedEventArgs args)
+        {
+            _ = HandleAssistantAudioAsync(args);
+        }
+
+        private async Task HandleAssistantAudioAsync(
+            OtomeKairoAssistantAudioReceivedEventArgs args)
+        {
+            await _forwardMessageSemaphore.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                // 通常版はprocess存在を正とし、Unity Editor実行時はloopback APIで判定する。
+                var shellProcessRunning = IsCocoroShellProcessRunning();
+                if (!shellProcessRunning &&
+                    !await _shellClient.IsRunningAsync().ConfigureAwait(false))
+                {
+                    await _directAudioPlaybackService
+                        .PlayAsync(args.AudioBytes)
+                        .ConfigureAwait(false);
+                    return;
+                }
+
+                // 起動確認後の配送失敗は再生先を切り替えず、接続異常として公開する。
+                await _shellClient
+                    .SendAudioAsync(args.AudioBytes, _appSettings.ShellSessionToken)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"音声配送エラー: {ex.Message}");
+                ErrorOccurred?.Invoke(this, $"音声配送エラー: {ex.Message}");
+                StatusUpdateRequested?.Invoke(
+                    this,
+                    new StatusUpdateEventArgs(false, "音声配送に失敗しました"));
+            }
+            finally
+            {
+                _forwardMessageSemaphore.Release();
+            }
         }
 
         private static bool ShouldForceNewBubbleForAssistantEvent(string? sourceKind)
@@ -1707,7 +1648,7 @@ namespace CocoroConsole.Services
             }
             _apiServer?.Dispose();
             _shellClient?.Dispose();
-            _directTtsService?.Dispose();
+            _directAudioPlaybackService?.Dispose();
             _otomeKairoApiClient?.Dispose();
             _logStreamClient?.Dispose();
             _eventsStreamClient?.Dispose();
