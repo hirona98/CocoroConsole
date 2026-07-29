@@ -270,7 +270,11 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("physical_input_enabled")]
         public bool PhysicalInputEnabled { get; set; }
 
+        /// <summary>
+        /// 未選択時もAPIの必須フィールドとしてnullを送信します。
+        /// </summary>
         [JsonPropertyName("input_device")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         public OtomeKairoSelectedAudioInputDevice? InputDevice { get; set; }
 
         [JsonPropertyName("response_client_id")]
