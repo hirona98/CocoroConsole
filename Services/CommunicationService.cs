@@ -525,7 +525,6 @@ namespace CocoroConsole.Services
                 {
                     await PrepareShellRuntimeAsync().ConfigureAwait(false);
                 }
-                RefreshSettingsCache();
                 _appSettings.SaveAppSettings();
                 await StartEventsStreamAsync().ConfigureAwait(false);
                 await SyncDesktopWatchCapabilityStateAsync().ConfigureAwait(false);
