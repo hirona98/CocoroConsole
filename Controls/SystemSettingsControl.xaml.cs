@@ -161,9 +161,23 @@ namespace CocoroConsole.Controls
             LocalInputDeviceComboBox.ItemsSource = _audioInputDevices;
             SelectConfiguredLocalAudioInputDevice(AppSettings.Instance.MicrophoneSettings.localInputDevice);
 
+            // connector が利用できない間も、空欄ではなく未検出状態を明示する。
+            SetLocalInputDeviceAvailability(
+                response.ConnectorConnected && response.Devices.Count > 0);
+
             LocalInputDeviceStatusText.Text = response.ConnectorConnected
-                ? $"connector: {response.ConnectorClientId} / {_audioInputDevices.Count}件"
+                ? $"connector: {response.ConnectorClientId} / {response.Devices.Count}件"
                 : "microphone connectorは未接続です。";
+        }
+
+        private void SetLocalInputDeviceAvailability(bool available)
+        {
+            LocalInputDeviceComboBox.Visibility = available
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            LocalInputDeviceUnavailableComboBox.Visibility = available
+                ? Visibility.Collapsed
+                : Visibility.Visible;
         }
 
         private void LoadConsoleAudioInputDevices()

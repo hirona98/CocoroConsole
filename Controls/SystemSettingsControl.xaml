@@ -205,48 +205,51 @@
                     <Border Background="White"
                             Padding="10">
                         <StackPanel>
-                            <TextBlock TextWrapping="Wrap"
-                                       Foreground="#666666"
-                                       Margin="0,0,0,10">
-                                通常時に使用するマイクと話者識別を設定します。Web UIの入力元はWeb UI側で一時的に切り替えます。
-                            </TextBlock>
-                            <Grid Margin="0,0,0,8">
+                            <Grid Margin="0,0,0,20">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="通常の入力元:"
+                                <TextBlock Text="使用するマイク:"
                                            VerticalAlignment="Center"/>
                                 <ComboBox x:Name="MicrophoneInputSourceComboBox"
                                           Grid.Column="1"
                                           Padding="2">
-                                    <ComboBoxItem Content="OtomeKairoのローカルマイク"
+                                    <ComboBoxItem Content="OtomeKairo側のマイク"
                                                   Tag="local_microphone"/>
-                                    <ComboBoxItem Content="このCocoroConsoleのマイク"
+                                    <ComboBoxItem Content="CocoroConsole側のマイク"
                                                   Tag="console_microphone"/>
                                 </ComboBox>
                             </Grid>
-                            <Grid Margin="0,0,0,8">
+                            <Grid Margin="0,0,0,2">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="ローカルデバイス:"
+                                <TextBlock Text="OtomeKairo:"
                                            VerticalAlignment="Center"/>
-                                <ComboBox x:Name="LocalInputDeviceComboBox"
-                                          Grid.Column="1"
-                                          Padding="2"/>
+                                <Grid Grid.Column="1">
+                                    <ComboBox x:Name="LocalInputDeviceComboBox"
+                                              Padding="2"
+                                              Visibility="Collapsed"/>
+                                    <ComboBox x:Name="LocalInputDeviceUnavailableComboBox"
+                                              Padding="2"
+                                              IsEnabled="False"
+                                              SelectedIndex="0">
+                                        <ComboBoxItem Content="未検出"/>
+                                    </ComboBox>
+                                </Grid>
                             </Grid>
                             <TextBlock x:Name="LocalInputDeviceStatusText"
                                        TextWrapping="Wrap"
                                        Foreground="#666666"
-                                       Margin="140,0,0,10"/>
-                            <Grid Margin="0,0,0,8">
+                                       Margin="140,0,0,14"/>
+                            <Grid Margin="0,0,0,2">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Consoleデバイス:"
+                                <TextBlock Text="CocoroConsole:"
                                            VerticalAlignment="Center"/>
                                 <ComboBox x:Name="ConsoleInputDeviceComboBox"
                                           Grid.Column="1"
@@ -255,8 +258,8 @@
                             <TextBlock x:Name="ConsoleInputDeviceStatusText"
                                        TextWrapping="Wrap"
                                        Foreground="#666666"
-                                       Margin="140,0,0,10"/>
-                            <Grid Margin="0,0,0,8">
+                                       Margin="140,0,0,14"/>
+                            <Grid Margin="0,0,0,14">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="*"/>
@@ -293,7 +296,7 @@
                             </Grid>
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
-                                       Margin="0,0,0,10">
+                                       Margin="150,0,0,14">
                                 値を下げると音声を拾いやすくなり、環境音による誤検出も増えます。
                             </TextBlock>
 

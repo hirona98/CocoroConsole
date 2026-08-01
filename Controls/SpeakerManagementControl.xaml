@@ -18,7 +18,7 @@
                        Margin="0,7,10,0"/>
             <ListBox Grid.Column="1"
                      x:Name="SpeakersListBox"
-                     MinHeight="100"
+                     MinHeight="80"
                      MaxHeight="220"
                      HorizontalContentAlignment="Stretch"
                      VerticalAlignment="Top">
@@ -67,8 +67,7 @@
             </ListBox>
         </Grid>
 
-        <Grid x:Name="SpeakerActionsPanel"
-              Margin="0,0,0,10">
+        <Grid x:Name="SpeakerActionsPanel" Margin="0,0,0,2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="120"/>
                 <ColumnDefinition Width="*"/>
@@ -101,7 +100,7 @@
         <TextBlock x:Name="EnrollmentStatusText"
                    Foreground="#666666"
                    TextWrapping="Wrap"
-                   Margin="120,0,0,10"
+                   Margin="120,0,0,14"
                    Text="選択中のマイクへ2秒以上の発話を3回入力すると登録が完了します。"/>
 
         <Grid Margin="0,0,0,10">
