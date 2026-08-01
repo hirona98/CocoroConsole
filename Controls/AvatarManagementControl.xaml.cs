@@ -72,16 +72,6 @@ namespace CocoroConsole.Controls
             ClipboardPasteOverride.CopyToClipboard(AivisCloudApiKeyPasswordBox);
         }
 
-        private void STTApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClipboardPasteOverride.PasteOverwrite(STTApiKeyPasswordBox);
-        }
-
-        private void STTApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClipboardPasteOverride.CopyToClipboard(STTApiKeyPasswordBox);
-        }
-
         /// <summary>
         /// 初期化処理
         /// </summary>
@@ -135,16 +125,12 @@ namespace CocoroConsole.Controls
             avatar.isConvertMToon = ConvertMToonCheckBox.IsChecked ?? false;
             avatar.isEnableShadowOff = EnableShadowOffCheckBox.IsChecked ?? false;
             avatar.shadowOffMesh = ShadowOffMeshTextBox.Text;
-            avatar.isUseSTT = IsUseSTTCheckBox.IsChecked ?? false;
-            avatar.sttEngine = STTEngineComboBox.SelectedItem is ComboBoxItem selectedSttEngine ? selectedSttEngine.Tag?.ToString() ?? "amivoice" : "amivoice";
             avatar.sttWakeWords = STTWakeWordTextBox.Text
                 .Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(wakeWord => wakeWord.Trim())
                 .Where(wakeWord => wakeWord.Length > 0)
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
-            avatar.sttProfileId = STTProfileIdTextBox.Text.Trim();
-            avatar.sttApiKey = STTApiKeyPasswordBox.Text;
             avatar.isUseTTS = IsUseTTSCheckBox.IsChecked ?? false;
 
             // TTSエンジンタイプ
@@ -266,22 +252,8 @@ namespace CocoroConsole.Controls
             ShadowOffMeshTextBox.Text = avatar.shadowOffMesh;
             ShadowOffMeshTextBox.IsEnabled = avatar.isEnableShadowOff;
 
-            // STT設定
-            IsUseSTTCheckBox.IsChecked = avatar.isUseSTT;
-
-            // STTエンジンComboBox設定
-            foreach (ComboBoxItem item in STTEngineComboBox.Items)
-            {
-                if (item.Tag?.ToString() == avatar.sttEngine)
-                {
-                    STTEngineComboBox.SelectedItem = item;
-                    break;
-                }
-            }
-
+            // 音声起動ワードはアバターページで編集する。
             STTWakeWordTextBox.Text = string.Join(Environment.NewLine, avatar.sttWakeWords);
-            STTProfileIdTextBox.Text = avatar.sttProfileId;
-            STTApiKeyPasswordBox.Text = avatar.sttApiKey;
 
             // TTS設定
             IsUseTTSCheckBox.IsChecked = avatar.isUseTTS;
@@ -602,6 +574,14 @@ namespace CocoroConsole.Controls
             if (ShadowOffMeshTextBox != null)
             {
                 ShadowOffMeshTextBox.IsEnabled = false;
+            }
+        }
+
+        private void STTWakeWordTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isInitialized)
+            {
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
         }
 

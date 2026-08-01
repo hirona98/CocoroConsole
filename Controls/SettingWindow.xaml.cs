@@ -170,7 +170,8 @@ namespace CocoroConsole.Controls
                 DisplaySettingsControl.InitializeFromAppSettings();
                 AvatarManagementControl.RefreshAvatarList();
                 AnimationSettingsControl.Initialize();
-                SystemSettingsControl.ReloadFromAppSettings();
+                SystemSettingsControl.ReloadFromAppSettings(
+                    AvatarManagementControl.GetCurrentAvatarIndex());
 
                 LlmSettingsControl.LoadSettingsList(
                     CloneModelPresets(_loadedOtomeKairoEditorState.ModelPresets),
@@ -257,6 +258,10 @@ namespace CocoroConsole.Controls
             // アバター変更イベントを登録
             AvatarManagementControl.AvatarChanged += (sender, args) =>
             {
+                // 会話入力ページの音声認識設定も選択アバターに合わせる。
+                SystemSettingsControl.SelectAvatar(
+                    AvatarManagementControl.GetCurrentAvatarIndex());
+
                 // アニメーション設定を更新
                 AnimationSettingsControl.Initialize();
             };
@@ -963,6 +968,8 @@ namespace CocoroConsole.Controls
 
             // AvatarManagementControlのUIを更新
             AvatarManagementControl.RefreshAvatarList();
+            SystemSettingsControl.ReloadFromAppSettings(
+                AvatarManagementControl.GetCurrentAvatarIndex());
         }
 
         #endregion
@@ -1083,6 +1090,7 @@ namespace CocoroConsole.Controls
         private void UpdateAvatarAndAnimationAppSettings()
         {
             var appSettings = AppSettings.Instance;
+            SystemSettingsControl.SyncSpeechRecognitionSettingsToSelectedAvatar();
             AvatarManagementControl.SyncCurrentAvatarFromUi();
             appSettings.CurrentAvatarIndex = AvatarManagementControl.GetCurrentAvatarIndex();
             appSettings.IsUseLLM = LlmSettingsControl.IsUseLlm;

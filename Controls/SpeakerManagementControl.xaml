@@ -15,7 +15,7 @@
             <TextBlock Grid.Column="0"
                        Text="登録済み話者:"
                        VerticalAlignment="Top"
-                       Margin="0,7,10,0"/>
+                       Margin="0,0,10,0"/>
             <ListBox Grid.Column="1"
                      x:Name="SpeakersListBox"
                      MinHeight="80"

@@ -27,6 +27,7 @@ namespace CocoroConsole.Controls
         private const int DefaultThinkingSpeechLevel = 5;
 
         private bool _isInitialized;
+        private int _currentAvatarIndex = -1;
         private Dictionary<string, object?> _wakePolicy = new Dictionary<string, object?>();
         private List<OtomeKairoAudioInputDevice> _audioInputDevices = new List<OtomeKairoAudioInputDevice>();
         private List<ConsoleMicrophoneInputDevice> _consoleInputDevices = new List<ConsoleMicrophoneInputDevice>();
@@ -45,6 +46,8 @@ namespace CocoroConsole.Controls
             ConnectionSettingsGroup.Visibility =
                 section == SystemSettingsSection.Connection ? Visibility.Visible : Visibility.Collapsed;
             ConversationSettingsGroup.Visibility =
+                section == SystemSettingsSection.ConversationInput ? Visibility.Visible : Visibility.Collapsed;
+            SpeechRecognitionSettingsGroup.Visibility =
                 section == SystemSettingsSection.ConversationInput ? Visibility.Visible : Visibility.Collapsed;
             VoiceInputSettingsGroup.Visibility =
                 section == SystemSettingsSection.ConversationInput ? Visibility.Visible : Visibility.Collapsed;
@@ -114,19 +117,28 @@ namespace CocoroConsole.Controls
                 current?.ThinkingSpeechLevel ?? DefaultThinkingSpeechLevel).ToString(CultureInfo.InvariantCulture);
         }
 
-        public void ReloadFromAppSettings()
+        public void ReloadFromAppSettings(int avatarIndex)
         {
             var previousInitialized = _isInitialized;
             _isInitialized = false;
-            ApplyAppSettingsToControls(AppSettings.Instance);
+            ApplyAppSettingsToControls(AppSettings.Instance, avatarIndex);
             _isInitialized = previousInitialized;
         }
 
-        private void ApplyAppSettingsToControls(AppSettings appSettings)
+        public void SelectAvatar(int avatarIndex)
+        {
+            var previousInitialized = _isInitialized;
+            _isInitialized = false;
+            LoadSpeechRecognitionSettings(AppSettings.Instance, avatarIndex);
+            _isInitialized = previousInitialized;
+        }
+
+        private void ApplyAppSettingsToControls(AppSettings appSettings, int? avatarIndex = null)
         {
             OtomeKairoServerUrlTextBox.Text = appSettings.ServerUrl;
             OtomeKairoAccessTokenPasswordBox.Password = appSettings.OtomeKairoBearerToken;
             ConversationDisplayNameTextBox.Text = appSettings.ConversationDisplayName;
+            LoadSpeechRecognitionSettings(appSettings, avatarIndex ?? appSettings.CurrentAvatarIndex);
             ExcludeWindowTitlePatternsTextBox.Text = string.Join(
                 Environment.NewLine,
                 appSettings.ScreenshotSettings.excludePatterns ?? new List<string>());
@@ -152,6 +164,59 @@ namespace CocoroConsole.Controls
             {
                 SelectConfiguredConsoleAudioInputDevice(microphoneSettings.console?.inputDevice);
             }
+        }
+
+        /// <summary>
+        /// 選択中のアバター音声プリセットから音声認識設定を読み込む。
+        /// </summary>
+        private void LoadSpeechRecognitionSettings(AppSettings appSettings, int avatarIndex)
+        {
+            _currentAvatarIndex = avatarIndex;
+            var hasSelectedAvatar =
+                avatarIndex >= 0 && avatarIndex < appSettings.AvatarList.Count;
+            SpeechRecognitionSettingsGroup.IsEnabled = hasSelectedAvatar;
+
+            if (!hasSelectedAvatar)
+            {
+                IsUseSTTCheckBox.IsChecked = false;
+                STTEngineComboBox.SelectedItem = null;
+                STTProfileIdTextBox.Clear();
+                STTApiKeyPasswordBox.Clear();
+                return;
+            }
+
+            var avatar = appSettings.AvatarList[avatarIndex];
+            IsUseSTTCheckBox.IsChecked = avatar.isUseSTT;
+            STTEngineComboBox.SelectedItem = STTEngineComboBox.Items
+                .OfType<ComboBoxItem>()
+                .Single(item => string.Equals(
+                    item.Tag as string,
+                    avatar.sttEngine,
+                    StringComparison.Ordinal));
+            STTProfileIdTextBox.Text = avatar.sttProfileId;
+            STTApiKeyPasswordBox.Text = avatar.sttApiKey;
+        }
+
+        /// <summary>
+        /// 会話入力ページの音声認識設定を選択中のアバターへ反映する。
+        /// </summary>
+        public void SyncSpeechRecognitionSettingsToSelectedAvatar()
+        {
+            if (_currentAvatarIndex < 0 ||
+                _currentAvatarIndex >= AppSettings.Instance.AvatarList.Count)
+            {
+                return;
+            }
+
+            var avatar = AppSettings.Instance.AvatarList[_currentAvatarIndex].DeepCopy();
+            avatar.isUseSTT = IsUseSTTCheckBox.IsChecked ?? false;
+            var selectedEngine = STTEngineComboBox.SelectedItem as ComboBoxItem
+                ?? throw new InvalidOperationException("音声認識エンジンを選択してください。");
+            avatar.sttEngine = selectedEngine.Tag?.ToString()
+                ?? throw new InvalidOperationException("音声認識エンジンの設定が不正です。");
+            avatar.sttProfileId = STTProfileIdTextBox.Text.Trim();
+            avatar.sttApiKey = STTApiKeyPasswordBox.Text;
+            AppSettings.Instance.AvatarList[_currentAvatarIndex] = avatar;
         }
 
         private async System.Threading.Tasks.Task LoadAudioInputDevicesAsync(OtomeKairoApiClient apiClient)
@@ -283,6 +348,11 @@ namespace CocoroConsole.Controls
             OtomeKairoServerUrlTextBox.TextChanged += OnSettingsChanged;
             OtomeKairoAccessTokenPasswordBox.PasswordChanged += OnSettingsChanged;
             ConversationDisplayNameTextBox.TextChanged += OnSettingsChanged;
+            IsUseSTTCheckBox.Checked += OnSpeechRecognitionSettingsChanged;
+            IsUseSTTCheckBox.Unchecked += OnSpeechRecognitionSettingsChanged;
+            STTEngineComboBox.SelectionChanged += OnSpeechRecognitionSettingsChanged;
+            STTProfileIdTextBox.TextChanged += OnSpeechRecognitionSettingsChanged;
+            STTApiKeyPasswordBox.TextChanged += OnSpeechRecognitionSettingsChanged;
             VisualCaptureIdleTimeoutMinutesTextBox.TextChanged += OnSettingsChanged;
             ExcludeWindowTitlePatternsTextBox.TextChanged += OnSettingsChanged;
             WakePolicyEnabledCheckBox.Checked += OnSettingsChanged;
@@ -306,6 +376,28 @@ namespace CocoroConsole.Controls
             }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void OnSpeechRecognitionSettingsChanged(object sender, RoutedEventArgs e)
+        {
+            if (!_isInitialized)
+            {
+                return;
+            }
+
+            // 他のアバターへ切り替える前に現在の編集値を保持する。
+            SyncSpeechRecognitionSettingsToSelectedAvatar();
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void STTApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.PasteOverwrite(STTApiKeyPasswordBox);
+        }
+
+        private void STTApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(STTApiKeyPasswordBox);
         }
 
         private void OnSpeakerThresholdChanged(object? sender, EventArgs e)
