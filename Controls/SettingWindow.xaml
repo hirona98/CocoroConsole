@@ -244,31 +244,7 @@
             </Border>
 
             <Grid Grid.Column="1">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <Border Grid.Row="0"
-                        BorderBrush="#E8E8E8"
-                        BorderThickness="0,0,0,1"
-                        Padding="24,18,24,14">
-                    <StackPanel>
-                        <TextBlock x:Name="PageTitleTextBlock"
-                                   Text="表示"
-                                   FontSize="22"
-                                   FontWeight="SemiBold"
-                                   Foreground="#222222"/>
-                        <TextBlock x:Name="PageDescriptionTextBlock"
-                                   Text="CocoroConsoleの表示方法を設定します。"
-                                   Foreground="#666666"
-                                   TextWrapping="Wrap"
-                                   Margin="0,5,0,0"/>
-                    </StackPanel>
-                </Border>
-
                 <Grid x:Name="SettingsContentHost"
-                      Grid.Row="1"
                       Margin="20,18,0,20">
                     <local:DisplaySettingsControl x:Name="DisplaySettingsControl"/>
                     <local:AvatarManagementControl x:Name="AvatarManagementControl"

@@ -333,64 +333,62 @@ namespace CocoroConsole.Controls
             switch (pageId)
             {
                 case "persona":
-                    ShowPage(PromptSettingsControl, "人格設定", "考え方や振る舞いの基底となる人格を設定します。");
+                    ShowPage(PromptSettingsControl);
                     break;
                 case "model":
-                    ShowPage(LlmSettingsControl, "モデル", "判断に使用するモデルプリセットを設定します。");
+                    ShowPage(LlmSettingsControl);
                     break;
                 case "memory":
-                    ShowPage(EmbeddingSettingsControl, "記憶", "現在の個が使用する記憶集合を設定します。");
+                    ShowPage(EmbeddingSettingsControl);
                     break;
                 case "avatar":
-                    ShowPage(AvatarManagementControl, "アバター", "アバター、音声合成、音声認識のプリセットを設定します。");
+                    ShowPage(AvatarManagementControl);
                     break;
                 case "motion":
-                    ShowPage(AnimationSettingsControl, "モーション", "アバターのモーションを設定します。");
+                    ShowPage(AnimationSettingsControl);
                     break;
                 case "conversation":
                     SystemSettingsControl.ShowSection(SystemSettingsSection.ConversationInput);
-                    ShowPage(SystemSettingsControl, "会話入力", "テキスト入力者、マイク、話者識別を設定します。");
+                    ShowPage(SystemSettingsControl);
                     break;
                 case "periodic-thinking":
                     SystemSettingsControl.ShowSection(SystemSettingsSection.PeriodicThinking);
-                    ShowPage(SystemSettingsControl, "定期思考", "OtomeKairoサーバー内部で発生する定期思考を設定します。");
+                    ShowPage(SystemSettingsControl);
                     break;
                 case "desktop":
                     SystemSettingsControl.ShowSection(SystemSettingsSection.DesktopObservation);
-                    ShowPage(SystemSettingsControl, "デスクトップ", "デスクトップ観測のキャプチャ条件を設定します。");
+                    ShowPage(SystemSettingsControl);
                     break;
                 case "camera":
                     CapabilitySettingsControl.ShowSection(CapabilitySettingsSection.Camera);
-                    ShowPage(CapabilitySettingsControl, "カメラ", "OtomeKairoが観測に使用するカメラを設定します。");
+                    ShowPage(CapabilitySettingsControl);
                     break;
                 case "watcher":
                     CapabilitySettingsControl.ShowSection(CapabilitySettingsSection.Watcher);
-                    ShowPage(CapabilitySettingsControl, "Watcher", "外部変化の検出と即時wakeを設定します。");
+                    ShowPage(CapabilitySettingsControl);
                     break;
                 case "connection":
                     SystemSettingsControl.ShowSection(SystemSettingsSection.Connection);
-                    ShowPage(SystemSettingsControl, "OtomeKairo接続", "CocoroConsoleからOtomeKairoへ接続するための認証情報を設定します。");
+                    ShowPage(SystemSettingsControl);
                     break;
                 case "mcp":
                     CapabilitySettingsControl.ShowSection(CapabilitySettingsSection.Mcp);
-                    ShowPage(CapabilitySettingsControl, "ツール（MCP）", "OtomeKairoが使用するMCP serverを設定します。");
+                    ShowPage(CapabilitySettingsControl);
                     break;
                 case "api":
-                    ShowPage(ApiDocumentationControl, "API説明", "CocoroConsole連携APIの使用方法を確認します。");
+                    ShowPage(ApiDocumentationControl);
                     break;
                 case "license":
-                    ShowPage(LicensePage, "ライセンス", "利用しているライブラリのライセンスを確認します。");
+                    ShowPage(LicensePage);
                     break;
                 default:
-                    ShowPage(DisplaySettingsControl, "表示", "CocoroConsoleの表示方法を設定します。");
+                    ShowPage(DisplaySettingsControl);
                     break;
             }
         }
 
-        private void ShowPage(FrameworkElement page, string title, string description)
+        private void ShowPage(FrameworkElement page)
         {
-            PageTitleTextBlock.Text = title;
-            PageDescriptionTextBlock.Text = description;
             page.Visibility = Visibility.Visible;
         }
 
