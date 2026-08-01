@@ -43,8 +43,7 @@
               UseLayoutRounding="True">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,0,0,20">
-                                <Grid Margin="0,0,20,0"
-                                      HorizontalAlignment="Left">
+                                <Grid Margin="0,0,20,0">
                                         <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="80"/>
@@ -55,8 +54,7 @@
                                         <ComboBox x:Name="PersonaSelectComboBox"
                                                   Grid.Column="0"
                                                   Margin="0,5,10,5"
-                                                  SelectionChanged="PersonaSelectComboBox_SelectionChanged"
-                                                  Width="500"/>
+                                                  SelectionChanged="PersonaSelectComboBox_SelectionChanged"/>
 
                                         <Button Grid.Column="1"
                                                 Content="追加"

@@ -10,7 +10,7 @@
             <StackPanel>
                 <!-- アバター選択 -->
                 <Grid Margin="0,0,20,0"
-                      ToolTip="Select avatar (restart required)" HorizontalAlignment="Left">
+                      ToolTip="Select avatar (restart required)">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="80"/>
@@ -23,8 +23,7 @@
                               Margin="0,5,10,5"
                               SelectionChanged="AvatarSelectComboBox_SelectionChanged"
                               DisplayMemberPath="modelName"
-                              SelectedValuePath="modelName" Width="500" HorizontalAlignment="Left">
-                    </ComboBox>
+                              SelectedValuePath="modelName"/>
 
                     <Button x:Name="AddAvatarButton"
                             Grid.Column="1"

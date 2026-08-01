@@ -33,7 +33,7 @@
             <StackPanel>
                 <!-- アニメーションセット選択 -->
                 <Grid Margin="0,0,20,0"
-                      ToolTip="Select Animation Set" HorizontalAlignment="Left">
+                      ToolTip="Select Animation Set">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="80"/>
@@ -47,7 +47,7 @@
 
                               IsEditable="False"
                               DisplayMemberPath="animeSetName"
-                              SelectedValuePath="animeSetName" Width="500"/>
+                              SelectedValuePath="animeSetName"/>
 
                     <Button Grid.Column="1"
                             x:Name="AddAnimationSetButton"
