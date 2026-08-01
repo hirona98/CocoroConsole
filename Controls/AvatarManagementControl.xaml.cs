@@ -143,7 +143,7 @@ namespace CocoroConsole.Controls
                 .Where(wakeWord => wakeWord.Length > 0)
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
-            avatar.sttProfileId = STTProfileIdTextBox.Text;
+            avatar.sttProfileId = STTProfileIdTextBox.Text.Trim();
             avatar.sttApiKey = STTApiKeyPasswordBox.Text;
             avatar.isUseTTS = IsUseTTSCheckBox.IsChecked ?? false;
 

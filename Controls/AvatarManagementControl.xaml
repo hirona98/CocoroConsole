@@ -870,13 +870,13 @@
                                      x:Name="STTProfileIdTextBox"
 
                                      Padding="2"
-                                     ToolTip="AmiVoice profileId（マイページ単語登録の場合は {サービスID}）。本アプリは grammarFileNames=-a-general 固定。"/>
+                                     ToolTip="AmiVoice Profile ID。マイページ単語登録の場合はサービスIDを先頭のコロンなしで入力します。本アプリは grammarFileNames=-a-general 固定です。"/>
                         </Grid>
                         <!-- STT profileId 説明テキスト -->
                         <TextBlock Foreground="#666666"
                                    TextWrapping="Wrap"
                                    Margin="130,0,0,0">
-                            単語登録を使う場合に入力してください。エンジンは -a-general を使います。
+                            単語登録を使う場合はサービスIDをそのまま入力してください。エンジンは -a-general を使います。
                         </TextBlock>
 
                         <!-- STT APIキー（AmiVoice APPKEY）の設定 -->
