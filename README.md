@@ -24,6 +24,6 @@ https://alice-encoder.booth.pm/items/6821221
 音声入力、音声認識、話者識別は OtomeKairo で実行する。
 話者登録画面は OtomeKairo API を通じて音声人物を管理する。
 人物設定用のDBは作成しない。
-CocoroConsole は OtomeKairo API `0.4.0` へ接続する。
+CocoroConsole は OtomeKairo API `0.6.0` へ接続する。
 音声合成は OtomeKairo で実行する。
 CocoroConsole は event stream で受信した WAV を CocoroShell へ配送し、CocoroShell が起動していない場合は自身で再生する。

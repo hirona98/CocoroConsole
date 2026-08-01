@@ -53,7 +53,7 @@ namespace CocoroConsole.Services
         {
             // --- OtomeKairo は自己署名HTTPSを前提とする ---
             // LAN公開（Web UI含む）に寄せるため HTTPS 必須の設計になっている。
-            // CocoroConsole はローカル接続のみの前提で、証明書のホスト検証は行わない。
+            // 自己署名証明書を使用する接続先を許容し、証明書のホスト検証は行わない。
             var handler = new HttpClientHandler
             {
                 ServerCertificateCustomValidationCallback = (_, _, _, _) => true
@@ -64,7 +64,7 @@ namespace CocoroConsole.Services
             };
             _probeEndpoint = $"{baseUrl.TrimEnd('/')}/api/bootstrap/probe";
 
-            // 1秒間隔でポーリング開始（起動待ち用）
+            // 購読側がイベントハンドラを登録してから明示的に開始する。
             _pollingTimer = new Timer(_ =>
             {
                 _ = PollHealthStatusAsync().ContinueWith(
@@ -78,7 +78,20 @@ namespace CocoroConsole.Services
                     CancellationToken.None,
                     TaskContinuationOptions.OnlyOnFaulted,
                     TaskScheduler.Default);
-            }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+            }, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        }
+
+        /// <summary>
+        /// ステータス変更の購読完了後にポーリングを開始する。
+        /// </summary>
+        public void Start()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(StatusPollingService));
+            }
+
+            _pollingTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
         }
 
         /// <summary>

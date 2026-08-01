@@ -42,6 +42,24 @@ namespace CocoroConsole.Models.OtomeKairoApi
     }
 
     /// <summary>
+    /// DB上の通常入力元とWeb入力セッションを解決した実効入力状態です。
+    /// </summary>
+    public class OtomeKairoAudioInputState
+    {
+        [JsonPropertyName("configured_source")]
+        public string ConfiguredSource { get; set; } = string.Empty;
+
+        [JsonPropertyName("effective_source")]
+        public string EffectiveSource { get; set; } = string.Empty;
+
+        [JsonPropertyName("local_input_device")]
+        public OtomeKairoSelectedAudioInputDevice? LocalInputDevice { get; set; }
+
+        [JsonPropertyName("console")]
+        public OtomeKairoConsoleMicrophoneSettings? Console { get; set; }
+    }
+
+    /// <summary>
     /// 音声人物と話者登録状態です。embedding は API 境界に出しません。
     /// </summary>
     public class OtomeKairoAudioSpeaker

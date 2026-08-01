@@ -258,7 +258,7 @@ namespace CocoroConsole.Controls
             CancelEnrollmentButton.IsEnabled = isActive;
             NewSpeakerNameBox.IsEnabled = !isActive;
             EnrollmentStatusText.Text = enrollment == null
-                ? "物理マイクへ2秒以上の発話を3回入力すると登録が完了します。"
+                ? "選択中のマイクへ2秒以上の発話を3回入力すると登録が完了します。"
                 : $"登録中: {enrollment.CompletedSamples}/{enrollment.RequiredSamples} 発話";
         }
 

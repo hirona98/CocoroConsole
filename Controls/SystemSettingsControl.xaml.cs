@@ -2,6 +2,7 @@ using CocoroConsole.Communication;
 using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using CocoroConsole.Utilities;
+using NAudio.CoreAudioApi;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -28,6 +29,7 @@ namespace CocoroConsole.Controls
         private bool _isInitialized;
         private Dictionary<string, object?> _wakePolicy = new Dictionary<string, object?>();
         private List<OtomeKairoAudioInputDevice> _audioInputDevices = new List<OtomeKairoAudioInputDevice>();
+        private List<ConsoleMicrophoneInputDevice> _consoleInputDevices = new List<ConsoleMicrophoneInputDevice>();
 
         public SystemSettingsControl()
         {
@@ -62,13 +64,14 @@ namespace CocoroConsole.Controls
                 var appSettings = AppSettings.Instance;
 
                 ApplyDefaultRemoteSettings();
+                LoadConsoleAudioInputDevices();
                 ApplyAppSettingsToControls(appSettings);
                 SetupEventHandlers();
                 _isInitialized = true;
 
                 if (apiClient == null || communicationService == null)
                 {
-                    InputDeviceStatusText.Text = "OtomeKairo APIへ接続すると入力デバイスを取得します。";
+                    LocalInputDeviceStatusText.Text = "OtomeKairo APIへ接続するとローカル入力デバイスを取得します。";
                     SpeakerManagementControl.SetUnavailable("OtomeKairo APIへ接続すると話者を管理できます。");
                     return;
                 }
@@ -79,6 +82,18 @@ namespace CocoroConsole.Controls
                     communicationService,
                     clientId,
                     appSettings.MicrophoneSettings.speakerRecognitionThreshold);
+            }
+            catch (OtomeKairoApiException ex) when (
+                ex.ErrorCode == "invalid_token" ||
+                ex.ErrorCode == "bootstrap_required")
+            {
+                // 接続設定を修正できるよう、認証エラーでも設定画面自体は開きます。
+                var message = ex.ErrorCode == "bootstrap_required"
+                    ? "OtomeKairoの初回登録が完了していません。"
+                    : "保存済みのアクセストークンが接続先と一致しません。";
+                LocalInputDeviceStatusText.Text = $"{message}「OtomeKairo接続」で認証情報を更新してください。";
+                SpeakerManagementControl.SetUnavailable(message);
+                System.Diagnostics.Debug.WriteLine($"システム設定の認証待ち: {ex.ErrorCode}");
             }
             catch (Exception ex)
             {
@@ -121,30 +136,69 @@ namespace CocoroConsole.Controls
                 idleTimeoutMinutes.ToString(CultureInfo.InvariantCulture);
 
             var microphoneSettings = appSettings.MicrophoneSettings;
-            PhysicalInputEnabledCheckBox.IsChecked = microphoneSettings.physicalInputEnabled;
-            ResponseClientIdTextBox.Text = appSettings.ClientId;
+            SelectMicrophoneInputSource(microphoneSettings.inputSource);
+            ConsoleClientIdTextBox.Text = appSettings.ClientId;
             VadProbabilityThresholdSlider.Value = microphoneSettings.vadProbabilityThreshold;
             SpeakerManagementControl.SetThreshold(microphoneSettings.speakerRecognitionThreshold);
-            SelectConfiguredAudioInputDevice(microphoneSettings.inputDevice);
+            SelectConfiguredLocalAudioInputDevice(microphoneSettings.localInputDevice);
+            if (microphoneSettings.console != null &&
+                !string.Equals(microphoneSettings.console.clientId, appSettings.ClientId, StringComparison.Ordinal))
+            {
+                SelectConfiguredConsoleAudioInputDevice(null);
+                ConsoleInputDeviceStatusText.Text =
+                    $"別のCocoroConsole（{microphoneSettings.console.clientId}）が設定されています。";
+            }
+            else
+            {
+                SelectConfiguredConsoleAudioInputDevice(microphoneSettings.console?.inputDevice);
+            }
         }
 
         private async System.Threading.Tasks.Task LoadAudioInputDevicesAsync(OtomeKairoApiClient apiClient)
         {
             var response = await apiClient.GetAudioInputDevicesAsync();
             _audioInputDevices = response.Devices;
-            InputDeviceComboBox.ItemsSource = _audioInputDevices;
-            SelectConfiguredAudioInputDevice(AppSettings.Instance.MicrophoneSettings.inputDevice);
+            LocalInputDeviceComboBox.ItemsSource = _audioInputDevices;
+            SelectConfiguredLocalAudioInputDevice(AppSettings.Instance.MicrophoneSettings.localInputDevice);
 
-            InputDeviceStatusText.Text = response.ConnectorConnected
+            LocalInputDeviceStatusText.Text = response.ConnectorConnected
                 ? $"connector: {response.ConnectorClientId} / {_audioInputDevices.Count}件"
                 : "microphone connectorは未接続です。";
         }
 
-        private void SelectConfiguredAudioInputDevice(MicrophoneInputDevice? configuredDevice)
+        private void LoadConsoleAudioInputDevices()
+        {
+            using var enumerator = new MMDeviceEnumerator();
+            var endpoints = enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active);
+            _consoleInputDevices = new List<ConsoleMicrophoneInputDevice>();
+            foreach (var endpoint in endpoints)
+            {
+                using (endpoint)
+                {
+                    _consoleInputDevices.Add(new ConsoleMicrophoneInputDevice
+                    {
+                        deviceId = endpoint.ID,
+                        name = endpoint.FriendlyName,
+                    });
+                }
+            }
+            ConsoleInputDeviceComboBox.ItemsSource = _consoleInputDevices;
+            ConsoleInputDeviceStatusText.Text = $"WASAPI / {_consoleInputDevices.Count}件";
+        }
+
+        private void SelectMicrophoneInputSource(string inputSource)
+        {
+            var selected = MicrophoneInputSourceComboBox.Items
+                .OfType<ComboBoxItem>()
+                .Single(item => string.Equals(item.Tag as string, inputSource, StringComparison.Ordinal));
+            MicrophoneInputSourceComboBox.SelectedItem = selected;
+        }
+
+        private void SelectConfiguredLocalAudioInputDevice(MicrophoneInputDevice? configuredDevice)
         {
             if (configuredDevice == null)
             {
-                InputDeviceComboBox.SelectedItem = null;
+                LocalInputDeviceComboBox.SelectedItem = null;
                 return;
             }
 
@@ -161,10 +215,33 @@ namespace CocoroConsole.Controls
                 _audioInputDevices = new[] { selectedDevice }
                     .Concat(_audioInputDevices)
                     .ToList();
-                InputDeviceComboBox.ItemsSource = _audioInputDevices;
+                LocalInputDeviceComboBox.ItemsSource = _audioInputDevices;
             }
 
-            InputDeviceComboBox.SelectedItem = selectedDevice;
+            LocalInputDeviceComboBox.SelectedItem = selectedDevice;
+        }
+
+        private void SelectConfiguredConsoleAudioInputDevice(ConsoleMicrophoneInputDevice? configuredDevice)
+        {
+            if (configuredDevice == null)
+            {
+                ConsoleInputDeviceComboBox.SelectedItem = null;
+                return;
+            }
+
+            var selectedDevice = _consoleInputDevices.FirstOrDefault(device =>
+                string.Equals(device.deviceId, configuredDevice.deviceId, StringComparison.Ordinal));
+            if (selectedDevice == null)
+            {
+                selectedDevice = configuredDevice.DeepCopy();
+                _consoleInputDevices = new[] { selectedDevice }
+                    .Concat(_consoleInputDevices)
+                    .ToList();
+                ConsoleInputDeviceComboBox.ItemsSource = _consoleInputDevices;
+                ConsoleInputDeviceStatusText.Text = "保存済みデバイスは現在利用できません。";
+            }
+
+            ConsoleInputDeviceComboBox.SelectedItem = selectedDevice;
         }
 
         public void SetWakeDesktopObservationEnabled(bool enabled)
@@ -200,9 +277,9 @@ namespace CocoroConsole.Controls
             WakeDesktopObservationCheckBox.Unchecked += OnSettingsChanged;
             WakeIntervalSecondsTextBox.TextChanged += OnSettingsChanged;
             ThinkingSpeechLevelTextBox.TextChanged += OnSettingsChanged;
-            PhysicalInputEnabledCheckBox.Checked += OnSettingsChanged;
-            PhysicalInputEnabledCheckBox.Unchecked += OnSettingsChanged;
-            InputDeviceComboBox.SelectionChanged += OnSettingsChanged;
+            MicrophoneInputSourceComboBox.SelectionChanged += OnSettingsChanged;
+            LocalInputDeviceComboBox.SelectionChanged += OnSettingsChanged;
+            ConsoleInputDeviceComboBox.SelectionChanged += OnSettingsChanged;
             VadProbabilityThresholdSlider.ValueChanged += OnSettingsChanged;
             SpeakerManagementControl.ThresholdChanged += OnSpeakerThresholdChanged;
         }
@@ -287,18 +364,29 @@ namespace CocoroConsole.Controls
 
         public MicrophoneSettings GetMicrophoneSettings()
         {
-            var selectedDevice = InputDeviceComboBox.SelectedItem as OtomeKairoAudioInputDevice;
+            var sourceItem = MicrophoneInputSourceComboBox.SelectedItem as ComboBoxItem
+                ?? throw new InvalidOperationException("通常のマイク入力元を選択してください。");
+            var inputSource = sourceItem.Tag as string
+                ?? throw new InvalidOperationException("通常のマイク入力元が不正です。");
+            var selectedLocalDevice = LocalInputDeviceComboBox.SelectedItem as OtomeKairoAudioInputDevice;
+            var selectedConsoleDevice = ConsoleInputDeviceComboBox.SelectedItem as ConsoleMicrophoneInputDevice;
             return new MicrophoneSettings
             {
-                physicalInputEnabled = PhysicalInputEnabledCheckBox.IsChecked ?? false,
-                inputDevice = selectedDevice == null
+                inputSource = inputSource,
+                localInputDevice = selectedLocalDevice == null
                     ? null
                     : new MicrophoneInputDevice
                     {
-                        hostApi = selectedDevice.HostApi,
-                        name = selectedDevice.Name,
+                        hostApi = selectedLocalDevice.HostApi,
+                        name = selectedLocalDevice.Name,
                     },
-                responseClientId = AppSettings.Instance.ClientId,
+                console = selectedConsoleDevice == null
+                    ? AppSettings.Instance.MicrophoneSettings.console?.DeepCopy()
+                    : new ConsoleMicrophoneSettings
+                    {
+                        clientId = AppSettings.Instance.ClientId,
+                        inputDevice = selectedConsoleDevice.DeepCopy(),
+                    },
                 vadProbabilityThreshold = (float)VadProbabilityThresholdSlider.Value,
                 speakerRecognitionThreshold = SpeakerManagementControl.GetCurrentThreshold(),
             };
@@ -321,6 +409,15 @@ namespace CocoroConsole.Controls
         public string GetOtomeKairoServerUrl()
         {
             return OtomeKairoServerUrlTextBox.Text.Trim();
+        }
+
+        public void SetOtomeKairoServerUrl(string serverUrl)
+        {
+            // 保存時の正規化結果をユーザー編集として扱わず画面へ反映します。
+            var previousInitialized = _isInitialized;
+            _isInitialized = false;
+            OtomeKairoServerUrlTextBox.Text = serverUrl;
+            _isInitialized = previousInitialized;
         }
 
         public string GetConversationDisplayName()

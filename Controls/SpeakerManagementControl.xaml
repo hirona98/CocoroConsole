@@ -102,7 +102,7 @@
                    Foreground="#666666"
                    TextWrapping="Wrap"
                    Margin="120,0,0,10"
-                   Text="物理マイクへ2秒以上の発話を3回入力すると登録が完了します。"/>
+                   Text="選択中のマイクへ2秒以上の発話を3回入力すると登録が完了します。"/>
 
         <Grid Margin="0,0,0,10">
             <Grid.ColumnDefinitions>

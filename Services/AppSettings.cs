@@ -340,15 +340,25 @@ namespace CocoroConsole.Services
 
             MicrophoneSettings = new MicrophoneSettings
             {
-                physicalInputEnabled = avatarSpeech.MicrophoneSettings.PhysicalInputEnabled,
-                inputDevice = avatarSpeech.MicrophoneSettings.InputDevice == null
+                inputSource = avatarSpeech.MicrophoneSettings.InputSource,
+                localInputDevice = avatarSpeech.MicrophoneSettings.LocalInputDevice == null
                     ? null
                     : new MicrophoneInputDevice
                     {
-                        hostApi = avatarSpeech.MicrophoneSettings.InputDevice.HostApi,
-                        name = avatarSpeech.MicrophoneSettings.InputDevice.Name,
+                        hostApi = avatarSpeech.MicrophoneSettings.LocalInputDevice.HostApi,
+                        name = avatarSpeech.MicrophoneSettings.LocalInputDevice.Name,
                     },
-                responseClientId = avatarSpeech.MicrophoneSettings.ResponseClientId,
+                console = avatarSpeech.MicrophoneSettings.Console == null
+                    ? null
+                    : new ConsoleMicrophoneSettings
+                    {
+                        clientId = avatarSpeech.MicrophoneSettings.Console.ClientId,
+                        inputDevice = new ConsoleMicrophoneInputDevice
+                        {
+                            deviceId = avatarSpeech.MicrophoneSettings.Console.InputDevice.DeviceId,
+                            name = avatarSpeech.MicrophoneSettings.Console.InputDevice.Name,
+                        },
+                    },
                 vadProbabilityThreshold = avatarSpeech.MicrophoneSettings.VadProbabilityThreshold,
                 speakerRecognitionThreshold = avatarSpeech.MicrophoneSettings.SpeakerRecognitionThreshold,
             };
@@ -485,15 +495,25 @@ namespace CocoroConsole.Services
                 SelectedAvatarId = AvatarList[selectedAvatarIndex].avatarId,
                 MicrophoneSettings = new OtomeKairoMicrophoneSettings
                 {
-                    PhysicalInputEnabled = MicrophoneSettings.physicalInputEnabled,
-                    InputDevice = MicrophoneSettings.inputDevice == null
+                    InputSource = MicrophoneSettings.inputSource,
+                    LocalInputDevice = MicrophoneSettings.localInputDevice == null
                         ? null
                         : new OtomeKairoSelectedAudioInputDevice
                         {
-                            HostApi = MicrophoneSettings.inputDevice.hostApi,
-                            Name = MicrophoneSettings.inputDevice.name,
+                            HostApi = MicrophoneSettings.localInputDevice.hostApi,
+                            Name = MicrophoneSettings.localInputDevice.name,
                         },
-                    ResponseClientId = MicrophoneSettings.responseClientId,
+                    Console = MicrophoneSettings.console == null
+                        ? null
+                        : new OtomeKairoConsoleMicrophoneSettings
+                        {
+                            ClientId = MicrophoneSettings.console.clientId,
+                            InputDevice = new OtomeKairoConsoleMicrophoneInputDevice
+                            {
+                                DeviceId = MicrophoneSettings.console.inputDevice.deviceId,
+                                Name = MicrophoneSettings.console.inputDevice.name,
+                            },
+                        },
                     VadProbabilityThreshold = MicrophoneSettings.vadProbabilityThreshold,
                     SpeakerRecognitionThreshold = MicrophoneSettings.speakerRecognitionThreshold,
                 },

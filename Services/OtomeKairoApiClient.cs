@@ -64,12 +64,6 @@ namespace CocoroConsole.Services
                 : new AuthenticationHeaderValue("Bearer", bearerToken.Trim());
         }
 
-        public Task<OtomeKairoBootstrapProbeResponse> ProbeBootstrapAsync(CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOtomeKairoAsync<OtomeKairoBootstrapProbeResponse>(HttpMethod.Get, "/api/bootstrap/probe", null, cancellationToken);
-        }
-
         public Task<OtomeKairoServerIdentityResponse> GetServerIdentityAsync(
             CancellationToken cancellationToken = default)
         {
@@ -81,10 +75,15 @@ namespace CocoroConsole.Services
                 cancellationToken);
         }
 
-        public Task<OtomeKairoRegisterFirstConsoleResponse> RegisterFirstConsoleAsync(CancellationToken cancellationToken = default)
+        public Task<OtomeKairoAcquireConsoleAccessTokenResponse> AcquireConsoleAccessTokenAsync(
+            CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return SendOtomeKairoAsync<OtomeKairoRegisterFirstConsoleResponse>(HttpMethod.Post, "/api/bootstrap/register-first-console", new { }, cancellationToken);
+            return SendOtomeKairoAsync<OtomeKairoAcquireConsoleAccessTokenResponse>(
+                HttpMethod.Post,
+                "/api/bootstrap/acquire-console-access-token",
+                new { },
+                cancellationToken);
         }
 
         public Task<OtomeKairoStatusResponse> GetOtomeKairoStatusAsync(CancellationToken cancellationToken = default)
@@ -237,6 +236,17 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoAudioInputDevicesResponse>(
                 HttpMethod.Get,
                 "/api/audio/input-devices",
+                null,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoAudioInputState> GetAudioInputStateAsync(
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoAudioInputState>(
+                HttpMethod.Get,
+                "/api/audio/input-state",
                 null,
                 cancellationToken);
         }
@@ -633,18 +643,6 @@ namespace CocoroConsole.Services
         public string? Message { get; set; }
     }
 
-    public class OtomeKairoBootstrapProbeResponse
-    {
-        [JsonPropertyName("bootstrap_available")]
-        public bool BootstrapAvailable { get; set; }
-
-        [JsonPropertyName("https_required")]
-        public bool HttpsRequired { get; set; }
-
-        [JsonPropertyName("bootstrap_state")]
-        public string BootstrapState { get; set; } = string.Empty;
-    }
-
     public class OtomeKairoServerIdentityResponse
     {
         [JsonPropertyName("server_id")]
@@ -657,7 +655,7 @@ namespace CocoroConsole.Services
         public string ApiVersion { get; set; } = string.Empty;
     }
 
-    public class OtomeKairoRegisterFirstConsoleResponse
+    public class OtomeKairoAcquireConsoleAccessTokenResponse
     {
         [JsonPropertyName("console_access_token")]
         public string ConsoleAccessToken { get; set; } = string.Empty;

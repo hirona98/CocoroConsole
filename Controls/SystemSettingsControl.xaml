@@ -208,23 +208,36 @@
                             <TextBlock TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="0,0,0,10">
-                                OtomeKairo動作PCの物理マイクと話者識別を設定します。
+                                通常時に使用するマイクと話者識別を設定します。Web UIの入力元はWeb UI側で一時的に切り替えます。
                             </TextBlock>
-                            <CheckBox x:Name="PhysicalInputEnabledCheckBox"
-                                      Content="物理マイク入力を有効にする"
-                                      Margin="0,0,0,10"/>
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="入力デバイス:"
+                                <TextBlock Text="通常の入力元:"
                                            VerticalAlignment="Center"/>
-                                <ComboBox x:Name="InputDeviceComboBox"
+                                <ComboBox x:Name="MicrophoneInputSourceComboBox"
+                                          Grid.Column="1"
+                                          Padding="2">
+                                    <ComboBoxItem Content="OtomeKairoのローカルマイク"
+                                                  Tag="local_microphone"/>
+                                    <ComboBoxItem Content="このCocoroConsoleのマイク"
+                                                  Tag="console_microphone"/>
+                                </ComboBox>
+                            </Grid>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="ローカルデバイス:"
+                                           VerticalAlignment="Center"/>
+                                <ComboBox x:Name="LocalInputDeviceComboBox"
                                           Grid.Column="1"
                                           Padding="2"/>
                             </Grid>
-                            <TextBlock x:Name="InputDeviceStatusText"
+                            <TextBlock x:Name="LocalInputDeviceStatusText"
                                        TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="140,0,0,10"/>
@@ -233,13 +246,27 @@
                                     <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="応答先client ID:"
+                                <TextBlock Text="Consoleデバイス:"
                                            VerticalAlignment="Center"/>
-                                <TextBox x:Name="ResponseClientIdTextBox"
+                                <ComboBox x:Name="ConsoleInputDeviceComboBox"
+                                          Grid.Column="1"
+                                          Padding="2"/>
+                            </Grid>
+                            <TextBlock x:Name="ConsoleInputDeviceStatusText"
+                                       TextWrapping="Wrap"
+                                       Foreground="#666666"
+                                       Margin="140,0,0,10"/>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Console client ID:"
+                                           VerticalAlignment="Center"/>
+                                <TextBox x:Name="ConsoleClientIdTextBox"
                                          Grid.Column="1"
                                          Padding="2"
-                                         IsEnabled="False"
-                                         ToolTip="物理マイクのconversation_inputとassistant_messageを受信するCocoroConsoleのclient ID"/>
+                                         IsReadOnly="True"/>
                             </Grid>
                             <Grid Margin="0,5,0,5">
                                 <Grid.ColumnDefinitions>

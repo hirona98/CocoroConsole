@@ -267,18 +267,19 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
     public class OtomeKairoMicrophoneSettings
     {
-        [JsonPropertyName("physical_input_enabled")]
-        public bool PhysicalInputEnabled { get; set; }
+        [JsonPropertyName("input_source")]
+        public string InputSource { get; set; } = "local_microphone";
 
         /// <summary>
         /// 未選択時もAPIの必須フィールドとしてnullを送信します。
         /// </summary>
-        [JsonPropertyName("input_device")]
+        [JsonPropertyName("local_input_device")]
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-        public OtomeKairoSelectedAudioInputDevice? InputDevice { get; set; }
+        public OtomeKairoSelectedAudioInputDevice? LocalInputDevice { get; set; }
 
-        [JsonPropertyName("response_client_id")]
-        public string ResponseClientId { get; set; } = string.Empty;
+        [JsonPropertyName("console")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        public OtomeKairoConsoleMicrophoneSettings? Console { get; set; }
 
         [JsonPropertyName("vad_probability_threshold")]
         public float VadProbabilityThreshold { get; set; }
@@ -291,6 +292,24 @@ namespace CocoroConsole.Models.OtomeKairoApi
     {
         [JsonPropertyName("host_api")]
         public string HostApi { get; set; } = string.Empty;
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class OtomeKairoConsoleMicrophoneSettings
+    {
+        [JsonPropertyName("client_id")]
+        public string ClientId { get; set; } = string.Empty;
+
+        [JsonPropertyName("input_device")]
+        public OtomeKairoConsoleMicrophoneInputDevice InputDevice { get; set; } = new OtomeKairoConsoleMicrophoneInputDevice();
+    }
+
+    public class OtomeKairoConsoleMicrophoneInputDevice
+    {
+        [JsonPropertyName("device_id")]
+        public string DeviceId { get; set; } = string.Empty;
 
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;

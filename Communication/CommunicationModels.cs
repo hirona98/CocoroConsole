@@ -213,9 +213,9 @@ namespace CocoroConsole.Communication
     /// </summary>
     public class MicrophoneSettings
     {
-        public bool physicalInputEnabled { get; set; } = true;
-        public MicrophoneInputDevice? inputDevice { get; set; }
-        public string responseClientId { get; set; } = string.Empty;
+        public string inputSource { get; set; } = "local_microphone";
+        public MicrophoneInputDevice? localInputDevice { get; set; }
+        public ConsoleMicrophoneSettings? console { get; set; }
         public float vadProbabilityThreshold { get; set; } = 0.5f;
         public float speakerRecognitionThreshold { get; set; } = 0.6f;
 
@@ -223,9 +223,9 @@ namespace CocoroConsole.Communication
         {
             return new MicrophoneSettings
             {
-                physicalInputEnabled = physicalInputEnabled,
-                inputDevice = inputDevice?.DeepCopy(),
-                responseClientId = responseClientId,
+                inputSource = inputSource,
+                localInputDevice = localInputDevice?.DeepCopy(),
+                console = console?.DeepCopy(),
                 vadProbabilityThreshold = vadProbabilityThreshold,
                 speakerRecognitionThreshold = speakerRecognitionThreshold,
             };
@@ -233,7 +233,7 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// OtomeKairo の物理マイク選択値。
+    /// OtomeKairo 動作端末のローカルマイク選択値。
     /// </summary>
     public class MicrophoneInputDevice
     {
@@ -247,6 +247,47 @@ namespace CocoroConsole.Communication
                 hostApi = hostApi,
                 name = name,
             };
+        }
+    }
+
+    /// <summary>
+    /// CocoroConsole のリモートマイク設定。
+    /// </summary>
+    public class ConsoleMicrophoneSettings
+    {
+        public string clientId { get; set; } = string.Empty;
+        public ConsoleMicrophoneInputDevice inputDevice { get; set; } = new ConsoleMicrophoneInputDevice();
+
+        public ConsoleMicrophoneSettings DeepCopy()
+        {
+            return new ConsoleMicrophoneSettings
+            {
+                clientId = clientId,
+                inputDevice = inputDevice.DeepCopy(),
+            };
+        }
+    }
+
+    /// <summary>
+    /// CocoroConsole 動作端末の WASAPI 入力デバイス選択値。
+    /// </summary>
+    public class ConsoleMicrophoneInputDevice
+    {
+        public string deviceId { get; set; } = string.Empty;
+        public string name { get; set; } = string.Empty;
+
+        public ConsoleMicrophoneInputDevice DeepCopy()
+        {
+            return new ConsoleMicrophoneInputDevice
+            {
+                deviceId = deviceId,
+                name = name,
+            };
+        }
+
+        public override string ToString()
+        {
+            return name;
         }
     }
 

@@ -29,7 +29,7 @@ namespace CocoroConsole.Services
     /// </summary>
     public class CommunicationService : ICommunicationService
     {
-        private const string RequiredOtomeKairoApiVersion = "0.4.0";
+        private const string RequiredOtomeKairoApiVersion = "0.6.0";
         // CocoroConsole 側の HTTP API サーバー（外部クライアントからの受信）
         private CocoroConsoleApiServer _apiServer;
         private int _apiServerPort;
@@ -51,6 +51,7 @@ namespace CocoroConsole.Services
         // otomekairo のログ/イベントを購読するストリームクライアント（必要時に開始/停止）
         private LogStreamClient? _logStreamClient;
         private EventsStreamClient? _eventsStreamClient;
+        private ConsoleMicrophoneStreamClient? _consoleMicrophoneStreamClient;
 
 
         // シェルへの送信順序を保証するためのセマフォ（同時送信を直列化）
@@ -169,6 +170,9 @@ namespace CocoroConsole.Services
 
             // AppSettingsの変更イベントを購読
             AppSettings.SettingsSaved += OnSettingsSaved;
+
+            // すべての購読完了後に起動確認と自動認証を開始する。
+            _statusPollingService.Start();
         }
 
         /// <summary>
@@ -210,7 +214,7 @@ namespace CocoroConsole.Services
                         $"OtomeKairo API {RequiredOtomeKairoApiVersion} が必要です。接続先は {serverIdentity.ApiVersion} です。");
                 }
 
-                // --- 既存トークンがあれば、まず有効性を確認する ---
+                // 保存済みトークンが有効なら、そのまま通常APIへ接続する。
                 var bearerToken = (_appSettings.OtomeKairoBearerToken ?? string.Empty).Trim();
                 if (!string.IsNullOrWhiteSpace(bearerToken))
                 {
@@ -219,28 +223,19 @@ namespace CocoroConsole.Services
                         await _otomeKairoApiClient.GetOtomeKairoStatusAsync().ConfigureAwait(false);
                         return;
                     }
-                    catch (OtomeKairoApiException ex) when (ex.ErrorCode == "invalid_token")
+                    catch (OtomeKairoApiException ex) when (
+                        ex.ErrorCode == "invalid_token" ||
+                        ex.ErrorCode == "bootstrap_required")
                     {
-                        throw new InvalidOperationException(
-                            "保存済みのconsole_access_tokenが接続先のOtomeKairoと一致しません。システム設定の「OtomeKairo接続」で有効なトークンを設定してください。",
-                            ex);
-                    }
-                    catch (OtomeKairoApiException ex) when (ex.ErrorCode == "bootstrap_required")
-                    {
-                        // --- 接続先が未登録なら、保存値にかかわらず初回登録へ進む ---
+                        // 未設定または不正な保存値は、未認証bootstrapから取得し直す。
                     }
                 }
 
-                // --- 未発行状態のときだけ最初のトークンを自動取得する ---
-                var probe = await _otomeKairoApiClient.ProbeBootstrapAsync().ConfigureAwait(false);
-                if (!string.Equals(probe.BootstrapState, "unregistered", StringComparison.Ordinal))
-                {
-                    throw new InvalidOperationException(
-                        "接続先のOtomeKairoは登録済みですが、console_access_tokenが未設定です。システム設定の「OtomeKairo接続」で発行済みのトークンを設定してください。");
-                }
-
-                var registered = await _otomeKairoApiClient.RegisterFirstConsoleAsync().ConfigureAwait(false);
-                StoreOtomeKairoBearerToken(registered.ConsoleAccessToken);
+                var acquired = await _otomeKairoApiClient
+                    .AcquireConsoleAccessTokenAsync()
+                    .ConfigureAwait(false);
+                StoreOtomeKairoBearerToken(acquired.ConsoleAccessToken);
+                await _otomeKairoApiClient.GetOtomeKairoStatusAsync().ConfigureAwait(false);
             }
             finally
             {
@@ -433,6 +428,7 @@ namespace CocoroConsole.Services
 
             if (otomeKairoEndpointChanged || bearerTokenChanged)
             {
+                _ = StopConsoleMicrophoneStreamAsync();
                 UpdateOtomeKairoApiClient(currentSettings);
                 _initialSettingsFetched = false;
 
@@ -448,6 +444,7 @@ namespace CocoroConsole.Services
 
             _statusPollingService = new StatusPollingService(_appSettings.GetOtomeKairoBaseUrl());
             _statusPollingService.StatusChanged += OnStatusPollingServiceStatusChanged;
+            _statusPollingService.Start();
         }
 
         private void UpdateOtomeKairoApiClient(ConfigSettings settings)
@@ -482,6 +479,7 @@ namespace CocoroConsole.Services
                 // 起動待ちに戻った場合は旧イベントストリームを止め、Normal 復帰時に再登録する。
                 _initialSettingsFetched = false;
                 _ = StopEventsStreamAsync();
+                _ = StopConsoleMicrophoneStreamAsync();
             }
         }
 
@@ -527,6 +525,7 @@ namespace CocoroConsole.Services
                 }
                 _appSettings.SaveAppSettings();
                 await StartEventsStreamAsync().ConfigureAwait(false);
+                await StartConsoleMicrophoneStreamAsync().ConfigureAwait(false);
                 await SyncDesktopWatchCapabilityStateAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -1180,6 +1179,47 @@ namespace CocoroConsole.Services
             }
         }
 
+        private async Task StartConsoleMicrophoneStreamAsync()
+        {
+            if (_consoleMicrophoneStreamClient != null)
+            {
+                return;
+            }
+
+            var bearerToken = _appSettings.OtomeKairoBearerToken;
+            if (string.IsNullOrWhiteSpace(bearerToken))
+            {
+                return;
+            }
+
+            // event stream接続後に開始し、音声入力の応答先を必ず登録済みにします。
+            _consoleMicrophoneStreamClient = new ConsoleMicrophoneStreamClient(
+                _appSettings.GetOtomeKairoBaseUrl(),
+                _appSettings.GetOtomeKairoWebSocketBaseUrl(),
+                bearerToken,
+                _appSettings.ClientId);
+            await _consoleMicrophoneStreamClient.StartAsync().ConfigureAwait(false);
+        }
+
+        private async Task StopConsoleMicrophoneStreamAsync()
+        {
+            var client = _consoleMicrophoneStreamClient;
+            _consoleMicrophoneStreamClient = null;
+            if (client == null)
+            {
+                return;
+            }
+
+            try
+            {
+                await client.StopAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                client.Dispose();
+            }
+        }
+
         private void OnEventsStreamConnectionStateChanged(object? sender, bool isConnected)
         {
             var message = isConnected
@@ -1651,6 +1691,7 @@ namespace CocoroConsole.Services
             _otomeKairoApiClient?.Dispose();
             _logStreamClient?.Dispose();
             _eventsStreamClient?.Dispose();
+            _consoleMicrophoneStreamClient?.Dispose();
             _otomeKairoBootstrapSemaphore?.Dispose();
             _apiServerLifecycleSemaphore.Dispose();
             _conversationInputSendSemaphore?.Dispose();

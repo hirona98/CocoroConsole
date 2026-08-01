@@ -35,6 +35,7 @@ namespace CocoroConsole.Controls
         private OtomeKairoAvatarSpeechEditorState? _loadedAvatarSpeechEditorState;
         private OtomeKairoCameraSourcesEditorState? _loadedCameraSourcesEditorState;
         private OtomeKairoMcpServersEditorState? _loadedMcpServersEditorState;
+        private string _otomeKairoServerUrlAtLoad = string.Empty;
         private string _otomeKairoAccessTokenAtLoad = string.Empty;
 
         public bool IsClosed { get; private set; } = false;
@@ -46,6 +47,7 @@ namespace CocoroConsole.Controls
         public SettingWindow(ICommunicationService? communicationService)
         {
             InitializeComponent();
+            _otomeKairoServerUrlAtLoad = AppSettings.Instance.ServerUrl;
             _otomeKairoAccessTokenAtLoad = AppSettings.Instance.OtomeKairoBearerToken;
             ShowSettingsPage("display");
             EmbeddingSettingsControl.ResolveLlmApiKey = () => LlmSettingsControl.GetPreferredApiKeyForEmbeddingPaste();
@@ -520,26 +522,23 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task ApplySettingsChangesAsync()
         {
+            var serverUrl = SystemSettingsControl.GetOtomeKairoServerUrl();
+            var bearerToken = ResolveOtomeKairoAccessToken();
+            var connectionChanged =
+                !string.Equals(serverUrl, _otomeKairoServerUrlAtLoad, StringComparison.Ordinal) ||
+                !string.Equals(bearerToken, _otomeKairoAccessTokenAtLoad, StringComparison.Ordinal);
+
+            if (connectionChanged || !AreRemoteSettingsLoaded())
+            {
+                await SaveOtomeKairoConnectionSettingsAsync(serverUrl, bearerToken);
+                return;
+            }
+
             var conversationDisplayName = SystemSettingsControl.GetConversationDisplayName();
             if (string.IsNullOrWhiteSpace(conversationDisplayName))
             {
                 throw new InvalidOperationException(
                     "呼ばれ方が未設定です。入力の「会話入力」で設定してください。");
-            }
-
-            // --- 登録済み接続先へ保存する前に、画面上の認証情報を確認する ---
-            var bearerToken = ResolveOtomeKairoAccessToken();
-            if (string.IsNullOrWhiteSpace(bearerToken))
-            {
-                var result = MessageBox.Show(
-                    "OtomeKairoのconsole_access_tokenが未設定です。登録済みの接続先ではチャット、通知、キャプチャを送受信できません。このまま保存しますか？",
-                    "アクセストークン未設定",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-                if (result == MessageBoxResult.No)
-                {
-                    return;
-                }
             }
 
             // すべてのタブの設定を保存（プリセットの保存・有効化を含む）
@@ -548,6 +547,37 @@ namespace CocoroConsole.Controls
             SystemSettingsControl.SetOtomeKairoAccessToken(bearerToken);
 
             // 保存イベントを受けた MainWindow が新しい端末設定で CocoroShell を再起動する。
+        }
+
+        private bool AreRemoteSettingsLoaded()
+        {
+            return _loadedOtomeKairoEditorState != null &&
+                _loadedConsoleClientEditorState != null &&
+                _loadedAvatarSpeechEditorState != null;
+        }
+
+        private async Task SaveOtomeKairoConnectionSettingsAsync(string serverUrl, string bearerToken)
+        {
+            var appSettings = AppSettings.Instance;
+            appSettings.ServerUrl = serverUrl;
+            appSettings.OtomeKairoBearerToken = bearerToken;
+            appSettings.SaveAppSettings();
+
+            if (_communicationService != null)
+            {
+                await _communicationService.RefreshOtomeKairoCurrentSettingsAsync();
+            }
+
+            _otomeKairoServerUrlAtLoad = appSettings.ServerUrl;
+            _otomeKairoAccessTokenAtLoad = appSettings.OtomeKairoBearerToken;
+            SystemSettingsControl.SetOtomeKairoServerUrl(appSettings.ServerUrl);
+            SystemSettingsControl.SetOtomeKairoAccessToken(appSettings.OtomeKairoBearerToken);
+
+            MessageBox.Show(
+                "OtomeKairo接続を保存しました。接続後に設定画面を開き直してください。",
+                "接続情報を保存",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
 
         private string ResolveOtomeKairoAccessToken()
