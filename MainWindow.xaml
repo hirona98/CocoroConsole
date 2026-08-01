@@ -61,6 +61,21 @@
                                             Orientation="Horizontal"
                                             Margin="0,0,20,0"
                                             VerticalAlignment="Center">
+                                        <Button x:Name="MicButton"
+                                                ToolTip="マイク"
+                                                Margin="0,0,10,0"
+                                                Padding="8"
+                                                Background="#4873CF"
+                                                BorderThickness="0"
+                                                Click="MicButton_Click"
+                                                Width="40"
+                                                Height="40">
+                                                <svgc:SvgViewbox x:Name="MicButtonImage"
+                                                                 Source="pack://application:,,,/Resource/icon/MicON.svg"
+                                                                 Width="24"
+                                                                 Height="24"/>
+                                        </Button>
+
                                         <Button x:Name="MuteButton"
                                                 ToolTip="TTS"
                                                 Margin="0,0,10,0"

@@ -124,6 +124,7 @@ namespace CocoroConsole.Services
         public event EventHandler<string>? LogStreamError;
         public event EventHandler<VoiceConversationInputEventArgs>? VoiceConversationInputReceived;
         public event EventHandler<OtomeKairoAudioRuntimeState>? AudioRuntimeStateChanged;
+        public event EventHandler<bool>? EventsStreamConnectionChanged;
 
         public bool IsServerRunning => _apiServer.IsRunning;
 
@@ -1222,6 +1223,7 @@ namespace CocoroConsole.Services
 
         private void OnEventsStreamConnectionStateChanged(object? sender, bool isConnected)
         {
+            EventsStreamConnectionChanged?.Invoke(this, isConnected);
             var message = isConnected
                 ? "イベントストリームに接続しました"
                 : "イベントストリームが切断されました";

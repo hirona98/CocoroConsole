@@ -29,6 +29,11 @@ namespace CocoroConsole.Controls
         private List<string> _attachedImageDataUrls = new List<string>();
         private List<BitmapSource> _attachedImageSources = new List<BitmapSource>();
         private const int MaxImageCount = 1;
+        private const float MinimumMicrophoneDbfs = -50.0f;
+        private static readonly Brush WaitingMicrophoneLevelBrush =
+            new SolidColorBrush(Color.FromRgb(0x9E, 0x9E, 0x9E));
+        private static readonly Brush SpeakingMicrophoneLevelBrush =
+            new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
 
         // バブル内の時刻表示識別子（右クリックコピー等の既存ロジックと干渉しないためTagで判別）
         private const string TimestampTag = "CocoroConsole.ChatBubble.Timestamp";
@@ -1109,6 +1114,29 @@ namespace CocoroConsole.Controls
         public List<BitmapSource> GetAttachedImageSources()
         {
             return new List<BitmapSource>(_attachedImageSources);
+        }
+
+        /// <summary>
+        /// 実効入力元のマイク音量と発話判定を表示します。
+        /// </summary>
+        /// <param name="dbfs">現在の入力音量（dBFS）</param>
+        /// <param name="speaking">VADが発話中と判定しているか</param>
+        /// <param name="active">音声入力が利用可能か</param>
+        public void UpdateMicrophoneLevel(float? dbfs, bool speaking, bool active)
+        {
+            var normalizedLevel = 0.0;
+            if (active && dbfs.HasValue && float.IsFinite(dbfs.Value))
+            {
+                normalizedLevel = Math.Clamp(
+                    (dbfs.Value - MinimumMicrophoneDbfs) / -MinimumMicrophoneDbfs,
+                    0.0f,
+                    1.0f);
+            }
+
+            VoiceLevelScale.ScaleY = normalizedLevel;
+            VoiceLevelBar.Fill = active && speaking
+                ? SpeakingMicrophoneLevelBrush
+                : WaitingMicrophoneLevelBrush;
         }
 
         /// <summary>

@@ -54,6 +54,7 @@ namespace CocoroConsole.Services
         event EventHandler<string>? LogStreamError;
         event EventHandler<VoiceConversationInputEventArgs>? VoiceConversationInputReceived;
         event EventHandler<OtomeKairoAudioRuntimeState>? AudioRuntimeStateChanged;
+        event EventHandler<bool>? EventsStreamConnectionChanged;
 
         bool IsServerRunning { get; }
         OtomeKairoStatus CurrentStatus { get; }

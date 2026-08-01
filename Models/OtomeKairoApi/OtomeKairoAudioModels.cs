@@ -169,9 +169,9 @@ namespace CocoroConsole.Models.OtomeKairoApi
         public bool Speaking { get; set; }
 
         [JsonPropertyName("probability")]
-        public float Probability { get; set; }
+        public float? Probability { get; set; }
 
         [JsonPropertyName("dbfs")]
-        public float Dbfs { get; set; }
+        public float? Dbfs { get; set; }
     }
 }

@@ -48,6 +48,8 @@
     <Resource Include="Resource\icon\SpeakerOFF.png" />
     <Resource Include="Resource\icon\SpeakerON.png" />
     <Resource Include="Resource\icon\Config.svg" />
+    <Resource Include="Resource\icon\MicOFF.svg" />
+    <Resource Include="Resource\icon\MicON.svg" />
     <Resource Include="Resource\icon\ScreenShotOFF.svg" />
     <Resource Include="Resource\icon\ScreenShotON.svg" />
     <Resource Include="Resource\icon\SpeakerOFF.svg" />

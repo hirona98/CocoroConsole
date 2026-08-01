@@ -213,6 +213,8 @@ namespace CocoroConsole
             var currentAvatar = GetStoredAvatarSetting();
             if (currentAvatar != null)
             {
+                UpdateMicrophoneButtonState(currentAvatar.isUseSTT);
+
                 // TTSの状態を反映
                 if (MuteButtonImage != null)
                 {
@@ -260,6 +262,8 @@ namespace CocoroConsole
             _communicationService.ControlCommandReceived += OnControlCommandReceived;
             _communicationService.ErrorOccurred += OnErrorOccurred;
             _communicationService.StatusChanged += OnOtomeKairoStatusChanged;
+            _communicationService.AudioRuntimeStateChanged += OnAudioRuntimeStateChanged;
+            _communicationService.EventsStreamConnectionChanged += OnEventsStreamConnectionChanged;
         }
 
         /// <summary>
@@ -576,6 +580,39 @@ namespace CocoroConsole
             UIHelper.RunOnUIThread(() =>
             {
                 UpdateOtomeKairoStatusDisplay(status);
+            });
+        }
+
+        /// <summary>
+        /// OtomeKairoが通知した実効入力元の音量を表示します。
+        /// </summary>
+        private void OnAudioRuntimeStateChanged(object? sender, OtomeKairoAudioRuntimeState state)
+        {
+            var active = state.Available &&
+                !string.IsNullOrWhiteSpace(state.ActiveSource) &&
+                state.PausedReason == null;
+            UIHelper.RunOnUIThread(() =>
+            {
+                ChatControlInstance.UpdateMicrophoneLevel(
+                    state.Vad.Dbfs,
+                    state.Vad.Speaking,
+                    active);
+            });
+        }
+
+        /// <summary>
+        /// イベントストリーム切断時に古い音量表示を残しません。
+        /// </summary>
+        private void OnEventsStreamConnectionChanged(object? sender, bool isConnected)
+        {
+            if (isConnected)
+            {
+                return;
+            }
+
+            UIHelper.RunOnUIThread(() =>
+            {
+                ChatControlInstance.UpdateMicrophoneLevel(null, false, false);
             });
         }
 
@@ -1035,6 +1072,56 @@ namespace CocoroConsole
         private AvatarSettings? GetStoredAvatarSetting()
         {
             return _appSettings.GetCurrentAvatar();
+        }
+
+        /// <summary>
+        /// 現在のアバターのSTT状態をマイクボタンへ反映します。
+        /// </summary>
+        private void UpdateMicrophoneButtonState(bool isEnabled)
+        {
+            MicButtonImage.Source = new Uri(
+                isEnabled
+                    ? "pack://application:,,,/Resource/icon/MicON.svg"
+                    : "pack://application:,,,/Resource/icon/MicOFF.svg",
+                UriKind.Absolute);
+            MicButton.ToolTip = isEnabled ? "STTを無効にする" : "STTを有効にする";
+            MicButton.Opacity = isEnabled ? 1.0 : 0.6;
+        }
+
+        /// <summary>
+        /// 現在のアバターのSTT設定を切り替えます。
+        /// </summary>
+        private async void MicButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_communicationService == null)
+            {
+                return;
+            }
+
+            var currentAvatar = GetStoredAvatarSetting();
+            if (currentAvatar == null)
+            {
+                return;
+            }
+
+            var previousEnabled = currentAvatar.isUseSTT;
+            MicButton.IsEnabled = false;
+            currentAvatar.isUseSTT = !previousEnabled;
+            try
+            {
+                await _communicationService.SaveAvatarSpeechSettingsAsync();
+                UpdateMicrophoneButtonState(currentAvatar.isUseSTT);
+            }
+            catch (Exception ex)
+            {
+                currentAvatar.isUseSTT = previousEnabled;
+                UpdateMicrophoneButtonState(previousEnabled);
+                UIHelper.ShowError("STT設定エラー", ex.Message);
+            }
+            finally
+            {
+                MicButton.IsEnabled = true;
+            }
         }
 
         /// <summary>
