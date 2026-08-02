@@ -332,19 +332,14 @@
                                         Margin="5,0,5,0"
                                         Background="#E0E0E0"
                                         CornerRadius="5"
+                                        SizeChanged="VoiceLevelBorder_SizeChanged"
                                         ToolTip="マイク入力レベル">
-                                        <Grid ClipToBounds="True">
-                                                <Rectangle x:Name="VoiceLevelBar"
-                                                           Fill="#9E9E9E"
-                                                           RadiusX="5"
-                                                           RadiusY="5"
-                                                           RenderTransformOrigin="0.5,1">
-                                                        <Rectangle.RenderTransform>
-                                                                <ScaleTransform x:Name="VoiceLevelScale"
-                                                                                ScaleY="0"/>
-                                                        </Rectangle.RenderTransform>
-                                                </Rectangle>
-                                        </Grid>
+                                        <Rectangle x:Name="VoiceLevelBar"
+                                                   Height="0"
+                                                   Fill="#9E9E9E"
+                                                   RadiusX="5"
+                                                   RadiusY="5"
+                                                   VerticalAlignment="Bottom"/>
                                 </Border>
 
                                 <Button x:Name="SendButton"

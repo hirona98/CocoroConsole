@@ -34,6 +34,7 @@ namespace CocoroConsole.Controls
             new SolidColorBrush(Color.FromRgb(0x9E, 0x9E, 0x9E));
         private static readonly Brush SpeakingMicrophoneLevelBrush =
             new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
+        private double _normalizedMicrophoneLevel;
 
         // バブル内の時刻表示識別子（右クリックコピー等の既存ロジックと干渉しないためTagで判別）
         private const string TimestampTag = "CocoroConsole.ChatBubble.Timestamp";
@@ -1133,10 +1134,27 @@ namespace CocoroConsole.Controls
                     1.0f);
             }
 
-            VoiceLevelScale.ScaleY = normalizedLevel;
+            _normalizedMicrophoneLevel = normalizedLevel;
+            UpdateMicrophoneLevelHeight();
             VoiceLevelBar.Fill = active && speaking
                 ? SpeakingMicrophoneLevelBrush
                 : WaitingMicrophoneLevelBrush;
+        }
+
+        /// <summary>
+        /// 入力欄の高さに合わせて、角丸を保ったまま音量バーの高さを更新します。
+        /// </summary>
+        private void UpdateMicrophoneLevelHeight()
+        {
+            VoiceLevelBar.Height = VoiceLevelBorder.ActualHeight * _normalizedMicrophoneLevel;
+        }
+
+        /// <summary>
+        /// 入力欄の伸縮後も現在の音量比率を維持します。
+        /// </summary>
+        private void VoiceLevelBorder_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateMicrophoneLevelHeight();
         }
 
         /// <summary>
