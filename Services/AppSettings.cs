@@ -403,11 +403,13 @@ namespace CocoroConsole.Services
                     : new ConsoleMicrophoneSettings
                     {
                         clientId = avatarSpeech.MicrophoneSettings.Console.ClientId,
-                        inputDevice = new ConsoleMicrophoneInputDevice
-                        {
-                            deviceId = avatarSpeech.MicrophoneSettings.Console.InputDevice.DeviceId,
-                            name = avatarSpeech.MicrophoneSettings.Console.InputDevice.Name,
-                        },
+                        inputDevice = avatarSpeech.MicrophoneSettings.Console.InputDevice == null
+                            ? null
+                            : new ConsoleMicrophoneInputDevice
+                            {
+                                deviceId = avatarSpeech.MicrophoneSettings.Console.InputDevice.DeviceId,
+                                name = avatarSpeech.MicrophoneSettings.Console.InputDevice.Name,
+                            },
                     },
                 vadProbabilityThreshold = avatarSpeech.MicrophoneSettings.VadProbabilityThreshold,
                 speakerRecognitionThreshold = avatarSpeech.MicrophoneSettings.SpeakerRecognitionThreshold,
@@ -558,11 +560,13 @@ namespace CocoroConsole.Services
                         : new OtomeKairoConsoleMicrophoneSettings
                         {
                             ClientId = MicrophoneSettings.console.clientId,
-                            InputDevice = new OtomeKairoConsoleMicrophoneInputDevice
-                            {
-                                DeviceId = MicrophoneSettings.console.inputDevice.deviceId,
-                                Name = MicrophoneSettings.console.inputDevice.name,
-                            },
+                            InputDevice = MicrophoneSettings.console.inputDevice == null
+                                ? null
+                                : new OtomeKairoConsoleMicrophoneInputDevice
+                                {
+                                    DeviceId = MicrophoneSettings.console.inputDevice.deviceId,
+                                    Name = MicrophoneSettings.console.inputDevice.name,
+                                },
                         },
                     VadProbabilityThreshold = MicrophoneSettings.vadProbabilityThreshold,
                     SpeakerRecognitionThreshold = MicrophoneSettings.speakerRecognitionThreshold,

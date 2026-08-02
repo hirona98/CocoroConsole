@@ -303,7 +303,8 @@ namespace CocoroConsole.Models.OtomeKairoApi
         public string ClientId { get; set; } = string.Empty;
 
         [JsonPropertyName("input_device")]
-        public OtomeKairoConsoleMicrophoneInputDevice InputDevice { get; set; } = new OtomeKairoConsoleMicrophoneInputDevice();
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        public OtomeKairoConsoleMicrophoneInputDevice? InputDevice { get; set; }
     }
 
     public class OtomeKairoConsoleMicrophoneInputDevice

@@ -480,6 +480,11 @@ namespace CocoroConsole.Controls
                     },
                 console = selectedConsoleDevice == null
                     ? AppSettings.Instance.MicrophoneSettings.console?.DeepCopy()
+                        ?? new ConsoleMicrophoneSettings
+                        {
+                            clientId = AppSettings.Instance.ClientId,
+                            inputDevice = null,
+                        }
                     : new ConsoleMicrophoneSettings
                     {
                         clientId = AppSettings.Instance.ClientId,

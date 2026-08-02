@@ -128,8 +128,10 @@ namespace CocoroConsole.Communication
             OtomeKairoConsoleMicrophoneSettings settings,
             CancellationToken cancellationToken)
         {
+            var inputDevice = settings.InputDevice
+                ?? throw new InvalidOperationException("Consoleマイクの入力デバイスが設定されていません。");
             using var deviceEnumerator = new MMDeviceEnumerator();
-            using var device = deviceEnumerator.GetDevice(settings.InputDevice.DeviceId);
+            using var device = deviceEnumerator.GetDevice(inputDevice.DeviceId);
             if (device.State != DeviceState.Active)
             {
                 throw new InvalidOperationException("設定したConsoleマイクは現在利用できません。");
@@ -161,8 +163,8 @@ namespace CocoroConsole.Communication
                     },
                     device = new
                     {
-                        device_id = settings.InputDevice.DeviceId,
-                        name = settings.InputDevice.Name,
+                        device_id = inputDevice.DeviceId,
+                        name = inputDevice.Name,
                     },
                     capture_settings = new
                     {

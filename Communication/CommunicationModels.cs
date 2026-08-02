@@ -256,14 +256,14 @@ namespace CocoroConsole.Communication
     public class ConsoleMicrophoneSettings
     {
         public string clientId { get; set; } = string.Empty;
-        public ConsoleMicrophoneInputDevice inputDevice { get; set; } = new ConsoleMicrophoneInputDevice();
+        public ConsoleMicrophoneInputDevice? inputDevice { get; set; }
 
         public ConsoleMicrophoneSettings DeepCopy()
         {
             return new ConsoleMicrophoneSettings
             {
                 clientId = clientId,
-                inputDevice = inputDevice.DeepCopy(),
+                inputDevice = inputDevice?.DeepCopy(),
             };
         }
     }
