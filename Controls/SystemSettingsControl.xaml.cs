@@ -152,7 +152,6 @@ namespace CocoroConsole.Controls
 
             var microphoneSettings = appSettings.MicrophoneSettings;
             SelectMicrophoneInputSource(microphoneSettings.inputSource);
-            ConsoleClientIdTextBox.Text = appSettings.ClientId;
             VadProbabilityThresholdSlider.Value = microphoneSettings.vadProbabilityThreshold;
             SpeakerManagementControl.SetThreshold(microphoneSettings.speakerRecognitionThreshold);
             SelectConfiguredLocalAudioInputDevice(microphoneSettings.localInputDevice);
