@@ -216,11 +216,6 @@
 
                         <TextBlock Text="外部連携"
                                    Style="{StaticResource NavigationCategoryStyle}"/>
-                        <RadioButton Content="OtomeKairo接続"
-                                     Tag="connection"
-                                     GroupName="SettingsNavigation"
-                                     Style="{StaticResource NavigationItemStyle}"
-                                     Checked="NavigationButton_Checked"/>
                         <RadioButton Content="ツール（MCP）"
                                      Tag="mcp"
                                      GroupName="SettingsNavigation"

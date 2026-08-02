@@ -25,44 +25,6 @@
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <GroupBox x:Name="ConnectionSettingsGroup"
-                          Header="OtomeKairo接続"
-                          Margin="0,0,20,20"
-                          Style="{StaticResource SettingsGroupBoxStyle}">
-                    <Border Background="White"
-                            Padding="10">
-                        <StackPanel>
-                            <TextBlock Text="初回未登録の接続先では自動取得します。登録済みの接続先では発行済みのconsole_access_tokenを設定します。"
-                                       TextWrapping="Wrap"
-                                       Foreground="#666666"
-                                       Margin="0,0,0,10"/>
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="サーバーURL:"
-                                           VerticalAlignment="Center"/>
-                                <TextBox x:Name="OtomeKairoServerUrlTextBox"
-                                         Grid.Column="1"
-                                         Padding="2"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="アクセストークン:"
-                                           VerticalAlignment="Center"/>
-                                <PasswordBox x:Name="OtomeKairoAccessTokenPasswordBox"
-                                             Grid.Column="1"
-
-                                             Padding="2"/>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                </GroupBox>
-
                 <GroupBox x:Name="ConversationSettingsGroup"
                           Header="会話入力"
                           Margin="0,0,20,20"

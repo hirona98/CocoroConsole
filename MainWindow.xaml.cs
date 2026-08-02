@@ -8,6 +8,7 @@ using CocoroConsole.Windows;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,6 +33,7 @@ namespace CocoroConsole
         private JudgmentTraceViewerWindow? _judgmentTraceViewerWindow;
         private CurrentStateViewerWindow? _currentStateViewerWindow;
         private AutonomousRunViewerWindow? _autonomousRunViewerWindow;
+        private ConnectionSettingsWindow? _connectionSettingsWindow;
         private DebugTraceListener? _debugTraceListener;
         private bool _isConversationOutputActive;
         private bool _skipNextAssistantMessage;
@@ -66,6 +68,7 @@ namespace CocoroConsole
         // WPF の Shutdown 中に Closing をキャンセルすると、Dispatcher が Shutdown 開始状態のまま残って
         // UI が固まることがあるため、明示的終了時はキャンセルしない判定に使う。
         private int _isShutdownInProgress;
+        private readonly SemaphoreSlim _connectionSwitchSemaphore = new(1, 1);
 
         public MainWindow()
         {
@@ -254,16 +257,41 @@ namespace CocoroConsole
         private void InitializeCommunicationService()
         {
             // 通信サービスを初期化 (REST APIサーバーを使用)
-            _communicationService = new CommunicationService(_appSettings);            // 通信サービスのイベントハンドラを設定
-            _communicationService.UiMessageReceived += OnUiMessageReceived;
-            _communicationService.ConversationOutputReceived += OnConversationOutputReceived;
-            _communicationService.VoiceConversationInputReceived += OnVoiceConversationInputReceived;
-            _communicationService.ConversationInputBusyChanged += OnConversationInputBusyChanged;
-            _communicationService.ControlCommandReceived += OnControlCommandReceived;
-            _communicationService.ErrorOccurred += OnErrorOccurred;
-            _communicationService.StatusChanged += OnOtomeKairoStatusChanged;
-            _communicationService.AudioRuntimeStateChanged += OnAudioRuntimeStateChanged;
-            _communicationService.EventsStreamConnectionChanged += OnEventsStreamConnectionChanged;
+            _communicationService = new CommunicationService(_appSettings);
+            AttachCommunicationServiceHandlers(_communicationService);
+        }
+
+        /// <summary>
+        /// 通信サービスからMainWindowへ必要なイベントだけを接続する。
+        /// </summary>
+        private void AttachCommunicationServiceHandlers(ICommunicationService communicationService)
+        {
+            // 通信サービスのイベントハンドラを設定
+            communicationService.UiMessageReceived += OnUiMessageReceived;
+            communicationService.ConversationOutputReceived += OnConversationOutputReceived;
+            communicationService.VoiceConversationInputReceived += OnVoiceConversationInputReceived;
+            communicationService.ConversationInputBusyChanged += OnConversationInputBusyChanged;
+            communicationService.ControlCommandReceived += OnControlCommandReceived;
+            communicationService.ErrorOccurred += OnErrorOccurred;
+            communicationService.StatusChanged += OnOtomeKairoStatusChanged;
+            communicationService.AudioRuntimeStateChanged += OnAudioRuntimeStateChanged;
+            communicationService.EventsStreamConnectionChanged += OnEventsStreamConnectionChanged;
+        }
+
+        /// <summary>
+        /// 破棄する通信サービスからMainWindowのイベントを切り離す。
+        /// </summary>
+        private void DetachCommunicationServiceHandlers(ICommunicationService communicationService)
+        {
+            communicationService.UiMessageReceived -= OnUiMessageReceived;
+            communicationService.ConversationOutputReceived -= OnConversationOutputReceived;
+            communicationService.VoiceConversationInputReceived -= OnVoiceConversationInputReceived;
+            communicationService.ConversationInputBusyChanged -= OnConversationInputBusyChanged;
+            communicationService.ControlCommandReceived -= OnControlCommandReceived;
+            communicationService.ErrorOccurred -= OnErrorOccurred;
+            communicationService.StatusChanged -= OnOtomeKairoStatusChanged;
+            communicationService.AudioRuntimeStateChanged -= OnAudioRuntimeStateChanged;
+            communicationService.EventsStreamConnectionChanged -= OnEventsStreamConnectionChanged;
         }
 
         /// <summary>
@@ -328,8 +356,23 @@ namespace CocoroConsole
             // NOTE:
             // - 送信中（SSEストリーム中）は UI 表示が 1 本前提なので、二重送信を抑止する。
             // - ステータスが Normal のときだけ送信可能にする。
-            bool isSendEnabled = isLLMEnabled && status == OtomeKairoStatus.Normal && !isConversationInputBusy;
+            bool isSendEnabled = isLLMEnabled &&
+                _appSettings.HasRemoteSettings &&
+                status == OtomeKairoStatus.Normal &&
+                !isConversationInputBusy;
             ChatControlInstance.UpdateSendButtonEnabled(isSendEnabled);
+
+            // OtomeKairo未接続中は接続先設定以外の操作を開始させない。
+            var isOperational = _appSettings.HasRemoteSettings &&
+                status != OtomeKairoStatus.WaitingForStartup;
+            MicButton.IsEnabled = isOperational;
+            MuteButton.IsEnabled = isOperational;
+            PauseScreenshotButton.IsEnabled = isOperational;
+            AdminButton.IsEnabled = isOperational;
+            if (CocoroAiTitleText.ContextMenu != null)
+            {
+                CocoroAiTitleText.ContextMenu.IsEnabled = isOperational;
+            }
         }
 
         #region チャットコントロールイベントハンドラ
@@ -413,12 +456,16 @@ namespace CocoroConsole
         /// </summary>
         private async void OnSettingsSaved(object? sender, EventArgs e)
         {
-            if (_appSettings.HasRemoteSettings && _communicationService != null)
+            var communicationService = _communicationService;
+            var canApplyRemoteSettings = _appSettings.HasRemoteSettings &&
+                communicationService != null &&
+                communicationService.CurrentStatus != OtomeKairoStatus.WaitingForStartup;
+            if (canApplyRemoteSettings)
             {
                 try
                 {
                     // Shell が設定取得を開始する前に、Console API の待受を確定する。
-                    await _communicationService.PrepareShellRuntimeAsync();
+                    await communicationService!.PrepareShellRuntimeAsync();
                 }
                 catch (Exception ex)
                 {
@@ -430,7 +477,11 @@ namespace CocoroConsole
             // UI側の設定反映（ボタン状態とLLM表示）
             UIHelper.RunOnUIThread(() =>
             {
-                if (_appSettings.HasRemoteSettings)
+                var canApplyCurrentSettings = canApplyRemoteSettings &&
+                    ReferenceEquals(_communicationService, communicationService) &&
+                    _appSettings.HasRemoteSettings &&
+                    communicationService!.CurrentStatus != OtomeKairoStatus.WaitingForStartup;
+                if (canApplyCurrentSettings)
                 {
                     LaunchCocoroShell();
                     WindowPlacementManager.RestorePosition(this, MainWindowPlacementKey, _appSettings);
@@ -623,6 +674,11 @@ namespace CocoroConsole
         /// </summary>
         public void OpenLogViewer()
         {
+            if (!IsOtomeKairoOperational())
+            {
+                return;
+            }
+
             // 既にログビューアーが開いている場合はアクティブにする
             if (_logViewerWindow != null && !_logViewerWindow.IsClosed)
             {
@@ -668,6 +724,11 @@ namespace CocoroConsole
 
         public void OpenJudgmentTraceViewer()
         {
+            if (!IsOtomeKairoOperational())
+            {
+                return;
+            }
+
             if (_judgmentTraceViewerWindow != null && !_judgmentTraceViewerWindow.IsClosed)
             {
                 _judgmentTraceViewerWindow.Activate();
@@ -695,6 +756,11 @@ namespace CocoroConsole
 
         public void OpenCurrentStateViewer()
         {
+            if (!IsOtomeKairoOperational())
+            {
+                return;
+            }
+
             if (_currentStateViewerWindow != null && !_currentStateViewerWindow.IsClosed)
             {
                 _currentStateViewerWindow.Activate();
@@ -722,6 +788,11 @@ namespace CocoroConsole
 
         public void OpenAutonomousRunViewer()
         {
+            if (!IsOtomeKairoOperational())
+            {
+                return;
+            }
+
             if (_autonomousRunViewerWindow != null && !_autonomousRunViewerWindow.IsClosed)
             {
                 _autonomousRunViewerWindow.Activate();
@@ -745,6 +816,168 @@ namespace CocoroConsole
             };
 
             _autonomousRunViewerWindow.Show();
+        }
+
+        /// <summary>
+        /// トレイメニューからローカルの接続先設定画面を開く。
+        /// </summary>
+        public async Task OpenConnectionSettingsAsync()
+        {
+            if (_connectionSettingsWindow != null)
+            {
+                if (!_connectionSettingsWindow.IsVisible)
+                {
+                    _connectionSettingsWindow.Show();
+                }
+                _connectionSettingsWindow.WindowState = WindowState.Normal;
+                _connectionSettingsWindow.Activate();
+                return;
+            }
+
+            _connectionSettingsWindow = new ConnectionSettingsWindow(
+                _appSettings.ServerUrl,
+                _appSettings.OtomeKairoBearerToken);
+            if (IsVisible)
+            {
+                _connectionSettingsWindow.Owner = this;
+                _connectionSettingsWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            }
+
+            try
+            {
+                var dialogResult = _connectionSettingsWindow.ShowDialog();
+                var connectionResult = _connectionSettingsWindow.ConnectionResult;
+                if (dialogResult != true || connectionResult == null)
+                {
+                    return;
+                }
+
+                var endpointChanged = !string.Equals(
+                    _appSettings.GetOtomeKairoBaseUrl(),
+                    connectionResult.ServerUrl,
+                    StringComparison.OrdinalIgnoreCase);
+                if (!endpointChanged)
+                {
+                    var accessTokenChanged = !string.Equals(
+                        _appSettings.OtomeKairoBearerToken,
+                        connectionResult.ConsoleAccessToken,
+                        StringComparison.Ordinal);
+                    if (accessTokenChanged)
+                    {
+                        _appSettings.SaveVerifiedConnection(
+                            connectionResult.ServerUrl,
+                            connectionResult.ConsoleAccessToken);
+                    }
+
+                    if ((accessTokenChanged || !IsOtomeKairoOperational()) &&
+                        _communicationService != null)
+                    {
+                        await _communicationService.RefreshOtomeKairoCurrentSettingsAsync();
+                    }
+                    return;
+                }
+
+                await SwitchOtomeKairoConnectionAsync(connectionResult);
+            }
+            catch (Exception ex)
+            {
+                UIHelper.ShowError("接続先変更エラー", ex.Message);
+            }
+            finally
+            {
+                _connectionSettingsWindow = null;
+            }
+        }
+
+        /// <summary>
+        /// 旧接続先に属する実行状態を破棄して、新しいOtomeKairo接続として初期化する。
+        /// </summary>
+        private async Task SwitchOtomeKairoConnectionAsync(
+            OtomeKairoConnectionResult connectionResult)
+        {
+            await _connectionSwitchSemaphore.WaitAsync();
+            try
+            {
+                await StopCocoroShellForConnectionSwitchAsync();
+
+                var previousCommunicationService = _communicationService;
+                _communicationService = null;
+                CloseConnectionScopedWindows();
+                if (previousCommunicationService != null)
+                {
+                    DetachCommunicationServiceHandlers(previousCommunicationService);
+                    await previousCommunicationService.StopServerAsync();
+                    previousCommunicationService.Dispose();
+                }
+
+                _appSettings.SaveVerifiedConnection(
+                    connectionResult.ServerUrl,
+                    connectionResult.ConsoleAccessToken);
+
+                ChatControlInstance.ClearChat();
+                ChatControlInstance.GetAndClearAttachedImages();
+                ChatControlInstance.UpdateMicrophoneLevel(null, false, false);
+                _isConversationOutputActive = false;
+                _skipNextAssistantMessage = false;
+                _skipNextAssistantMessageContent = null;
+
+                InitializeCommunicationService();
+                UpdateOtomeKairoStatusDisplay(
+                    _communicationService?.CurrentStatus ?? OtomeKairoStatus.WaitingForStartup);
+                _ = StartApiServerAsync();
+            }
+            catch
+            {
+                // 保存失敗を含む途中終了後も、現在のAppSettingsから通信境界を再構築する。
+                if (_communicationService == null)
+                {
+                    InitializeCommunicationService();
+                    UpdateOtomeKairoStatusDisplay(
+                        _communicationService?.CurrentStatus ?? OtomeKairoStatus.WaitingForStartup);
+                    _ = StartApiServerAsync();
+                }
+                throw;
+            }
+            finally
+            {
+                _connectionSwitchSemaphore.Release();
+            }
+        }
+
+        private void CloseConnectionScopedWindows()
+        {
+            _settingWindow?.Close();
+            _logViewerWindow?.Close();
+            _judgmentTraceViewerWindow?.Close();
+            _currentStateViewerWindow?.Close();
+            _autonomousRunViewerWindow?.Close();
+            foreach (var imagePreviewWindow in Application.Current.Windows
+                .OfType<ImagePreviewWindow>()
+                .ToList())
+            {
+                imagePreviewWindow.Close();
+            }
+        }
+
+        private static async Task StopCocoroShellForConnectionSwitchAsync()
+        {
+            try
+            {
+                await ProcessHelper
+                    .ExitProcessAsync("CocoroShell", ProcessOperation.Terminate)
+                    .WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            catch (TimeoutException)
+            {
+                Debug.WriteLine("接続先変更時のCocoroShell終了確認がタイムアウトしました。");
+            }
+        }
+
+        private bool IsOtomeKairoOperational()
+        {
+            return _communicationService != null &&
+                _appSettings.HasRemoteSettings &&
+                _communicationService.CurrentStatus != OtomeKairoStatus.WaitingForStartup;
         }
 
 
@@ -953,7 +1186,7 @@ namespace CocoroConsole
             var isLLMEnabled = _appSettings.IsUseLLM;
             var statusText = status switch
             {
-                OtomeKairoStatus.WaitingForStartup => isLLMEnabled ? "OtomeKairo起動待ち" : "LLM無効",
+                OtomeKairoStatus.WaitingForStartup => "OtomeKairo接続待ち",
                 OtomeKairoStatus.Normal => isLLMEnabled ? "正常動作中" : "LLM無効",
                 OtomeKairoStatus.ProcessingConversationInput => "対話入力処理中",
                 OtomeKairoStatus.ProcessingImage => "LLM画像処理中",

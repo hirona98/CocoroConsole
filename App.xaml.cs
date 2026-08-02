@@ -1,4 +1,5 @@
 using CocoroConsole.Services;
+using CocoroConsole.Windows;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -25,9 +26,14 @@ namespace CocoroConsole
         private Thread? _pipeServerThread;
         private CancellationTokenSource? _pipeServerCancellationTokenSource;
         private static Mutex? _mutex;
+        private ConnectionSettingsWindow? _connectionSettingsWindow;
+        private bool _startupConnectionPending;
+        private bool _showMainWindowRequested;
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
             // Mutexによる二重起動チェック
             string mutexName = $"Global\\{GetPipeNameFromExecutable()}";
             bool createdNew;
@@ -71,22 +77,77 @@ namespace CocoroConsole
             }
 
             // パイプサーバーを開始
+            _startupConnectionPending = true;
             StartPipeServer();
-
-            // システムトレイアイコンの初期化
-            InitializeNotifyIcon();
 
             // 未処理の例外ハンドラを登録
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             Application.Current.DispatcherUnhandledException += Application_DispatcherUnhandledException;
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
+            var appSettings = AppSettings.Instance;
+            var bootstrapper = new OtomeKairoConnectionBootstrapper();
+            OtomeKairoConnectionResult? connectionResult = null;
+            string? connectionError = null;
+
+            try
+            {
+                connectionResult = await bootstrapper.ConnectAsync(
+                    appSettings.ServerUrl,
+                    appSettings.ServerUrl,
+                    appSettings.OtomeKairoBearerToken);
+            }
+            catch (Exception ex)
+            {
+                connectionError = $"保存済みの接続先へ接続できません。{Environment.NewLine}{ex.Message}";
+            }
+
+            if (connectionResult == null)
+            {
+                _connectionSettingsWindow = new ConnectionSettingsWindow(
+                    appSettings.ServerUrl,
+                    appSettings.OtomeKairoBearerToken,
+                    connectionError,
+                    exitsApplicationOnClose: true);
+                var dialogResult = _connectionSettingsWindow.ShowDialog();
+                connectionResult = _connectionSettingsWindow.ConnectionResult;
+                _connectionSettingsWindow = null;
+
+                if (dialogResult != true || connectionResult == null)
+                {
+                    Shutdown();
+                    return;
+                }
+            }
+
+            try
+            {
+                appSettings.SaveVerifiedConnection(
+                    connectionResult.ServerUrl,
+                    connectionResult.ConsoleAccessToken);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"接続情報の保存に失敗しました: {ex.Message}",
+                    "エラー",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Shutdown();
+                return;
+            }
+
+            // 接続確認後に通常機能を公開する。
+            InitializeNotifyIcon();
+
             // メインウィンドウを作成するが、表示はしない
             MainWindow mainWindow = new MainWindow();
             Current.MainWindow = mainWindow; // MainWindowプロパティに明示的に設定
+            _startupConnectionPending = false;
 
             // コマンドライン引数をチェックして、表示フラグがある場合のみ表示する
             bool showWindow = e.Args.Any(arg => arg.ToLower() == "/show" || arg.ToLower() == "-show");
+            showWindow = showWindow || _showMainWindowRequested;
 
             // デバッグモードの場合は常に表示
 #if DEBUG
@@ -218,6 +279,22 @@ namespace CocoroConsole
                 showMenuItem.Click += (s, e) => ShowMainWindow();
                 contextMenu.Items.Add(showMenuItem);
 
+                var connectionSettingsMenuItem = new System.Windows.Forms.ToolStripMenuItem
+                {
+                    Text = "接続先設定"
+                };
+                connectionSettingsMenuItem.Click += (s, e) =>
+                {
+                    Dispatcher.InvokeAsync(async () =>
+                    {
+                        if (Current.MainWindow is MainWindow mainWindow)
+                        {
+                            await mainWindow.OpenConnectionSettingsAsync();
+                        }
+                    });
+                };
+                contextMenu.Items.Add(connectionSettingsMenuItem);
+
                 var factTraceMenuItem = new System.Windows.Forms.ToolStripMenuItem
                 {
                     Text = "判断トレース表示"
@@ -281,6 +358,28 @@ namespace CocoroConsole
         {
             try
             {
+                if (_startupConnectionPending)
+                {
+                    _showMainWindowRequested = true;
+                    if (_connectionSettingsWindow != null)
+                    {
+                        _connectionSettingsWindow.WindowState = WindowState.Normal;
+                        _connectionSettingsWindow.Activate();
+                    }
+                    return;
+                }
+
+                if (_connectionSettingsWindow != null)
+                {
+                    if (!_connectionSettingsWindow.IsVisible)
+                    {
+                        _connectionSettingsWindow.Show();
+                    }
+                    _connectionSettingsWindow.WindowState = WindowState.Normal;
+                    _connectionSettingsWindow.Activate();
+                    return;
+                }
+
                 // メインウィンドウを取得（Applicationのウィンドウコレクションから探す）
                 Window? mainWindow = null;
 

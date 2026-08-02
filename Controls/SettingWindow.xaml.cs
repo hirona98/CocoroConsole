@@ -35,8 +35,6 @@ namespace CocoroConsole.Controls
         private OtomeKairoAvatarSpeechEditorState? _loadedAvatarSpeechEditorState;
         private OtomeKairoCameraSourcesEditorState? _loadedCameraSourcesEditorState;
         private OtomeKairoMcpServersEditorState? _loadedMcpServersEditorState;
-        private string _otomeKairoServerUrlAtLoad = string.Empty;
-        private string _otomeKairoAccessTokenAtLoad = string.Empty;
 
         public bool IsClosed { get; private set; } = false;
 
@@ -47,8 +45,6 @@ namespace CocoroConsole.Controls
         public SettingWindow(ICommunicationService? communicationService)
         {
             InitializeComponent();
-            _otomeKairoServerUrlAtLoad = AppSettings.Instance.ServerUrl;
-            _otomeKairoAccessTokenAtLoad = AppSettings.Instance.OtomeKairoBearerToken;
             ShowSettingsPage("display");
             EmbeddingSettingsControl.ResolveLlmApiKey = () => LlmSettingsControl.GetPreferredApiKeyForEmbeddingPaste();
 
@@ -372,10 +368,6 @@ namespace CocoroConsole.Controls
                     CapabilitySettingsControl.ShowSection(CapabilitySettingsSection.Watcher);
                     ShowPage(CapabilitySettingsControl);
                     break;
-                case "connection":
-                    SystemSettingsControl.ShowSection(SystemSettingsSection.Connection);
-                    ShowPage(SystemSettingsControl);
-                    break;
                 case "mcp":
                     CapabilitySettingsControl.ShowSection(CapabilitySettingsSection.Mcp);
                     ShowPage(CapabilitySettingsControl);
@@ -399,14 +391,12 @@ namespace CocoroConsole.Controls
 
 
         // System やその他設定の収集はこのまま SettingWindow 側で実施
-        private Dictionary<string, object> CollectSystemSettings(string otomeKairoAccessToken)
+        private Dictionary<string, object> CollectSystemSettings()
         {
             var dict = new Dictionary<string, object>();
 
             var microphoneSettings = SystemSettingsControl.GetMicrophoneSettings();
             dict["MicrophoneSettings"] = microphoneSettings.DeepCopy();
-            dict["OtomeKairoServerUrl"] = SystemSettingsControl.GetOtomeKairoServerUrl();
-            dict["OtomeKairoAccessToken"] = otomeKairoAccessToken;
             dict["ConversationDisplayName"] = SystemSettingsControl.GetConversationDisplayName();
 
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
@@ -525,16 +515,10 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task ApplySettingsChangesAsync()
         {
-            var serverUrl = SystemSettingsControl.GetOtomeKairoServerUrl();
-            var bearerToken = ResolveOtomeKairoAccessToken();
-            var connectionChanged =
-                !string.Equals(serverUrl, _otomeKairoServerUrlAtLoad, StringComparison.Ordinal) ||
-                !string.Equals(bearerToken, _otomeKairoAccessTokenAtLoad, StringComparison.Ordinal);
-
-            if (connectionChanged || !AreRemoteSettingsLoaded())
+            if (!AreRemoteSettingsLoaded())
             {
-                await SaveOtomeKairoConnectionSettingsAsync(serverUrl, bearerToken);
-                return;
+                throw new InvalidOperationException(
+                    "OtomeKairoの通常設定を取得していません。トレイの「接続先設定」で接続し直してください。");
             }
 
             var conversationDisplayName = SystemSettingsControl.GetConversationDisplayName();
@@ -545,9 +529,7 @@ namespace CocoroConsole.Controls
             }
 
             // すべてのタブの設定を保存（プリセットの保存・有効化を含む）
-            await SaveAllSettingsAsync(bearerToken);
-            _otomeKairoAccessTokenAtLoad = bearerToken;
-            SystemSettingsControl.SetOtomeKairoAccessToken(bearerToken);
+            await SaveAllSettingsAsync();
 
             // 保存イベントを受けた MainWindow が新しい端末設定で CocoroShell を再起動する。
         }
@@ -559,55 +541,10 @@ namespace CocoroConsole.Controls
                 _loadedAvatarSpeechEditorState != null;
         }
 
-        private async Task SaveOtomeKairoConnectionSettingsAsync(string serverUrl, string bearerToken)
-        {
-            var appSettings = AppSettings.Instance;
-            appSettings.ServerUrl = serverUrl;
-            appSettings.OtomeKairoBearerToken = bearerToken;
-            appSettings.SaveAppSettings();
-
-            if (_communicationService != null)
-            {
-                await _communicationService.RefreshOtomeKairoCurrentSettingsAsync();
-            }
-
-            _otomeKairoServerUrlAtLoad = appSettings.ServerUrl;
-            _otomeKairoAccessTokenAtLoad = appSettings.OtomeKairoBearerToken;
-            SystemSettingsControl.SetOtomeKairoServerUrl(appSettings.ServerUrl);
-            SystemSettingsControl.SetOtomeKairoAccessToken(appSettings.OtomeKairoBearerToken);
-
-            MessageBox.Show(
-                "OtomeKairo接続を保存しました。接続後に設定画面を開き直してください。",
-                "接続情報を保存",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-
-        private string ResolveOtomeKairoAccessToken()
-        {
-            var displayedToken = SystemSettingsControl.GetOtomeKairoAccessToken();
-            var currentToken = AppSettings.Instance.OtomeKairoBearerToken.Trim();
-
-            // 画面を開いた後に初回登録が完了した場合、未編集の古い表示値で発行結果を上書きしない。
-            if (string.Equals(
-                    displayedToken,
-                    _otomeKairoAccessTokenAtLoad,
-                    StringComparison.Ordinal)
-                && !string.Equals(
-                    currentToken,
-                    _otomeKairoAccessTokenAtLoad,
-                    StringComparison.Ordinal))
-            {
-                return currentToken;
-            }
-
-            return displayedToken;
-        }
-
         /// <summary>
         /// すべてのタブの設定を保存する
         /// </summary>
-        private async Task SaveAllSettingsAsync(string otomeKairoAccessToken)
+        private async Task SaveAllSettingsAsync()
         {
             try
             {
@@ -616,7 +553,7 @@ namespace CocoroConsole.Controls
                 var displaySnapshot = DisplaySettingsControl.GetSnapshot();
 
                 // System の設定を収集
-                var systemSnapshot = CollectSystemSettings(otomeKairoAccessToken);
+                var systemSnapshot = CollectSystemSettings();
 
                 // AppSettings に反映（Display）
                 DisplaySettingsControl.ApplySnapshotToAppSettings(displaySnapshot);
@@ -1060,6 +997,9 @@ namespace CocoroConsole.Controls
         protected override void OnClosed(EventArgs e)
         {
             IsClosed = true;
+            _apiClient?.Dispose();
+            _apiClient = null;
+            _communicationService = null;
             base.OnClosed(e);
         }
 
@@ -1073,8 +1013,6 @@ namespace CocoroConsole.Controls
 
             appSettings.MicrophoneSettings =
                 ((MicrophoneSettings)snapshot["MicrophoneSettings"]).DeepCopy();
-            appSettings.ServerUrl = (string)snapshot["OtomeKairoServerUrl"];
-            appSettings.OtomeKairoBearerToken = (string)snapshot["OtomeKairoAccessToken"];
             appSettings.ConversationDisplayName = (string)snapshot["ConversationDisplayName"];
 
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）

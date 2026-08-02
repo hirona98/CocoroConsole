@@ -190,6 +190,13 @@ namespace CocoroConsole.Services
         bool HasRemoteSettings { get; }
 
         /// <summary>
+        /// 検証済みの接続情報を保存し、接続先変更時は通常設定の反映状態を解除する。
+        /// </summary>
+        /// <param name="serverUrl">検証済みのOtomeKairoサーバーURL</param>
+        /// <param name="consoleAccessToken">検証済みのconsole_access_token</param>
+        void SaveVerifiedConnection(string serverUrl, string consoleAccessToken);
+
+        /// <summary>
         /// 現在の設定からConfigSettingsオブジェクトを作成
         /// </summary>
         /// <returns>ConfigSettings オブジェクト</returns>

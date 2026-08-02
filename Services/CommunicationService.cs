@@ -29,7 +29,8 @@ namespace CocoroConsole.Services
     /// </summary>
     public class CommunicationService : ICommunicationService
     {
-        private const string RequiredOtomeKairoApiVersion = "0.6.0";
+        private const string RequiredOtomeKairoApiVersion =
+            OtomeKairoConnectionBootstrapper.RequiredApiVersion;
         // CocoroConsole 側の HTTP API サーバー（外部クライアントからの受信）
         private CocoroConsoleApiServer _apiServer;
         private int _apiServerPort;
@@ -424,6 +425,7 @@ namespace CocoroConsole.Services
 
             if (otomeKairoEndpointChanged)
             {
+                _remoteSettingsApplied = false;
                 ResetStatusPollingService();
             }
 
@@ -531,6 +533,9 @@ namespace CocoroConsole.Services
             }
             catch (Exception ex)
             {
+                _initialSettingsFetched = false;
+                _remoteSettingsApplied = false;
+                _statusPollingService.SetWaitingForStartup();
                 Debug.WriteLine($"[CommunicationService] OtomeKairo 現在設定の取得に失敗: {ex.Message}");
             }
         }

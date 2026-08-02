@@ -91,6 +91,56 @@ namespace CocoroConsole.Services
         public bool IsLoaded { get; set; } = false;
         public bool HasRemoteSettings { get; private set; }
 
+        /// <summary>
+        /// 検証済みの接続情報を一括保存する。
+        /// </summary>
+        public void SaveVerifiedConnection(string serverUrl, string consoleAccessToken)
+        {
+            var normalizedServerUrl = OtomeKairoConnectionBootstrapper.NormalizeServerUrl(serverUrl);
+            string? normalizedCurrentServerUrl;
+            try
+            {
+                normalizedCurrentServerUrl =
+                    OtomeKairoConnectionBootstrapper.NormalizeServerUrl(ServerUrl);
+            }
+            catch (InvalidOperationException)
+            {
+                normalizedCurrentServerUrl = null;
+            }
+            var endpointChanged = !string.Equals(
+                normalizedCurrentServerUrl,
+                normalizedServerUrl,
+                StringComparison.OrdinalIgnoreCase);
+
+            var previousServerUrl = ServerUrl;
+            var previousAccessToken = OtomeKairoBearerToken;
+            var previousHasRemoteSettings = HasRemoteSettings;
+            var previousHost = OtomeKairoHost;
+            var previousPort = OtomeKairoPort;
+
+            ServerUrl = normalizedServerUrl;
+            OtomeKairoBearerToken = consoleAccessToken.Trim();
+            if (endpointChanged)
+            {
+                // 旧接続先から取得した通常設定を新接続先の実行状態として扱わない。
+                HasRemoteSettings = false;
+            }
+
+            try
+            {
+                SaveAppSettings();
+            }
+            catch
+            {
+                ServerUrl = previousServerUrl;
+                OtomeKairoBearerToken = previousAccessToken;
+                HasRemoteSettings = previousHasRemoteSettings;
+                OtomeKairoHost = previousHost;
+                OtomeKairoPort = previousPort;
+                throw;
+            }
+        }
+
         // コンストラクタはprivate（シングルトンパターン）
         private AppSettings()
         {
@@ -761,14 +811,7 @@ namespace CocoroConsole.Services
 
         private static string NormalizeServerUrl(string? serverUrl)
         {
-            var normalized = (serverUrl ?? string.Empty).Trim().TrimEnd('/');
-            if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri)
-                || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
-            {
-                throw new InvalidOperationException("OtomeKairoのサーバーURLが不正です。");
-            }
-
-            return uri.GetLeftPart(UriPartial.Authority);
+            return OtomeKairoConnectionBootstrapper.NormalizeServerUrl(serverUrl);
         }
 
         /// <summary>
@@ -788,12 +831,25 @@ namespace CocoroConsole.Services
             EnsureUserDataDirectoryExists();
             if (File.Exists(ConnectionSettingsFilePath))
             {
-                var json = File.ReadAllText(ConnectionSettingsFilePath);
-                var connection = JsonSerializer.Deserialize<ConnectionSettings>(json)
-                    ?? throw new InvalidOperationException("Connection.jsonを読み込めません。");
-                ServerUrl = NormalizeServerUrl(connection.ServerUrl);
-                ClientId = connection.ClientId.Trim();
-                OtomeKairoBearerToken = connection.ConsoleAccessToken;
+                try
+                {
+                    var json = File.ReadAllText(ConnectionSettingsFilePath);
+                    var connection = JsonSerializer.Deserialize<ConnectionSettings>(json)
+                        ?? throw new InvalidOperationException("Connection.jsonを読み込めません。");
+                    ServerUrl = connection.ServerUrl.Trim();
+                    ClientId = connection.ClientId.Trim();
+                    OtomeKairoBearerToken = connection.ConsoleAccessToken;
+                }
+                catch (Exception ex) when (
+                    ex is JsonException ||
+                    ex is InvalidOperationException)
+                {
+                    // 不正なローカル接続情報では通常機能を開始せず、起動時の専用画面で復旧する。
+                    ServerUrl = string.Empty;
+                    ClientId = string.Empty;
+                    OtomeKairoBearerToken = string.Empty;
+                    Debug.WriteLine($"Connection.jsonの読み込みに失敗しました: {ex.Message}");
+                }
             }
 
             if (string.IsNullOrWhiteSpace(ClientId))
@@ -801,8 +857,16 @@ namespace CocoroConsole.Services
                 ClientId = $"console-{Guid.NewGuid()}";
             }
 
-            ApplyConnectionUri();
-            SaveConnectionSettings();
+            try
+            {
+                ApplyConnectionUri();
+                SaveConnectionSettings();
+            }
+            catch (InvalidOperationException)
+            {
+                OtomeKairoHost = string.Empty;
+                OtomeKairoPort = 0;
+            }
         }
 
         /// <summary>

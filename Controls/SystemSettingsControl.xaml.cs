@@ -14,7 +14,6 @@ namespace CocoroConsole.Controls
 {
     public enum SystemSettingsSection
     {
-        Connection,
         ConversationInput,
         DesktopObservation,
         PeriodicThinking,
@@ -35,7 +34,7 @@ namespace CocoroConsole.Controls
         public SystemSettingsControl()
         {
             InitializeComponent();
-            ShowSection(SystemSettingsSection.Connection);
+            ShowSection(SystemSettingsSection.ConversationInput);
         }
 
         /// <summary>
@@ -43,8 +42,6 @@ namespace CocoroConsole.Controls
         /// </summary>
         public void ShowSection(SystemSettingsSection section)
         {
-            ConnectionSettingsGroup.Visibility =
-                section == SystemSettingsSection.Connection ? Visibility.Visible : Visibility.Collapsed;
             ConversationSettingsGroup.Visibility =
                 section == SystemSettingsSection.ConversationInput ? Visibility.Visible : Visibility.Collapsed;
             SpeechRecognitionSettingsGroup.Visibility =
@@ -90,11 +87,10 @@ namespace CocoroConsole.Controls
                 ex.ErrorCode == "invalid_token" ||
                 ex.ErrorCode == "bootstrap_required")
             {
-                // 接続設定を修正できるよう、認証エラーでも設定画面自体は開きます。
                 var message = ex.ErrorCode == "bootstrap_required"
                     ? "OtomeKairoの初回登録が完了していません。"
                     : "保存済みのアクセストークンが接続先と一致しません。";
-                LocalInputDeviceStatusText.Text = $"{message}「OtomeKairo接続」で認証情報を更新してください。";
+                LocalInputDeviceStatusText.Text = $"{message}トレイの「接続先設定」で接続し直してください。";
                 SpeakerManagementControl.SetUnavailable(message);
                 System.Diagnostics.Debug.WriteLine($"システム設定の認証待ち: {ex.ErrorCode}");
             }
@@ -135,8 +131,6 @@ namespace CocoroConsole.Controls
 
         private void ApplyAppSettingsToControls(AppSettings appSettings, int? avatarIndex = null)
         {
-            OtomeKairoServerUrlTextBox.Text = appSettings.ServerUrl;
-            OtomeKairoAccessTokenPasswordBox.Password = appSettings.OtomeKairoBearerToken;
             ConversationDisplayNameTextBox.Text = appSettings.ConversationDisplayName;
             LoadSpeechRecognitionSettings(appSettings, avatarIndex ?? appSettings.CurrentAvatarIndex);
             ExcludeWindowTitlePatternsTextBox.Text = string.Join(
@@ -345,8 +339,6 @@ namespace CocoroConsole.Controls
 
         private void SetupEventHandlers()
         {
-            OtomeKairoServerUrlTextBox.TextChanged += OnSettingsChanged;
-            OtomeKairoAccessTokenPasswordBox.PasswordChanged += OnSettingsChanged;
             ConversationDisplayNameTextBox.TextChanged += OnSettingsChanged;
             IsUseSTTCheckBox.Checked += OnSpeechRecognitionSettingsChanged;
             IsUseSTTCheckBox.Unchecked += OnSpeechRecognitionSettingsChanged;
@@ -496,34 +488,6 @@ namespace CocoroConsole.Controls
                 vadProbabilityThreshold = (float)VadProbabilityThresholdSlider.Value,
                 speakerRecognitionThreshold = SpeakerManagementControl.GetCurrentThreshold(),
             };
-        }
-
-        public string GetOtomeKairoAccessToken()
-        {
-            return OtomeKairoAccessTokenPasswordBox.Password.Trim();
-        }
-
-        public void SetOtomeKairoAccessToken(string accessToken)
-        {
-            // 自動取得した接続情報の反映をユーザー編集として扱わない。
-            var previousInitialized = _isInitialized;
-            _isInitialized = false;
-            OtomeKairoAccessTokenPasswordBox.Password = accessToken;
-            _isInitialized = previousInitialized;
-        }
-
-        public string GetOtomeKairoServerUrl()
-        {
-            return OtomeKairoServerUrlTextBox.Text.Trim();
-        }
-
-        public void SetOtomeKairoServerUrl(string serverUrl)
-        {
-            // 保存時の正規化結果をユーザー編集として扱わず画面へ反映します。
-            var previousInitialized = _isInitialized;
-            _isInitialized = false;
-            OtomeKairoServerUrlTextBox.Text = serverUrl;
-            _isInitialized = previousInitialized;
         }
 
         public string GetConversationDisplayName()
