@@ -64,7 +64,6 @@ namespace CocoroConsole.Communication
                 _cts = new CancellationTokenSource();
 
                 var builder = WebApplication.CreateBuilder();
-                builder.WebHost.UseUrls($"http://127.0.0.1:{_port}");
 
                 // ログレベルを設定してHTTPリクエストログを無効化
                 builder.Logging.ClearProviders();
@@ -73,7 +72,7 @@ namespace CocoroConsole.Communication
                 // Kestrelサーバーの設定
                 builder.WebHost.ConfigureKestrel(serverOptions =>
                 {
-                    serverOptions.ListenLocalhost(_port);
+                    serverOptions.ListenAnyIP(_port);
                 });
 
                 // サービスの登録
@@ -113,7 +112,7 @@ namespace CocoroConsole.Communication
                 await _host.StartAsync(_cts.Token).ConfigureAwait(false);
                 _shellEditorBootstrapTask = RunShellEditorBootstrapPipeAsync(_cts.Token);
 
-                Debug.WriteLine($"CocoroConsole APIサーバーを起動しました: http://127.0.0.1:{_port}");
+                Debug.WriteLine($"CocoroConsole APIサーバーを起動しました: http://0.0.0.0:{_port}");
             }
             catch (Exception ex)
             {
