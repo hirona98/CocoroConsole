@@ -67,7 +67,7 @@ namespace CocoroConsole.Controls
             ApplyConversationDisplayNameChoices(speakers);
             SpeakersListBox.ItemsSource = null;
             SpeakersListBox.ItemsSource = speakers;
-            NewSpeakerDisplayNameComboBox.ItemsSource = conversationDisplayNames;
+            UpdateNewSpeakerChoices(speakers);
         }
 
         public void SetUnavailable(string message)
@@ -100,7 +100,14 @@ namespace CocoroConsole.Controls
             ApplyConversationDisplayNameChoices(response.Speakers);
             SpeakersListBox.ItemsSource = response.Speakers;
             SpeakersListBox.IsEnabled = true;
-            var assignedIds = response.Speakers
+            UpdateNewSpeakerChoices(response.Speakers);
+        }
+
+        private void UpdateNewSpeakerChoices(
+            IReadOnlyList<OtomeKairoAudioSpeaker> speakers)
+        {
+            // 呼ばれ方の更新時にも選択肢と登録操作の可否を同じ状態へ揃えます。
+            var assignedIds = speakers
                 .Select(speaker => speaker.ConversationDisplayNameId)
                 .ToHashSet(StringComparer.Ordinal);
             NewSpeakerDisplayNameComboBox.ItemsSource = ConversationDisplayNames
@@ -108,6 +115,7 @@ namespace CocoroConsole.Controls
                 .ToList();
             StartEnrollmentButton.IsEnabled = _activeEnrollment == null
                 && NewSpeakerDisplayNameComboBox.Items.Count > 0;
+            NewSpeakerDisplayNameComboBox.IsEnabled = _activeEnrollment == null;
         }
 
         private void ApplyConversationDisplayNameChoices(

@@ -582,7 +582,7 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task SaveAllSettingsToApiAsync()
         {
-            InitializeApiClient();
+            // 子コントロールと共有するAPIクライアントは設定画面を閉じるまで維持する。
             if (_apiClient == null)
             {
                 throw new InvalidOperationException("OtomeKairo APIクライアントを初期化できません。");
