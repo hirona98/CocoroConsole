@@ -30,6 +30,7 @@ namespace CocoroConsole.Controls
         private Dictionary<string, object?> _wakePolicy = new Dictionary<string, object?>();
         private List<OtomeKairoAudioInputDevice> _audioInputDevices = new List<OtomeKairoAudioInputDevice>();
         private List<ConsoleMicrophoneInputDevice> _consoleInputDevices = new List<ConsoleMicrophoneInputDevice>();
+        private OtomeKairoApiClient? _apiClient;
 
         public SystemSettingsControl()
         {
@@ -62,6 +63,7 @@ namespace CocoroConsole.Controls
             try
             {
                 var appSettings = AppSettings.Instance;
+                _apiClient = apiClient;
 
                 ApplyDefaultRemoteSettings();
                 LoadConsoleAudioInputDevices();
@@ -81,7 +83,8 @@ namespace CocoroConsole.Controls
                     apiClient,
                     communicationService,
                     clientId,
-                    appSettings.MicrophoneSettings.speakerRecognitionThreshold);
+                    appSettings.MicrophoneSettings.speakerRecognitionThreshold,
+                    appSettings.ConversationDisplayNames);
             }
             catch (OtomeKairoApiException ex) when (
                 ex.ErrorCode == "invalid_token" ||
@@ -131,7 +134,13 @@ namespace CocoroConsole.Controls
 
         private void ApplyAppSettingsToControls(AppSettings appSettings, int? avatarIndex = null)
         {
-            ConversationDisplayNameTextBox.Text = appSettings.ConversationDisplayName;
+            ConversationDisplayNameComboBox.ItemsSource = appSettings.ConversationDisplayNames;
+            ConversationDisplayNameComboBox.SelectedValue = appSettings.SelectedConversationDisplayNameId;
+            ConversationDisplayNameEditBox.Text =
+                (ConversationDisplayNameComboBox.SelectedItem as OtomeKairoConversationDisplayNameDefinition)
+                ?.DisplayName ?? string.Empty;
+            SpeakerManagementControl.SetConversationDisplayNames(
+                appSettings.ConversationDisplayNames);
             LoadSpeechRecognitionSettings(appSettings, avatarIndex ?? appSettings.CurrentAvatarIndex);
             ExcludeWindowTitlePatternsTextBox.Text = string.Join(
                 Environment.NewLine,
@@ -339,7 +348,7 @@ namespace CocoroConsole.Controls
 
         private void SetupEventHandlers()
         {
-            ConversationDisplayNameTextBox.TextChanged += OnSettingsChanged;
+            ConversationDisplayNameComboBox.SelectionChanged += OnConversationDisplayNameSelectionChanged;
             IsUseSTTCheckBox.Checked += OnSpeechRecognitionSettingsChanged;
             IsUseSTTCheckBox.Unchecked += OnSpeechRecognitionSettingsChanged;
             STTEngineComboBox.SelectionChanged += OnSpeechRecognitionSettingsChanged;
@@ -495,9 +504,108 @@ namespace CocoroConsole.Controls
             };
         }
 
-        public string GetConversationDisplayName()
+        public string? GetSelectedConversationDisplayNameId()
         {
-            return ConversationDisplayNameTextBox.Text.Trim();
+            return ConversationDisplayNameComboBox.SelectedValue as string;
+        }
+
+        private void OnConversationDisplayNameSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ConversationDisplayNameEditBox.Text =
+                (ConversationDisplayNameComboBox.SelectedItem as OtomeKairoConversationDisplayNameDefinition)
+                ?.DisplayName ?? string.Empty;
+            OnSettingsChanged(sender, e);
+        }
+
+        private async void AddConversationDisplayName_Click(object sender, RoutedEventArgs e)
+        {
+            await ChangeConversationDisplayNamesAsync(async displayName =>
+            {
+                var created = await RequireApiClient().CreateConversationDisplayNameAsync(displayName);
+                await RefreshConversationDisplayNamesAsync(created.ConversationDisplayNameId);
+            });
+        }
+
+        private async void UpdateConversationDisplayName_Click(object sender, RoutedEventArgs e)
+        {
+            if (ConversationDisplayNameComboBox.SelectedItem is not OtomeKairoConversationDisplayNameDefinition selected)
+            {
+                MessageBox.Show("変更する呼ばれ方を選択してください。", "入力エラー",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            await ChangeConversationDisplayNamesAsync(async displayName =>
+            {
+                await RequireApiClient().UpdateConversationDisplayNameAsync(
+                    selected.ConversationDisplayNameId,
+                    displayName);
+                await RefreshConversationDisplayNamesAsync(selected.ConversationDisplayNameId);
+            });
+        }
+
+        private async void DeleteConversationDisplayName_Click(object sender, RoutedEventArgs e)
+        {
+            if (ConversationDisplayNameComboBox.SelectedItem is not OtomeKairoConversationDisplayNameDefinition selected)
+            {
+                MessageBox.Show("削除する呼ばれ方を選択してください。", "入力エラー",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (MessageBox.Show($"「{selected.DisplayName}」を削除します。", "確認",
+                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                await RequireApiClient().DeleteConversationDisplayNameAsync(
+                    selected.ConversationDisplayNameId);
+                await RefreshConversationDisplayNamesAsync(null);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"呼ばれ方を削除できませんでした: {ex.Message}", "設定エラー",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async System.Threading.Tasks.Task ChangeConversationDisplayNamesAsync(
+            Func<string, System.Threading.Tasks.Task> action)
+        {
+            var displayName = ConversationDisplayNameEditBox.Text.Trim();
+            if (displayName.Length == 0)
+            {
+                MessageBox.Show("呼ばれ方を入力してください。", "入力エラー",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            try
+            {
+                await action(displayName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"呼ばれ方を保存できませんでした: {ex.Message}", "設定エラー",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async System.Threading.Tasks.Task RefreshConversationDisplayNamesAsync(string? selectedId)
+        {
+            var definitions = (await RequireApiClient().GetConversationDisplayNamesAsync())
+                .ConversationDisplayNames;
+            AppSettings.Instance.ConversationDisplayNames = definitions;
+            ConversationDisplayNameComboBox.ItemsSource = definitions;
+            ConversationDisplayNameComboBox.SelectedValue = selectedId;
+            SpeakerManagementControl.SetConversationDisplayNames(definitions);
+        }
+
+        private OtomeKairoApiClient RequireApiClient()
+        {
+            return _apiClient ?? throw new InvalidOperationException(
+                "OtomeKairo APIへ接続してください。");
         }
 
         public List<string> GetWindowTitleExcludePatterns()

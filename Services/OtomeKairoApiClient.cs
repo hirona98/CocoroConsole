@@ -287,17 +287,72 @@ namespace CocoroConsole.Services
                 cancellationToken);
         }
 
-        public Task<OtomeKairoAudioSpeaker> RenameAudioSpeakerAsync(
+        public Task<OtomeKairoAudioSpeaker> AssignAudioSpeakerConversationDisplayNameAsync(
             string personRef,
+            string conversationDisplayNameId,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            var path = BuildAudioResourcePath("/api/audio/speakers", personRef) + "/conversation-display-name";
+            return SendOtomeKairoAsync<OtomeKairoAudioSpeaker>(
+                HttpMethod.Put,
+                path,
+                new OtomeKairoAssignSpeakerConversationDisplayNameRequest
+                {
+                    ConversationDisplayNameId = conversationDisplayNameId,
+                },
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoConversationDisplayNamesResponse> GetConversationDisplayNamesAsync(
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoConversationDisplayNamesResponse>(
+                HttpMethod.Get,
+                "/api/config/conversation-display-names",
+                null,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoConversationDisplayNameDefinition> CreateConversationDisplayNameAsync(
             string displayName,
             CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            var path = BuildAudioResourcePath("/api/audio/speakers", personRef) + "/display-name";
-            return SendOtomeKairoAsync<OtomeKairoAudioSpeaker>(
+            return SendOtomeKairoAsync<OtomeKairoConversationDisplayNameDefinition>(
+                HttpMethod.Post,
+                "/api/config/conversation-display-names",
+                new { display_name = displayName },
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoConversationDisplayNameDefinition> UpdateConversationDisplayNameAsync(
+            string conversationDisplayNameId,
+            string displayName,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoConversationDisplayNameDefinition>(
                 HttpMethod.Put,
-                path,
-                new OtomeKairoRenameSpeakerRequest { DisplayName = displayName },
+                BuildConfigResourcePath(
+                    "/api/config/conversation-display-names",
+                    conversationDisplayNameId),
+                new { display_name = displayName },
+                cancellationToken);
+        }
+
+        public Task DeleteConversationDisplayNameAsync(
+            string conversationDisplayNameId,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOkAsync(
+                HttpMethod.Delete,
+                BuildConfigResourcePath(
+                    "/api/config/conversation-display-names",
+                    conversationDisplayNameId),
+                null,
                 cancellationToken);
         }
 
@@ -675,6 +730,10 @@ namespace CocoroConsole.Services
         [JsonPropertyName("settings_snapshot")]
         public OtomeKairoCurrentSettings SettingsSnapshot { get; set; } = new OtomeKairoCurrentSettings();
 
+        [JsonPropertyName("conversation_display_names")]
+        public List<OtomeKairoConversationDisplayNameDefinition> ConversationDisplayNames { get; set; }
+            = new List<OtomeKairoConversationDisplayNameDefinition>();
+
         [JsonPropertyName("selected_persona")]
         public OtomeKairoPersonaDefinition SelectedPersona { get; set; } = new OtomeKairoPersonaDefinition();
 
@@ -734,9 +793,9 @@ namespace CocoroConsole.Services
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, object?>? WakePolicy { get; set; }
 
-        [JsonPropertyName("conversation_display_name")]
+        [JsonPropertyName("selected_conversation_display_name_id")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? ConversationDisplayName { get; set; }
+        public string? SelectedConversationDisplayNameId { get; set; }
     }
 
     public class OtomeKairoConversationRequest

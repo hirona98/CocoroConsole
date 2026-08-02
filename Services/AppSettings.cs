@@ -43,8 +43,15 @@ namespace CocoroConsole.Services
         public int CocoroShellPort { get; set; }
         // /api/events/stream で hello を送るためのクライアントID（安定ID）
         public string ClientId { get; set; } = string.Empty;
-        // テキスト入力で participants[].display_name に渡す呼び名
-        public string ConversationDisplayName { get; set; } = string.Empty;
+        // テキスト入力では選択中の共有定義から表示名を解決する。
+        public string? SelectedConversationDisplayNameId { get; set; }
+        public List<OtomeKairoConversationDisplayNameDefinition> ConversationDisplayNames { get; set; }
+            = new List<OtomeKairoConversationDisplayNameDefinition>();
+        public string ConversationDisplayName => ConversationDisplayNames
+            .SingleOrDefault(definition => string.Equals(
+                definition.ConversationDisplayNameId,
+                SelectedConversationDisplayNameId,
+                StringComparison.Ordinal))?.DisplayName ?? string.Empty;
         // otomekairo API Bearer トークン
         public string OtomeKairoBearerToken { get; set; } = string.Empty;
         // CocoroShell プロセスの起動中だけ保持する一時トークン
@@ -330,13 +337,22 @@ namespace CocoroConsole.Services
         public void ApplyRemoteSettings(
             OtomeKairoConsoleClientSettings consoleSettings,
             OtomeKairoCurrentSettings currentSettings,
+            IReadOnlyList<OtomeKairoConversationDisplayNameDefinition> conversationDisplayNames,
             OtomeKairoAvatarSpeechEditorState avatarSpeech)
         {
             var process = consoleSettings.Process;
             CocoroConsolePort = process.ConsoleApiPort;
             CocoroShellPort = process.CocoroShellPort;
             IsUseLLM = process.ConversationInputEnabled;
-            ConversationDisplayName = currentSettings.ConversationDisplayName.Trim();
+            SelectedConversationDisplayNameId = currentSettings.SelectedConversationDisplayNameId;
+            ConversationDisplayNames = conversationDisplayNames.Select(definition =>
+                new OtomeKairoConversationDisplayNameDefinition
+                {
+                    ConversationDisplayNameId = definition.ConversationDisplayNameId,
+                    DisplayName = definition.DisplayName,
+                    CreatedAt = definition.CreatedAt,
+                    UpdatedAt = definition.UpdatedAt,
+                }).ToList();
 
             var display = consoleSettings.Display;
             IsRestoreWindowPosition = display.RestoreWindowPosition;

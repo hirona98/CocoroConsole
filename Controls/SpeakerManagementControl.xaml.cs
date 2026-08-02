@@ -1,6 +1,8 @@
 using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,6 +20,9 @@ namespace CocoroConsole.Controls
         private OtomeKairoSpeakerEnrollment? _activeEnrollment;
         private float _currentThreshold = 0.6f;
 
+        public IReadOnlyList<OtomeKairoConversationDisplayNameDefinition> ConversationDisplayNames { get; private set; }
+            = Array.Empty<OtomeKairoConversationDisplayNameDefinition>();
+
         public event EventHandler? ThresholdChanged;
 
         public SpeakerManagementControl()
@@ -32,7 +37,8 @@ namespace CocoroConsole.Controls
             OtomeKairoApiClient apiClient,
             ICommunicationService communicationService,
             string ownerClientId,
-            float threshold)
+            float threshold,
+            IReadOnlyList<OtomeKairoConversationDisplayNameDefinition> conversationDisplayNames)
         {
             if (_communicationService != null)
             {
@@ -46,8 +52,22 @@ namespace CocoroConsole.Controls
                 : ownerClientId.Trim();
             _communicationService.AudioRuntimeStateChanged += OnAudioRuntimeStateChanged;
             SpeakerActionsPanel.IsEnabled = true;
+            SetConversationDisplayNames(conversationDisplayNames);
             SetThreshold(threshold);
             await RefreshSpeakerListAsync();
+        }
+
+        public void SetConversationDisplayNames(
+            IReadOnlyList<OtomeKairoConversationDisplayNameDefinition> conversationDisplayNames)
+        {
+            ConversationDisplayNames = conversationDisplayNames;
+            var speakers = SpeakersListBox.ItemsSource is IEnumerable<OtomeKairoAudioSpeaker> current
+                ? current.ToList()
+                : new List<OtomeKairoAudioSpeaker>();
+            ApplyConversationDisplayNameChoices(speakers);
+            SpeakersListBox.ItemsSource = null;
+            SpeakersListBox.ItemsSource = speakers;
+            NewSpeakerDisplayNameComboBox.ItemsSource = conversationDisplayNames;
         }
 
         public void SetUnavailable(string message)
@@ -77,17 +97,49 @@ namespace CocoroConsole.Controls
             }
 
             var response = await _apiClient.GetAudioSpeakersAsync();
+            ApplyConversationDisplayNameChoices(response.Speakers);
             SpeakersListBox.ItemsSource = response.Speakers;
             SpeakersListBox.IsEnabled = true;
+            var assignedIds = response.Speakers
+                .Select(speaker => speaker.ConversationDisplayNameId)
+                .ToHashSet(StringComparer.Ordinal);
+            NewSpeakerDisplayNameComboBox.ItemsSource = ConversationDisplayNames
+                .Where(definition => !assignedIds.Contains(definition.ConversationDisplayNameId))
+                .ToList();
+            StartEnrollmentButton.IsEnabled = _activeEnrollment == null
+                && NewSpeakerDisplayNameComboBox.Items.Count > 0;
+        }
+
+        private void ApplyConversationDisplayNameChoices(
+            IReadOnlyList<OtomeKairoAudioSpeaker> speakers)
+        {
+            var assignedIds = speakers
+                .Select(speaker => speaker.ConversationDisplayNameId)
+                .ToHashSet(StringComparer.Ordinal);
+            foreach (var speaker in speakers)
+            {
+                speaker.DisplayName = ConversationDisplayNames.Single(definition =>
+                    string.Equals(
+                        definition.ConversationDisplayNameId,
+                        speaker.ConversationDisplayNameId,
+                        StringComparison.Ordinal)).DisplayName;
+                speaker.AvailableConversationDisplayNames = ConversationDisplayNames
+                    .Where(definition =>
+                        string.Equals(
+                            definition.ConversationDisplayNameId,
+                            speaker.ConversationDisplayNameId,
+                            StringComparison.Ordinal)
+                        || !assignedIds.Contains(definition.ConversationDisplayNameId))
+                    .ToList();
+            }
         }
 
         private async void StartEnrollment_Click(object sender, RoutedEventArgs e)
         {
-            var displayName = NewSpeakerNameBox.Text.Trim();
-            if (displayName.Length == 0)
+            if (NewSpeakerDisplayNameComboBox.SelectedValue is not string conversationDisplayNameId)
             {
                 MessageBox.Show(
-                    "話者の呼ばれ方を入力してください。",
+                    "未割当の呼ばれ方を選択してください。",
                     "入力エラー",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -97,7 +149,7 @@ namespace CocoroConsole.Controls
             await StartEnrollmentAsync(new OtomeKairoSpeakerEnrollmentRequest
             {
                 OwnerClientId = _ownerClientId,
-                DisplayName = displayName,
+                ConversationDisplayNameId = conversationDisplayNameId,
             });
         }
 
@@ -160,7 +212,7 @@ namespace CocoroConsole.Controls
             }
         }
 
-        private async void RenameSpeaker_Click(object sender, RoutedEventArgs e)
+        private async void AssignSpeakerDisplayName_Click(object sender, RoutedEventArgs e)
         {
             if (_apiClient == null ||
                 sender is not Button button ||
@@ -169,11 +221,10 @@ namespace CocoroConsole.Controls
                 return;
             }
 
-            var displayName = speaker.DisplayName.Trim();
-            if (displayName.Length == 0)
+            if (button.CommandParameter is not string conversationDisplayNameId)
             {
                 MessageBox.Show(
-                    "話者の呼ばれ方を入力してください。",
+                    "割り当てる呼ばれ方を選択してください。",
                     "入力エラー",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -182,7 +233,9 @@ namespace CocoroConsole.Controls
 
             try
             {
-                await _apiClient.RenameAudioSpeakerAsync(speaker.PersonRef, displayName);
+                await _apiClient.AssignAudioSpeakerConversationDisplayNameAsync(
+                    speaker.PersonRef,
+                    conversationDisplayNameId);
                 await RefreshSpeakerListAsync();
             }
             catch (Exception ex)
@@ -254,9 +307,10 @@ namespace CocoroConsole.Controls
         private void ApplyEnrollmentState(OtomeKairoSpeakerEnrollment? enrollment)
         {
             var isActive = enrollment != null;
-            StartEnrollmentButton.IsEnabled = !isActive;
+            StartEnrollmentButton.IsEnabled = !isActive
+                && NewSpeakerDisplayNameComboBox.Items.Count > 0;
             CancelEnrollmentButton.IsEnabled = isActive;
-            NewSpeakerNameBox.IsEnabled = !isActive;
+            NewSpeakerDisplayNameComboBox.IsEnabled = !isActive;
             EnrollmentStatusText.Text = enrollment == null
                 ? "選択中のマイクへ2秒以上の発話を3回入力すると登録が完了します。"
                 : $"登録中: {enrollment.CompletedSamples}/{enrollment.RequiredSamples} 発話";

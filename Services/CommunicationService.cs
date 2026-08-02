@@ -520,6 +520,7 @@ namespace CocoroConsole.Services
                 _appSettings.ApplyRemoteSettings(
                     consoleClient.Settings,
                     config.SettingsSnapshot,
+                    config.ConversationDisplayNames,
                     avatarSpeech);
                 _remoteSettingsApplied = true;
                 if (_apiServerStartRequested)

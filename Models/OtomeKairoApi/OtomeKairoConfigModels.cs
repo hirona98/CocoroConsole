@@ -41,11 +41,41 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("thinking_speech_level")]
         public int ThinkingSpeechLevel { get; set; } = 5;
 
-        [JsonPropertyName("conversation_display_name")]
-        public string ConversationDisplayName { get; set; } = string.Empty;
+        [JsonPropertyName("selected_conversation_display_name_id")]
+        public string? SelectedConversationDisplayNameId { get; set; }
 
         [JsonPropertyName("wake_policy")]
         public Dictionary<string, object?> WakePolicy { get; set; } = new Dictionary<string, object?>();
+    }
+
+    /// <summary>
+    /// 会話入力と音声話者が共有する呼ばれ方を表します。
+    /// </summary>
+    public class OtomeKairoConversationDisplayNameDefinition
+    {
+        [JsonPropertyName("conversation_display_name_id")]
+        public string ConversationDisplayNameId { get; set; } = string.Empty;
+
+        [JsonPropertyName("display_name")]
+        public string DisplayName { get; set; } = string.Empty;
+
+        [JsonPropertyName("created_at")]
+        public string? CreatedAt { get; set; }
+
+        [JsonPropertyName("updated_at")]
+        public string? UpdatedAt { get; set; }
+
+        public override string ToString()
+        {
+            return DisplayName;
+        }
+    }
+
+    public class OtomeKairoConversationDisplayNamesResponse
+    {
+        [JsonPropertyName("conversation_display_names")]
+        public List<OtomeKairoConversationDisplayNameDefinition> ConversationDisplayNames { get; set; }
+            = new List<OtomeKairoConversationDisplayNameDefinition>();
     }
 
     /// <summary>

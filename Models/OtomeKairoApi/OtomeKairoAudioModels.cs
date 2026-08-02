@@ -67,6 +67,9 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("person_ref")]
         public string PersonRef { get; set; } = string.Empty;
 
+        [JsonPropertyName("conversation_display_name_id")]
+        public string ConversationDisplayNameId { get; set; } = string.Empty;
+
         [JsonPropertyName("display_name")]
         public string DisplayName { get; set; } = string.Empty;
 
@@ -81,6 +84,10 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
         [JsonPropertyName("updated_at")]
         public string? UpdatedAt { get; set; }
+
+        [JsonIgnore]
+        public List<OtomeKairoConversationDisplayNameDefinition> AvailableConversationDisplayNames { get; set; }
+            = new List<OtomeKairoConversationDisplayNameDefinition>();
     }
 
     public class OtomeKairoAudioSpeakersResponse
@@ -98,9 +105,9 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? PersonRef { get; set; }
 
-        [JsonPropertyName("display_name")]
+        [JsonPropertyName("conversation_display_name_id")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? DisplayName { get; set; }
+        public string? ConversationDisplayNameId { get; set; }
     }
 
     public class OtomeKairoSpeakerEnrollment
@@ -117,6 +124,9 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("display_name")]
         public string? DisplayName { get; set; }
 
+        [JsonPropertyName("conversation_display_name_id")]
+        public string? ConversationDisplayNameId { get; set; }
+
         [JsonPropertyName("required_samples")]
         public int RequiredSamples { get; set; }
 
@@ -127,10 +137,10 @@ namespace CocoroConsole.Models.OtomeKairoApi
         public string ExpiresAt { get; set; } = string.Empty;
     }
 
-    public class OtomeKairoRenameSpeakerRequest
+    public class OtomeKairoAssignSpeakerConversationDisplayNameRequest
     {
-        [JsonPropertyName("display_name")]
-        public string DisplayName { get; set; } = string.Empty;
+        [JsonPropertyName("conversation_display_name_id")]
+        public string ConversationDisplayNameId { get; set; } = string.Empty;
     }
 
     /// <summary>

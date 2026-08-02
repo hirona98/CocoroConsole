@@ -42,7 +42,17 @@ namespace CocoroConsole.Services
         /// <summary>
         /// テキスト入力で使用する人物の呼び名
         /// </summary>
-        string ConversationDisplayName { get; set; }
+        string ConversationDisplayName { get; }
+
+        /// <summary>
+        /// テキスト入力で使用する呼ばれ方のID
+        /// </summary>
+        string? SelectedConversationDisplayNameId { get; set; }
+
+        /// <summary>
+        /// 会話入力と音声話者が共有する呼ばれ方
+        /// </summary>
+        List<OtomeKairoConversationDisplayNameDefinition> ConversationDisplayNames { get; set; }
 
         /// <summary>
         /// otomekairo API Bearer トークン
@@ -213,6 +223,7 @@ namespace CocoroConsole.Services
         void ApplyRemoteSettings(
             OtomeKairoConsoleClientSettings consoleSettings,
             OtomeKairoCurrentSettings currentSettings,
+            IReadOnlyList<OtomeKairoConversationDisplayNameDefinition> conversationDisplayNames,
             OtomeKairoAvatarSpeechEditorState avatarSpeech);
 
         /// <summary>

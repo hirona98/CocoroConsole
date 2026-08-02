@@ -161,6 +161,7 @@ namespace CocoroConsole.Controls
                 AppSettings.Instance.ApplyRemoteSettings(
                     _loadedConsoleClientEditorState.Settings,
                     _loadedOtomeKairoEditorState.Current,
+                    (await _apiClient.GetConversationDisplayNamesAsync()).ConversationDisplayNames,
                     _loadedAvatarSpeechEditorState);
 
                 DisplaySettingsControl.InitializeFromAppSettings();
@@ -391,13 +392,14 @@ namespace CocoroConsole.Controls
 
 
         // System やその他設定の収集はこのまま SettingWindow 側で実施
-        private Dictionary<string, object> CollectSystemSettings()
+        private Dictionary<string, object?> CollectSystemSettings()
         {
-            var dict = new Dictionary<string, object>();
+            var dict = new Dictionary<string, object?>();
 
             var microphoneSettings = SystemSettingsControl.GetMicrophoneSettings();
             dict["MicrophoneSettings"] = microphoneSettings.DeepCopy();
-            dict["ConversationDisplayName"] = SystemSettingsControl.GetConversationDisplayName();
+            dict["SelectedConversationDisplayNameId"] =
+                SystemSettingsControl.GetSelectedConversationDisplayNameId();
 
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
             dict["WindowTitleExcludePatterns"] = SystemSettingsControl.GetWindowTitleExcludePatterns();
@@ -519,13 +521,6 @@ namespace CocoroConsole.Controls
             {
                 throw new InvalidOperationException(
                     "OtomeKairoの通常設定を取得していません。トレイの「接続先設定」で接続し直してください。");
-            }
-
-            var conversationDisplayName = SystemSettingsControl.GetConversationDisplayName();
-            if (string.IsNullOrWhiteSpace(conversationDisplayName))
-            {
-                throw new InvalidOperationException(
-                    "呼ばれ方が未設定です。入力の「会話入力」で設定してください。");
             }
 
             // すべてのタブの設定を保存（プリセットの保存・有効化を含む）
@@ -820,7 +815,8 @@ namespace CocoroConsole.Controls
                     SelectedMemorySetId = activeMemorySetId,
                     SelectedModelPresetId = activeModelPresetId,
                     ThinkingSpeechLevel = SystemSettingsControl.GetThinkingSpeechLevel(),
-                    ConversationDisplayName = SystemSettingsControl.GetConversationDisplayName(),
+                    SelectedConversationDisplayNameId =
+                        SystemSettingsControl.GetSelectedConversationDisplayNameId(),
                     WakePolicy = SystemSettingsControl.GetWakePolicy(),
                 },
                 Personas = ClonePersonas(personas),
@@ -1007,19 +1003,26 @@ namespace CocoroConsole.Controls
         /// 表示設定を保存する
         /// </summary>
         // Display タブ以外の設定を AppSettings に適用
-        private void ApplySystemSnapshotToAppSettings(Dictionary<string, object> snapshot)
+        private void ApplySystemSnapshotToAppSettings(Dictionary<string, object?> snapshot)
         {
             var appSettings = AppSettings.Instance;
 
-            appSettings.MicrophoneSettings =
-                ((MicrophoneSettings)snapshot["MicrophoneSettings"]).DeepCopy();
-            appSettings.ConversationDisplayName = (string)snapshot["ConversationDisplayName"];
+            var microphoneSettings = snapshot["MicrophoneSettings"] as MicrophoneSettings
+                ?? throw new InvalidOperationException("マイク設定を取得できません。");
+            appSettings.MicrophoneSettings = microphoneSettings.DeepCopy();
+            appSettings.SelectedConversationDisplayNameId =
+                snapshot["SelectedConversationDisplayNameId"] as string;
 
             // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
-            appSettings.ScreenshotSettings.excludePatterns = (List<string>)snapshot["WindowTitleExcludePatterns"];
+            appSettings.ScreenshotSettings.excludePatterns =
+                snapshot["WindowTitleExcludePatterns"] as List<string>
+                ?? throw new InvalidOperationException("除外パターンを取得できません。");
 
             // 視覚キャプチャ（アイドルタイムアウト / ローカル設定）
-            appSettings.ScreenshotSettings.idleTimeoutMinutes = (int)snapshot["VisualCaptureIdleTimeoutMinutes"];
+            appSettings.ScreenshotSettings.idleTimeoutMinutes =
+                snapshot["VisualCaptureIdleTimeoutMinutes"] is int idleTimeoutMinutes
+                    ? idleTimeoutMinutes
+                    : throw new InvalidOperationException("アイドル時間を取得できません。");
         }
 
         /// <summary>
