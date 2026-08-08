@@ -92,12 +92,6 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoStatusResponse>(HttpMethod.Get, "/api/status", null, cancellationToken);
         }
 
-        public Task<OtomeKairoDocsResponse> GetApiDocumentationAsync(CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOtomeKairoAsync<OtomeKairoDocsResponse>(HttpMethod.Get, "/api/docs", null, cancellationToken);
-        }
-
         public Task<OtomeKairoConversationResponse> SendConversationAsync(OtomeKairoConversationRequest request, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -108,18 +102,6 @@ namespace CocoroConsole.Services
         {
             ThrowIfDisposed();
             return SendOtomeKairoAsync<OtomeKairoConfigResponse>(HttpMethod.Get, "/api/config", null, cancellationToken);
-        }
-
-        public Task<OtomeKairoEditorState> GetEditorStateAsync(CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOtomeKairoAsync<OtomeKairoEditorState>(HttpMethod.Get, "/api/config/editor-state", null, cancellationToken);
-        }
-
-        public Task<OtomeKairoEditorState> ReplaceEditorStateAsync(OtomeKairoEditorState request, CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOtomeKairoAsync<OtomeKairoEditorState>(HttpMethod.Put, "/api/config/editor-state", request, cancellationToken);
         }
 
         public Task<OtomeKairoAvatarSpeechEditorState> GetAvatarSpeechEditorStateAsync(
@@ -141,50 +123,6 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoAvatarSpeechEditorState>(
                 HttpMethod.Put,
                 "/api/config/avatar-speech/editor-state",
-                request,
-                cancellationToken);
-        }
-
-        public Task<OtomeKairoCameraSourcesEditorState> GetCameraSourcesEditorStateAsync(CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOtomeKairoAsync<OtomeKairoCameraSourcesEditorState>(
-                HttpMethod.Get,
-                "/api/config/camera-sources/editor-state",
-                null,
-                cancellationToken);
-        }
-
-        public Task<OtomeKairoCameraSourcesEditorState> ReplaceCameraSourcesEditorStateAsync(
-            OtomeKairoCameraSourcesEditorState request,
-            CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOtomeKairoAsync<OtomeKairoCameraSourcesEditorState>(
-                HttpMethod.Put,
-                "/api/config/camera-sources/editor-state",
-                request,
-                cancellationToken);
-        }
-
-        public Task<OtomeKairoMcpServersEditorState> GetMcpServersEditorStateAsync(CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOtomeKairoAsync<OtomeKairoMcpServersEditorState>(
-                HttpMethod.Get,
-                "/api/config/mcp-servers/editor-state",
-                null,
-                cancellationToken);
-        }
-
-        public Task<OtomeKairoMcpServersEditorState> ReplaceMcpServersEditorStateAsync(
-            OtomeKairoMcpServersEditorState request,
-            CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOtomeKairoAsync<OtomeKairoMcpServersEditorState>(
-                HttpMethod.Put,
-                "/api/config/mcp-servers/editor-state",
                 request,
                 cancellationToken);
         }
@@ -315,47 +253,6 @@ namespace CocoroConsole.Services
                 cancellationToken);
         }
 
-        public Task<OtomeKairoConversationDisplayNameDefinition> CreateConversationDisplayNameAsync(
-            string displayName,
-            CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOtomeKairoAsync<OtomeKairoConversationDisplayNameDefinition>(
-                HttpMethod.Post,
-                "/api/config/conversation-display-names",
-                new { display_name = displayName },
-                cancellationToken);
-        }
-
-        public Task<OtomeKairoConversationDisplayNameDefinition> UpdateConversationDisplayNameAsync(
-            string conversationDisplayNameId,
-            string displayName,
-            CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOtomeKairoAsync<OtomeKairoConversationDisplayNameDefinition>(
-                HttpMethod.Put,
-                BuildConfigResourcePath(
-                    "/api/config/conversation-display-names",
-                    conversationDisplayNameId),
-                new { display_name = displayName },
-                cancellationToken);
-        }
-
-        public Task DeleteConversationDisplayNameAsync(
-            string conversationDisplayNameId,
-            CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOkAsync(
-                HttpMethod.Delete,
-                BuildConfigResourcePath(
-                    "/api/config/conversation-display-names",
-                    conversationDisplayNameId),
-                null,
-                cancellationToken);
-        }
-
         public Task<OtomeKairoAudioSpeaker> UnregisterAudioSpeakerAsync(
             string personRef,
             CancellationToken cancellationToken = default)
@@ -365,45 +262,6 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoAudioSpeaker>(
                 HttpMethod.Delete,
                 path,
-                null,
-                cancellationToken);
-        }
-
-        public Task ReplaceMemorySetAsync(OtomeKairoMemorySetDefinition request, CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOkAsync(
-                HttpMethod.Put,
-                BuildConfigResourcePath("/api/config/memory-sets", request.MemorySetId),
-                request,
-                cancellationToken);
-        }
-
-        public Task CloneMemorySetAsync(
-            string sourceMemorySetId,
-            string targetMemorySetId,
-            string displayName,
-            CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOkAsync(
-                HttpMethod.Post,
-                "/api/config/memory-sets/clone",
-                new
-                {
-                    source_memory_set_id = sourceMemorySetId,
-                    memory_set_id = targetMemorySetId,
-                    display_name = displayName,
-                },
-                cancellationToken);
-        }
-
-        public Task DeleteMemorySetAsync(string memorySetId, CancellationToken cancellationToken = default)
-        {
-            ThrowIfDisposed();
-            return SendOkAsync(
-                HttpMethod.Delete,
-                BuildConfigResourcePath("/api/config/memory-sets", memorySetId),
                 null,
                 cancellationToken);
         }
@@ -742,33 +600,6 @@ namespace CocoroConsole.Services
 
         [JsonPropertyName("selected_model_preset")]
         public OtomeKairoModelPresetDefinition SelectedModelPreset { get; set; } = new OtomeKairoModelPresetDefinition();
-    }
-
-    public class OtomeKairoDocsResponse
-    {
-        [JsonPropertyName("document_set_id")]
-        public string DocumentSetId { get; set; } = string.Empty;
-
-        [JsonPropertyName("title")]
-        public string Title { get; set; } = string.Empty;
-
-        [JsonPropertyName("format")]
-        public string Format { get; set; } = string.Empty;
-
-        [JsonPropertyName("sections")]
-        public List<OtomeKairoDocsSection> Sections { get; set; } = new List<OtomeKairoDocsSection>();
-    }
-
-    public class OtomeKairoDocsSection
-    {
-        [JsonPropertyName("section_id")]
-        public string SectionId { get; set; } = string.Empty;
-
-        [JsonPropertyName("title")]
-        public string Title { get; set; } = string.Empty;
-
-        [JsonPropertyName("body_text")]
-        public string BodyText { get; set; } = string.Empty;
     }
 
     public class OtomeKairoCurrentSettingsPatch

@@ -164,65 +164,8 @@
 
                         <TextBlock Text="入力"
                                    Style="{StaticResource NavigationCategoryStyle}"/>
-                        <RadioButton Content="会話入力"
-                                     Tag="conversation"
-                                     GroupName="SettingsNavigation"
-                                     Style="{StaticResource NavigationItemStyle}"
-                                     Checked="NavigationButton_Checked"/>
-
-                        <TextBlock Text="個"
-                                   Style="{StaticResource NavigationCategoryStyle}"/>
-                        <RadioButton Content="人格設定"
-                                     Tag="persona"
-                                     GroupName="SettingsNavigation"
-                                     Style="{StaticResource NavigationItemStyle}"
-                                     Checked="NavigationButton_Checked"/>
-                        <RadioButton Content="モデル"
-                                     Tag="model"
-                                     GroupName="SettingsNavigation"
-                                     Style="{StaticResource NavigationItemStyle}"
-                                     Checked="NavigationButton_Checked"/>
-                        <RadioButton Content="記憶"
-                                     Tag="memory"
-                                     GroupName="SettingsNavigation"
-                                     Style="{StaticResource NavigationItemStyle}"
-                                     Checked="NavigationButton_Checked"/>
-
-                        <TextBlock Text="自律動作"
-                                   Style="{StaticResource NavigationCategoryStyle}"/>
-                        <RadioButton Content="定期思考"
-                                     Tag="periodic-thinking"
-                                     GroupName="SettingsNavigation"
-                                     Style="{StaticResource NavigationItemStyle}"
-                                     Checked="NavigationButton_Checked"/>
-
-                        <TextBlock Text="観測と監視"
-                                   Style="{StaticResource NavigationCategoryStyle}"/>
-                        <RadioButton Content="デスクトップ"
-                                     Tag="desktop"
-                                     GroupName="SettingsNavigation"
-                                     Style="{StaticResource NavigationItemStyle}"
-                                     Checked="NavigationButton_Checked"/>
-                        <RadioButton Content="カメラ"
-                                     Tag="camera"
-                                     GroupName="SettingsNavigation"
-                                     Style="{StaticResource NavigationItemStyle}"
-                                     Checked="NavigationButton_Checked"/>
-                        <RadioButton Content="Watcher"
-                                     Tag="watcher"
-                                     GroupName="SettingsNavigation"
-                                     Style="{StaticResource NavigationItemStyle}"
-                                     Checked="NavigationButton_Checked"/>
-
-                        <TextBlock Text="外部連携"
-                                   Style="{StaticResource NavigationCategoryStyle}"/>
-                        <RadioButton Content="ツール（MCP）"
-                                     Tag="mcp"
-                                     GroupName="SettingsNavigation"
-                                     Style="{StaticResource NavigationItemStyle}"
-                                     Checked="NavigationButton_Checked"/>
-                        <RadioButton Content="API説明"
-                                     Tag="api"
+                        <RadioButton Content="マイク"
+                                     Tag="microphone"
                                      GroupName="SettingsNavigation"
                                      Style="{StaticResource NavigationItemStyle}"
                                      Checked="NavigationButton_Checked"/>
@@ -244,20 +187,10 @@
                     <local:DisplaySettingsControl x:Name="DisplaySettingsControl"/>
                     <local:AvatarManagementControl x:Name="AvatarManagementControl"
                                                    Visibility="Collapsed"/>
-                    <local:PromptSettingsControl x:Name="PromptSettingsControl"
-                                                 Visibility="Collapsed"/>
-                    <local:LlmSettingsControl x:Name="LlmSettingsControl"
-                                              Visibility="Collapsed"/>
-                    <local:EmbeddingSettingsControl x:Name="EmbeddingSettingsControl"
-                                                    Visibility="Collapsed"/>
                     <local:AnimationSettingsControl x:Name="AnimationSettingsControl"
                                                     Visibility="Collapsed"/>
                     <local:SystemSettingsControl x:Name="SystemSettingsControl"
                                                  Visibility="Collapsed"/>
-                    <local:CapabilitySettingsControl x:Name="CapabilitySettingsControl"
-                                                     Visibility="Collapsed"/>
-                    <local:ApiDocumentationControl x:Name="ApiDocumentationControl"
-                                                   Visibility="Collapsed"/>
 
                     <Grid x:Name="LicensePage"
                           Visibility="Collapsed"
@@ -266,7 +199,6 @@
                                 BorderThickness="1"
                                 CornerRadius="5">
                             <TextBox x:Name="LicenseTextBox"
-
                                      Padding="8"
                                      BorderThickness="0"
                                      AcceptsReturn="True"

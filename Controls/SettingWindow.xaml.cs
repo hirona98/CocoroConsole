@@ -5,36 +5,26 @@ using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace CocoroConsole.Controls
 {
-
     /// <summary>
-    /// SettingWindow.xaml の相互作用ロジック
+    /// 端末固有設定とアバター・マイク設定を編集する設定ウィンドウ。
+    /// 人格・モデル・記憶・定期思考・カメラ・Watcher・MCP は OtomeKairo WebUI で編集する。
     /// </summary>
     public partial class SettingWindow : Window
     {
-        // Display 設定は DisplaySettingsControl に委譲
         private Dictionary<string, object> _originalDisplaySettings = new Dictionary<string, object>();
         private List<AvatarSettings> _originalAvatarList = new List<AvatarSettings>();
 
-        // 通信サービス
         private ICommunicationService? _communicationService;
-
-        // otomekairo APIクライアント
         private OtomeKairoApiClient? _apiClient;
 
-        // OtomeKairo の editor-state を保持
-        private OtomeKairoEditorState? _loadedOtomeKairoEditorState;
         private OtomeKairoConsoleClientEditorState? _loadedConsoleClientEditorState;
         private OtomeKairoAvatarSpeechEditorState? _loadedAvatarSpeechEditorState;
-        private OtomeKairoCameraSourcesEditorState? _loadedCameraSourcesEditorState;
-        private OtomeKairoMcpServersEditorState? _loadedMcpServersEditorState;
 
         public bool IsClosed { get; private set; } = false;
 
@@ -46,38 +36,20 @@ namespace CocoroConsole.Controls
         {
             InitializeComponent();
             ShowSettingsPage("display");
-            EmbeddingSettingsControl.ResolveLlmApiKey = () => LlmSettingsControl.GetPreferredApiKeyForEmbeddingPaste();
 
             _communicationService = communicationService;
 
-            // LLM使用設定（全体設定）を初期表示に反映
-            LlmSettingsControl.IsUseLlm = AppSettings.Instance.IsUseLLM;
-
-            // otomekairo APIクライアントを初期化
             InitializeApiClient();
 
-            // Display タブ初期化
             DisplaySettingsControl.SetCommunicationService(_communicationService);
             DisplaySettingsControl.InitializeFromAppSettings();
 
-            // アバター設定の初期化
             InitializeAvatarSettings();
-
-            // システム設定コントロールを初期化（APIクライアント設定後に初期化）
             _ = InitializeSystemSettingsAsync();
-
-            // システム設定変更イベントを登録
             SystemSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
+            _ = InitializeRemoteSettingsAsync();
 
-            // API説明コントロールを初期化
-            _ = ApiDocumentationControl.InitializeAsync();
-
-            // プリセット管理コントロールを初期化
-            _ = InitializePresetControlsAsync();
-
-            // 元の設定のバックアップを作成
             BackupSettings();
-
         }
 
         private async Task InitializeSystemSettingsAsync()
@@ -88,29 +60,14 @@ namespace CocoroConsole.Controls
                 AppSettings.Instance.ClientId);
         }
 
-        public void SetWakeDesktopObservationEnabled(bool enabled)
-        {
-            SystemSettingsControl.SetWakeDesktopObservationEnabled(enabled);
-        }
-
-        /// <summary>
-        /// ウィンドウがロードされた後に呼び出されるイベントハンドラ
-        /// </summary>
         protected override void OnSourceInitialized(System.EventArgs e)
         {
             base.OnSourceInitialized(e);
-            // Owner設定後にメインサービスを初期化
             InitializeMainServices();
         }
 
-        #region 初期化メソッド
-
-        /// <summary>
-        /// メインサービスの初期化
-        /// </summary>
         private void InitializeMainServices()
         {
-            // 通信サービスの取得（メインウィンドウから）
             if (Owner is MainWindow mainWindow &&
                 typeof(MainWindow).GetField("_communicationService", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(mainWindow) is CommunicationService service)
             {
@@ -119,14 +76,10 @@ namespace CocoroConsole.Controls
             LoadLicenseText();
         }
 
-        /// <summary>
-        /// otomekairo APIクライアントを初期化
-        /// </summary>
         private void InitializeApiClient()
         {
             try
             {
-                // --- 既存クライアントを破棄して現在の設定で作り直す ---
                 _apiClient?.Dispose();
                 _apiClient = null;
 
@@ -146,156 +99,67 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// プリセット管理コントロールを初期化
+        /// 端末設定とアバター音声設定を取得し、表示・アバター・マイク UI に反映する。
         /// </summary>
-        private async Task InitializePresetControlsAsync()
+        private async Task InitializeRemoteSettingsAsync()
         {
-            if (_apiClient == null) return;
+            if (_apiClient == null)
+            {
+                return;
+            }
 
             try
             {
-                _loadedOtomeKairoEditorState = await _apiClient.GetEditorStateAsync();
                 _loadedConsoleClientEditorState = await _apiClient.ConnectConsoleClientAsync(
                     AppSettings.Instance.ClientId);
                 _loadedAvatarSpeechEditorState = await _apiClient.GetAvatarSpeechEditorStateAsync();
+                var currentSettings = (await _apiClient.GetOtomeKairoConfigAsync()).SettingsSnapshot;
                 AppSettings.Instance.ApplyRemoteSettings(
                     _loadedConsoleClientEditorState.Settings,
-                    _loadedOtomeKairoEditorState.Current,
+                    currentSettings,
                     (await _apiClient.GetConversationDisplayNamesAsync()).ConversationDisplayNames,
                     _loadedAvatarSpeechEditorState);
 
                 DisplaySettingsControl.InitializeFromAppSettings();
                 AvatarManagementControl.RefreshAvatarList();
                 AnimationSettingsControl.Initialize();
-                SystemSettingsControl.ReloadFromAppSettings(
-                    AvatarManagementControl.GetCurrentAvatarIndex());
-
-                LlmSettingsControl.LoadSettingsList(
-                    CloneModelPresets(_loadedOtomeKairoEditorState.ModelPresets),
-                    _loadedOtomeKairoEditorState.Current.SelectedModelPresetId
-                );
-
-                EmbeddingSettingsControl.LoadSettings(
-                    CloneMemorySets(_loadedOtomeKairoEditorState.MemorySets),
-                    _loadedOtomeKairoEditorState.Current.SelectedMemorySetId
-                );
-
-                PromptSettingsControl.LoadSettings(
-                    ClonePersonas(_loadedOtomeKairoEditorState.Personas),
-                    _loadedOtomeKairoEditorState.Current.SelectedPersonaId
-                );
-
-                SystemSettingsControl.ApplyOtomeKairoCurrentSettings(_loadedOtomeKairoEditorState.Current);
-                await InitializeCameraSourcesControlAsync();
-                await InitializeMcpServersControlAsync();
-
-                LlmSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
-                EmbeddingSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
-                PromptSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
-                CapabilitySettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
+                SystemSettingsControl.ReloadFromAppSettings();
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"プリセット管理初期化エラー: {ex.Message}");
+                Debug.WriteLine($"端末設定初期化エラー: {ex.Message}");
             }
         }
 
-
-        private async Task InitializeCameraSourcesControlAsync()
-        {
-            if (_apiClient == null)
-            {
-                return;
-            }
-
-            try
-            {
-                _loadedCameraSourcesEditorState = await _apiClient.GetCameraSourcesEditorStateAsync();
-                CapabilitySettingsControl.LoadCameraSources(_loadedCameraSourcesEditorState);
-            }
-            catch (Exception ex)
-            {
-                _loadedCameraSourcesEditorState = null;
-                CapabilitySettingsControl.LoadCameraSources(null);
-                Debug.WriteLine($"カメラ視覚初期化エラー: {ex.Message}");
-            }
-        }
-
-
-        private async Task InitializeMcpServersControlAsync()
-        {
-            if (_apiClient == null)
-            {
-                return;
-            }
-
-            try
-            {
-                _loadedMcpServersEditorState = await _apiClient.GetMcpServersEditorStateAsync();
-                CapabilitySettingsControl.LoadMcpServers(_loadedMcpServersEditorState);
-            }
-            catch (Exception ex)
-            {
-                _loadedMcpServersEditorState = null;
-                CapabilitySettingsControl.LoadMcpServers(null);
-                Debug.WriteLine($"MCP初期化エラー: {ex.Message}");
-            }
-        }
-
-
-        /// <summary>
-        /// アバター設定の初期化
-        /// </summary>
         private void InitializeAvatarSettings()
         {
-            // AvatarManagementControlの初期化
             AvatarManagementControl.Initialize();
             AvatarManagementControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
 
-            // アバター変更イベントを登録
             AvatarManagementControl.AvatarChanged += (sender, args) =>
             {
-                // 会話入力ページの音声認識設定も選択アバターに合わせる。
-                SystemSettingsControl.SelectAvatar(
-                    AvatarManagementControl.GetCurrentAvatarIndex());
-
-                // アニメーション設定を更新
                 AnimationSettingsControl.Initialize();
             };
 
-            // アニメーション設定コントロールを初期化
             if (_communicationService != null)
             {
                 AnimationSettingsControl.SetCommunicationService(_communicationService);
             }
             AnimationSettingsControl.Initialize();
-
-            // アニメーション設定変更イベントを登録
             AnimationSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
         }
 
-        // EscapePositionControl は DisplaySettingsControl 内で取り扱う
-
-        /// <summary>
-        /// 現在の設定をバックアップする
-        /// </summary>
         private void BackupSettings()
         {
-            // 表示設定のバックアップ
             DisplaySettingsControl.SaveToSnapshot();
             _originalDisplaySettings = DisplaySettingsControl.GetSnapshot();
 
-            // アバターリストのバックアップ（Deep Copy）
             _originalAvatarList.Clear();
             foreach (var avatar in AppSettings.Instance.AvatarList)
             {
                 _originalAvatarList.Add(DeepCopyAvatarSettings(avatar));
             }
         }
-
-        #endregion
-
-        #region 表示設定メソッド
 
         private void MarkSettingsChanged()
         {
@@ -316,65 +180,24 @@ namespace CocoroConsole.Controls
             ShowSettingsPage(pageId);
         }
 
-        /// <summary>
-        /// 左ナビで選択した責務だけを右ペインへ表示する。
-        /// </summary>
         private void ShowSettingsPage(string pageId)
         {
             DisplaySettingsControl.Visibility = Visibility.Collapsed;
             AvatarManagementControl.Visibility = Visibility.Collapsed;
-            PromptSettingsControl.Visibility = Visibility.Collapsed;
-            LlmSettingsControl.Visibility = Visibility.Collapsed;
-            EmbeddingSettingsControl.Visibility = Visibility.Collapsed;
             AnimationSettingsControl.Visibility = Visibility.Collapsed;
             SystemSettingsControl.Visibility = Visibility.Collapsed;
-            CapabilitySettingsControl.Visibility = Visibility.Collapsed;
-            ApiDocumentationControl.Visibility = Visibility.Collapsed;
             LicensePage.Visibility = Visibility.Collapsed;
 
             switch (pageId)
             {
-                case "persona":
-                    ShowPage(PromptSettingsControl);
-                    break;
-                case "model":
-                    ShowPage(LlmSettingsControl);
-                    break;
-                case "memory":
-                    ShowPage(EmbeddingSettingsControl);
-                    break;
                 case "avatar":
                     ShowPage(AvatarManagementControl);
                     break;
                 case "motion":
                     ShowPage(AnimationSettingsControl);
                     break;
-                case "conversation":
-                    SystemSettingsControl.ShowSection(SystemSettingsSection.ConversationInput);
+                case "microphone":
                     ShowPage(SystemSettingsControl);
-                    break;
-                case "periodic-thinking":
-                    SystemSettingsControl.ShowSection(SystemSettingsSection.PeriodicThinking);
-                    ShowPage(SystemSettingsControl);
-                    break;
-                case "desktop":
-                    SystemSettingsControl.ShowSection(SystemSettingsSection.DesktopObservation);
-                    ShowPage(SystemSettingsControl);
-                    break;
-                case "camera":
-                    CapabilitySettingsControl.ShowSection(CapabilitySettingsSection.Camera);
-                    ShowPage(CapabilitySettingsControl);
-                    break;
-                case "watcher":
-                    CapabilitySettingsControl.ShowSection(CapabilitySettingsSection.Watcher);
-                    ShowPage(CapabilitySettingsControl);
-                    break;
-                case "mcp":
-                    CapabilitySettingsControl.ShowSection(CapabilitySettingsSection.Mcp);
-                    ShowPage(CapabilitySettingsControl);
-                    break;
-                case "api":
-                    ShowPage(ApiDocumentationControl);
                     break;
                 case "license":
                     ShowPage(LicensePage);
@@ -390,89 +213,11 @@ namespace CocoroConsole.Controls
             page.Visibility = Visibility.Visible;
         }
 
-
-        // System やその他設定の収集はこのまま SettingWindow 側で実施
-        private Dictionary<string, object?> CollectSystemSettings()
-        {
-            var dict = new Dictionary<string, object?>();
-
-            var microphoneSettings = SystemSettingsControl.GetMicrophoneSettings();
-            dict["MicrophoneSettings"] = microphoneSettings.DeepCopy();
-            dict["SelectedConversationDisplayNameId"] =
-                SystemSettingsControl.GetSelectedConversationDisplayNameId();
-
-            // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
-            dict["WindowTitleExcludePatterns"] = SystemSettingsControl.GetWindowTitleExcludePatterns();
-
-            // 視覚キャプチャ（アイドルタイムアウト / ローカル設定）
-            dict["VisualCaptureIdleTimeoutMinutes"] = SystemSettingsControl.GetVisualCaptureIdleTimeoutMinutes();
-
-            return dict;
-        }
-
-        #endregion
-
-        /// <summary>
-        /// アニメーションチェックボックスのチェック時の処理
-        /// </summary>
-        private void AnimationCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            if (sender is CheckBox checkBox && checkBox.Tag is AnimationConfig animation)
-            {
-                animation.isEnabled = true;
-            }
-        }
-
-        /// <summary>
-        /// アニメーションチェックボックスのアンチェック時の処理
-        /// </summary>
-        private void AnimationCheckBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            if (sender is CheckBox checkBox && checkBox.Tag is AnimationConfig animation)
-            {
-                animation.isEnabled = false;
-            }
-        }
-
-        /// <summary>
-        /// アニメーション再生ボタンクリック時の処理
-        /// </summary>
-        private async void PlayAnimationButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.Tag is AnimationConfig animation)
-            {
-                if (_communicationService != null)
-                {
-                    try
-                    {
-                        // CocoroShellにアニメーション再生指示を送信
-                        await _communicationService.SendAnimationToShellAsync(animation.animationName);
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"アニメーション再生エラー: {ex.Message}");
-                        UIHelper.ShowError("アニメーション再生エラー", ex.Message);
-                    }
-                }
-                else
-                {
-                    UIHelper.ShowError("通信エラー", "通信サービスが利用できません。");
-                }
-            }
-        }
-
-        #region 共通ボタンイベントハンドラ
-        /// <summary>
-        /// OKボタンのクリックイベントハンドラ
-        /// </summary>
         private async void OkButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                // 共通の設定保存処理を実行
                 await ApplySettingsChangesAsync();
-
-                // ウィンドウを閉じる
                 Close();
             }
             catch (Exception ex)
@@ -481,29 +226,17 @@ namespace CocoroConsole.Controls
             }
         }
 
-        /// <summary>
-        /// キャンセルボタンのクリックイベントハンドラ
-        /// </summary>
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            // 変更を破棄して元の設定に戻す
             RestoreOriginalSettings();
-
-            // ウィンドウを閉じる
             Close();
         }
 
-        /// <summary>
-        /// 適用ボタンのクリックイベントハンドラ
-        /// </summary>
         private async void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                // 共通の設定保存処理を実行
                 await ApplySettingsChangesAsync();
-
-                // 設定のバックアップを更新（適用後の状態を新しいベースラインとする）
                 BackupSettings();
             }
             catch (Exception ex)
@@ -512,9 +245,6 @@ namespace CocoroConsole.Controls
             }
         }
 
-        /// <summary>
-        /// 設定変更を適用する共通処理
-        /// </summary>
         private async Task ApplySettingsChangesAsync()
         {
             if (!AreRemoteSettingsLoaded())
@@ -523,46 +253,29 @@ namespace CocoroConsole.Controls
                     "OtomeKairoの通常設定を取得していません。トレイの「接続先設定」で接続し直してください。");
             }
 
-            // すべてのタブの設定を保存（プリセットの保存・有効化を含む）
             await SaveAllSettingsAsync();
-
-            // 保存イベントを受けた MainWindow が新しい端末設定で CocoroShell を再起動する。
         }
 
         private bool AreRemoteSettingsLoaded()
         {
-            return _loadedOtomeKairoEditorState != null &&
-                _loadedConsoleClientEditorState != null &&
+            return _loadedConsoleClientEditorState != null &&
                 _loadedAvatarSpeechEditorState != null;
         }
 
-        /// <summary>
-        /// すべてのタブの設定を保存する
-        /// </summary>
         private async Task SaveAllSettingsAsync()
         {
             try
             {
-                // Display タブのスナップショットを更新
                 DisplaySettingsControl.SaveToSnapshot();
                 var displaySnapshot = DisplaySettingsControl.GetSnapshot();
-
-                // System の設定を収集
-                var systemSnapshot = CollectSystemSettings();
-
-                // AppSettings に反映（Display）
                 DisplaySettingsControl.ApplySnapshotToAppSettings(displaySnapshot);
 
-                // AppSettings に反映（System）
-                ApplySystemSnapshotToAppSettings(systemSnapshot);
+                AppSettings.Instance.MicrophoneSettings =
+                    SystemSettingsControl.GetMicrophoneSettings().DeepCopy();
 
-                // Avatar/Animation の反映
                 UpdateAvatarAndAnimationAppSettings();
-
-                // 設定をファイルに保存
                 AppSettings.Instance.SaveAppSettings();
 
-                // 全設定をAPIに保存（1回のリクエストで送信）
                 await SaveAllSettingsToApiAsync();
 
                 if (_communicationService != null)
@@ -578,11 +291,10 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// 全設定を責務別APIへ保存する
+        /// 端末設定とアバター音声設定だけを API へ保存する。
         /// </summary>
         private async Task SaveAllSettingsToApiAsync()
         {
-            // 子コントロールと共有するAPIクライアントは設定画面を閉じるまで維持する。
             if (_apiClient == null)
             {
                 throw new InvalidOperationException("OtomeKairo APIクライアントを初期化できません。");
@@ -590,37 +302,12 @@ namespace CocoroConsole.Controls
 
             try
             {
-                _loadedOtomeKairoEditorState ??= await _apiClient.GetEditorStateAsync();
-                await SyncMemorySetsAsync(_loadedOtomeKairoEditorState);
-
-                var request = BuildEditorStateFromUi();
-                var updated = await _apiClient.ReplaceEditorStateAsync(request);
-                _loadedOtomeKairoEditorState = updated;
                 _loadedAvatarSpeechEditorState = await _apiClient.ReplaceAvatarSpeechEditorStateAsync(
                     AppSettings.Instance.BuildAvatarSpeechEditorState());
                 _loadedConsoleClientEditorState = await _apiClient.ReplaceConsoleClientEditorStateAsync(
                     AppSettings.Instance.ClientId,
                     AppSettings.Instance.BuildConsoleClientSettings());
-                await SaveCameraSourcesToApiAsync();
-                await SaveMcpServersToApiAsync();
-                Debug.WriteLine("[SettingWindow] 全設定bundleを OtomeKairo API に保存しました");
-
-                LlmSettingsControl.LoadSettingsList(
-                    CloneModelPresets(updated.ModelPresets),
-                    updated.Current.SelectedModelPresetId
-                );
-
-                EmbeddingSettingsControl.LoadSettings(
-                    CloneMemorySets(updated.MemorySets),
-                    updated.Current.SelectedMemorySetId
-                );
-
-                PromptSettingsControl.LoadSettings(
-                    ClonePersonas(updated.Personas),
-                    updated.Current.SelectedPersonaId
-                );
-
-                SystemSettingsControl.ApplyOtomeKairoCurrentSettings(updated.Current);
+                Debug.WriteLine("[SettingWindow] 端末設定とアバター音声設定を OtomeKairo API に保存しました");
             }
             catch (Exception ex)
             {
@@ -629,293 +316,30 @@ namespace CocoroConsole.Controls
             }
         }
 
-
-        private async Task SaveCameraSourcesToApiAsync()
-        {
-            if (_apiClient == null || _loadedCameraSourcesEditorState == null)
-            {
-                return;
-            }
-
-            var request = CapabilitySettingsControl.GetCameraSourcesEditorState();
-            var updated = await _apiClient.ReplaceCameraSourcesEditorStateAsync(request);
-            _loadedCameraSourcesEditorState = updated;
-            CapabilitySettingsControl.LoadCameraSources(updated);
-            Debug.WriteLine("[SettingWindow] camera-sources editor-state saved to API");
-        }
-
-
-        private async Task SaveMcpServersToApiAsync()
-        {
-            if (_apiClient == null || _loadedMcpServersEditorState == null)
-            {
-                return;
-            }
-
-            var request = CapabilitySettingsControl.GetMcpServersEditorState();
-            var updated = await _apiClient.ReplaceMcpServersEditorStateAsync(request);
-            _loadedMcpServersEditorState = updated;
-            CapabilitySettingsControl.LoadMcpServers(updated);
-            Debug.WriteLine("[SettingWindow] mcp-servers editor-state saved to API");
-        }
-
-
-        private static void EnsurePresetIds<T>(
-            IEnumerable<T> presets,
-            Func<T, string?> idGetter,
-            Action<T, string> idSetter
-        )
-        {
-            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var preset in presets)
-            {
-                var id = idGetter(preset);
-                var normalized = id?.Trim();
-
-                if (string.IsNullOrWhiteSpace(normalized) || used.Contains(normalized))
-                {
-                    normalized = Guid.NewGuid().ToString();
-                    idSetter(preset, normalized);
-                }
-                else if (!string.Equals(id, normalized, StringComparison.Ordinal))
-                {
-                    idSetter(preset, normalized);
-                }
-
-                used.Add(normalized);
-            }
-        }
-
-        private static string? ResolveActivePresetId<T>(
-            IReadOnlyList<T> presets,
-            string? activePresetId,
-            Func<T, string?> idGetter
-        ) where T : class
-        {
-            if (presets.Count == 0)
-            {
-                return null;
-            }
-
-            var normalizedActiveId = activePresetId?.Trim();
-            T? resolved = string.IsNullOrWhiteSpace(normalizedActiveId)
-                ? null
-                : presets.FirstOrDefault(p => string.Equals(idGetter(p), normalizedActiveId, StringComparison.OrdinalIgnoreCase));
-
-            if (resolved == null || string.IsNullOrWhiteSpace(idGetter(resolved)))
-            {
-                resolved = presets.FirstOrDefault(p => !string.IsNullOrWhiteSpace(idGetter(p))) ?? presets[0];
-            }
-
-            return idGetter(resolved)?.Trim();
-        }
-
-        private async Task SyncMemorySetsAsync(OtomeKairoEditorState baseState)
-        {
-            if (_apiClient == null)
-            {
-                return;
-            }
-
-            var memorySets = EmbeddingSettingsControl.GetAllMemorySets();
-            EnsurePresetIds(memorySets, p => p.MemorySetId, (p, id) => p.MemorySetId = id);
-
-            var activeMemorySetId = ResolveActivePresetId(
-                memorySets,
-                EmbeddingSettingsControl.GetActiveMemorySetId(),
-                p => p.MemorySetId);
-            if (string.IsNullOrWhiteSpace(activeMemorySetId))
-            {
-                throw new InvalidOperationException("アクティブな記憶集合を解決できませんでした。");
-            }
-
-            var baseMemorySets = baseState.MemorySets.ToDictionary(
-                memorySet => memorySet.MemorySetId,
-                StringComparer.OrdinalIgnoreCase);
-            var pendingClones = EmbeddingSettingsControl.GetPendingCloneRequests();
-            var pendingCloneIds = new HashSet<string>(
-                pendingClones.Select(item => item.Definition.MemorySetId),
-                StringComparer.OrdinalIgnoreCase);
-            var desiredMemorySetIds = new HashSet<string>(
-                memorySets.Select(memorySet => memorySet.MemorySetId),
-                StringComparer.OrdinalIgnoreCase);
-
-            foreach (var pendingClone in pendingClones)
-            {
-                await _apiClient.CloneMemorySetAsync(
-                    pendingClone.SourceMemorySetId,
-                    pendingClone.Definition.MemorySetId,
-                    pendingClone.Definition.DisplayName);
-            }
-
-            foreach (var memorySet in memorySets.Where(memorySet =>
-                         !baseMemorySets.ContainsKey(memorySet.MemorySetId)
-                         && !pendingCloneIds.Contains(memorySet.MemorySetId)))
-            {
-                await _apiClient.ReplaceMemorySetAsync(CloneMemorySet(memorySet));
-            }
-
-            foreach (var memorySet in memorySets.Where(memorySet =>
-                         baseMemorySets.TryGetValue(memorySet.MemorySetId, out var existing)
-                         && MemorySetDefinitionChanged(existing, memorySet)))
-            {
-                await _apiClient.ReplaceMemorySetAsync(CloneMemorySet(memorySet));
-            }
-
-            var deletedMemorySetIds = baseMemorySets.Keys
-                .Where(memorySetId => !desiredMemorySetIds.Contains(memorySetId))
-                .ToList();
-            if (deletedMemorySetIds.Count == 0)
-            {
-                return;
-            }
-
-            if (deletedMemorySetIds.Any(memorySetId =>
-                    string.Equals(memorySetId, baseState.Current.SelectedMemorySetId, StringComparison.OrdinalIgnoreCase)))
-            {
-                await _apiClient.PatchCurrentConfigAsync(new OtomeKairoCurrentSettingsPatch
-                {
-                    SelectedMemorySetId = activeMemorySetId,
-                });
-            }
-
-            foreach (var memorySetId in deletedMemorySetIds)
-            {
-                await _apiClient.DeleteMemorySetAsync(memorySetId);
-            }
-        }
-
-        private OtomeKairoEditorState BuildEditorStateFromUi()
-        {
-            var personas = PromptSettingsControl.GetAllPersonas();
-            var memorySets = EmbeddingSettingsControl.GetAllMemorySets();
-            var modelPresets = LlmSettingsControl.GetAllPresets();
-
-            EnsurePresetIds(personas, p => p.PersonaId, (p, id) => p.PersonaId = id);
-            EnsurePresetIds(memorySets, p => p.MemorySetId, (p, id) => p.MemorySetId = id);
-            EnsurePresetIds(modelPresets, p => p.ModelPresetId, (p, id) => p.ModelPresetId = id);
-
-            var activePersonaId = ResolveActivePresetId(personas, PromptSettingsControl.GetActivePersonaId(), p => p.PersonaId);
-            var activeMemorySetId = ResolveActivePresetId(memorySets, EmbeddingSettingsControl.GetActiveMemorySetId(), p => p.MemorySetId);
-            var activeModelPresetId = ResolveActivePresetId(modelPresets, LlmSettingsControl.GetActivePresetId(), p => p.ModelPresetId);
-
-            if (string.IsNullOrWhiteSpace(activePersonaId)
-                || string.IsNullOrWhiteSpace(activeMemorySetId)
-                || string.IsNullOrWhiteSpace(activeModelPresetId))
-            {
-                throw new InvalidOperationException("アクティブな OtomeKairo 設定資源を解決できませんでした。");
-            }
-
-            return new OtomeKairoEditorState
-            {
-                Current = new OtomeKairoCurrentSettings
-                {
-                    SelectedPersonaId = activePersonaId,
-                    SelectedMemorySetId = activeMemorySetId,
-                    SelectedModelPresetId = activeModelPresetId,
-                    ThinkingSpeechLevel = SystemSettingsControl.GetThinkingSpeechLevel(),
-                    SelectedConversationDisplayNameId =
-                        SystemSettingsControl.GetSelectedConversationDisplayNameId(),
-                    WakePolicy = SystemSettingsControl.GetWakePolicy(),
-                },
-                Personas = ClonePersonas(personas),
-                MemorySets = CloneMemorySets(memorySets),
-                ModelPresets = CloneModelPresets(modelPresets),
-            };
-        }
-
-        private static List<OtomeKairoPersonaDefinition> ClonePersonas(IEnumerable<OtomeKairoPersonaDefinition> personas)
-        {
-            return personas.Select(ClonePersona).ToList();
-        }
-
-        private static List<OtomeKairoMemorySetDefinition> CloneMemorySets(IEnumerable<OtomeKairoMemorySetDefinition> memorySets)
-        {
-            return memorySets.Select(CloneMemorySet).ToList();
-        }
-
-        private static List<OtomeKairoModelPresetDefinition> CloneModelPresets(IEnumerable<OtomeKairoModelPresetDefinition> modelPresets)
-        {
-            return modelPresets.Select(CloneModelPreset).ToList();
-        }
-
-        private static OtomeKairoPersonaDefinition ClonePersona(OtomeKairoPersonaDefinition persona)
-        {
-            return DeepClone(persona);
-        }
-
-        private static OtomeKairoMemorySetDefinition CloneMemorySet(OtomeKairoMemorySetDefinition memorySet)
-        {
-            return DeepClone(memorySet);
-        }
-
-        private static bool MemorySetDefinitionChanged(
-            OtomeKairoMemorySetDefinition current,
-            OtomeKairoMemorySetDefinition updated)
-        {
-            return !string.Equals(current.DisplayName, updated.DisplayName, StringComparison.Ordinal)
-                || !EmbeddingDefinitionChanged(current.Embedding, updated.Embedding);
-        }
-
-        private static bool EmbeddingDefinitionChanged(
-            Dictionary<string, object?>? current,
-            Dictionary<string, object?>? updated)
-        {
-            var currentJson = JsonSerializer.Serialize(current ?? new Dictionary<string, object?>());
-            var updatedJson = JsonSerializer.Serialize(updated ?? new Dictionary<string, object?>());
-            return !string.Equals(currentJson, updatedJson, StringComparison.Ordinal);
-        }
-
-        private static OtomeKairoModelPresetDefinition CloneModelPreset(OtomeKairoModelPresetDefinition modelPreset)
-        {
-            return DeepClone(modelPreset);
-        }
-
-        private static T DeepClone<T>(T value)
-        {
-            var json = JsonSerializer.Serialize(value);
-            var clone = JsonSerializer.Deserialize<T>(json);
-            if (clone == null)
-            {
-                throw new InvalidOperationException($"型 {typeof(T).Name} の複製に失敗しました。");
-            }
-            return clone;
-        }
-
-        /// <summary>
-        /// 元の設定に戻す（一設定などがあるためDisplayのみ復元が必要）
-        /// </summary>
         private void RestoreOriginalSettings()
         {
-            // Display の復元
             DisplaySettingsControl.ApplySnapshotToAppSettings(_originalDisplaySettings);
             DisplaySettingsControl.InitializeFromAppSettings();
 
-            // アバターリストの復元
             AppSettings.Instance.AvatarList.Clear();
             foreach (var avatar in _originalAvatarList)
             {
                 AppSettings.Instance.AvatarList.Add(DeepCopyAvatarSettings(avatar));
             }
 
-            // AvatarManagementControlのUIを更新
             AvatarManagementControl.RefreshAvatarList();
-            SystemSettingsControl.ReloadFromAppSettings(
-                AvatarManagementControl.GetCurrentAvatarIndex());
+            SystemSettingsControl.ReloadFromAppSettings();
         }
 
-        #endregion
+        private void UpdateAvatarAndAnimationAppSettings()
+        {
+            var appSettings = AppSettings.Instance;
+            AvatarManagementControl.SyncCurrentAvatarFromUi();
+            appSettings.CurrentAvatarIndex = AvatarManagementControl.GetCurrentAvatarIndex();
+            appSettings.CurrentAnimationSettingIndex = AnimationSettingsControl.GetCurrentAnimationSettingIndex();
+            appSettings.AnimationSettings = AnimationSettingsControl.GetAnimationSettings();
+        }
 
-        #region 設定保存メソッド
-
-        /// <summary>
-        /// ウィンドウが閉じられる前に呼び出されるイベントハンドラ
-        /// </summary>
-
-        /// <summary>
-        /// アバター設定のディープコピーを作成
-        /// </summary>
         private AvatarSettings DeepCopyAvatarSettings(AvatarSettings source)
         {
             return new AvatarSettings
@@ -999,73 +423,10 @@ namespace CocoroConsole.Controls
             base.OnClosed(e);
         }
 
-        /// <summary>
-        /// 表示設定を保存する
-        /// </summary>
-        // Display タブ以外の設定を AppSettings に適用
-        private void ApplySystemSnapshotToAppSettings(Dictionary<string, object?> snapshot)
-        {
-            var appSettings = AppSettings.Instance;
-
-            var microphoneSettings = snapshot["MicrophoneSettings"] as MicrophoneSettings
-                ?? throw new InvalidOperationException("マイク設定を取得できません。");
-            appSettings.MicrophoneSettings = microphoneSettings.DeepCopy();
-            appSettings.SelectedConversationDisplayNameId =
-                snapshot["SelectedConversationDisplayNameId"] as string;
-
-            // スクショ除外（ウィンドウタイトル正規表現 / ローカル設定）
-            appSettings.ScreenshotSettings.excludePatterns =
-                snapshot["WindowTitleExcludePatterns"] as List<string>
-                ?? throw new InvalidOperationException("除外パターンを取得できません。");
-
-            // 視覚キャプチャ（アイドルタイムアウト / ローカル設定）
-            appSettings.ScreenshotSettings.idleTimeoutMinutes =
-                snapshot["VisualCaptureIdleTimeoutMinutes"] is int idleTimeoutMinutes
-                    ? idleTimeoutMinutes
-                    : throw new InvalidOperationException("アイドル時間を取得できません。");
-        }
-
-        /// <summary>
-        /// AppSettingsを更新する
-        /// </summary>
-        private void UpdateAvatarAndAnimationAppSettings()
-        {
-            var appSettings = AppSettings.Instance;
-            SystemSettingsControl.SyncSpeechRecognitionSettingsToSelectedAvatar();
-            AvatarManagementControl.SyncCurrentAvatarFromUi();
-            appSettings.CurrentAvatarIndex = AvatarManagementControl.GetCurrentAvatarIndex();
-            appSettings.IsUseLLM = LlmSettingsControl.IsUseLlm;
-
-            appSettings.CurrentAnimationSettingIndex = AnimationSettingsControl.GetCurrentAnimationSettingIndex();
-            appSettings.AnimationSettings = AnimationSettingsControl.GetAnimationSettings();
-        }
-
-        #endregion
-
-        #region VRMファイル選択イベントハンドラ
-
-        /// <summary>
-        /// VRMファイル参照ボタンのクリックイベント
-        /// </summary>
-        private void BrowseVrmFileButton_Click(object sender, RoutedEventArgs e)
-        {
-            // ファイルダイアログの設定
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Title = "VRMファイルを選択",
-                Filter = "VRMファイル (*.vrm)|*.vrm|すべてのファイル (*.*)|*.*",
-                CheckFileExists = true,
-                Multiselect = false
-            };
-        }
-
-        #endregion
-
         private void LoadLicenseText()
         {
             try
             {
-                // 埋め込みリソースからライセンステキストを読み込む
                 var assembly = System.Reflection.Assembly.GetExecutingAssembly();
                 var resourceName = "CocoroConsole.Resource.License.txt";
 
@@ -1075,52 +436,25 @@ namespace CocoroConsole.Controls
                     {
                         using (var reader = new System.IO.StreamReader(stream))
                         {
-                            string licenseText = reader.ReadToEnd();
-                            LicenseTextBox.Text = licenseText;
+                            LicenseTextBox.Text = reader.ReadToEnd();
                         }
                     }
                     else
                     {
-                        // リソースが見つからない場合
                         LicenseTextBox.Text = "ライセンスリソースが見つかりませんでした。";
                     }
                 }
             }
             catch (Exception ex)
             {
-                // エラーが発生した場合
                 LicenseTextBox.Text = $"ライセンスリソースの読み込み中にエラーが発生しました: {ex.Message}";
             }
         }
 
-        /// <summary>
-        /// ハイパーリンクをクリックしたときにブラウザで開く
-        /// </summary>
-        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
-        {
-            try
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = e.Uri.AbsoluteUri,
-                    UseShellExecute = true
-                });
-                e.Handled = true;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"URLを開けませんでした: {ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// ログ表示ボタンのクリックイベント
-        /// </summary>
         private void LogViewerButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                // 通信サービスからログビューアーを開く
                 _communicationService?.OpenLogViewer();
             }
             catch (Exception ex)
@@ -1131,6 +465,5 @@ namespace CocoroConsole.Controls
                                MessageBoxImage.Error);
             }
         }
-
     }
 }

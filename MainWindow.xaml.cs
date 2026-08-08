@@ -1370,7 +1370,6 @@ namespace CocoroConsole
             await _communicationService.SetDesktopWatchEnabledAsync(!_isDesktopWatchEnabled);
             _isDesktopWatchEnabled = _appSettings.ScreenshotSettings.enabled;
             UpdateDesktopWatchButtonState();
-            _settingWindow?.SetWakeDesktopObservationEnabled(_isDesktopWatchEnabled);
         }
 
         /// <summary>
