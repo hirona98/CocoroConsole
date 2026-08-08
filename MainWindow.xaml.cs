@@ -339,7 +339,6 @@ namespace CocoroConsole
             _latestOtomeKairoStatus = status;
 
             // --- 送信ボタンの有効/無効を状態に応じて更新 ---
-            bool isLLMEnabled = _appSettings.IsUseLLM;
             bool isConversationInputBusy = _communicationService?.IsConversationInputBusy ?? false;
 
             // --- OtomeKairo起動待ちは最優先表示（ログ上書きより優先） ---
@@ -356,8 +355,7 @@ namespace CocoroConsole
             // NOTE:
             // - 送信中（SSEストリーム中）は UI 表示が 1 本前提なので、二重送信を抑止する。
             // - ステータスが Normal のときだけ送信可能にする。
-            bool isSendEnabled = isLLMEnabled &&
-                _appSettings.HasRemoteSettings &&
+            bool isSendEnabled = _appSettings.HasRemoteSettings &&
                 status == OtomeKairoStatus.Normal &&
                 !isConversationInputBusy;
             ChatControlInstance.UpdateSendButtonEnabled(isSendEnabled);
@@ -1183,11 +1181,10 @@ namespace CocoroConsole
         private string BuildOtomeKairoStatusBarText(OtomeKairoStatus status)
         {
             // --- 表示文言は UpdateOtomeKairoStatusDisplay と同じルールで統一 ---
-            var isLLMEnabled = _appSettings.IsUseLLM;
             var statusText = status switch
             {
                 OtomeKairoStatus.WaitingForStartup => "OtomeKairo接続待ち",
-                OtomeKairoStatus.Normal => isLLMEnabled ? "正常動作中" : "LLM無効",
+                OtomeKairoStatus.Normal => "正常動作中",
                 OtomeKairoStatus.ProcessingConversationInput => "対話入力処理中",
                 OtomeKairoStatus.ProcessingImage => "LLM画像処理中",
                 _ => "不明な状態"
@@ -1507,17 +1504,6 @@ namespace CocoroConsole
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"[CocoroConsole] 補助ウィンドウのクローズ中にエラー: {ex.Message}");
-                }
-
-                bool isLLMEnabled = _appSettings.IsUseLLM;
-
-                if (!isLLMEnabled)
-                {
-                    // LLMが無効の場合は「記憶を整理しています」を非表示に
-                    if (ShutdownOverlay.FindName("MemoryCleanupText") is System.Windows.Controls.TextBlock memoryText)
-                    {
-                        memoryText.Visibility = Visibility.Collapsed;
-                    }
                 }
 
                 // シャットダウンオーバーレイを表示

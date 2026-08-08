@@ -371,7 +371,6 @@ namespace CocoroConsole.Communication
         // テキスト入力で participants[].display_name に渡す呼び名
         public string conversationDisplayName { get; set; } = string.Empty;
         public string? otomeKairoBearerToken { get; set; }
-        public bool isUseLLM { get; set; }
         public bool isRestoreWindowPosition { get; set; }
         public bool isTopmost { get; set; }
         public bool isEscapeCursor { get; set; }
@@ -413,7 +412,6 @@ namespace CocoroConsole.Communication
                 clientId = this.clientId,
                 conversationDisplayName = this.conversationDisplayName,
                 otomeKairoBearerToken = this.otomeKairoBearerToken,
-                isUseLLM = this.isUseLLM,
                 isRestoreWindowPosition = this.isRestoreWindowPosition,
                 isTopmost = this.isTopmost,
                 isEscapeCursor = this.isEscapeCursor,

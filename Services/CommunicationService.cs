@@ -617,13 +617,6 @@ namespace CocoroConsole.Services
                 // --- 送信中状態をセットする ---
                 SetConversationInputBusy(true);
 
-                // --- LLMが無効の場合は処理しない ---
-                if (!_appSettings.IsUseLLM)
-                {
-                    Debug.WriteLine("対話入力送信: LLMが無効のためスキップ");
-                    return;
-                }
-
                 // --- client_id は bootstrap 済みトークンと合わせて管理する ---
                 EnsureClientIdInitialized();
 

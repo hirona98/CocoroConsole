@@ -446,9 +446,6 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
         [JsonPropertyName("cocoro_shell_port")]
         public int CocoroShellPort { get; set; }
-
-        [JsonPropertyName("conversation_input_enabled")]
-        public bool ConversationInputEnabled { get; set; }
     }
 
     public class OtomeKairoConsoleDisplaySettings

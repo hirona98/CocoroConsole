@@ -56,8 +56,6 @@ namespace CocoroConsole.Services
         public string OtomeKairoBearerToken { get; set; } = string.Empty;
         // CocoroShell プロセスの起動中だけ保持する一時トークン
         public string ShellSessionToken { get; set; } = string.Empty;
-        // LLMを使用するか
-        public bool IsUseLLM { get; set; } = false;
         // UI設定
         public bool IsRestoreWindowPosition { get; set; }
         public bool IsTopmost { get; set; }
@@ -209,7 +207,6 @@ namespace CocoroConsole.Services
                 clientId = ClientId,
                 conversationDisplayName = ConversationDisplayName,
                 otomeKairoBearerToken = OtomeKairoBearerToken,
-                isUseLLM = IsUseLLM,
                 isRestoreWindowPosition = IsRestoreWindowPosition,
                 isTopmost = IsTopmost,
                 isEscapeCursor = IsEscapeCursor,
@@ -343,7 +340,6 @@ namespace CocoroConsole.Services
             var process = consoleSettings.Process;
             CocoroConsolePort = process.ConsoleApiPort;
             CocoroShellPort = process.CocoroShellPort;
-            IsUseLLM = process.ConversationInputEnabled;
             SelectedConversationDisplayNameId = currentSettings.SelectedConversationDisplayNameId;
             ConversationDisplayNames = conversationDisplayNames.Select(definition =>
                 new OtomeKairoConversationDisplayNameDefinition
@@ -466,7 +462,6 @@ namespace CocoroConsole.Services
                 {
                     ConsoleApiPort = CocoroConsolePort,
                     CocoroShellPort = CocoroShellPort,
-                    ConversationInputEnabled = IsUseLLM,
                 },
                 Display = new OtomeKairoConsoleDisplaySettings
                 {

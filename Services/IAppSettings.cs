@@ -65,11 +65,6 @@ namespace CocoroConsole.Services
         string ShellSessionToken { get; set; }
 
         /// <summary>
-        /// 対話機能（LLM）を使用するか
-        /// </summary>
-        bool IsUseLLM { get; set; }
-
-        /// <summary>
         /// アバター位置復元
         /// </summary>
         bool IsRestoreWindowPosition { get; set; }
