@@ -620,7 +620,6 @@ namespace CocoroConsole.Services
                 shadowOffMesh = string.Join(",", presentation?.ShadowExcludedMeshNames ?? new List<string>()),
                 isUseSTT = definition.Stt.Enabled,
                 sttEngine = definition.Stt.Engine,
-                sttWakeWords = new List<string>(definition.Stt.WakeWords),
                 sttProfileId = definition.Stt.ProfileId,
                 sttApiKey = definition.Stt.ApiKey,
                 isUseTTS = definition.Tts.Enabled,
@@ -738,7 +737,6 @@ namespace CocoroConsole.Services
                 {
                     Enabled = avatar.isUseSTT,
                     Engine = avatar.sttEngine,
-                    WakeWords = new List<string>(avatar.sttWakeWords),
                     ProfileId = avatar.sttProfileId,
                     ApiKey = avatar.sttApiKey,
                 },

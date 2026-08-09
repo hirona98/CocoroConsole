@@ -404,7 +404,6 @@ namespace CocoroConsole.Controls
                 },
                 isUseSTT = source.isUseSTT,
                 sttEngine = source.sttEngine,
-                sttWakeWords = new List<string>(source.sttWakeWords),
                 sttProfileId = source.sttProfileId,
                 sttApiKey = source.sttApiKey,
                 isConvertMToon = source.isConvertMToon,

@@ -233,9 +233,6 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("engine")]
         public string Engine { get; set; } = string.Empty;
 
-        [JsonPropertyName("wake_words")]
-        public List<string> WakeWords { get; set; } = new List<string>();
-
         [JsonPropertyName("profile_id")]
         public string ProfileId { get; set; } = string.Empty;
 
