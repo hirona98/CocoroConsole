@@ -633,7 +633,7 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// OtomeKairoが通知した実効入力元の音量を表示します。
+        /// OtomeKairoが通知した実効入力状態を音量表示とマイクボタンへ反映します。
         /// </summary>
         private void OnAudioRuntimeStateChanged(object? sender, OtomeKairoAudioRuntimeState state)
         {
@@ -642,6 +642,13 @@ namespace CocoroConsole
                 state.PausedReason == null;
             UIHelper.RunOnUIThread(() =>
             {
+                // 他接点からの STT トグルも同一正本で表示する。
+                var currentAvatar = GetStoredAvatarSetting();
+                if (currentAvatar != null)
+                {
+                    currentAvatar.isUseSTT = state.SttEnabled;
+                }
+                UpdateMicrophoneButtonState(state.SttEnabled);
                 ChatControlInstance.UpdateMicrophoneLevel(
                     state.Vad.Dbfs,
                     state.Vad.Speaking,
@@ -1305,7 +1312,7 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// 現在のアバターのSTT状態をマイクボタンへ反映します。
+        /// 選択中アバターの STT 運用状態をマイクボタンへ反映します。
         /// </summary>
         private void UpdateMicrophoneButtonState(bool isEnabled)
         {
@@ -1314,12 +1321,14 @@ namespace CocoroConsole
                     ? "pack://application:,,,/Resource/icon/MicON.svg"
                     : "pack://application:,,,/Resource/icon/MicOFF.svg",
                 UriKind.Absolute);
-            MicButton.ToolTip = isEnabled ? "STTを無効にする" : "STTを有効にする";
+            MicButton.ToolTip = isEnabled
+                ? "マイク（音声認識）をOFF"
+                : "マイク（音声認識）をON";
             MicButton.Opacity = isEnabled ? 1.0 : 0.6;
         }
 
         /// <summary>
-        /// 現在のアバターのSTT設定を切り替えます。
+        /// 選択中アバターの STT 運用トグルを切り替えます。
         /// </summary>
         private async void MicButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1336,17 +1345,16 @@ namespace CocoroConsole
 
             var previousEnabled = currentAvatar.isUseSTT;
             MicButton.IsEnabled = false;
-            currentAvatar.isUseSTT = !previousEnabled;
             try
             {
-                await _communicationService.SaveAvatarSpeechSettingsAsync();
+                await _communicationService.SetSttEnabledAsync(!previousEnabled);
                 UpdateMicrophoneButtonState(currentAvatar.isUseSTT);
             }
             catch (Exception ex)
             {
                 currentAvatar.isUseSTT = previousEnabled;
                 UpdateMicrophoneButtonState(previousEnabled);
-                UIHelper.ShowError("STT設定エラー", ex.Message);
+                UIHelper.ShowError("マイク設定エラー", ex.Message);
             }
             finally
             {

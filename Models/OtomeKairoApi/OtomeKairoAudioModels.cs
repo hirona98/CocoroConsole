@@ -52,11 +52,35 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("effective_source")]
         public string EffectiveSource { get; set; } = string.Empty;
 
+        [JsonPropertyName("stt_enabled")]
+        public bool SttEnabled { get; set; }
+
+        [JsonPropertyName("selected_avatar_id")]
+        public string SelectedAvatarId { get; set; } = string.Empty;
+
         [JsonPropertyName("local_input_device")]
         public OtomeKairoSelectedAudioInputDevice? LocalInputDevice { get; set; }
 
         [JsonPropertyName("console")]
         public OtomeKairoConsoleMicrophoneSettings? Console { get; set; }
+    }
+
+    /// <summary>
+    /// 選択中アバターの STT 運用トグルです。
+    /// </summary>
+    public class OtomeKairoSttEnabledState
+    {
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; }
+
+        [JsonPropertyName("selected_avatar_id")]
+        public string SelectedAvatarId { get; set; } = string.Empty;
+    }
+
+    public class OtomeKairoSttEnabledRequest
+    {
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; }
     }
 
     /// <summary>
@@ -153,6 +177,18 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
         [JsonPropertyName("unavailable_reason")]
         public string? UnavailableReason { get; set; }
+
+        [JsonPropertyName("configured_source")]
+        public string? ConfiguredSource { get; set; }
+
+        [JsonPropertyName("effective_source")]
+        public string? EffectiveSource { get; set; }
+
+        [JsonPropertyName("stt_enabled")]
+        public bool SttEnabled { get; set; }
+
+        [JsonPropertyName("selected_avatar_id")]
+        public string? SelectedAvatarId { get; set; }
 
         [JsonPropertyName("active_source")]
         public string? ActiveSource { get; set; }

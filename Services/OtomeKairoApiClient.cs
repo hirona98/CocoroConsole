@@ -127,6 +127,29 @@ namespace CocoroConsole.Services
                 cancellationToken);
         }
 
+        public Task<OtomeKairoSttEnabledState> GetSttEnabledAsync(
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoSttEnabledState>(
+                HttpMethod.Get,
+                "/api/audio/stt-enabled",
+                null,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoSttEnabledState> ReplaceSttEnabledAsync(
+            bool enabled,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoSttEnabledState>(
+                HttpMethod.Put,
+                "/api/audio/stt-enabled",
+                new OtomeKairoSttEnabledRequest { Enabled = enabled },
+                cancellationToken);
+        }
+
         public Task<OtomeKairoConsoleClientEditorState> ConnectConsoleClientAsync(
             string clientId,
             CancellationToken cancellationToken = default)
