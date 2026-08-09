@@ -42,7 +42,7 @@ namespace CocoroConsole.Models.OtomeKairoApi
     }
 
     /// <summary>
-    /// DB上の通常入力元とWeb入力セッションを解決した実効入力状態です。
+    /// DB上の保存入力元とWeb入力セッションを解決した実効入力状態です。
     /// </summary>
     public class OtomeKairoAudioInputState
     {

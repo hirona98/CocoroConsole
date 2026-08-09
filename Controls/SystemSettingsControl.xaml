@@ -45,7 +45,21 @@
                                                   Tag="local_microphone"/>
                                     <ComboBoxItem Content="CocoroConsole側のマイク"
                                                   Tag="console_microphone"/>
+                                    <ComboBoxItem Content="ブラウザのマイク"
+                                                  Tag="web_microphone"/>
                                 </ComboBox>
+                            </Grid>
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="OtomeKairo:"
+                                           VerticalAlignment="Center"/>
+                                <TextBox x:Name="LocalInputDeviceTextBox"
+                                         Grid.Column="1"
+                                         Padding="2"
+                                         IsReadOnly="True"/>
                             </Grid>
                             <Grid Margin="0,0,0,2">
                                 <Grid.ColumnDefinitions>
@@ -62,6 +76,10 @@
                                        TextWrapping="Wrap"
                                        Foreground="#666666"
                                        Margin="140,0,0,0"/>
+                            <TextBlock Text="ブラウザの入力デバイスはブラウザ側で選択します。"
+                                       TextWrapping="Wrap"
+                                       Foreground="#666666"
+                                       Margin="140,14,0,0"/>
                         </StackPanel>
                     </Border>
                 </GroupBox>

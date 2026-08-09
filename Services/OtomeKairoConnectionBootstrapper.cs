@@ -24,7 +24,7 @@ namespace CocoroConsole.Services
     /// </summary>
     internal sealed class OtomeKairoConnectionBootstrapper
     {
-        public const string RequiredApiVersion = "0.7.0";
+        public const string RequiredApiVersion = "0.8.0";
         private static readonly TimeSpan ConnectionTimeout = TimeSpan.FromSeconds(5);
 
         public async Task<OtomeKairoConnectionResult> ConnectAsync(

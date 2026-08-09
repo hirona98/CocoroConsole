@@ -57,6 +57,9 @@ namespace CocoroConsole.Controls
         {
             var microphoneSettings = appSettings.MicrophoneSettings;
             SelectMicrophoneInputSource(microphoneSettings.inputSource);
+            LocalInputDeviceTextBox.Text = microphoneSettings.localInputDevice == null
+                ? "未設定"
+                : $"{microphoneSettings.localInputDevice.hostApi}: {microphoneSettings.localInputDevice.name}";
             if (microphoneSettings.console != null &&
                 !string.Equals(microphoneSettings.console.clientId, appSettings.ClientId, StringComparison.Ordinal))
             {
@@ -149,6 +152,11 @@ namespace CocoroConsole.Controls
             var inputSource = sourceItem.Tag as string
                 ?? throw new InvalidOperationException("通常のマイク入力元が不正です。");
             var selectedConsoleDevice = ConsoleInputDeviceComboBox.SelectedItem as ConsoleMicrophoneInputDevice;
+            if (string.Equals(inputSource, "console_microphone", StringComparison.Ordinal) &&
+                selectedConsoleDevice == null)
+            {
+                throw new InvalidOperationException("CocoroConsoleの入力デバイスを選択してください。");
+            }
 
             return new MicrophoneSettings
             {
