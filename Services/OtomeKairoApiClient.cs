@@ -150,6 +150,29 @@ namespace CocoroConsole.Services
                 cancellationToken);
         }
 
+        public Task<OtomeKairoTtsEnabledState> GetTtsEnabledAsync(
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoTtsEnabledState>(
+                HttpMethod.Get,
+                "/api/audio/tts-enabled",
+                null,
+                cancellationToken);
+        }
+
+        public Task<OtomeKairoTtsEnabledState> ReplaceTtsEnabledAsync(
+            bool enabled,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoTtsEnabledState>(
+                HttpMethod.Put,
+                "/api/audio/tts-enabled",
+                new OtomeKairoTtsEnabledRequest { Enabled = enabled },
+                cancellationToken);
+        }
+
         public Task<OtomeKairoConsoleClientEditorState> ConnectConsoleClientAsync(
             string clientId,
             CancellationToken cancellationToken = default)

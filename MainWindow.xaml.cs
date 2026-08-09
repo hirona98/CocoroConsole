@@ -217,20 +217,7 @@ namespace CocoroConsole
             if (currentAvatar != null)
             {
                 UpdateMicrophoneButtonState(currentAvatar.isUseSTT);
-
-                // TTSの状態を反映
-                if (MuteButtonImage != null)
-                {
-                    MuteButtonImage.Source = new Uri(currentAvatar.isUseTTS ?
-                        "pack://application:,,,/Resource/icon/SpeakerON.svg" :
-                        "pack://application:,,,/Resource/icon/SpeakerOFF.svg",
-                        UriKind.Absolute);
-                }
-                if (MuteButton != null)
-                {
-                    MuteButton.ToolTip = currentAvatar.isUseTTS ? "TTSを無効にする" : "TTSを有効にする";
-                    MuteButton.Opacity = currentAvatar.isUseTTS ? 1.0 : 0.6;
-                }
+                UpdateTtsButtonState(currentAvatar.isUseTTS);
             }
         }
 
@@ -642,13 +629,15 @@ namespace CocoroConsole
                 state.PausedReason == null;
             UIHelper.RunOnUIThread(() =>
             {
-                // 他接点からの STT トグルも同一正本で表示する。
+                // 他接点からの STT / TTS トグルも同一正本で表示する。
                 var currentAvatar = GetStoredAvatarSetting();
                 if (currentAvatar != null)
                 {
                     currentAvatar.isUseSTT = state.SttEnabled;
+                    currentAvatar.isUseTTS = state.TtsEnabled;
                 }
                 UpdateMicrophoneButtonState(state.SttEnabled);
+                UpdateTtsButtonState(state.TtsEnabled);
                 ChatControlInstance.UpdateMicrophoneLevel(
                     state.Vad.Dbfs,
                     state.Vad.Speaking,
@@ -1378,7 +1367,30 @@ namespace CocoroConsole
         }
 
         /// <summary>
-        /// TTSボタンクリック時のイベントハンドラ
+        /// 選択中アバターの TTS 運用状態を Speaker ボタンへ反映します。
+        /// </summary>
+        private void UpdateTtsButtonState(bool isEnabled)
+        {
+            if (MuteButtonImage != null)
+            {
+                MuteButtonImage.Source = new Uri(
+                    isEnabled
+                        ? "pack://application:,,,/Resource/icon/SpeakerON.svg"
+                        : "pack://application:,,,/Resource/icon/SpeakerOFF.svg",
+                    UriKind.Absolute);
+            }
+
+            if (MuteButton != null)
+            {
+                MuteButton.ToolTip = isEnabled
+                    ? "音声合成をOFF"
+                    : "音声合成をON";
+                MuteButton.Opacity = isEnabled ? 1.0 : 0.6;
+            }
+        }
+
+        /// <summary>
+        /// 選択中アバターの TTS 運用トグルを切り替えます。
         /// </summary>
         private async void TTSButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1387,40 +1399,28 @@ namespace CocoroConsole
                 return;
             }
 
-            // 現在のキャラクターのTTS設定をトグル
             var currentAvatar = GetStoredAvatarSetting();
-            if (currentAvatar != null)
+            if (currentAvatar == null)
             {
-                currentAvatar.isUseTTS = !currentAvatar.isUseTTS;
-                try
-                {
-                    await _communicationService.SaveAvatarSpeechSettingsAsync();
-                }
-                catch (Exception ex)
-                {
-                    currentAvatar.isUseTTS = !currentAvatar.isUseTTS;
-                    UIHelper.ShowError("TTS設定エラー", ex.Message);
-                    return;
-                }
+                return;
+            }
 
-                // ボタンの画像を更新
-                if (MuteButtonImage != null)
-                {
-                    MuteButtonImage.Source = new Uri(currentAvatar.isUseTTS ?
-                        "pack://application:,,,/Resource/icon/SpeakerON.svg" :
-                        "pack://application:,,,/Resource/icon/SpeakerOFF.svg",
-                        UriKind.Absolute);
-                }
-
-                // ツールチップを更新
-                if (MuteButton != null)
-                {
-                    MuteButton.ToolTip = currentAvatar.isUseTTS ? "TTSを無効にする" : "TTSを有効にする";
-
-                    // 無効状態の場合は半透明にする
-                    MuteButton.Opacity = currentAvatar.isUseTTS ? 1.0 : 0.6;
-                }
-
+            var previousEnabled = currentAvatar.isUseTTS;
+            MuteButton.IsEnabled = false;
+            try
+            {
+                await _communicationService.SetTtsEnabledAsync(!previousEnabled);
+                UpdateTtsButtonState(currentAvatar.isUseTTS);
+            }
+            catch (Exception ex)
+            {
+                currentAvatar.isUseTTS = previousEnabled;
+                UpdateTtsButtonState(previousEnabled);
+                UIHelper.ShowError("音声合成設定エラー", ex.Message);
+            }
+            finally
+            {
+                MuteButton.IsEnabled = true;
             }
         }
 

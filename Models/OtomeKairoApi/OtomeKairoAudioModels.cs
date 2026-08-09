@@ -55,6 +55,9 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("stt_enabled")]
         public bool SttEnabled { get; set; }
 
+        [JsonPropertyName("tts_enabled")]
+        public bool TtsEnabled { get; set; }
+
         [JsonPropertyName("selected_avatar_id")]
         public string SelectedAvatarId { get; set; } = string.Empty;
 
@@ -78,6 +81,24 @@ namespace CocoroConsole.Models.OtomeKairoApi
     }
 
     public class OtomeKairoSttEnabledRequest
+    {
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; }
+    }
+
+    /// <summary>
+    /// 選択中アバターの TTS 運用トグルです。
+    /// </summary>
+    public class OtomeKairoTtsEnabledState
+    {
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; }
+
+        [JsonPropertyName("selected_avatar_id")]
+        public string SelectedAvatarId { get; set; } = string.Empty;
+    }
+
+    public class OtomeKairoTtsEnabledRequest
     {
         [JsonPropertyName("enabled")]
         public bool Enabled { get; set; }
@@ -186,6 +207,9 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
         [JsonPropertyName("stt_enabled")]
         public bool SttEnabled { get; set; }
+
+        [JsonPropertyName("tts_enabled")]
+        public bool TtsEnabled { get; set; }
 
         [JsonPropertyName("selected_avatar_id")]
         public string? SelectedAvatarId { get; set; }

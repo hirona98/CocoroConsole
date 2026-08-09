@@ -97,6 +97,11 @@ namespace CocoroConsole.Services
         Task SetSttEnabledAsync(bool enabled);
 
         /// <summary>
+        /// 選択中アバターの TTS 運用トグルだけを更新する。
+        /// </summary>
+        Task SetTtsEnabledAsync(bool enabled);
+
+        /// <summary>
         /// 現在の CocoroConsole 端末設定を OtomeKairo に保存する。
         /// </summary>
         Task SaveConsoleClientSettingsAsync(CancellationToken cancellationToken = default);

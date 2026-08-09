@@ -977,6 +977,25 @@ namespace CocoroConsole.Services
             _appSettings.SaveAppSettings();
         }
 
+        public async Task SetTtsEnabledAsync(bool enabled)
+        {
+            if (_otomeKairoApiClient == null)
+            {
+                throw new InvalidOperationException("OtomeKairo APIクライアントが初期化されていません。");
+            }
+
+            await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
+            var result = await _otomeKairoApiClient
+                .ReplaceTtsEnabledAsync(enabled)
+                .ConfigureAwait(false);
+            var currentAvatar = _appSettings.GetCurrentAvatar();
+            if (currentAvatar != null)
+            {
+                currentAvatar.isUseTTS = result.Enabled;
+            }
+            _appSettings.SaveAppSettings();
+        }
+
         public async Task SaveConsoleClientSettingsAsync(CancellationToken cancellationToken = default)
         {
             if (_otomeKairoApiClient == null)
