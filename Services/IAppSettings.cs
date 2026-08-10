@@ -169,6 +169,8 @@ namespace CocoroConsole.Services
         /// </summary>
         MicrophoneSettings MicrophoneSettings { get; set; }
 
+        AudioOutputSettings AudioOutputSettings { get; set; }
+
         /// <summary>
         /// アバターリスト
         /// </summary>

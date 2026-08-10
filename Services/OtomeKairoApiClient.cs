@@ -235,6 +235,17 @@ namespace CocoroConsole.Services
                 cancellationToken);
         }
 
+        public Task<OtomeKairoAudioOutputDevicesResponse> GetAudioOutputDevicesAsync(
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return SendOtomeKairoAsync<OtomeKairoAudioOutputDevicesResponse>(
+                HttpMethod.Get,
+                "/api/audio/output-devices",
+                null,
+                cancellationToken);
+        }
+
         public Task<OtomeKairoAudioSpeakersResponse> GetAudioSpeakersAsync(
             CancellationToken cancellationToken = default)
         {
@@ -677,6 +688,9 @@ namespace CocoroConsole.Services
 
     public class OtomeKairoConversationRequest
     {
+        [JsonPropertyName("message_id")]
+        public string MessageId { get; set; } = string.Empty;
+
         [JsonPropertyName("text")]
         public string Text { get; set; } = string.Empty;
 

@@ -13,6 +13,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Forms = System.Windows.Forms;
 using System.Windows.Interop;
@@ -35,9 +36,8 @@ namespace CocoroConsole
         private AutonomousRunViewerWindow? _autonomousRunViewerWindow;
         private ConnectionSettingsWindow? _connectionSettingsWindow;
         private DebugTraceListener? _debugTraceListener;
-        private bool _isConversationOutputActive;
-        private bool _skipNextAssistantMessage;
-        private string? _skipNextAssistantMessageContent;
+        private readonly Dictionary<string, List<BitmapSource>> _pendingConversationImages =
+            new Dictionary<string, List<BitmapSource>>();
         private bool _isLogStreamHandlersAttached;
         private const string MainWindowPlacementKey = "MainWindow";
         private const string SettingWindowPlacementKey = "SettingWindow";
@@ -389,9 +389,10 @@ namespace CocoroConsole
             // UIスレッドで画像データを取得・処理（スレッドセーフな形式に変換）
             var imageSources = ChatControlInstance.GetAttachedImageSources();
             var imageDataUrls = ChatControlInstance.GetAndClearAttachedImages();
+            var messageId = $"chat_message:{Guid.NewGuid():N}";
 
-            // ユーザーメッセージとしてチャットウィンドウに表示（送信前に表示）
-            ChatControlInstance.AddUserMessage(displayName, message, imageSources);
+            // 表示は conversation_input event を正本にし、画像だけ送信元で保持する。
+            _pendingConversationImages[messageId] = imageSources;
 
             // --- 送信開始と同時に送信ボタンを無効化（連打を防ぐ） ---
             ChatControlInstance.UpdateSendButtonEnabled(false);
@@ -403,8 +404,8 @@ namespace CocoroConsole
                 {
                     // OtomeKairoにメッセージを送信（API使用、画像付きの場合は画像データも送信）
                     await _communicationService.SendConversationInputToOtomeKairoAsync(
+                        messageId,
                         message,
-                        null,
                         imageDataUrls);
                 }
                 catch (TimeoutException)
@@ -491,18 +492,6 @@ namespace CocoroConsole
         {
             UIHelper.RunOnUIThread(() =>
             {
-                if (_skipNextAssistantMessage && request.role == "assistant")
-                {
-                    var skipContent = _skipNextAssistantMessageContent;
-                    _skipNextAssistantMessage = false;
-                    _skipNextAssistantMessageContent = null;
-
-                    if (string.IsNullOrEmpty(skipContent) || string.Equals(request.content, skipContent, StringComparison.Ordinal))
-                    {
-                        return;
-                    }
-                }
-
                 if (request.role == "user")
                 {
                     if (TryGetConversationDisplayName(out var displayName))
@@ -524,7 +513,9 @@ namespace CocoroConsole
         {
             UIHelper.RunOnUIThread(() =>
             {
-                ChatControlInstance.AddUserMessage(input.DisplayName, input.Message);
+                _pendingConversationImages.TryGetValue(input.MessageId, out var imageSources);
+                _pendingConversationImages.Remove(input.MessageId);
+                ChatControlInstance.AddUserMessage(input.DisplayName, input.Message, imageSources);
             });
         }
 
@@ -534,31 +525,8 @@ namespace CocoroConsole
             {
                 if (e.IsError)
                 {
+                    _pendingConversationImages.Clear();
                     ChatControlInstance.AddAiMessage($"[error] {e.ErrorMessage ?? "チャット中断"}");
-                    _isConversationOutputActive = false;
-                    _skipNextAssistantMessage = false;
-                    _skipNextAssistantMessageContent = null;
-                    return;
-                }
-
-                if (!e.IsFinished)
-                {
-                    if (!_isConversationOutputActive)
-                    {
-                        ChatControlInstance.AddAiMessage(e.Content);
-                        _isConversationOutputActive = true;
-                    }
-                    else
-                    {
-                        ChatControlInstance.UpdateStreamingAiMessage(e.Content);
-                    }
-                }
-                else
-                {
-                    ChatControlInstance.UpdateStreamingAiMessage(e.Content);
-                    _isConversationOutputActive = false;
-                    _skipNextAssistantMessage = true; // 直後の最終メッセージ表示を抑止
-                    _skipNextAssistantMessageContent = e.Content;
                 }
             });
         }
@@ -911,9 +879,6 @@ namespace CocoroConsole
                 ChatControlInstance.ClearChat();
                 ChatControlInstance.GetAndClearAttachedImages();
                 ChatControlInstance.UpdateMicrophoneLevel(null, false, false);
-                _isConversationOutputActive = false;
-                _skipNextAssistantMessage = false;
-                _skipNextAssistantMessageContent = null;
 
                 InitializeCommunicationService();
                 UpdateOtomeKairoStatusDisplay(

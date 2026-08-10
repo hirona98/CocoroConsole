@@ -555,37 +555,14 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// OtomeKairoに対話入力を送信（HTTP/SSE）
+        /// OtomeKairoに対話入力を送信する。
         /// </summary>
+        /// <param name="messageId">チャットイベントと対応づける一意なID</param>
         /// <param name="message">送信メッセージ</param>
-        /// <param name="avatarName">アバター名（オプション）</param>
-        /// <param name="imageDataUrl">画像データURL（オプション）</param>
-        public async Task SendConversationInputToOtomeKairoAsync(
-            string message,
-            string? avatarName = null,
-            string? imageDataUrl = null,
-            string? speakerId = null,
-            string? speakerDisplayName = null)
-        {
-            // 単一画像を配列に変換して複数画像対応版を呼び出し
-            var imageDataUrls = imageDataUrl != null ? new List<string> { imageDataUrl } : null;
-            await SendConversationInputToOtomeKairoAsync(
-                message,
-                avatarName,
-                imageDataUrls,
-                speakerId,
-                speakerDisplayName);
-        }
-
-        /// <summary>
-        /// OtomeKairoへ対話入力を送信（複数画像対応）
-        /// </summary>
-        /// <param name="message">送信メッセージ</param>
-        /// <param name="avatarName">アバター名（オプション）</param>
         /// <param name="imageDataUrls">画像データURLリスト（オプション）</param>
         public async Task SendConversationInputToOtomeKairoAsync(
+            string messageId,
             string message,
-            string? avatarName = null,
             List<string>? imageDataUrls = null,
             string? speakerId = null,
             string? speakerDisplayName = null)
@@ -597,6 +574,7 @@ namespace CocoroConsole.Services
             }
 
             await SendConversationInputViaHttpAsync(
+                messageId,
                 message,
                 imageDataUrls,
                 speakerId,
@@ -604,6 +582,7 @@ namespace CocoroConsole.Services
         }
 
         private async Task SendConversationInputViaHttpAsync(
+            string messageId,
             string message,
             List<string>? imageDataUrls,
             string? speakerId,
@@ -676,6 +655,7 @@ namespace CocoroConsole.Services
                 // --- OtomeKairo の会話入力 API を呼ぶ ---
                 var request = new OtomeKairoConversationRequest
                 {
+                    MessageId = messageId,
                     Text = message,
                     Images = normalizedImages,
                     InteractionContext = interactionContext,
@@ -686,31 +666,9 @@ namespace CocoroConsole.Services
                     .ConfigureAwait(false);
                 ValidateConversationResponseRouting(response, interactionContext);
 
-                // --- 発話種別ごとに UI へ反映する ---
+                // 発話バブルは event stream を唯一の表示経路とする。
                 if (string.Equals(response.ResultKind, "speech", StringComparison.Ordinal))
                 {
-                    var speechText = response.Speech?.Text ?? string.Empty;
-                    ConversationOutputReceived?.Invoke(this, new ConversationOutputEventArgs
-                    {
-                        Content = speechText,
-                        IsFinished = true,
-                        IsError = false
-                    });
-
-                    if (!string.IsNullOrWhiteSpace(speechText))
-                    {
-                        var uiMessage = new UiMessageRequest
-                        {
-                            memoryId = _cachedMemoryId,
-                            sessionId = response.CycleId,
-                            message = speechText,
-                            role = "assistant",
-                            content = speechText
-                        };
-
-                        UiMessageReceived?.Invoke(this, uiMessage);
-                    }
-
                     _statusPollingService.SetNormalStatus();
                     StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(true, "対話入力完了"));
                     return;
@@ -889,6 +847,7 @@ namespace CocoroConsole.Services
             return new Dictionary<string, object?>
             {
                 ["source"] = "CocoroConsole",
+                ["source_kind"] = "user_message",
                 ["client_id"] = _appSettings.ClientId,
                 ["active_app"] = snapshot.ActiveApp,
                 ["window_title"] = snapshot.WindowTitle,
@@ -1303,7 +1262,7 @@ namespace CocoroConsole.Services
 
                 if (string.Equals(ev.Type, "conversation_input", StringComparison.Ordinal))
                 {
-                    if (ev.Data.UtteranceSeq == null ||
+                    if (string.IsNullOrWhiteSpace(ev.Data.MessageId) ||
                         string.IsNullOrWhiteSpace(ev.Data.SourceKind) ||
                         string.IsNullOrWhiteSpace(ev.Data.Message) ||
                         string.IsNullOrWhiteSpace(ev.Data.InteractionRef) ||
@@ -1320,7 +1279,9 @@ namespace CocoroConsole.Services
                         this,
                         new VoiceConversationInputEventArgs
                         {
-                            UtteranceSeq = ev.Data.UtteranceSeq.Value,
+                            UtteranceSeq = ev.Data.UtteranceSeq,
+                            MessageId = ev.Data.MessageId,
+                            SourceClientId = ev.Data.SourceClientId ?? string.Empty,
                             SourceKind = ev.Data.SourceKind,
                             Message = ev.Data.Message,
                             InteractionRef = ev.Data.InteractionRef,
@@ -1366,8 +1327,8 @@ namespace CocoroConsole.Services
                 role = "assistant",
                 content = assistantSpeech,
                 sourceKind = sourceKind,
-                // spontaneous assistant_message は通常会話と分離して別バブルに出す。
-                forceNewBubble = ShouldForceNewBubbleForAssistantEvent(sourceKind)
+                // 一つの assistant_message event を一つのバブルとして表示する。
+                forceNewBubble = true
             };
 
             UiMessageReceived?.Invoke(this, uiMessage);
@@ -1414,19 +1375,6 @@ namespace CocoroConsole.Services
             {
                 _forwardMessageSemaphore.Release();
             }
-        }
-
-        private static bool ShouldForceNewBubbleForAssistantEvent(string? sourceKind)
-        {
-            if (string.IsNullOrWhiteSpace(sourceKind))
-            {
-                return false;
-            }
-
-            return string.Equals(sourceKind, "wake", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(sourceKind, "background_thinking", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(sourceKind, "capability_result", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(sourceKind, "autonomous_run", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task HandleVisionCaptureRequestAsync(OtomeKairoEvent ev)

@@ -90,6 +90,9 @@ namespace CocoroConsole.Services
         // マイク設定
         public MicrophoneSettings MicrophoneSettings { get; set; } = new MicrophoneSettings();
 
+        // 音声の配信先と OtomeKairo 側の物理出力デバイス。
+        public AudioOutputSettings AudioOutputSettings { get; set; } = new AudioOutputSettings();
+
         // メッセージウィンドウ設定
         public MessageWindowSettings MessageWindowSettings { get; set; } = new MessageWindowSettings();
 
@@ -426,6 +429,17 @@ namespace CocoroConsole.Services
                 vadProbabilityThreshold = avatarSpeech.MicrophoneSettings.VadProbabilityThreshold,
                 speakerRecognitionThreshold = avatarSpeech.MicrophoneSettings.SpeakerRecognitionThreshold,
             };
+            AudioOutputSettings = new AudioOutputSettings
+            {
+                destination = avatarSpeech.AudioOutputSettings.Destination,
+                localOutputDevice = avatarSpeech.AudioOutputSettings.LocalOutputDevice == null
+                    ? null
+                    : new MicrophoneInputDevice
+                    {
+                        hostApi = avatarSpeech.AudioOutputSettings.LocalOutputDevice.HostApi,
+                        name = avatarSpeech.AudioOutputSettings.LocalOutputDevice.Name,
+                    },
+            };
             ApplyAvatarSettings(consoleSettings.AvatarPresentations, avatarSpeech);
             ApplyMotionSettings(consoleSettings.Motion);
             IsLoaded = true;
@@ -581,6 +595,17 @@ namespace CocoroConsole.Services
                         },
                     VadProbabilityThreshold = MicrophoneSettings.vadProbabilityThreshold,
                     SpeakerRecognitionThreshold = MicrophoneSettings.speakerRecognitionThreshold,
+                },
+                AudioOutputSettings = new OtomeKairoAudioOutputSettings
+                {
+                    Destination = AudioOutputSettings.destination,
+                    LocalOutputDevice = AudioOutputSettings.localOutputDevice == null
+                        ? null
+                        : new OtomeKairoSelectedAudioInputDevice
+                        {
+                            HostApi = AudioOutputSettings.localOutputDevice.hostApi,
+                            Name = AudioOutputSettings.localOutputDevice.name,
+                        },
                 },
                 Avatars = AvatarList.Select(BuildAvatarSpeechDefinition).ToList(),
             };

@@ -45,19 +45,10 @@ namespace CocoroConsole.Controls
             DisplaySettingsControl.InitializeFromAppSettings();
 
             InitializeAvatarSettings();
-            _ = InitializeSystemSettingsAsync();
             SystemSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
             _ = InitializeRemoteSettingsAsync();
 
             BackupSettings();
-        }
-
-        private async Task InitializeSystemSettingsAsync()
-        {
-            await SystemSettingsControl.InitializeAsync(
-                _apiClient,
-                _communicationService,
-                AppSettings.Instance.ClientId);
         }
 
         protected override void OnSourceInitialized(System.EventArgs e)
@@ -123,7 +114,10 @@ namespace CocoroConsole.Controls
                 DisplaySettingsControl.InitializeFromAppSettings();
                 AvatarManagementControl.RefreshAvatarList();
                 AnimationSettingsControl.Initialize();
-                SystemSettingsControl.ReloadFromAppSettings();
+                await SystemSettingsControl.InitializeAsync(
+                    _apiClient,
+                    _communicationService,
+                    AppSettings.Instance.ClientId);
             }
             catch (Exception ex)
             {
@@ -272,6 +266,8 @@ namespace CocoroConsole.Controls
 
                 AppSettings.Instance.MicrophoneSettings =
                     SystemSettingsControl.GetMicrophoneSettings().DeepCopy();
+                AppSettings.Instance.AudioOutputSettings =
+                    SystemSettingsControl.GetAudioOutputSettings().DeepCopy();
 
                 UpdateAvatarAndAnimationAppSettings();
                 AppSettings.Instance.SaveAppSettings();

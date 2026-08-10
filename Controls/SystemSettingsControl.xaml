@@ -83,6 +83,36 @@
                         </StackPanel>
                     </Border>
                 </GroupBox>
+                <GroupBox Header="音声出力"
+                          Margin="0,0,20,20"
+                          Style="{StaticResource SettingsGroupBoxStyle}">
+                    <Border Background="White" Padding="10">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="出力先:" VerticalAlignment="Center"/>
+                                <ComboBox x:Name="AudioOutputDestinationComboBox" Grid.Column="1" Padding="2">
+                                    <ComboBoxItem Content="OtomeKairo" Tag="otomekairo"/>
+                                    <ComboBoxItem Content="CocoroConsole" Tag="cocoro_console"/>
+                                    <ComboBoxItem Content="ブラウザ" Tag="browser"/>
+                                </ComboBox>
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="OtomeKairo:" VerticalAlignment="Center"/>
+                                <ComboBox x:Name="LocalOutputDeviceComboBox" Grid.Column="1" Padding="2"/>
+                            </Grid>
+                            <TextBlock x:Name="LocalOutputDeviceStatusText"
+                                       TextWrapping="Wrap" Foreground="#666666" Margin="140,0,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </GroupBox>
             </StackPanel>
         </ScrollViewer>
     </Grid>

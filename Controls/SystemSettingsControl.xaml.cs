@@ -18,13 +18,14 @@ namespace CocoroConsole.Controls
 
         private bool _isInitialized;
         private List<ConsoleMicrophoneInputDevice> _consoleInputDevices = new List<ConsoleMicrophoneInputDevice>();
+        private List<OtomeKairoAudioOutputDevice> _localOutputDevices = new List<OtomeKairoAudioOutputDevice>();
 
         public SystemSettingsControl()
         {
             InitializeComponent();
         }
 
-        public System.Threading.Tasks.Task InitializeAsync(
+        public async System.Threading.Tasks.Task InitializeAsync(
             OtomeKairoApiClient? apiClient,
             ICommunicationService? communicationService,
             string clientId)
@@ -32,6 +33,16 @@ namespace CocoroConsole.Controls
             try
             {
                 LoadConsoleAudioInputDevices();
+                if (apiClient == null)
+                {
+                    throw new InvalidOperationException("OtomeKairo APIクライアントを初期化できません。");
+                }
+                var outputDevices = await apiClient.GetAudioOutputDevicesAsync();
+                _localOutputDevices = outputDevices.Devices.Where(device => !device.Ambiguous).ToList();
+                LocalOutputDeviceComboBox.ItemsSource = _localOutputDevices;
+                LocalOutputDeviceStatusText.Text = outputDevices.ConnectorConnected
+                    ? $"{_localOutputDevices.Count}件"
+                    : "OtomeKairoの音声コネクタは未接続です。";
                 ApplyAppSettingsToControls(AppSettings.Instance);
                 SetupEventHandlers();
                 _isInitialized = true;
@@ -42,7 +53,6 @@ namespace CocoroConsole.Controls
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
-            return System.Threading.Tasks.Task.CompletedTask;
         }
 
         public void ReloadFromAppSettings()
@@ -71,6 +81,11 @@ namespace CocoroConsole.Controls
             {
                 SelectConfiguredConsoleAudioInputDevice(microphoneSettings.console?.inputDevice);
             }
+            var audioOutput = appSettings.AudioOutputSettings;
+            AudioOutputDestinationComboBox.SelectedItem = AudioOutputDestinationComboBox.Items
+                .OfType<ComboBoxItem>()
+                .Single(item => string.Equals(item.Tag as string, audioOutput.destination, StringComparison.Ordinal));
+            SelectConfiguredLocalOutputDevice(audioOutput.localOutputDevice);
         }
 
         private void LoadConsoleAudioInputDevices()
@@ -128,6 +143,8 @@ namespace CocoroConsole.Controls
         {
             MicrophoneInputSourceComboBox.SelectionChanged += OnSettingsChanged;
             ConsoleInputDeviceComboBox.SelectionChanged += OnSettingsChanged;
+            AudioOutputDestinationComboBox.SelectionChanged += OnSettingsChanged;
+            LocalOutputDeviceComboBox.SelectionChanged += OnSettingsChanged;
         }
 
         private void OnSettingsChanged(object sender, RoutedEventArgs e)
@@ -177,6 +194,50 @@ namespace CocoroConsole.Controls
                 vadProbabilityThreshold = current.vadProbabilityThreshold,
                 speakerRecognitionThreshold = current.speakerRecognitionThreshold,
             };
+        }
+
+        public AudioOutputSettings GetAudioOutputSettings()
+        {
+            var destinationItem = AudioOutputDestinationComboBox.SelectedItem as ComboBoxItem
+                ?? throw new InvalidOperationException("音声出力先を選択してください。");
+            var destination = destinationItem.Tag as string
+                ?? throw new InvalidOperationException("音声出力先が不正です。");
+            var selectedDevice = LocalOutputDeviceComboBox.SelectedItem as OtomeKairoAudioOutputDevice;
+            return new AudioOutputSettings
+            {
+                destination = destination,
+                localOutputDevice = selectedDevice == null
+                    ? AppSettings.Instance.AudioOutputSettings.localOutputDevice?.DeepCopy()
+                    : new MicrophoneInputDevice
+                    {
+                        hostApi = selectedDevice.HostApi,
+                        name = selectedDevice.Name,
+                    },
+            };
+        }
+
+        private void SelectConfiguredLocalOutputDevice(MicrophoneInputDevice? configuredDevice)
+        {
+            if (configuredDevice == null)
+            {
+                LocalOutputDeviceComboBox.SelectedItem = null;
+                return;
+            }
+            var selected = _localOutputDevices.FirstOrDefault(device =>
+                string.Equals(device.HostApi, configuredDevice.hostApi, StringComparison.Ordinal) &&
+                string.Equals(device.Name, configuredDevice.name, StringComparison.Ordinal));
+            if (selected == null)
+            {
+                selected = new OtomeKairoAudioOutputDevice
+                {
+                    HostApi = configuredDevice.hostApi,
+                    Name = configuredDevice.name,
+                };
+                _localOutputDevices = new[] { selected }.Concat(_localOutputDevices).ToList();
+                LocalOutputDeviceComboBox.ItemsSource = _localOutputDevices;
+                LocalOutputDeviceStatusText.Text = "保存済みデバイスは現在利用できません。";
+            }
+            LocalOutputDeviceComboBox.SelectedItem = selected;
         }
     }
 }

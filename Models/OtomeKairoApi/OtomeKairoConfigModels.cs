@@ -155,8 +155,21 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("microphone_settings")]
         public OtomeKairoMicrophoneSettings MicrophoneSettings { get; set; } = new OtomeKairoMicrophoneSettings();
 
+        [JsonPropertyName("audio_output_settings")]
+        public OtomeKairoAudioOutputSettings AudioOutputSettings { get; set; } = new OtomeKairoAudioOutputSettings();
+
         [JsonPropertyName("avatars")]
         public List<OtomeKairoAvatarSpeechDefinition> Avatars { get; set; } = new List<OtomeKairoAvatarSpeechDefinition>();
+    }
+
+    public class OtomeKairoAudioOutputSettings
+    {
+        [JsonPropertyName("destination")]
+        public string Destination { get; set; } = "otomekairo";
+
+        [JsonPropertyName("local_output_device")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        public OtomeKairoSelectedAudioInputDevice? LocalOutputDevice { get; set; }
     }
 
     public class OtomeKairoMicrophoneSettings

@@ -70,6 +70,7 @@ namespace CocoroConsole.Communication
                 {
                     Type = "hello",
                     ClientId = _clientId!,
+                    ClientKind = "cocoro_console",
                     Caps = _caps?.ToArray() ?? new[] { new OtomeKairoCapabilityOffer("vision.capture", "1") },
                     EventSubscriptions = new[]
                     {
@@ -187,6 +188,9 @@ namespace CocoroConsole.Communication
                 {
                     data.SystemText = dataElement.TryGetProperty("system_text", out var systemText) ? systemText.GetString() : null;
                     data.Message = dataElement.TryGetProperty("message", out var message) ? message.GetString() : null;
+                    data.MessageId = dataElement.TryGetProperty("message_id", out var messageId) ? messageId.GetString() : null;
+                    data.CreatedAt = dataElement.TryGetProperty("created_at", out var createdAt) ? createdAt.GetString() : null;
+                    data.SourceClientId = dataElement.TryGetProperty("source_client_id", out var sourceClientId) ? sourceClientId.GetString() : null;
                     data.DeliveryId = dataElement.TryGetProperty("delivery_id", out var deliveryId) ? deliveryId.GetString() : null;
                     data.Status = dataElement.TryGetProperty("status", out var status) ? status.GetString() : null;
                     data.MediaType = dataElement.TryGetProperty("media_type", out var mediaType) ? mediaType.GetString() : null;
@@ -304,6 +308,9 @@ namespace CocoroConsole.Communication
         public int? ByteCount { get; set; }
         public string? SystemText { get; set; }
         public string? Message { get; set; }
+        public string? MessageId { get; set; }
+        public string? CreatedAt { get; set; }
+        public string? SourceClientId { get; set; }
 
         /// <summary>
         /// イベントに添付された画像（Data URI）一覧。
@@ -404,6 +411,9 @@ namespace CocoroConsole.Communication
 
         [JsonPropertyName("client_id")]
         public string ClientId { get; set; } = string.Empty;
+
+        [JsonPropertyName("client_kind")]
+        public string ClientKind { get; set; } = string.Empty;
 
         [JsonPropertyName("caps")]
         public OtomeKairoCapabilityOffer[] Caps { get; set; } = Array.Empty<OtomeKairoCapabilityOffer>();

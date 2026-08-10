@@ -28,7 +28,9 @@ namespace CocoroConsole.Services
     /// </summary>
     public class VoiceConversationInputEventArgs : EventArgs
     {
-        public int UtteranceSeq { get; init; }
+        public int? UtteranceSeq { get; init; }
+        public string MessageId { get; init; } = string.Empty;
+        public string SourceClientId { get; init; } = string.Empty;
         public string SourceKind { get; init; } = string.Empty;
         public string Message { get; init; } = string.Empty;
         public string InteractionRef { get; init; } = string.Empty;
@@ -65,14 +67,8 @@ namespace CocoroConsole.Services
         Task StopServerAsync();
         ConfigSettings GetCurrentConfig();
         Task SendConversationInputToOtomeKairoAsync(
+            string messageId,
             string message,
-            string? avatarName = null,
-            string? imageDataUrl = null,
-            string? speakerId = null,
-            string? speakerDisplayName = null);
-        Task SendConversationInputToOtomeKairoAsync(
-            string message,
-            string? avatarName = null,
             List<string>? imageDataUrls = null,
             string? speakerId = null,
             string? speakerDisplayName = null);

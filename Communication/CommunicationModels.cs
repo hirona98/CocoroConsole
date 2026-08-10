@@ -230,6 +230,21 @@ namespace CocoroConsole.Communication
         }
     }
 
+    public class AudioOutputSettings
+    {
+        public string destination { get; set; } = "otomekairo";
+        public MicrophoneInputDevice? localOutputDevice { get; set; }
+
+        public AudioOutputSettings DeepCopy()
+        {
+            return new AudioOutputSettings
+            {
+                destination = destination,
+                localOutputDevice = localOutputDevice?.DeepCopy(),
+            };
+        }
+    }
+
     /// <summary>
     /// OtomeKairo 動作端末のローカルマイク選択値。
     /// </summary>
