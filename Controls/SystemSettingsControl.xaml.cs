@@ -1,5 +1,4 @@
 using CocoroConsole.Communication;
-using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using NAudio.CoreAudioApi;
 using System;
@@ -11,7 +10,8 @@ using System.Windows.Controls;
 namespace CocoroConsole.Controls
 {
     /// <summary>
-    /// マイク入力元と CocoroConsole 側デバイスの設定 UI。
+    /// マイク入力元と CocoroConsole 側デバイス、音声出力先の設定 UI。
+    /// OtomeKairo 側の入出力デバイスは OtomeKairo WebUI で編集する。
     /// </summary>
     public partial class SystemSettingsControl : UserControl
     {
@@ -19,31 +19,17 @@ namespace CocoroConsole.Controls
 
         private bool _isInitialized;
         private List<ConsoleMicrophoneInputDevice> _consoleInputDevices = new List<ConsoleMicrophoneInputDevice>();
-        private List<OtomeKairoAudioOutputDevice> _localOutputDevices = new List<OtomeKairoAudioOutputDevice>();
 
         public SystemSettingsControl()
         {
             InitializeComponent();
         }
 
-        public async System.Threading.Tasks.Task InitializeAsync(
-            OtomeKairoApiClient? apiClient,
-            ICommunicationService? communicationService,
-            string clientId)
+        public void Initialize()
         {
             try
             {
                 LoadConsoleAudioInputDevices();
-                if (apiClient == null)
-                {
-                    throw new InvalidOperationException("OtomeKairo APIクライアントを初期化できません。");
-                }
-                var outputDevices = await apiClient.GetAudioOutputDevicesAsync();
-                _localOutputDevices = outputDevices.Devices.Where(device => !device.Ambiguous).ToList();
-                LocalOutputDeviceComboBox.ItemsSource = _localOutputDevices;
-                LocalOutputDeviceStatusText.Text = outputDevices.ConnectorConnected
-                    ? $"{_localOutputDevices.Count}件"
-                    : "OtomeKairoの音声コネクタは未接続です。";
                 ApplyAppSettingsToControls(AppSettings.Instance);
                 SetupEventHandlers();
                 _isInitialized = true;
@@ -53,7 +39,6 @@ namespace CocoroConsole.Controls
                 MessageBox.Show($"マイク設定の初期化エラー: {ex.Message}", "エラー",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
         }
 
         public void ReloadFromAppSettings()
@@ -68,9 +53,6 @@ namespace CocoroConsole.Controls
         {
             var microphoneSettings = appSettings.MicrophoneSettings;
             SelectMicrophoneInputSource(microphoneSettings.inputSource);
-            LocalInputDeviceTextBox.Text = microphoneSettings.localInputDevice == null
-                ? "未設定"
-                : $"{microphoneSettings.localInputDevice.hostApi}: {microphoneSettings.localInputDevice.name}";
             if (microphoneSettings.console != null &&
                 !string.Equals(microphoneSettings.console.clientId, appSettings.ClientId, StringComparison.Ordinal))
             {
@@ -86,7 +68,6 @@ namespace CocoroConsole.Controls
             AudioOutputDestinationComboBox.SelectedItem = AudioOutputDestinationComboBox.Items
                 .OfType<ComboBoxItem>()
                 .Single(item => string.Equals(item.Tag as string, audioOutput.destination, StringComparison.Ordinal));
-            SelectConfiguredLocalOutputDevice(audioOutput.localOutputDevice);
         }
 
         private void LoadConsoleAudioInputDevices()
@@ -145,7 +126,6 @@ namespace CocoroConsole.Controls
             MicrophoneInputSourceComboBox.SelectionChanged += OnSettingsChanged;
             ConsoleInputDeviceComboBox.SelectionChanged += OnSettingsChanged;
             AudioOutputDestinationComboBox.SelectionChanged += OnSettingsChanged;
-            LocalOutputDeviceComboBox.SelectionChanged += OnSettingsChanged;
         }
 
         private void OnSettingsChanged(object sender, RoutedEventArgs e)
@@ -197,48 +177,20 @@ namespace CocoroConsole.Controls
             };
         }
 
+        /// <summary>
+        /// UI で編集する出力先だけを反映し、OtomeKairo 側出力デバイスは既存値を保持する。
+        /// </summary>
         public AudioOutputSettings GetAudioOutputSettings()
         {
             var destinationItem = AudioOutputDestinationComboBox.SelectedItem as ComboBoxItem
                 ?? throw new InvalidOperationException("音声出力先を選択してください。");
             var destination = destinationItem.Tag as string
                 ?? throw new InvalidOperationException("音声出力先が不正です。");
-            var selectedDevice = LocalOutputDeviceComboBox.SelectedItem as OtomeKairoAudioOutputDevice;
             return new AudioOutputSettings
             {
                 destination = destination,
-                localOutputDevice = selectedDevice == null
-                    ? AppSettings.Instance.AudioOutputSettings.localOutputDevice?.DeepCopy()
-                    : new MicrophoneInputDevice
-                    {
-                        hostApi = selectedDevice.HostApi,
-                        name = selectedDevice.Name,
-                    },
+                localOutputDevice = AppSettings.Instance.AudioOutputSettings.localOutputDevice?.DeepCopy(),
             };
-        }
-
-        private void SelectConfiguredLocalOutputDevice(MicrophoneInputDevice? configuredDevice)
-        {
-            if (configuredDevice == null)
-            {
-                LocalOutputDeviceComboBox.SelectedItem = null;
-                return;
-            }
-            var selected = _localOutputDevices.FirstOrDefault(device =>
-                string.Equals(device.HostApi, configuredDevice.hostApi, StringComparison.Ordinal) &&
-                string.Equals(device.Name, configuredDevice.name, StringComparison.Ordinal));
-            if (selected == null)
-            {
-                selected = new OtomeKairoAudioOutputDevice
-                {
-                    HostApi = configuredDevice.hostApi,
-                    Name = configuredDevice.name,
-                };
-                _localOutputDevices = new[] { selected }.Concat(_localOutputDevices).ToList();
-                LocalOutputDeviceComboBox.ItemsSource = _localOutputDevices;
-                LocalOutputDeviceStatusText.Text = "保存済みデバイスは現在利用できません。";
-            }
-            LocalOutputDeviceComboBox.SelectedItem = selected;
         }
     }
 }

@@ -46,6 +46,7 @@ namespace CocoroConsole.Controls
 
             InitializeAvatarSettings();
             SystemSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
+            SystemSettingsControl.Initialize();
             _ = InitializeRemoteSettingsAsync();
 
             BackupSettings();
@@ -114,10 +115,7 @@ namespace CocoroConsole.Controls
                 DisplaySettingsControl.InitializeFromAppSettings();
                 AvatarManagementControl.RefreshAvatarList();
                 AnimationSettingsControl.Initialize();
-                await SystemSettingsControl.InitializeAsync(
-                    _apiClient,
-                    _communicationService,
-                    AppSettings.Instance.ClientId);
+                SystemSettingsControl.ReloadFromAppSettings();
             }
             catch (Exception ex)
             {

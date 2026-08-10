@@ -49,18 +49,6 @@
                                                   Tag="web_microphone"/>
                                 </ComboBox>
                             </Grid>
-                            <Grid Margin="0,0,0,14">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="OtomeKairo:"
-                                           VerticalAlignment="Center"/>
-                                <TextBox x:Name="LocalInputDeviceTextBox"
-                                         Grid.Column="1"
-                                         Padding="2"
-                                         IsReadOnly="True"/>
-                            </Grid>
                             <Grid Margin="0,0,0,2">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="140"/>
@@ -88,7 +76,7 @@
                           Style="{StaticResource SettingsGroupBoxStyle}">
                     <Border Background="White" Padding="10">
                         <StackPanel>
-                            <Grid Margin="0,0,0,14">
+                            <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="*"/>
@@ -100,16 +88,6 @@
                                     <ComboBoxItem Content="ブラウザ" Tag="browser"/>
                                 </ComboBox>
                             </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="OtomeKairo:" VerticalAlignment="Center"/>
-                                <ComboBox x:Name="LocalOutputDeviceComboBox" Grid.Column="1" Padding="2"/>
-                            </Grid>
-                            <TextBlock x:Name="LocalOutputDeviceStatusText"
-                                       TextWrapping="Wrap" Foreground="#666666" Margin="140,0,0,0"/>
                         </StackPanel>
                     </Border>
                 </GroupBox>
