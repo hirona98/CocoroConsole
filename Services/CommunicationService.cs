@@ -1232,12 +1232,14 @@ namespace CocoroConsole.Services
             {
                 if (string.Equals(ev.Type, "assistant_message", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (string.IsNullOrWhiteSpace(ev.Data.InteractionRef) ||
+                    if (string.IsNullOrWhiteSpace(ev.Data.PersonaId) ||
+                        string.IsNullOrWhiteSpace(ev.Data.PersonaDisplayName) ||
+                        string.IsNullOrWhiteSpace(ev.Data.InteractionRef) ||
                         ev.Data.RecipientPersonRefs == null ||
                         ev.Data.RecipientPersonRefs.Count == 0)
                     {
                         throw new InvalidOperationException(
-                            "assistant_message に interaction_ref または recipient_person_refs がありません。");
+                            "assistant_message に人格設定または配送先の必須フィールドがありません。");
                     }
 
                     var assistantSpeech = ev.Data.Message;
@@ -1327,6 +1329,8 @@ namespace CocoroConsole.Services
                 role = "assistant",
                 content = assistantSpeech,
                 sourceKind = sourceKind,
+                personaId = ev.Data.PersonaId!,
+                personaDisplayName = ev.Data.PersonaDisplayName!,
                 // 一つの assistant_message event を一つのバブルとして表示する。
                 forceNewBubble = true
             };

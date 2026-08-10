@@ -502,7 +502,10 @@ namespace CocoroConsole
                 else if (request.role == "assistant")
                 {
                     // サーバー側処理済みメッセージをそのまま新規追加
-                    ChatControlInstance.AddAiMessage(request.content, request.forceNewBubble);
+                    ChatControlInstance.AddAiMessage(
+                        request.personaDisplayName,
+                        request.content,
+                        request.forceNewBubble);
                 }
             });
         }
@@ -526,7 +529,8 @@ namespace CocoroConsole
                 if (e.IsError)
                 {
                     _pendingConversationImages.Clear();
-                    ChatControlInstance.AddAiMessage($"[error] {e.ErrorMessage ?? "チャット中断"}");
+                    ChatControlInstance.AddSystemErrorMessage(
+                        $"[error] {e.ErrorMessage ?? "チャット中断"}");
                 }
             });
         }

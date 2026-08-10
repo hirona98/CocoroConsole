@@ -762,6 +762,12 @@ namespace CocoroConsole.Services
     {
         [JsonPropertyName("text")]
         public string Text { get; set; } = string.Empty;
+
+        [JsonPropertyName("persona_id")]
+        public string PersonaId { get; set; } = string.Empty;
+
+        [JsonPropertyName("persona_display_name")]
+        public string PersonaDisplayName { get; set; } = string.Empty;
     }
 
     public class OtomeKairoCapabilityRequestSummary

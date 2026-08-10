@@ -51,6 +51,7 @@ namespace CocoroConsole.Controls
         // 最後のメッセージの情報を記録
         private MessageType _lastMessageType = MessageType.User;
         private DateTime _lastMessageTime = DateTime.MinValue;
+        private string _lastAiDisplayName = string.Empty;
         private readonly TimeSpan _continuousMessageThreshold = TimeSpan.FromSeconds(10);
 
         public ChatControl()
@@ -209,25 +210,34 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// AIレスポンスをUIに追加
         /// </summary>
+        /// <param name="displayName">発話生成で使った人格設定のプリセット名</param>
         /// <param name="message">レスポンスメッセージ</param>
-        public void AddAiMessage(string message)
+        public void AddAiMessage(string displayName, string message)
         {
-            AddAiMessage(message, forceNewBubble: false);
+            AddAiMessage(displayName, message, forceNewBubble: false);
         }
 
         /// <summary>
         /// AIレスポンスをUIに追加
         /// </summary>
+        /// <param name="displayName">発話生成で使った人格設定のプリセット名</param>
         /// <param name="message">レスポンスメッセージ</param>
         /// <param name="forceNewBubble">直前がAIでも新しい吹き出しを強制するか</param>
-        public void AddAiMessage(string message, bool forceNewBubble)
+        public void AddAiMessage(string displayName, string message, bool forceNewBubble)
         {
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                throw new ArgumentException("人格設定のプリセット名が未設定です。", nameof(displayName));
+            }
+            var normalizedDisplayName = displayName.Trim();
+
             // --- 時刻（バブル表示用） ---
             var timestamp = DateTime.Now;
 
             // spontaneous 発話は通常会話と混ざらないように新しい吹き出しに分離する。
             bool isContinuous = !forceNewBubble
-                && ShouldContinueLastMessage(MessageType.AI, hasImage: false);
+                && ShouldContinueLastMessage(MessageType.AI, hasImage: false)
+                && string.Equals(_lastAiDisplayName, normalizedDisplayName, StringComparison.Ordinal);
 
             if (isContinuous)
             {
@@ -261,9 +271,12 @@ namespace CocoroConsole.Controls
                 // --- 本文をバブルに設定 ---
                 bubble.Child = messageContent;
 
+                // 人格設定名をバルーン直上に表示する。
+                var aiMessage = CreateAiMessageElement(normalizedDisplayName, bubble);
+
                 // --- 時刻をLINE風にバブルの隣へ配置 ---
                 var timestampText = CreateTimestampTextBlock(timestamp, "AiTimestampTextStyle");
-                var messageRow = CreateMessageRowWithTimestamp(bubble, timestampText, isUser: false);
+                var messageRow = CreateMessageRowWithTimestamp(aiMessage, timestampText, isUser: false);
                 ChatMessagesPanel.Children.Add(messageRow);
 
                 // 自動スクロール
@@ -271,16 +284,24 @@ namespace CocoroConsole.Controls
             }
 
             // 最後のメッセージ情報を更新
+            _lastAiDisplayName = normalizedDisplayName;
             UpdateLastMessageInfo(MessageType.AI);
         }
 
         /// <summary>
         /// AIレスポンスを画像付きでUIに追加
         /// </summary>
+        /// <param name="displayName">発話生成で使った人格設定のプリセット名</param>
         /// <param name="message">レスポンスメッセージ</param>
         /// <param name="imageBase64">Base64エンコードされた画像データ（オプション）</param>
-        public void AddAiMessage(string message, string? imageBase64 = null)
+        public void AddAiMessage(string displayName, string message, string? imageBase64)
         {
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                throw new ArgumentException("人格設定のプリセット名が未設定です。", nameof(displayName));
+            }
+            var normalizedDisplayName = displayName.Trim();
+
             // --- 時刻（バブル表示用） ---
             var timestamp = DateTime.Now;
 
@@ -371,15 +392,19 @@ namespace CocoroConsole.Controls
             // --- 本文をバブルに設定 ---
             bubble.Child = messageContent;
 
+            // 人格設定名をバルーン直上に表示する。
+            var aiMessage = CreateAiMessageElement(normalizedDisplayName, bubble);
+
             // --- 時刻をLINE風にバブルの隣へ配置 ---
             var timestampText = CreateTimestampTextBlock(timestamp, "AiTimestampTextStyle");
-            var messageRow = CreateMessageRowWithTimestamp(bubble, timestampText, isUser: false);
+            var messageRow = CreateMessageRowWithTimestamp(aiMessage, timestampText, isUser: false);
             ChatMessagesPanel.Children.Add(messageRow);
 
             // 自動スクロール
             ChatScrollViewer.ScrollToEnd();
 
             // 最後のメッセージ情報を更新（画像付きは常に新バブル）
+            _lastAiDisplayName = normalizedDisplayName;
             UpdateLastMessageInfo(MessageType.AI);
         }
 
@@ -420,12 +445,13 @@ namespace CocoroConsole.Controls
             ChatScrollViewer.ScrollToEnd();
         }
 
-        public void UpdateStreamingAiMessage(string content)
+        public void UpdateStreamingAiMessage(string displayName, string content)
         {
             var messageTextBox = GetLastAiMessageTextBox();
-            if (messageTextBox == null)
+            if (messageTextBox == null ||
+                !string.Equals(_lastAiDisplayName, displayName.Trim(), StringComparison.Ordinal))
             {
-                AddAiMessage(content);
+                AddAiMessage(displayName, content, forceNewBubble: true);
                 return;
             }
 
@@ -1164,6 +1190,26 @@ namespace CocoroConsole.Controls
         public void UpdateSendButtonEnabled(bool isEnabled)
         {
             SendButton.IsEnabled = isEnabled;
+        }
+
+        /// <summary>
+        /// 人格設定名とAIバルーンを同じ左寄せの列にまとめます。
+        /// </summary>
+        private StackPanel CreateAiMessageElement(string displayName, Border bubble)
+        {
+            var displayNameText = new TextBlock
+            {
+                Style = (Style)Resources["AiDisplayNameTextStyle"],
+                Text = displayName
+            };
+            var aiMessage = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+            bubble.HorizontalAlignment = HorizontalAlignment.Left;
+            aiMessage.Children.Add(displayNameText);
+            aiMessage.Children.Add(bubble);
+            return aiMessage;
         }
 
         /// <summary>

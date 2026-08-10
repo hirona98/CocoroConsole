@@ -172,6 +172,20 @@ namespace CocoroConsole.Communication
                         return;
                     }
 
+                    // assistant バルーンは発話で使った人格設定を必ず表示する。
+                    if (request.role == "assistant" &&
+                        (string.IsNullOrWhiteSpace(request.personaId) ||
+                         string.IsNullOrWhiteSpace(request.personaDisplayName)))
+                    {
+                        context.Response.StatusCode = 400;
+                        await context.Response.WriteAsJsonAsync(new ErrorResponse
+                        {
+                            message = "Fields 'personaId' and 'personaDisplayName' are required for assistant messages",
+                            errorCode = "VALIDATION_ERROR"
+                        });
+                        return;
+                    }
+
                     // イベント発火
                     UiMessageReceived?.Invoke(this, request);
 

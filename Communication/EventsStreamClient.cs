@@ -190,6 +190,10 @@ namespace CocoroConsole.Communication
                     data.Message = dataElement.TryGetProperty("message", out var message) ? message.GetString() : null;
                     data.MessageId = dataElement.TryGetProperty("message_id", out var messageId) ? messageId.GetString() : null;
                     data.CreatedAt = dataElement.TryGetProperty("created_at", out var createdAt) ? createdAt.GetString() : null;
+                    data.PersonaId = dataElement.TryGetProperty("persona_id", out var personaId) ? personaId.GetString() : null;
+                    data.PersonaDisplayName = dataElement.TryGetProperty("persona_display_name", out var personaDisplayName)
+                        ? personaDisplayName.GetString()
+                        : null;
                     data.SourceClientId = dataElement.TryGetProperty("source_client_id", out var sourceClientId) ? sourceClientId.GetString() : null;
                     data.DeliveryId = dataElement.TryGetProperty("delivery_id", out var deliveryId) ? deliveryId.GetString() : null;
                     data.Status = dataElement.TryGetProperty("status", out var status) ? status.GetString() : null;
@@ -310,6 +314,8 @@ namespace CocoroConsole.Communication
         public string? Message { get; set; }
         public string? MessageId { get; set; }
         public string? CreatedAt { get; set; }
+        public string? PersonaId { get; set; }
+        public string? PersonaDisplayName { get; set; }
         public string? SourceClientId { get; set; }
 
         /// <summary>

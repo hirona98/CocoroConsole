@@ -598,6 +598,8 @@ namespace CocoroConsole.Communication
         public string role { get; set; } = string.Empty; // "user" | "assistant"
         public string content { get; set; } = string.Empty;
         public string sourceKind { get; set; } = string.Empty;
+        public string personaId { get; set; } = string.Empty;
+        public string personaDisplayName { get; set; } = string.Empty;
         public bool forceNewBubble { get; set; }
         public DateTime timestamp { get; set; } = DateTime.UtcNow;
     }
