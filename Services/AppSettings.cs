@@ -652,6 +652,7 @@ namespace CocoroConsole.Services
                 voicevoxConfig = new VoicevoxConfig
                 {
                     endpointUrl = voicevox.EndpointUrl,
+                    secondaryEndpointUrl = voicevox.SecondaryEndpointUrl,
                     speakerId = voicevox.SpeakerId,
                     speedScale = voicevox.SpeedScale,
                     pitchScale = voicevox.PitchScale,
@@ -772,6 +773,7 @@ namespace CocoroConsole.Services
                     VoicevoxConfig = new OtomeKairoVoicevoxSettings
                     {
                         EndpointUrl = avatar.voicevoxConfig.endpointUrl,
+                        SecondaryEndpointUrl = avatar.voicevoxConfig.secondaryEndpointUrl,
                         SpeakerId = avatar.voicevoxConfig.speakerId,
                         SpeedScale = avatar.voicevoxConfig.speedScale,
                         PitchScale = avatar.voicevoxConfig.pitchScale,

@@ -348,6 +348,7 @@ namespace CocoroConsole.Controls
                 voicevoxConfig = new VoicevoxConfig
                 {
                     endpointUrl = source.voicevoxConfig.endpointUrl,
+                    secondaryEndpointUrl = source.voicevoxConfig.secondaryEndpointUrl,
                     speakerId = source.voicevoxConfig.speakerId,
                     speedScale = source.voicevoxConfig.speedScale,
                     pitchScale = source.voicevoxConfig.pitchScale,

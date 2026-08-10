@@ -17,11 +17,12 @@ namespace CocoroConsole.Communication
     }
 
     /// <summary>
-    /// Style-Bert-VITS2の設定を保持するクラス
+    /// VOICEVOXの設定を保持するクラス
     /// </summary>
     public class VoicevoxConfig
     {
         public string endpointUrl { get; set; } = string.Empty;
+        public string secondaryEndpointUrl { get; set; } = string.Empty;
         public int speakerId { get; set; }
         public float speedScale { get; set; }        // 話速 (0.5 - 2.0)
         public float pitchScale { get; set; }        // 音高 (-0.15 - 0.15)
@@ -122,6 +123,7 @@ namespace CocoroConsole.Communication
                 voicevoxConfig = new VoicevoxConfig
                 {
                     endpointUrl = this.voicevoxConfig.endpointUrl,
+                    secondaryEndpointUrl = this.voicevoxConfig.secondaryEndpointUrl,
                     speakerId = this.voicevoxConfig.speakerId,
                     speedScale = this.voicevoxConfig.speedScale,
                     pitchScale = this.voicevoxConfig.pitchScale,

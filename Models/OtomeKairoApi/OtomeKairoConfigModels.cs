@@ -277,6 +277,9 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("endpoint_url")]
         public string EndpointUrl { get; set; } = string.Empty;
 
+        [JsonPropertyName("secondary_endpoint_url")]
+        public string SecondaryEndpointUrl { get; set; } = string.Empty;
+
         [JsonPropertyName("speaker_id")]
         public int SpeakerId { get; set; }
 
