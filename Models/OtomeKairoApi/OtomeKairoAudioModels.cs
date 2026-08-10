@@ -267,6 +267,9 @@ namespace CocoroConsole.Models.OtomeKairoApi
         [JsonPropertyName("paused_reason")]
         public string? PausedReason { get; set; }
 
+        [JsonPropertyName("conversation_input_blocked_reason")]
+        public string? ConversationInputBlockedReason { get; set; }
+
         [JsonPropertyName("vad")]
         public OtomeKairoAudioVadState Vad { get; set; } = new OtomeKairoAudioVadState();
 
