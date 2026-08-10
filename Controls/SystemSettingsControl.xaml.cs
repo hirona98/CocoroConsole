@@ -1,4 +1,5 @@
 using CocoroConsole.Communication;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using NAudio.CoreAudioApi;
 using System;
