@@ -1,8 +1,10 @@
 using CocoroConsole.Communication;
 using CocoroConsole.Services;
+using CocoroConsole.Utilities;
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -12,8 +14,7 @@ using System.Windows.Threading;
 namespace CocoroConsole.Controls
 {
     /// <summary>
-    /// アバターの表示設定（プリセット選択と VRM）を編集する。
-    /// 音声合成と音声起動ワードは OtomeKairo WebUI で編集する。
+    /// アバターの表示設定（プリセット選択と VRM）と音声合成設定を編集する。
     /// </summary>
     public partial class AvatarManagementControl : UserControl
     {
@@ -22,6 +23,7 @@ namespace CocoroConsole.Controls
 
         private int _currentAvatarIndex = -1;
         private bool _isInitialized = false;
+        private bool _isUpdatingUi = false;
         private DispatcherTimer? _avatarNameChangeTimer;
         private const int CHARACTER_NAME_DEBOUNCE_DELAY_MS = 200;
 
@@ -63,8 +65,8 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// UI 上の VRM / 表示関連だけを AppSettings へ同期する。
-        /// 音声合成・STT・起動ワードは既存値を保持する。
+        /// UI 上の VRM / 表示 / TTS 関連を AppSettings へ同期する。
+        /// STT など UI に無い項目は既存値を保持する。
         /// </summary>
         public void SyncCurrentAvatarFromUi()
         {
@@ -79,7 +81,123 @@ namespace CocoroConsole.Controls
             avatar.isConvertMToon = ConvertMToonCheckBox.IsChecked ?? false;
             avatar.isEnableShadowOff = EnableShadowOffCheckBox.IsChecked ?? false;
             avatar.shadowOffMesh = ShadowOffMeshTextBox.Text;
+
+            avatar.isUseTTS = IsUseTTSCheckBox.IsChecked ?? false;
+            avatar.ttsType = TTSEngineComboBox.SelectedItem is ComboBoxItem selectedTtsEngine
+                ? selectedTtsEngine.Tag?.ToString() ?? "voicevox"
+                : "voicevox";
+
+            avatar.voicevoxConfig.endpointUrl = VoicevoxEndpointUrlTextBox.Text;
+            avatar.voicevoxConfig.secondaryEndpointUrl = VoicevoxSecondaryEndpointUrlTextBox.Text;
+            if (int.TryParse(VoicevoxSpeakerIdTextBox.Text, out int voicevoxSpeakerId))
+            {
+                avatar.voicevoxConfig.speakerId = voicevoxSpeakerId;
+            }
+
+            avatar.voicevoxConfig.speedScale = (float)VoicevoxSpeedScaleSlider.Value;
+            avatar.voicevoxConfig.pitchScale = (float)VoicevoxPitchScaleSlider.Value;
+            avatar.voicevoxConfig.intonationScale = (float)VoicevoxIntonationScaleSlider.Value;
+            avatar.voicevoxConfig.volumeScale = (float)VoicevoxVolumeScaleSlider.Value;
+            avatar.voicevoxConfig.prePhonemeLength = (float)VoicevoxPrePhonemeLengthSlider.Value;
+            avatar.voicevoxConfig.postPhonemeLength = (float)VoicevoxPostPhonemeLengthSlider.Value;
+
+            if (VoicevoxOutputSamplingRateComboBox.SelectedItem is ComboBoxItem selectedSampleRate &&
+                int.TryParse(selectedSampleRate.Tag?.ToString(), out int samplingRate))
+            {
+                avatar.voicevoxConfig.outputSamplingRate = samplingRate;
+            }
+
+            avatar.voicevoxConfig.outputStereo = VoicevoxOutputStereoCheckBox.IsChecked ?? false;
+
+            avatar.styleBertVits2Config.endpointUrl = SBV2EndpointUrlTextBox.Text;
+            avatar.styleBertVits2Config.modelName = SBV2ModelNameTextBox.Text;
+            if (int.TryParse(SBV2ModelIdTextBox.Text, out int modelId))
+            {
+                avatar.styleBertVits2Config.modelId = modelId;
+            }
+
+            avatar.styleBertVits2Config.speakerName = SBV2SpeakerNameTextBox.Text;
+            if (int.TryParse(SBV2SpeakerIdTextBox.Text, out int speakerId))
+            {
+                avatar.styleBertVits2Config.speakerId = speakerId;
+            }
+
+            avatar.styleBertVits2Config.style = SBV2StyleTextBox.Text;
+            if (TryParseInvariantFloat(SBV2StyleWeightTextBox.Text, out float styleWeight))
+            {
+                avatar.styleBertVits2Config.styleWeight = styleWeight;
+            }
+
+            avatar.styleBertVits2Config.language = SBV2LanguageTextBox.Text;
+            if (TryParseInvariantFloat(SBV2SdpRatioTextBox.Text, out float sdpRatio))
+            {
+                avatar.styleBertVits2Config.sdpRatio = sdpRatio;
+            }
+
+            if (TryParseInvariantFloat(SBV2NoiseTextBox.Text, out float noise))
+            {
+                avatar.styleBertVits2Config.noise = noise;
+            }
+
+            if (TryParseInvariantFloat(SBV2NoiseWTextBox.Text, out float noiseW))
+            {
+                avatar.styleBertVits2Config.noiseW = noiseW;
+            }
+
+            if (TryParseInvariantFloat(SBV2LengthTextBox.Text, out float length))
+            {
+                avatar.styleBertVits2Config.length = length;
+            }
+
+            avatar.styleBertVits2Config.autoSplit = SBV2AutoSplitCheckBox.IsChecked ?? true;
+            if (TryParseInvariantFloat(SBV2SplitIntervalTextBox.Text, out float splitInterval))
+            {
+                avatar.styleBertVits2Config.splitInterval = splitInterval;
+            }
+
+            avatar.aivisCloudConfig.apiKey = AivisCloudApiKeyPasswordBox.Text;
+            avatar.aivisCloudConfig.modelUuid = AivisCloudModelUuidTextBox.Text;
+            avatar.aivisCloudConfig.speakerUuid = AivisCloudSpeakerUuidTextBox.Text;
+            if (int.TryParse(AivisCloudStyleIdTextBox.Text, out int styleId))
+            {
+                avatar.aivisCloudConfig.styleId = styleId;
+            }
+
+            if (TryParseInvariantFloat(AivisCloudSpeakingRateTextBox.Text, out float speakingRate))
+            {
+                avatar.aivisCloudConfig.speakingRate = speakingRate;
+            }
+
+            if (TryParseInvariantFloat(AivisCloudEmotionalIntensityTextBox.Text, out float emotionalIntensity))
+            {
+                avatar.aivisCloudConfig.emotionalIntensity = emotionalIntensity;
+            }
+
+            if (TryParseInvariantFloat(AivisCloudTempoDynamicsTextBox.Text, out float tempoDynamics))
+            {
+                avatar.aivisCloudConfig.tempoDynamics = tempoDynamics;
+            }
+
+            if (TryParseInvariantFloat(AivisCloudVolumeTextBox.Text, out float volume))
+            {
+                avatar.aivisCloudConfig.volume = volume;
+            }
+
             AppSettings.Instance.AvatarList[_currentAvatarIndex] = avatar;
+        }
+
+        private static bool TryParseInvariantFloat(string value, out float parsed)
+        {
+            return float.TryParse(
+                value,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out parsed);
+        }
+
+        private static string FormatInvariantFloat(float value)
+        {
+            return value.ToString("R", CultureInfo.InvariantCulture);
         }
 
         public int GetCurrentAvatarIndex()
@@ -107,17 +225,82 @@ namespace CocoroConsole.Controls
                 return;
             }
 
-            var avatar = AppSettings.Instance.AvatarList[_currentAvatarIndex];
-            AvatarNameTextBox.Text = avatar.modelName;
-            VRMFilePathTextBox.Text = avatar.vrmFilePath;
-            ConvertMToonCheckBox.IsChecked = avatar.isConvertMToon;
-            EnableShadowOffCheckBox.IsChecked = avatar.isEnableShadowOff;
-            ShadowOffMeshTextBox.Text = avatar.shadowOffMesh;
-            ShadowOffMeshTextBox.IsEnabled = avatar.isEnableShadowOff;
+            _isUpdatingUi = true;
+            try
+            {
+                var avatar = AppSettings.Instance.AvatarList[_currentAvatarIndex];
+                AvatarNameTextBox.Text = avatar.modelName;
+                VRMFilePathTextBox.Text = avatar.vrmFilePath;
+                ConvertMToonCheckBox.IsChecked = avatar.isConvertMToon;
+                EnableShadowOffCheckBox.IsChecked = avatar.isEnableShadowOff;
+                ShadowOffMeshTextBox.Text = avatar.shadowOffMesh;
+                ShadowOffMeshTextBox.IsEnabled = avatar.isEnableShadowOff;
 
-            DeleteAvatarButton.IsEnabled = !avatar.isReadOnly;
-            VRMFilePathTextBox.IsEnabled = !avatar.isReadOnly;
-            BrowseVrmFileButton.IsEnabled = !avatar.isReadOnly;
+                IsUseTTSCheckBox.IsChecked = avatar.isUseTTS;
+
+                VoicevoxEndpointUrlTextBox.Text = avatar.voicevoxConfig.endpointUrl;
+                VoicevoxSecondaryEndpointUrlTextBox.Text = avatar.voicevoxConfig.secondaryEndpointUrl;
+                VoicevoxSpeakerIdTextBox.Text = avatar.voicevoxConfig.speakerId.ToString();
+                VoicevoxSpeedScaleSlider.Value = avatar.voicevoxConfig.speedScale;
+                VoicevoxPitchScaleSlider.Value = avatar.voicevoxConfig.pitchScale;
+                VoicevoxIntonationScaleSlider.Value = avatar.voicevoxConfig.intonationScale;
+                VoicevoxVolumeScaleSlider.Value = avatar.voicevoxConfig.volumeScale;
+                VoicevoxPrePhonemeLengthSlider.Value = avatar.voicevoxConfig.prePhonemeLength;
+                VoicevoxPostPhonemeLengthSlider.Value = avatar.voicevoxConfig.postPhonemeLength;
+                VoicevoxOutputStereoCheckBox.IsChecked = avatar.voicevoxConfig.outputStereo;
+
+                foreach (ComboBoxItem item in VoicevoxOutputSamplingRateComboBox.Items)
+                {
+                    if (item.Tag?.ToString() == avatar.voicevoxConfig.outputSamplingRate.ToString())
+                    {
+                        VoicevoxOutputSamplingRateComboBox.SelectedItem = item;
+                        break;
+                    }
+                }
+
+                foreach (ComboBoxItem item in TTSEngineComboBox.Items)
+                {
+                    if (item.Tag?.ToString() == avatar.ttsType)
+                    {
+                        TTSEngineComboBox.SelectedItem = item;
+                        break;
+                    }
+                }
+
+                SBV2EndpointUrlTextBox.Text = avatar.styleBertVits2Config.endpointUrl;
+                SBV2ModelNameTextBox.Text = avatar.styleBertVits2Config.modelName;
+                SBV2ModelIdTextBox.Text = avatar.styleBertVits2Config.modelId.ToString();
+                SBV2SpeakerNameTextBox.Text = avatar.styleBertVits2Config.speakerName;
+                SBV2SpeakerIdTextBox.Text = avatar.styleBertVits2Config.speakerId.ToString();
+                SBV2StyleTextBox.Text = avatar.styleBertVits2Config.style;
+                SBV2StyleWeightTextBox.Text = FormatInvariantFloat(avatar.styleBertVits2Config.styleWeight);
+                SBV2LanguageTextBox.Text = avatar.styleBertVits2Config.language;
+                SBV2SdpRatioTextBox.Text = FormatInvariantFloat(avatar.styleBertVits2Config.sdpRatio);
+                SBV2NoiseTextBox.Text = FormatInvariantFloat(avatar.styleBertVits2Config.noise);
+                SBV2NoiseWTextBox.Text = FormatInvariantFloat(avatar.styleBertVits2Config.noiseW);
+                SBV2LengthTextBox.Text = FormatInvariantFloat(avatar.styleBertVits2Config.length);
+                SBV2AutoSplitCheckBox.IsChecked = avatar.styleBertVits2Config.autoSplit;
+                SBV2SplitIntervalTextBox.Text = FormatInvariantFloat(avatar.styleBertVits2Config.splitInterval);
+
+                AivisCloudApiKeyPasswordBox.Text = avatar.aivisCloudConfig.apiKey;
+                AivisCloudModelUuidTextBox.Text = avatar.aivisCloudConfig.modelUuid;
+                AivisCloudSpeakerUuidTextBox.Text = avatar.aivisCloudConfig.speakerUuid;
+                AivisCloudStyleIdTextBox.Text = avatar.aivisCloudConfig.styleId.ToString();
+                AivisCloudSpeakingRateTextBox.Text = FormatInvariantFloat(avatar.aivisCloudConfig.speakingRate);
+                AivisCloudEmotionalIntensityTextBox.Text = FormatInvariantFloat(avatar.aivisCloudConfig.emotionalIntensity);
+                AivisCloudTempoDynamicsTextBox.Text = FormatInvariantFloat(avatar.aivisCloudConfig.tempoDynamics);
+                AivisCloudVolumeTextBox.Text = FormatInvariantFloat(avatar.aivisCloudConfig.volume);
+
+                UpdateTTSPanelVisibility(avatar.ttsType);
+
+                DeleteAvatarButton.IsEnabled = !avatar.isReadOnly;
+                VRMFilePathTextBox.IsEnabled = !avatar.isReadOnly;
+                BrowseVrmFileButton.IsEnabled = !avatar.isReadOnly;
+            }
+            finally
+            {
+                _isUpdatingUi = false;
+            }
         }
 
         private void AddAvatarButton_Click(object sender, RoutedEventArgs e)
@@ -279,6 +462,92 @@ namespace CocoroConsole.Controls
             if (_isInitialized)
             {
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        private void OnTtsSettingChanged(object sender, RoutedEventArgs e)
+        {
+            NotifyTtsSettingsChanged();
+        }
+
+        private void OnTtsTextChanged(object sender, TextChangedEventArgs e)
+        {
+            NotifyTtsSettingsChanged();
+        }
+
+        private void OnTtsSliderChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            NotifyTtsSettingsChanged();
+        }
+
+        private void OnTtsComboChanged(object sender, SelectionChangedEventArgs e)
+        {
+            NotifyTtsSettingsChanged();
+        }
+
+        private void NotifyTtsSettingsChanged()
+        {
+            if (_isInitialized && !_isUpdatingUi)
+            {
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        private void AivisCloudApiKeyPasteOverrideButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.PasteOverwrite(AivisCloudApiKeyPasswordBox);
+            NotifyTtsSettingsChanged();
+        }
+
+        private void AivisCloudApiKeyCopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClipboardPasteOverride.CopyToClipboard(AivisCloudApiKeyPasswordBox);
+        }
+
+        private void TTSEngineComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_isInitialized || _isUpdatingUi || TTSEngineComboBox.SelectedItem == null)
+            {
+                return;
+            }
+
+            var selectedItem = (ComboBoxItem)TTSEngineComboBox.SelectedItem;
+            var engineType = selectedItem.Tag?.ToString();
+            UpdateTTSPanelVisibility(engineType);
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void UpdateTTSPanelVisibility(string? engineType)
+        {
+            if (VoicevoxSettingsPanel == null ||
+                StyleBertVits2BasicPanel == null ||
+                StyleBertVits2SettingsPanel == null ||
+                AivisCloudSettingsPanel == null)
+            {
+                return;
+            }
+
+            switch (engineType)
+            {
+                case "style-bert-vits2":
+                    VoicevoxSettingsPanel.Visibility = Visibility.Collapsed;
+                    StyleBertVits2BasicPanel.Visibility = Visibility.Visible;
+                    StyleBertVits2SettingsPanel.Visibility = Visibility.Visible;
+                    AivisCloudSettingsPanel.Visibility = Visibility.Collapsed;
+                    break;
+                case "aivis-cloud":
+                    VoicevoxSettingsPanel.Visibility = Visibility.Collapsed;
+                    StyleBertVits2BasicPanel.Visibility = Visibility.Collapsed;
+                    StyleBertVits2SettingsPanel.Visibility = Visibility.Collapsed;
+                    AivisCloudSettingsPanel.Visibility = Visibility.Visible;
+                    break;
+                case "voicevox":
+                default:
+                    VoicevoxSettingsPanel.Visibility = Visibility.Visible;
+                    StyleBertVits2BasicPanel.Visibility = Visibility.Collapsed;
+                    StyleBertVits2SettingsPanel.Visibility = Visibility.Collapsed;
+                    AivisCloudSettingsPanel.Visibility = Visibility.Collapsed;
+                    break;
             }
         }
 
