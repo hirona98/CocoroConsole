@@ -24,7 +24,7 @@ namespace CocoroConsole.Services
     /// </summary>
     internal sealed class OtomeKairoConnectionBootstrapper
     {
-        public const string RequiredApiVersion = "0.9.0";
+        public const string RequiredApiVersion = "0.10.0";
         private static readonly TimeSpan ConnectionTimeout = TimeSpan.FromSeconds(5);
 
         public async Task<OtomeKairoConnectionResult> ConnectAsync(
@@ -60,7 +60,7 @@ namespace CocoroConsole.Services
                         StringComparison.Ordinal))
                 {
                     throw new InvalidOperationException(
-                        $"OtomeKairo API {RequiredApiVersion} が必要です。接続先は {identity.ApiVersion} です。");
+                        $"接続先 OtomeKairo API は {identity.ApiVersion} です。本ソフトは {RequiredApiVersion} しか対応していません。");
                 }
 
                 if (!string.IsNullOrWhiteSpace(accessToken))
