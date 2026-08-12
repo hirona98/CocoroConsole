@@ -15,6 +15,11 @@ namespace CocoroConsole.Services
         string ServerUrl { get; set; }
 
         /// <summary>
+        /// 接続に成功したサーバーURLの履歴（新しい順）。
+        /// </summary>
+        List<string> ServerUrlHistory { get; }
+
+        /// <summary>
         /// CocoroConsoleポート
         /// </summary>
         int CocoroConsolePort { get; set; }

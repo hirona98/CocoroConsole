@@ -27,9 +27,12 @@
             </Grid.ColumnDefinitions>
             <TextBlock Text="サーバーURL:"
                        VerticalAlignment="Center"/>
-            <TextBox x:Name="ServerUrlTextBox"
-                     Grid.Column="1"
-                     Padding="4"/>
+            <ComboBox x:Name="ServerUrlComboBox"
+                      Grid.Column="1"
+                      IsEditable="True"
+                      IsTextSearchEnabled="True"
+                      StaysOpenOnEdit="True"
+                      Padding="4"/>
         </Grid>
 
         <TextBlock Grid.Row="2"

@@ -37,10 +37,15 @@ namespace CocoroConsole.Services
         private string ConnectionSettingsFilePath => Path.Combine(UserDataDirectory, "Connection.json");
 
         public string ServerUrl { get; set; } = "https://127.0.0.1:55601";
+        /// <summary>
+        /// 接続に成功したサーバーURLの履歴（新しい順）。
+        /// </summary>
+        public List<string> ServerUrlHistory { get; private set; } = new List<string>();
         public int CocoroConsolePort { get; set; }
         public int OtomeKairoPort { get; set; } = 55601;
         public string OtomeKairoHost { get; set; } = "127.0.0.1";
         public int CocoroShellPort { get; set; }
+        private const int MaxServerUrlHistory = 20;
         // /api/events/stream で hello を送るためのクライアントID（安定ID）
         public string ClientId { get; set; } = string.Empty;
         // テキスト入力では選択中の共有定義から表示名を解決する。
@@ -125,9 +130,11 @@ namespace CocoroConsole.Services
             var previousHasRemoteSettings = HasRemoteSettings;
             var previousHost = OtomeKairoHost;
             var previousPort = OtomeKairoPort;
+            var previousHistory = new List<string>(ServerUrlHistory);
 
             ServerUrl = normalizedServerUrl;
             OtomeKairoBearerToken = consoleAccessToken.Trim();
+            RememberServerUrlInHistory(normalizedServerUrl);
             if (endpointChanged)
             {
                 // 旧接続先から取得した通常設定を新接続先の実行状態として扱わない。
@@ -145,6 +152,7 @@ namespace CocoroConsole.Services
                 HasRemoteSettings = previousHasRemoteSettings;
                 OtomeKairoHost = previousHost;
                 OtomeKairoPort = previousPort;
+                ServerUrlHistory = previousHistory;
                 throw;
             }
         }
@@ -879,6 +887,7 @@ namespace CocoroConsole.Services
                     ServerUrl = connection.ServerUrl.Trim();
                     ClientId = connection.ClientId.Trim();
                     OtomeKairoBearerToken = connection.ConsoleAccessToken;
+                    ServerUrlHistory = NormalizeServerUrlHistory(connection.ServerUrlHistory);
                 }
                 catch (Exception ex) when (
                     ex is JsonException ||
@@ -888,6 +897,7 @@ namespace CocoroConsole.Services
                     ServerUrl = string.Empty;
                     ClientId = string.Empty;
                     OtomeKairoBearerToken = string.Empty;
+                    ServerUrlHistory = new List<string>();
                     Debug.WriteLine($"Connection.jsonの読み込みに失敗しました: {ex.Message}");
                 }
             }
@@ -900,6 +910,8 @@ namespace CocoroConsole.Services
             try
             {
                 ApplyConnectionUri();
+                // 現行接続先は履歴にも残し、コンボボックスから再選択できるようにする。
+                RememberServerUrlInHistory(NormalizeServerUrl(ServerUrl));
                 SaveConnectionSettings();
             }
             catch (InvalidOperationException)
@@ -974,11 +986,13 @@ namespace CocoroConsole.Services
             EnsureUserDataDirectoryExists();
             ServerUrl = NormalizeServerUrl(ServerUrl);
             ApplyConnectionUri();
+            RememberServerUrlInHistory(ServerUrl);
             var connection = new ConnectionSettings
             {
                 ServerUrl = ServerUrl,
                 ClientId = ClientId.Trim(),
                 ConsoleAccessToken = OtomeKairoBearerToken ?? string.Empty,
+                ServerUrlHistory = new List<string>(ServerUrlHistory),
             };
             var options = new JsonSerializerOptions
             {
@@ -987,6 +1001,59 @@ namespace CocoroConsole.Services
             };
             File.WriteAllText(ConnectionSettingsFilePath, JsonSerializer.Serialize(connection, options));
             Debug.WriteLine($"接続情報を保存しました: {ConnectionSettingsFilePath}");
+        }
+
+        private void RememberServerUrlInHistory(string serverUrl)
+        {
+            var normalized = NormalizeServerUrl(serverUrl);
+            ServerUrlHistory.RemoveAll(url =>
+                string.Equals(url, normalized, StringComparison.OrdinalIgnoreCase));
+            ServerUrlHistory.Insert(0, normalized);
+            if (ServerUrlHistory.Count > MaxServerUrlHistory)
+            {
+                ServerUrlHistory.RemoveRange(
+                    MaxServerUrlHistory,
+                    ServerUrlHistory.Count - MaxServerUrlHistory);
+            }
+        }
+
+        private static List<string> NormalizeServerUrlHistory(IEnumerable<string>? source)
+        {
+            var result = new List<string>();
+            if (source == null)
+            {
+                return result;
+            }
+
+            foreach (var item in source)
+            {
+                if (string.IsNullOrWhiteSpace(item))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var normalized = NormalizeServerUrl(item);
+                    if (result.Any(url =>
+                            string.Equals(url, normalized, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
+
+                    result.Add(normalized);
+                    if (result.Count >= MaxServerUrlHistory)
+                    {
+                        break;
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    // 壊れた履歴項目は捨てる。
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -1058,5 +1125,8 @@ namespace CocoroConsole.Services
 
         [JsonPropertyName("console_access_token")]
         public string ConsoleAccessToken { get; set; } = string.Empty;
+
+        [JsonPropertyName("server_url_history")]
+        public List<string> ServerUrlHistory { get; set; } = new List<string>();
     }
 }

@@ -1,5 +1,6 @@
 using CocoroConsole.Services;
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
@@ -23,17 +24,36 @@ namespace CocoroConsole.Windows
             InitializeComponent();
             _currentServerUrl = currentServerUrl;
             _currentAccessToken = currentAccessToken;
-            ServerUrlTextBox.Text = currentServerUrl;
+            PopulateServerUrlHistory(currentServerUrl);
             StatusText.Text = initialErrorMessage ?? string.Empty;
             CancelButton.Content = exitsApplicationOnClose ? "終了" : "キャンセル";
             Loaded += (_, _) =>
             {
-                ServerUrlTextBox.Focus();
-                ServerUrlTextBox.SelectAll();
+                ServerUrlComboBox.Focus();
             };
         }
 
         internal OtomeKairoConnectionResult? ConnectionResult { get; private set; }
+
+        private void PopulateServerUrlHistory(string currentServerUrl)
+        {
+            var history = AppSettings.Instance.ServerUrlHistory
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (!string.IsNullOrWhiteSpace(currentServerUrl) &&
+                !history.Any(url => string.Equals(
+                    url,
+                    currentServerUrl.Trim(),
+                    StringComparison.OrdinalIgnoreCase)))
+            {
+                history.Insert(0, currentServerUrl.Trim());
+            }
+
+            ServerUrlComboBox.ItemsSource = history;
+            ServerUrlComboBox.Text = currentServerUrl ?? string.Empty;
+        }
 
         private async void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
@@ -44,7 +64,7 @@ namespace CocoroConsole.Windows
             try
             {
                 ConnectionResult = await _bootstrapper.ConnectAsync(
-                    ServerUrlTextBox.Text,
+                    ServerUrlComboBox.Text,
                     _currentServerUrl,
                     _currentAccessToken);
                 DialogResult = true;
@@ -64,7 +84,7 @@ namespace CocoroConsole.Windows
 
         private void SetBusy(bool isBusy)
         {
-            ServerUrlTextBox.IsEnabled = !isBusy;
+            ServerUrlComboBox.IsEnabled = !isBusy;
             ConnectButton.IsEnabled = !isBusy;
             CancelButton.IsEnabled = !isBusy;
         }
