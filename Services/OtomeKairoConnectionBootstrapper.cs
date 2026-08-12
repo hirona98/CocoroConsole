@@ -100,7 +100,7 @@ namespace CocoroConsole.Services
                 timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
             {
                 throw new TimeoutException(
-                    "OtomeKairoへの接続が5秒以内に完了しませんでした。",
+                    $"OtomeKairoへの接続が5秒以内に完了しませんでした。({normalizedServerUrl})",
                     ex);
             }
         }
@@ -118,6 +118,14 @@ namespace CocoroConsole.Services
             {
                 throw new InvalidOperationException(
                     "OtomeKairoのサーバーURLには https://<host>:<port> の形式を指定してください。");
+            }
+
+            // localhost は IPv6 (::1) を先に解決することが多く、
+            // OtomeKairo が 127.0.0.1 のみ待ち受けていると接続がハングしてタイムアウトする。
+            if (string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
+            {
+                var portPart = uri.IsDefaultPort ? string.Empty : $":{uri.Port}";
+                return $"https://127.0.0.1{portPart}";
             }
 
             return uri.GetLeftPart(UriPartial.Authority);
