@@ -38,7 +38,8 @@
                                                    Text="CocoroAI"
                                                    FontSize="24"
                                                    Foreground="WhiteSmoke"
-                                                   FontWeight="SemiBold">
+                                                   FontWeight="SemiBold"
+                                                   VerticalAlignment="Center">
                                                 <TextBlock.ContextMenu>
                                                         <ContextMenu>
                                                                 <MenuItem Header="判断トレース表示"
@@ -52,9 +53,14 @@
                                                                           Click="LogViewerMenuItem_Click"/>
                                                         </ContextMenu>
                                                 </TextBlock.ContextMenu>
-
-
                                         </TextBlock>
+                                        <TextBlock Text="Powered by OtomeKairo"
+                                                   FontSize="12"
+                                                   Foreground="WhiteSmoke"
+                                                   FontWeight="Normal"
+                                                   VerticalAlignment="Center"
+                                                   Margin="10,4,0,0"
+                                                   Opacity="0.85"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="1"
