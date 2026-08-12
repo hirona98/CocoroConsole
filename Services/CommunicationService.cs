@@ -1234,9 +1234,7 @@ namespace CocoroConsole.Services
                 {
                     if (string.IsNullOrWhiteSpace(ev.Data.PersonaId) ||
                         string.IsNullOrWhiteSpace(ev.Data.PersonaDisplayName) ||
-                        string.IsNullOrWhiteSpace(ev.Data.InteractionRef) ||
-                        ev.Data.RecipientPersonRefs == null ||
-                        ev.Data.RecipientPersonRefs.Count == 0)
+                        !HasValidAssistantMessageDelivery(ev.Data))
                     {
                         throw new InvalidOperationException(
                             "assistant_message に人格設定または配送先の必須フィールドがありません。");
@@ -1318,13 +1316,34 @@ namespace CocoroConsole.Services
             }
         }
 
+        private static bool HasValidAssistantMessageDelivery(OtomeKairoEventData data)
+        {
+            var hasDirectedDelivery =
+                !string.IsNullOrWhiteSpace(data.InteractionRef) &&
+                data.RecipientPersonRefs != null &&
+                data.RecipientPersonRefs.Count > 0;
+            if (hasDirectedDelivery)
+            {
+                return true;
+            }
+
+            var hasAmbientSource =
+                string.Equals(data.SourceKind, "wake", StringComparison.Ordinal) ||
+                string.Equals(data.SourceKind, "background_thinking", StringComparison.Ordinal);
+            return
+                hasAmbientSource &&
+                data.InteractionRef == null &&
+                data.RecipientPersonRefs != null &&
+                data.RecipientPersonRefs.Count == 0;
+        }
+
         private void HandleAssistantSpeechFromEvent(OtomeKairoEvent ev, string assistantSpeech)
         {
             var sourceKind = ev.Data.SourceKind ?? string.Empty;
             var uiMessage = new UiMessageRequest
             {
                 memoryId = string.Empty,
-                sessionId = ev.Data.InteractionRef!,
+                sessionId = ev.Data.InteractionRef ?? string.Empty,
                 message = assistantSpeech,
                 role = "assistant",
                 content = assistantSpeech,
