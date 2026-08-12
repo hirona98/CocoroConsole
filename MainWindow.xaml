@@ -8,7 +8,7 @@
         xmlns:svgc="http://sharpvectors.codeplex.com/svgc/"
         mc:Ignorable="d"
         Title="CocoroAI Ver. 6.0.0 Beta"
-        Height="600"
+        Height="650"
         Width="500"
         ShowInTaskbar="True"
         WindowStartupLocation="CenterScreen">
@@ -30,38 +30,33 @@
                                         <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
-                                <StackPanel Grid.Column="0"
-                                            Orientation="Horizontal"
-                                            VerticalAlignment="Center"
-                                            Margin="20,0">
-                                        <TextBlock x:Name="CocoroAiTitleText"
-                                                   Text="CocoroAI"
-                                                   FontSize="24"
-                                                   Foreground="WhiteSmoke"
-                                                   FontWeight="SemiBold"
-                                                   VerticalAlignment="Center">
-                                                <TextBlock.ContextMenu>
-                                                        <ContextMenu>
-                                                                <MenuItem Header="判断トレース表示"
-                                                                          Click="JudgmentTraceViewerMenuItem_Click"/>
-                                                                <MenuItem Header="現在状態表示"
-                                                                          Click="CurrentStateViewerMenuItem_Click"/>
-                                                                <MenuItem Header="自律実行表示"
-                                                                          Click="AutonomousRunViewerMenuItem_Click"/>
-                                                                <Separator/>
-                                                                <MenuItem Header="ログ表示"
-                                                                          Click="LogViewerMenuItem_Click"/>
-                                                        </ContextMenu>
-                                                </TextBlock.ContextMenu>
-                                        </TextBlock>
-                                        <TextBlock Text="Powered by OtomeKairo"
-                                                   FontSize="12"
-                                                   Foreground="WhiteSmoke"
-                                                   FontWeight="Normal"
-                                                   VerticalAlignment="Center"
-                                                   Margin="10,4,0,0"
-                                                   Opacity="0.85"/>
-                                </StackPanel>
+                                <TextBlock x:Name="CocoroAiTitleText"
+                                           Grid.Column="0"
+                                           VerticalAlignment="Center"
+                                           Margin="20,0"
+                                           Foreground="WhiteSmoke">
+                                        <TextBlock.ContextMenu>
+                                                <ContextMenu>
+                                                        <MenuItem Header="判断トレース表示"
+                                                                  Click="JudgmentTraceViewerMenuItem_Click"/>
+                                                        <MenuItem Header="現在状態表示"
+                                                                  Click="CurrentStateViewerMenuItem_Click"/>
+                                                        <MenuItem Header="自律実行表示"
+                                                                  Click="AutonomousRunViewerMenuItem_Click"/>
+                                                        <Separator/>
+                                                        <MenuItem Header="ログ表示"
+                                                                  Click="LogViewerMenuItem_Click"/>
+                                                </ContextMenu>
+                                        </TextBlock.ContextMenu>
+                                        <Run Text="CocoroAI"
+                                             FontSize="24"
+                                             FontWeight="SemiBold"/>
+                                        <Run Text="  Powered by OtomeKairo"
+                                             FontSize="12"
+                                             FontWeight="Normal"
+                                             BaselineAlignment="Baseline"
+                                             Foreground="#D9F5F5F5"/>
+                                </TextBlock>
 
                                 <StackPanel Grid.Column="1"
                                             Orientation="Horizontal"
