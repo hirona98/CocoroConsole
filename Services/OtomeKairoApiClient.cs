@@ -329,19 +329,21 @@ namespace CocoroConsole.Services
             return SendOtomeKairoAsync<OtomeKairoConfigResponse>(new HttpMethod("PATCH"), "/api/config/current", request, cancellationToken);
         }
 
-        public Task PatchCapabilityStateAsync(string capabilityId, bool paused, CancellationToken cancellationToken = default)
+        public Task PatchVisionCaptureStateAsync(
+            string visionSourceId,
+            bool paused,
+            CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            if (string.IsNullOrWhiteSpace(capabilityId))
+            if (string.IsNullOrWhiteSpace(visionSourceId))
             {
-                throw new ArgumentException("capabilityIdを指定してください", nameof(capabilityId));
+                throw new ArgumentException("visionSourceIdを指定してください", nameof(visionSourceId));
             }
 
-            var normalizedCapabilityId = Uri.EscapeDataString(capabilityId.Trim());
             return SendOkAsync(
                 new HttpMethod("PATCH"),
-                $"/api/capabilities/{normalizedCapabilityId}/state",
-                new { paused },
+                "/api/capabilities/vision.capture/state",
+                new { paused, vision_source_id = visionSourceId.Trim() },
                 cancellationToken);
         }
 

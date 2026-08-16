@@ -884,7 +884,9 @@ namespace CocoroConsole.Services
                     })
                     .ConfigureAwait(false);
                 await _otomeKairoApiClient
-                    .PatchCapabilityStateAsync("vision.capture", paused: !enabled)
+                    .PatchVisionCaptureStateAsync(
+                        DesktopWakePolicyHelper.BuildDesktopVisionSourceId(_appSettings.ClientId),
+                        paused: !enabled)
                     .ConfigureAwait(false);
                 await _otomeKairoApiClient
                     .ReplaceConsoleClientEditorStateAsync(
@@ -1541,7 +1543,9 @@ namespace CocoroConsole.Services
             try
             {
                 await _otomeKairoApiClient
-                    .PatchCapabilityStateAsync("vision.capture", paused: !_appSettings.ScreenshotSettings.enabled)
+                    .PatchVisionCaptureStateAsync(
+                        DesktopWakePolicyHelper.BuildDesktopVisionSourceId(_appSettings.ClientId),
+                        paused: !_appSettings.ScreenshotSettings.enabled)
                     .ConfigureAwait(false);
             }
             catch (Exception ex)
