@@ -15,14 +15,16 @@ namespace CocoroConsole.Communication
     public class CocoroShellClient : IDisposable
     {
         private readonly HttpClient _httpClient;
+        private readonly Func<string> _sessionTokenProvider;
         private bool _disposed;
 
         /// <summary>
         /// コンストラクタ
         /// </summary>
         /// <param name="baseUrl">ベースURL（例: http://127.0.0.1:55605）</param>
-        public CocoroShellClient(string baseUrl)
+        public CocoroShellClient(string baseUrl, Func<string> sessionTokenProvider)
         {
+            _sessionTokenProvider = sessionTokenProvider ?? throw new ArgumentNullException(nameof(sessionTokenProvider));
             _httpClient = new HttpClient
             {
                 BaseAddress = new Uri(baseUrl),
@@ -35,7 +37,7 @@ namespace CocoroConsole.Communication
         /// コンストラクタ（ポート番号指定）
         /// </summary>
         /// <param name="port">ポート番号</param>
-        public CocoroShellClient(int port) : this($"http://127.0.0.1:{port}")
+        public CocoroShellClient(int port, Func<string> sessionTokenProvider) : this($"http://127.0.0.1:{port}", sessionTokenProvider)
         {
         }
 
@@ -106,7 +108,8 @@ namespace CocoroConsole.Communication
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("/api/animation", request);
+                using var message = CreateControlRequest("/api/animation", request);
+                using var response = await _httpClient.SendAsync(message);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -145,7 +148,8 @@ namespace CocoroConsole.Communication
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("/api/control", request);
+                using var message = CreateControlRequest("/api/control", request);
+                using var response = await _httpClient.SendAsync(message);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -175,6 +179,18 @@ namespace CocoroConsole.Communication
                 Debug.WriteLine($"制御コマンド送信エラー: {ex.Message}");
                 throw new InvalidOperationException($"Failed to send control action: {ex.Message}", ex);
             }
+        }
+
+        private HttpRequestMessage CreateControlRequest<T>(string path, T body)
+        {
+            var token = _sessionTokenProvider();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                throw new InvalidOperationException("CocoroShellの制御トークンが設定されていません。");
+            }
+            var message = new HttpRequestMessage(HttpMethod.Post, path) { Content = JsonContent.Create(body) };
+            message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            return message;
         }
 
         /// <summary>

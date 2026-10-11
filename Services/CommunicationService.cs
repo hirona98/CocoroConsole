@@ -155,7 +155,7 @@ namespace CocoroConsole.Services
             _apiServerPort = _appSettings.CocoroConsolePort;
 
             // CocoroShellクライアントの初期化
-            _shellClient = new CocoroShellClient(_appSettings.CocoroShellPort);
+            _shellClient = new CocoroShellClient(_appSettings.CocoroShellPort, () => _appSettings.ShellSessionToken);
             _directAudioPlaybackService = new DirectAudioPlaybackService();
 
             // OtomeKairo APIクライアントを初期化する
@@ -420,7 +420,7 @@ namespace CocoroConsole.Services
             if (shellPortChanged)
             {
                 _shellClient?.Dispose();
-                _shellClient = new CocoroShellClient(currentSettings.cocoroShellPort);
+                _shellClient = new CocoroShellClient(currentSettings.cocoroShellPort, () => _appSettings.ShellSessionToken);
             }
 
             if (otomeKairoEndpointChanged)

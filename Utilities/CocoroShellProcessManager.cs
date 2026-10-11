@@ -32,20 +32,23 @@ namespace CocoroConsole.Utilities
 #if !DEBUG
             if (HasDisplayableAvatar(appSettings))
             {
-                // Shell 再起動ごとに資格を更新し、永続ファイルとコマンドラインへ残さない。
-                PrepareSessionToken(appSettings, true);
+                // 旧Shellの終了要求には旧資格を使い、新processの起動直前に更新する。
                 var environmentVariables = new Dictionary<string, string>
                 {
                     [ConsoleApiUrlEnvironmentVariable] =
                         $"http://127.0.0.1:{appSettings.CocoroConsolePort}",
-                    [SessionTokenEnvironmentVariable] = appSettings.ShellSessionToken,
                 };
                 ProcessHelper.LaunchExternalApplication(
                     "CocoroShell.exe",
                     "CocoroShell",
                     operation,
                     true,
-                    environmentVariables);
+                    environmentVariables,
+                    beforeStart: () =>
+                    {
+                        PrepareSessionToken(appSettings, true);
+                        environmentVariables[SessionTokenEnvironmentVariable] = appSettings.ShellSessionToken;
+                    });
                 return;
             }
 

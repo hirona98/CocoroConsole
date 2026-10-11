@@ -9,6 +9,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -72,7 +73,7 @@ namespace CocoroConsole.Communication
                 // Kestrelサーバーの設定
                 builder.WebHost.ConfigureKestrel(serverOptions =>
                 {
-                    serverOptions.ListenAnyIP(_port);
+                    serverOptions.Listen(IPAddress.Loopback, _port);
                 });
 
                 // サービスの登録
@@ -112,7 +113,7 @@ namespace CocoroConsole.Communication
                 await _host.StartAsync(_cts.Token).ConfigureAwait(false);
                 _shellEditorBootstrapTask = RunShellEditorBootstrapPipeAsync(_cts.Token);
 
-                Debug.WriteLine($"CocoroConsole APIサーバーを起動しました: http://0.0.0.0:{_port}");
+                Debug.WriteLine($"CocoroConsole APIサーバーを起動しました: http://127.0.0.1:{_port}");
             }
             catch (Exception ex)
             {

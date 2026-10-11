@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using CocoroConsole.Services;
@@ -262,6 +263,11 @@ namespace CocoroConsole.Utilities
                 {
                     Content = content
                 };
+                if (string.IsNullOrWhiteSpace(settings.ShellSessionToken))
+                {
+                    throw new InvalidOperationException("CocoroShellの終了トークンが設定されていません。");
+                }
+                requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ShellSessionToken);
                 var response = await httpClient.SendAsync(requestMessage).ConfigureAwait(false);
 
                 if (response.IsSuccessStatusCode)
@@ -386,14 +392,16 @@ namespace CocoroConsole.Utilities
             string? relativeDir = null,
             ProcessOperation operation = ProcessOperation.RestartIfRunning,
             bool createWindow = false,
-            IReadOnlyDictionary<string, string>? environmentVariables = null)
+            IReadOnlyDictionary<string, string>? environmentVariables = null,
+            Action? beforeStart = null)
         {
             LaunchExternalApplicationAsync(
                 exeName,
                 relativeDir,
                 operation,
                 createWindow,
-                environmentVariables).GetAwaiter().GetResult();
+                environmentVariables,
+                beforeStart).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -408,7 +416,8 @@ namespace CocoroConsole.Utilities
             string? relativeDir = null,
             ProcessOperation operation = ProcessOperation.RestartIfRunning,
             bool createWindow = false,
-            IReadOnlyDictionary<string, string>? environmentVariables = null)
+            IReadOnlyDictionary<string, string>? environmentVariables = null,
+            Action? beforeStart = null)
         {
             try
             {
@@ -462,6 +471,8 @@ namespace CocoroConsole.Utilities
                     UIHelper.ShowError("起動エラー", $"{exeName}が見つかないため正常動作しません。パス: {fullPath}");
                     return;
                 }
+
+                beforeStart?.Invoke();
 
                 // プロセス起動のためのパラメータを設定
                 ProcessStartInfo startInfo = new ProcessStartInfo
