@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -22,6 +23,7 @@ namespace CocoroConsole.Services
         private const string BuiltInModel = "default";
 
         private static readonly Lazy<AppSettings> _instance = new Lazy<AppSettings>(() => new AppSettings());
+        private readonly object _connectionSettingsSaveLock = new object();
 
         public static AppSettings Instance => _instance.Value;
 
@@ -983,6 +985,14 @@ namespace CocoroConsole.Services
 
         private void SaveConnectionSettings()
         {
+            lock (_connectionSettingsSaveLock)
+            {
+                SaveConnectionSettingsCore();
+            }
+        }
+
+        private void SaveConnectionSettingsCore()
+        {
             EnsureUserDataDirectoryExists();
             ServerUrl = NormalizeServerUrl(ServerUrl);
             ApplyConnectionUri();
@@ -999,7 +1009,33 @@ namespace CocoroConsole.Services
                 WriteIndented = true,
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             };
-            File.WriteAllText(ConnectionSettingsFilePath, JsonSerializer.Serialize(connection, options));
+            // 同じディレクトリで書き込みを完了してから置換し、途中のJSONを公開しない。
+            var temporaryPath = Path.Combine(UserDataDirectory, $"Connection.{Guid.NewGuid():N}.tmp");
+            try
+            {
+                using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
+                    writer.Write(JsonSerializer.Serialize(connection, options));
+                    writer.Flush();
+                    stream.Flush(flushToDisk: true);
+                }
+                if (File.Exists(ConnectionSettingsFilePath))
+                {
+                    File.Replace(temporaryPath, ConnectionSettingsFilePath, null);
+                }
+                else
+                {
+                    File.Move(temporaryPath, ConnectionSettingsFilePath);
+                }
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath))
+                {
+                    File.Delete(temporaryPath);
+                }
+            }
             Debug.WriteLine($"接続情報を保存しました: {ConnectionSettingsFilePath}");
         }
 

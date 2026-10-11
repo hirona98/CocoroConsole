@@ -1184,23 +1184,8 @@ namespace CocoroConsole
                 // 接続中ならリソース解放
                 if (_communicationService != null)
                 {
-                    try
-                    {
-                        using var saveTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-                        _communicationService
-                            .SaveConsoleClientSettingsAsync(saveTimeout.Token)
-                            .GetAwaiter()
-                            .GetResult();
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"終了時の端末設定保存に失敗しました: {ex.Message}");
-                    }
-                    finally
-                    {
-                        _communicationService.Dispose();
-                        _communicationService = null;
-                    }
+                    _communicationService.Dispose();
+                    _communicationService = null;
                 }
             }
             catch (Exception)
@@ -1485,6 +1470,20 @@ namespace CocoroConsole
 
                 // シャットダウンオーバーレイを表示
                 ShutdownOverlay.Visibility = Visibility.Visible;
+
+                // 保存の接続確認を含めて期限を設け、UIスレッドを待機で止めない。
+                if (_communicationService != null)
+                {
+                    try
+                    {
+                        using var saveTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                        await _communicationService.SaveConsoleClientSettingsAsync(saveTimeout.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"終了時の端末設定保存に失敗しました: {ex.Message}");
+                    }
+                }
 
                 Debug.WriteLine("CocoroShell に終了要求を送信中...");
                 var shutdownTasks = new List<Task>

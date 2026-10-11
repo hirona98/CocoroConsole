@@ -194,18 +194,18 @@ namespace CocoroConsole.Services
             _appSettings.SaveAppSettings();
         }
 
-        private async Task EnsureOtomeKairoReadyAsync()
+        private async Task EnsureOtomeKairoReadyAsync(CancellationToken cancellationToken = default)
         {
             if (_otomeKairoApiClient == null)
             {
                 return;
             }
 
-            await _otomeKairoBootstrapSemaphore.WaitAsync().ConfigureAwait(false);
+            await _otomeKairoBootstrapSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 var serverIdentity = await _otomeKairoApiClient
-                    .GetServerIdentityAsync()
+                    .GetServerIdentityAsync(cancellationToken)
                     .ConfigureAwait(false);
                 if (!string.Equals(
                         serverIdentity.ApiVersion,
@@ -222,7 +222,7 @@ namespace CocoroConsole.Services
                 {
                     try
                     {
-                        await _otomeKairoApiClient.GetOtomeKairoStatusAsync().ConfigureAwait(false);
+                        await _otomeKairoApiClient.GetOtomeKairoStatusAsync(cancellationToken).ConfigureAwait(false);
                         return;
                     }
                     catch (OtomeKairoApiException ex) when (
@@ -234,10 +234,10 @@ namespace CocoroConsole.Services
                 }
 
                 var acquired = await _otomeKairoApiClient
-                    .AcquireConsoleAccessTokenAsync()
+                    .AcquireConsoleAccessTokenAsync(cancellationToken)
                     .ConfigureAwait(false);
                 StoreOtomeKairoBearerToken(acquired.ConsoleAccessToken);
-                await _otomeKairoApiClient.GetOtomeKairoStatusAsync().ConfigureAwait(false);
+                await _otomeKairoApiClient.GetOtomeKairoStatusAsync(cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -964,7 +964,7 @@ namespace CocoroConsole.Services
                 throw new InvalidOperationException("OtomeKairo APIクライアントが初期化されていません。");
             }
 
-            await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
+            await EnsureOtomeKairoReadyAsync(cancellationToken).ConfigureAwait(false);
             await _otomeKairoApiClient
                 .ReplaceConsoleClientEditorStateAsync(
                     _appSettings.ClientId,
