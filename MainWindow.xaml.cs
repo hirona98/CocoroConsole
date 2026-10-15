@@ -114,7 +114,6 @@ namespace CocoroConsole
         public void ClearChatHistory()
         {
             ChatControlInstance.ClearChat();
-            _communicationService?.StartNewConversation();
         }
 
         private void PositionWindowNearMain(Window child)

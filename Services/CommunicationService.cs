@@ -556,14 +556,6 @@ namespace CocoroConsole.Services
         }
 
         /// <summary>
-        /// 新しい会話セッションを開始
-        /// </summary>
-        public void StartNewConversation()
-        {
-            Debug.WriteLine("新しい会話を開始しました");
-        }
-
-        /// <summary>
         /// OtomeKairoに対話入力を送信する。
         /// </summary>
         /// <param name="messageId">チャットイベントと対応づける一意なID</param>

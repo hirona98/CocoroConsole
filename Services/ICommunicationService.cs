@@ -73,7 +73,6 @@ namespace CocoroConsole.Services
             List<string>? imageDataUrls = null,
             string? speakerId = null,
             string? speakerDisplayName = null);
-        void StartNewConversation();
         Task SendAnimationToShellAsync(string animationName);
         Task StartLogStreamAsync();
         Task StopLogStreamAsync();

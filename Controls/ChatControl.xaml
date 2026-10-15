@@ -68,7 +68,7 @@
                         <Setter Property="Padding"
                                 Value="10"/>
                         <Setter Property="MaxWidth"
-                                Value="{Binding ElementName=ChatScrollViewer, Path=ActualWidth, Converter={StaticResource PercentageConverter}, ConverterParameter=0.85}"/>
+                                Value="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}, Converter={StaticResource PercentageConverter}, ConverterParameter=0.85}"/>
                 </Style>
 
                 <Style x:Key="AiBubbleStyle"
@@ -80,7 +80,7 @@
                         <Setter Property="Padding"
                                 Value="10"/>
                         <Setter Property="MaxWidth"
-                                Value="{Binding ElementName=ChatScrollViewer, Path=ActualWidth, Converter={StaticResource PercentageConverter}, ConverterParameter=0.85}"/>
+                                Value="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}, Converter={StaticResource PercentageConverter}, ConverterParameter=0.85}"/>
                 </Style>
 
                 <!-- システムメッセージバブルスタイル -->
@@ -101,7 +101,7 @@
                         <Setter Property="HorizontalAlignment"
                                 Value="Center"/>
                         <Setter Property="MaxWidth"
-                                Value="{Binding ElementName=ChatScrollViewer, Path=ActualWidth, Converter={StaticResource PercentageConverter}, ConverterParameter=0.85}"/>
+                                Value="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}, Converter={StaticResource PercentageConverter}, ConverterParameter=0.85}"/>
                 </Style>
 
                 <!-- メッセージテキストスタイル -->
@@ -226,6 +226,202 @@
                         <Setter Property="Margin"
                                 Value="6,0,0,2"/>
                 </Style>
+
+                <DataTemplate x:Key="UserChatMessageTemplate">
+                        <Grid Margin="10,5,10,5">
+                                <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="1"
+                                           Style="{StaticResource UserTimestampTextStyle}"
+                                           Text="{Binding TimestampText}"/>
+                                <StackPanel Grid.Column="2"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Bottom">
+                                        <TextBlock Style="{StaticResource UserDisplayNameTextStyle}"
+                                                   Text="{Binding DisplayName}"/>
+                                        <Border Style="{StaticResource UserBubbleStyle}"
+                                                HorizontalAlignment="Right"
+                                                MouseRightButtonUp="Bubble_MouseRightButtonUp">
+                                                <StackPanel>
+                                                        <ItemsControl ItemsSource="{Binding Images}">
+                                                                <ItemsControl.ItemsPanel>
+                                                                        <ItemsPanelTemplate>
+                                                                                <WrapPanel Orientation="Horizontal"/>
+                                                                        </ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                                <Border BorderBrush="White"
+                                                                                        BorderThickness="1"
+                                                                                        Margin="0,0,5,5"
+                                                                                        Cursor="Hand"
+                                                                                        MouseLeftButtonUp="ChatImage_MouseLeftButtonUp">
+                                                                                        <Image Source="{Binding}"
+                                                                                               MaxHeight="120"
+                                                                                               MaxWidth="160"
+                                                                                               Stretch="Uniform"/>
+                                                                                </Border>
+                                                                        </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <TextBox Text="{Binding Text, Mode=OneWay}">
+                                                                <TextBox.Style>
+                                                                        <Style TargetType="TextBox"
+                                                                               BasedOn="{StaticResource UserMessageTextStyle}">
+                                                                                <Style.Triggers>
+                                                                                        <DataTrigger Binding="{Binding Text}"
+                                                                                                     Value="">
+                                                                                                <Setter Property="Visibility"
+                                                                                                        Value="Collapsed"/>
+                                                                                        </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                        </Style>
+                                                                </TextBox.Style>
+                                                        </TextBox>
+                                                </StackPanel>
+                                        </Border>
+                                </StackPanel>
+                        </Grid>
+                </DataTemplate>
+
+                <DataTemplate x:Key="AiChatMessageTemplate">
+                        <Grid Margin="10,5,10,5">
+                                <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Bottom">
+                                        <TextBlock Style="{StaticResource AiDisplayNameTextStyle}"
+                                                   Text="{Binding DisplayName}"/>
+                                        <Border Style="{StaticResource AiBubbleStyle}"
+                                                HorizontalAlignment="Left"
+                                                MouseRightButtonUp="Bubble_MouseRightButtonUp">
+                                                <StackPanel>
+                                                        <ItemsControl ItemsSource="{Binding Images}">
+                                                                <ItemsControl.ItemsPanel>
+                                                                        <ItemsPanelTemplate>
+                                                                                <WrapPanel Orientation="Horizontal"/>
+                                                                        </ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                                <Border BorderBrush="#B5C7EB"
+                                                                                        BorderThickness="1"
+                                                                                        CornerRadius="8"
+                                                                                        Margin="0,0,0,8"
+                                                                                        Cursor="Hand"
+                                                                                        MouseLeftButtonUp="ChatImage_MouseLeftButtonUp">
+                                                                                        <Image Source="{Binding}"
+                                                                                               MaxHeight="200"
+                                                                                               MaxWidth="200"
+                                                                                               Stretch="Uniform"/>
+                                                                                </Border>
+                                                                        </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <TextBox Text="{Binding Text, Mode=OneWay}">
+                                                                <TextBox.Style>
+                                                                        <Style TargetType="TextBox"
+                                                                               BasedOn="{StaticResource AiMessageTextStyle}">
+                                                                                <Style.Triggers>
+                                                                                        <DataTrigger Binding="{Binding Text}"
+                                                                                                     Value="">
+                                                                                                <Setter Property="Visibility"
+                                                                                                        Value="Collapsed"/>
+                                                                                        </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                        </Style>
+                                                                </TextBox.Style>
+                                                        </TextBox>
+                                                </StackPanel>
+                                        </Border>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1"
+                                           Style="{StaticResource AiTimestampTextStyle}"
+                                           Text="{Binding TimestampText}"/>
+                        </Grid>
+                </DataTemplate>
+
+                <DataTemplate x:Key="SystemChatMessageTemplate">
+                        <Border Style="{StaticResource SystemMessageBubbleStyle}"
+                                MouseRightButtonUp="Bubble_MouseRightButtonUp">
+                                <StackPanel>
+                                        <TextBox Style="{StaticResource SystemMessageTextStyle}"
+                                                 Text="{Binding Text, Mode=OneWay}"/>
+                                        <ItemsControl ItemsSource="{Binding Images}">
+                                                <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                                <Image Source="{Binding}"
+                                                                       MaxHeight="200"
+                                                                       MaxWidth="400"
+                                                                       Stretch="Uniform"
+                                                                       Cursor="Hand"
+                                                                       MouseLeftButtonUp="ChatImage_MouseLeftButtonUp"/>
+                                                        </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                </StackPanel>
+                        </Border>
+                </DataTemplate>
+
+                <DataTemplate x:Key="NotificationChatMessageTemplate">
+                        <Border Style="{StaticResource SystemMessageBubbleStyle}"
+                                MouseRightButtonUp="Bubble_MouseRightButtonUp">
+                                <StackPanel>
+                                        <TextBox Style="{StaticResource NotificationMessageTextStyle}"
+                                                 Text="{Binding Text, Mode=OneWay}"/>
+                                        <ItemsControl ItemsSource="{Binding Images}"
+                                                      HorizontalAlignment="Center">
+                                                <ItemsControl.Style>
+                                                        <Style TargetType="ItemsControl">
+                                                                <Setter Property="Margin"
+                                                                        Value="0,10,0,0"/>
+                                                                <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Images.Count}"
+                                                                                     Value="0">
+                                                                                <Setter Property="Visibility"
+                                                                                        Value="Collapsed"/>
+                                                                        </DataTrigger>
+                                                                </Style.Triggers>
+                                                        </Style>
+                                                </ItemsControl.Style>
+                                                <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                                <WrapPanel Orientation="Horizontal"
+                                                                           HorizontalAlignment="Center"/>
+                                                        </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                                <Border BorderBrush="LightGray"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="3"
+                                                                        Margin="3,0,3,0"
+                                                                        Cursor="Hand"
+                                                                        MouseLeftButtonUp="ChatImage_MouseLeftButtonUp">
+                                                                        <Image Source="{Binding}"
+                                                                               MaxHeight="120"
+                                                                               MaxWidth="160"
+                                                                               Stretch="Uniform"/>
+                                                                </Border>
+                                                        </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                </StackPanel>
+                        </Border>
+                </DataTemplate>
+
+                <local:ChatMessageTemplateSelector x:Key="ChatMessageTemplateSelector"
+                                                    UserTemplate="{StaticResource UserChatMessageTemplate}"
+                                                    AiTemplate="{StaticResource AiChatMessageTemplate}"
+                                                    SystemTemplate="{StaticResource SystemChatMessageTemplate}"
+                                                    NotificationTemplate="{StaticResource NotificationChatMessageTemplate}"/>
         </UserControl.Resources>
 
         <Grid AllowDrop="True"
@@ -245,9 +441,15 @@
                               Margin="5"
                               Background="#FAFAFA"
                               VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="ChatMessagesPanel">
-                                <!-- 対話メッセージがここに追加されます -->
-                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding Messages, RelativeSource={RelativeSource AncestorType=local:ChatControl}}"
+                                      ItemTemplateSelector="{StaticResource ChatMessageTemplateSelector}">
+                                <ItemsControl.ItemContainerStyle>
+                                        <Style TargetType="ContentPresenter">
+                                                <Setter Property="HorizontalAlignment"
+                                                        Value="Stretch"/>
+                                        </Style>
+                                </ItemsControl.ItemContainerStyle>
+                        </ItemsControl>
                 </ScrollViewer>
 
                 <!-- 入力エリア -->

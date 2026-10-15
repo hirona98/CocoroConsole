@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -36,22 +37,8 @@ namespace CocoroConsole.Controls
             new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
         private double _normalizedMicrophoneLevel;
 
-        // バブル内の時刻表示識別子（右クリックコピー等の既存ロジックと干渉しないためTagで判別）
-        private const string TimestampTag = "CocoroConsole.ChatBubble.Timestamp";
+        public ObservableCollection<ChatMessage> Messages { get; } = new ObservableCollection<ChatMessage>();
 
-        // メッセージタイプの列挙型
-        private enum MessageType
-        {
-            User,
-            AI,
-            System,
-            Notification
-        }
-
-        // 最後のメッセージの情報を記録
-        private MessageType _lastMessageType = MessageType.User;
-        private DateTime _lastMessageTime = DateTime.MinValue;
-        private string _lastAiDisplayName = string.Empty;
         private readonly TimeSpan _continuousMessageThreshold = TimeSpan.FromSeconds(10);
 
         public ChatControl()
@@ -95,9 +82,6 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// ユーザーメッセージをUIに追加
         /// </summary>
-        /// <param name="displayName">あなたの名前</param>
-        /// <param name="message">メッセージ</param>
-        /// <param name="imageSources">画像リスト（オプション）</param>
         public void AddUserMessage(
             string displayName,
             string message,
@@ -108,110 +92,18 @@ namespace CocoroConsole.Controls
                 throw new ArgumentException("「あなたの名前」が未設定です。", nameof(displayName));
             }
 
-            // --- 時刻（バブル表示用） ---
-            var timestamp = DateTime.Now;
-
-            var bubble = new Border
-            {
-                Style = (Style)Resources["UserBubbleStyle"]
-            };
-
-            // 右クリックでコピー
-            AttachCopyOnRightClick(bubble);
-
-            var messageContent = new StackPanel();
-
-            // テキスト入力と音声入力に共通する人物名をバルーンの直上へ表示する。
-            var displayNameText = new TextBlock
-            {
-                Style = (Style)Resources["UserDisplayNameTextStyle"],
-                Text = displayName.Trim()
-            };
-
-            // 添付画像がある場合は先に表示
-            if (imageSources != null && imageSources.Count > 0)
-            {
-                // 添付画像を表示するためのWrapPanel
-                var imagePanel = new WrapPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    Margin = new Thickness(0, 0, 0, 5)
-                };
-
-                foreach (var imageSource in imageSources)
-                {
-                    var imageBorder = new Border
-                    {
-                        BorderBrush = new SolidColorBrush(Colors.White),
-                        BorderThickness = new Thickness(1),
-                        CornerRadius = new CornerRadius(0),  // 角を丸くしない
-                        Margin = new Thickness(0, 0, 5, 0),
-                        Cursor = System.Windows.Input.Cursors.Hand
-                    };
-
-                    var image = new Image
-                    {
-                        Source = imageSource,
-                        MaxHeight = 120,
-                        MaxWidth = 160,
-                        Stretch = Stretch.Uniform
-                    };
-
-                    imageBorder.Child = image;
-
-                    // クリックイベントで拡大表示
-                    imageBorder.MouseLeftButtonUp += (s, e) =>
-                    {
-                        var previewWindow = new Windows.ImagePreviewWindow(imageSource);
-                        previewWindow.Show();
-                    };
-
-                    imagePanel.Children.Add(imageBorder);
-                }
-
-                messageContent.Children.Add(imagePanel);
-            }
-
-            // テキストメッセージ（空でない場合のみ）
-            if (!string.IsNullOrEmpty(message))
-            {
-                var messageText = new TextBox
-                {
-                    Style = (Style)Resources["UserMessageTextStyle"],
-                    Text = message
-                };
-                messageContent.Children.Add(messageText);
-            }
-
-            // --- 本文をバブルに設定 ---
-            bubble.Child = messageContent;
-
-            // 人物名とバルーンを同じ右寄せの列にまとめる。
-            var userMessage = new StackPanel
-            {
-                HorizontalAlignment = HorizontalAlignment.Right
-            };
-            bubble.HorizontalAlignment = HorizontalAlignment.Right;
-            userMessage.Children.Add(displayNameText);
-            userMessage.Children.Add(bubble);
-
-            // --- 時刻をLINE風にバブルの隣へ配置 ---
-            var timestampText = CreateTimestampTextBlock(timestamp, "UserTimestampTextStyle");
-            var messageRow = CreateMessageRowWithTimestamp(userMessage, timestampText, isUser: true);
-            ChatMessagesPanel.Children.Add(messageRow);
-
-            // 自動スクロール
-            ChatScrollViewer.ScrollToEnd();
-
-            // 最後のメッセージ情報を更新
-            UpdateLastMessageInfo(MessageType.User);
+            Messages.Add(new ChatMessage(
+                ChatMessageKind.User,
+                displayName.Trim(),
+                message,
+                DateTime.Now,
+                imageSources?.ToList()));
+            ScrollChatToEnd();
         }
 
         /// <summary>
         /// AIレスポンスをUIに追加
         /// </summary>
-        /// <param name="displayName">発話生成で使った人格設定のプリセット名</param>
-        /// <param name="message">レスポンスメッセージ</param>
         public void AddAiMessage(string displayName, string message)
         {
             AddAiMessage(displayName, message, forceNewBubble: false);
@@ -220,506 +112,131 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// AIレスポンスをUIに追加
         /// </summary>
-        /// <param name="displayName">発話生成で使った人格設定のプリセット名</param>
-        /// <param name="message">レスポンスメッセージ</param>
         /// <param name="forceNewBubble">直前がAIでも新しい吹き出しを強制するか</param>
         public void AddAiMessage(string displayName, string message, bool forceNewBubble)
         {
-            if (string.IsNullOrWhiteSpace(displayName))
+            var normalizedDisplayName = RequireAiDisplayName(displayName);
+            var cleanMessage = RemoveFaceTags(message);
+            if (!forceNewBubble && TryGetContinuousAiMessage(normalizedDisplayName) is ChatMessage continuous)
             {
-                throw new ArgumentException("人格設定のプリセット名が未設定です。", nameof(displayName));
-            }
-            var normalizedDisplayName = displayName.Trim();
-
-            // --- 時刻（バブル表示用） ---
-            var timestamp = DateTime.Now;
-
-            // spontaneous 発話は通常会話と混ざらないように新しい吹き出しに分離する。
-            bool isContinuous = !forceNewBubble
-                && ShouldContinueLastMessage(MessageType.AI, hasImage: false)
-                && string.Equals(_lastAiDisplayName, normalizedDisplayName, StringComparison.Ordinal);
-
-            if (isContinuous)
-            {
-                // 既存のバブルに追記
-                AppendToLastAiMessage(message);
-            }
-            else
-            {
-                // 新しいバブルを作成
-                var bubble = new Border
-                {
-                    Style = (Style)Resources["AiBubbleStyle"]
-                };
-
-                // 右クリックでコピー
-                AttachCopyOnRightClick(bubble);
-
-                var messageContent = new StackPanel();
-
-                // 表情タグを削除してからテキストを設定
-                var cleanMessage = RemoveFaceTags(message);
-
-                var messageText = new TextBox
-                {
-                    Style = (Style)Resources["AiMessageTextStyle"],
-                    Text = cleanMessage
-                };
-
-                messageContent.Children.Add(messageText);
-
-                // --- 本文をバブルに設定 ---
-                bubble.Child = messageContent;
-
-                // 人格設定名をバルーン直上に表示する。
-                var aiMessage = CreateAiMessageElement(normalizedDisplayName, bubble);
-
-                // --- 時刻をLINE風にバブルの隣へ配置 ---
-                var timestampText = CreateTimestampTextBlock(timestamp, "AiTimestampTextStyle");
-                var messageRow = CreateMessageRowWithTimestamp(aiMessage, timestampText, isUser: false);
-                ChatMessagesPanel.Children.Add(messageRow);
-
-                // 自動スクロール
-                ChatScrollViewer.ScrollToEnd();
+                AppendToMessage(continuous, cleanMessage);
+                return;
             }
 
-            // 最後のメッセージ情報を更新
-            _lastAiDisplayName = normalizedDisplayName;
-            UpdateLastMessageInfo(MessageType.AI);
+            Messages.Add(new ChatMessage(
+                ChatMessageKind.AI,
+                normalizedDisplayName,
+                cleanMessage,
+                DateTime.Now));
+            ScrollChatToEnd();
         }
 
         /// <summary>
         /// AIレスポンスを画像付きでUIに追加
         /// </summary>
-        /// <param name="displayName">発話生成で使った人格設定のプリセット名</param>
-        /// <param name="message">レスポンスメッセージ</param>
-        /// <param name="imageBase64">Base64エンコードされた画像データ（オプション）</param>
         public void AddAiMessage(string displayName, string message, string? imageBase64)
         {
-            if (string.IsNullOrWhiteSpace(displayName))
-            {
-                throw new ArgumentException("人格設定のプリセット名が未設定です。", nameof(displayName));
-            }
-            var normalizedDisplayName = displayName.Trim();
-
-            // --- 時刻（バブル表示用） ---
-            var timestamp = DateTime.Now;
-
-            var bubble = new Border
-            {
-                Style = (Style)Resources["AiBubbleStyle"]
-            };
-
-            // 右クリックでコピー
-            AttachCopyOnRightClick(bubble);
-
-            var messageContent = new StackPanel();
-
-            // 画像がある場合は先に表示（上に配置）
+            var normalizedDisplayName = RequireAiDisplayName(displayName);
+            BitmapSource? image = null;
+            var text = string.Empty;
             if (!string.IsNullOrEmpty(imageBase64))
             {
                 try
                 {
-                    // Base64データをBitmapImageに変換
-                    var imageBytes = Convert.FromBase64String(imageBase64);
-                    using (var stream = new MemoryStream(imageBytes))
-                    {
-                        var bitmapImage = new BitmapImage();
-                        bitmapImage.BeginInit();
-                        bitmapImage.StreamSource = stream;
-                        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmapImage.EndInit();
-                        bitmapImage.Freeze();
-
-                        var imageBorder = new Border
-                        {
-                            BorderBrush = new SolidColorBrush(Color.FromRgb(181, 199, 235)), // AIバブルと同じ色
-                            BorderThickness = new Thickness(1),
-                            CornerRadius = new CornerRadius(8),
-                            Margin = new Thickness(0, 0, 0, 8), // 下にマージン
-                            Cursor = Cursors.Hand
-                        };
-
-                        var image = new Image
-                        {
-                            Source = bitmapImage,
-                            MaxHeight = 200,
-                            MaxWidth = 200,
-                            Stretch = Stretch.Uniform
-                        };
-
-                        imageBorder.Child = image;
-
-                        // クリックイベントで拡大表示
-                        imageBorder.MouseLeftButtonUp += (s, e) =>
-                        {
-                            var previewWindow = new ImagePreviewWindow(bitmapImage);
-                            previewWindow.Show();
-                        };
-
-                        messageContent.Children.Add(imageBorder);
-                    }
+                    image = DecodeBase64Image(imageBase64);
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"画像表示エラー: {ex.Message}");
-                    // 画像表示に失敗した場合はエラー表示を追加
-                    var errorText = new TextBox
-                    {
-                        Style = (Style)Resources["AiMessageTextStyle"],
-                        Text = "[画像を表示できませんでした]",
-                        Margin = new Thickness(0, 0, 0, 8)
-                    };
-                    messageContent.Children.Add(errorText);
+                    text = "[画像を表示できませんでした]";
                 }
             }
 
-            // テキストメッセージ（空でない場合のみ）
             if (!string.IsNullOrEmpty(message))
             {
-                // 表情タグを削除してからテキストを設定
                 var cleanMessage = RemoveFaceTags(message);
-
-                var messageText = new TextBox
-                {
-                    Style = (Style)Resources["AiMessageTextStyle"],
-                    Text = cleanMessage
-                };
-
-                messageContent.Children.Add(messageText);
+                text = text.Length == 0 ? cleanMessage : text + Environment.NewLine + cleanMessage;
             }
 
-            // --- 本文をバブルに設定 ---
-            bubble.Child = messageContent;
-
-            // 人格設定名をバルーン直上に表示する。
-            var aiMessage = CreateAiMessageElement(normalizedDisplayName, bubble);
-
-            // --- 時刻をLINE風にバブルの隣へ配置 ---
-            var timestampText = CreateTimestampTextBlock(timestamp, "AiTimestampTextStyle");
-            var messageRow = CreateMessageRowWithTimestamp(aiMessage, timestampText, isUser: false);
-            ChatMessagesPanel.Children.Add(messageRow);
-
-            // 自動スクロール
-            ChatScrollViewer.ScrollToEnd();
-
-            // 最後のメッセージ情報を更新（画像付きは常に新バブル）
-            _lastAiDisplayName = normalizedDisplayName;
-            UpdateLastMessageInfo(MessageType.AI);
+            Messages.Add(new ChatMessage(
+                ChatMessageKind.AI,
+                normalizedDisplayName,
+                text,
+                DateTime.Now,
+                image == null ? null : new List<BitmapSource> { image }));
+            ScrollChatToEnd();
         }
 
         /// <summary>
         /// 最後のAIメッセージにテキストを追記
         /// </summary>
-        /// <param name="additionalText">追記するテキスト</param>
         public void AppendToLastAiMessage(string additionalText)
         {
-            if (ChatMessagesPanel.Children.Count == 0)
+            if (Messages.Count == 0 || Messages[Messages.Count - 1].Kind != ChatMessageKind.AI)
+            {
                 return;
+            }
 
-            // --- 最後のメッセージコンテナを取得 ---
-            var lastContainer = ChatMessagesPanel.Children[ChatMessagesPanel.Children.Count - 1] as DependencyObject;
-            if (lastContainer == null) return;
-
-            // --- AIバブルを取得 ---
-            var bubble = FindVisualChildren<Border>(lastContainer)
-                .FirstOrDefault(b => b.Style == (Style)Resources["AiBubbleStyle"]);
-            if (bubble == null) return;
-
-            // メッセージコンテンツを取得（本文領域のみ）
-            var messageContent = bubble.Child as StackPanel;
-            if (messageContent == null) return;
-
-            // テキストボックスを取得
-            var messageTextBox = messageContent.Children.OfType<TextBox>().FirstOrDefault(tb => tb.Style == (Style)Resources["AiMessageTextStyle"]);
-            if (messageTextBox == null) return;
-
-            // 表情タグを削除してからテキストを追記
-            var cleanAdditionalText = RemoveFaceTags(additionalText);
-            messageTextBox.Text += cleanAdditionalText;
-
-            // --- 追記が発生した場合は、表示時刻も更新（連続AIメッセージの最終受信時刻） ---
-            UpdateMessageTimestamp(lastContainer, DateTime.Now);
-
-            // 自動スクロール
-            ChatScrollViewer.ScrollToEnd();
+            AppendToMessage(Messages[Messages.Count - 1], RemoveFaceTags(additionalText));
         }
 
         public void UpdateStreamingAiMessage(string displayName, string content)
         {
-            var messageTextBox = GetLastAiMessageTextBox();
-            if (messageTextBox == null ||
-                !string.Equals(_lastAiDisplayName, displayName.Trim(), StringComparison.Ordinal))
+            var normalizedDisplayName = displayName.Trim();
+            if (Messages.Count == 0 ||
+                Messages[Messages.Count - 1].Kind != ChatMessageKind.AI ||
+                !string.Equals(Messages[Messages.Count - 1].DisplayName, normalizedDisplayName, StringComparison.Ordinal))
             {
                 AddAiMessage(displayName, content, forceNewBubble: true);
                 return;
             }
 
-            messageTextBox.Text = RemoveFaceTags(content);
-            ChatScrollViewer.ScrollToEnd();
-        }
-
-        private TextBox? GetLastAiMessageTextBox()
-        {
-            if (ChatMessagesPanel.Children.Count == 0)
-                return null;
-
-            // --- 最後のメッセージコンテナを取得 ---
-            var lastContainer = ChatMessagesPanel.Children[ChatMessagesPanel.Children.Count - 1] as DependencyObject;
-            if (lastContainer == null) return null;
-
-            // --- AIバブルを取得 ---
-            var bubble = FindVisualChildren<Border>(lastContainer)
-                .FirstOrDefault(b => b.Style == (Style)Resources["AiBubbleStyle"]);
-            if (bubble == null) return null;
-
-            // --- 本文領域を取得 ---
-            var messageContent = bubble.Child as StackPanel;
-            if (messageContent == null) return null;
-
-            var messageTextBox = messageContent.Children.OfType<TextBox>().FirstOrDefault(tb => tb.Style == (Style)Resources["AiMessageTextStyle"]);
-            return messageTextBox;
-        }
-
-        /// <summary>
-        /// 連続メッセージかどうかを判定
-        /// </summary>
-        /// <param name="currentType">現在のメッセージタイプ</param>
-        /// <param name="hasImage">画像が含まれているか</param>
-        /// <returns>連続メッセージの場合はtrue</returns>
-        private bool ShouldContinueLastMessage(MessageType currentType, bool hasImage)
-        {
-            // 画像付きは常に新バブル
-            if (hasImage) return false;
-
-            // 前がAI以外なら新バブル
-            if (_lastMessageType != MessageType.AI) return false;
-
-            // 現在がAI以外なら新バブル
-            if (currentType != MessageType.AI) return false;
-
-            // 10秒以内なら連続
-            var elapsed = DateTime.Now - _lastMessageTime;
-            return elapsed <= _continuousMessageThreshold;
-        }
-
-        /// <summary>
-        /// 最後のメッセージ情報を更新
-        /// </summary>
-        /// <param name="messageType">メッセージタイプ</param>
-        private void UpdateLastMessageInfo(MessageType messageType)
-        {
-            _lastMessageType = messageType;
-            _lastMessageTime = DateTime.Now;
-        }
-
-        /// <summary>
-        /// 表情タグを削除
-        /// </summary>
-        /// <param name="message">元のメッセージ</param>
-        /// <returns>表情タグを削除したメッセージ</returns>
-        private string RemoveFaceTags(string message)
-        {
-            // [face:XXX] 形式のタグを削除（XXXは任意の文字列）
-            return Regex.Replace(message, @"\[face:[^\]]+\]", "").Trim();
+            Messages[Messages.Count - 1].Text = RemoveFaceTags(content);
+            ScrollChatToEnd();
         }
 
         /// <summary>
         /// システムエラーメッセージをUIに追加（中央のグレー枠に表示）
         /// </summary>
-        /// <param name="message">エラーメッセージ</param>
         public void AddSystemErrorMessage(string message)
         {
-            var messageContainer = new StackPanel();
-
-            var bubble = new Border
-            {
-                Style = (Style)Resources["SystemMessageBubbleStyle"]
-            };
-
-            // 右クリックでコピー
-            AttachCopyOnRightClick(bubble);
-
-            var messageContent = new StackPanel();
-
-            var messageText = new TextBox
-            {
-                Style = (Style)Resources["SystemMessageTextStyle"],
-                Text = message
-            };
-
-            messageContent.Children.Add(messageText);
-
-            // --- 本文をバブルに設定 ---
-            bubble.Child = messageContent;
-            messageContainer.Children.Add(bubble);
-
-            ChatMessagesPanel.Children.Add(messageContainer);
-
-            // 自動スクロール
-            ChatScrollViewer.ScrollToEnd();
-
-            // 最後のメッセージ情報を更新
-            UpdateLastMessageInfo(MessageType.System);
+            Messages.Add(new ChatMessage(
+                ChatMessageKind.System,
+                string.Empty,
+                message,
+                DateTime.Now));
+            ScrollChatToEnd();
         }
 
         /// <summary>
         /// 通知メッセージをUIに追加（中央のグレー枠に白文字で表示）
         /// </summary>
-        /// <param name="from">通知元のアプリ名</param>
-        /// <param name="message">通知メッセージ</param>
-        /// <param name="imageSources">画像データリスト（オプション）</param>
         public void AddNotificationMessage(string from, string message, List<BitmapSource>? imageSources = null)
         {
-            var messageContainer = new StackPanel();
-
-            var bubble = new Border
-            {
-                Style = (Style)Resources["SystemMessageBubbleStyle"]
-            };
-
-            // 右クリックでコピー
-            AttachCopyOnRightClick(bubble);
-
-            var messageContent = new StackPanel();
-
-            var messageText = new TextBox
-            {
-                Style = (Style)Resources["NotificationMessageTextStyle"],
-                Text = $"[{from}]\n{message}"
-            };
-
-            messageContent.Children.Add(messageText);
-
-            // 複数画像がある場合は追加
-            if (imageSources != null && imageSources.Count > 0)
-            {
-                // 添付画像を表示するためのWrapPanel
-                var imagePanel = new WrapPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    Margin = new Thickness(0, 10, 0, 0),
-                    HorizontalAlignment = HorizontalAlignment.Center
-                };
-
-                foreach (var imageSource in imageSources)
-                {
-                    var imageBorder = new Border
-                    {
-                        BorderBrush = new SolidColorBrush(Colors.LightGray),
-                        BorderThickness = new Thickness(1),
-                        CornerRadius = new CornerRadius(3),
-                        Margin = new Thickness(3, 0, 3, 0),
-                        Cursor = Cursors.Hand
-                    };
-
-                    var image = new Image
-                    {
-                        Source = imageSource,
-                        MaxHeight = 120,
-                        MaxWidth = 160,
-                        Stretch = Stretch.Uniform
-                    };
-
-                    imageBorder.Child = image;
-
-                    // クリックイベントで拡大表示
-                    imageBorder.MouseLeftButtonUp += (s, e) =>
-                    {
-                        var previewWindow = new ImagePreviewWindow(imageSource);
-                        previewWindow.Show();
-                    };
-
-                    imagePanel.Children.Add(imageBorder);
-                }
-
-                messageContent.Children.Add(imagePanel);
-            }
-
-            // --- 本文をバブルに設定 ---
-            bubble.Child = messageContent;
-            messageContainer.Children.Add(bubble);
-
-            ChatMessagesPanel.Children.Add(messageContainer);
-
-            // 自動スクロール
-            ChatScrollViewer.ScrollToEnd();
-
-            // 最後のメッセージ情報を更新
-            UpdateLastMessageInfo(MessageType.Notification);
+            Messages.Add(new ChatMessage(
+                ChatMessageKind.Notification,
+                string.Empty,
+                $"[{from}]\n{message}",
+                DateTime.Now,
+                imageSources?.ToList()));
+            ScrollChatToEnd();
         }
 
         /// <summary>
         /// 視覚キャプチャ画像を表示
         /// </summary>
-        /// <param name="imageBase64">Base64エンコードされた画像データ</param>
         public void AddVisualCaptureImage(string imageBase64)
         {
             try
             {
-                var messageContainer = new StackPanel();
-
-                var bubble = new Border
-                {
-                    Style = (Style)Resources["SystemMessageBubbleStyle"]
-                };
-
-                // 右クリックでコピー
-                AttachCopyOnRightClick(bubble);
-
-                var messageContent = new StackPanel();
-
-                // タイトルテキスト
-                var titleText = new TextBox
-                {
-                    Style = (Style)Resources["SystemMessageTextStyle"],
-                    Text = "[視覚キャプチャ画像]",
-                    Margin = new Thickness(0, 0, 0, 5)
-                };
-                messageContent.Children.Add(titleText);
-
-                // 画像を表示
-                var imageBytes = Convert.FromBase64String(imageBase64);
-                using (var stream = new System.IO.MemoryStream(imageBytes))
-                {
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.BeginInit();
-                    bitmapImage.StreamSource = stream;
-                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmapImage.EndInit();
-                    bitmapImage.Freeze();
-
-                    var image = new Image
-                    {
-                        Source = bitmapImage,
-                        MaxHeight = 200,
-                        MaxWidth = 400,
-                        Stretch = Stretch.Uniform,
-                        Margin = new Thickness(0, 0, 0, 0),
-                        Cursor = Cursors.Hand
-                    };
-
-                    // クリックで拡大表示
-                    image.MouseLeftButtonUp += (s, e) =>
-                    {
-                        var previewWindow = new ImagePreviewWindow(bitmapImage);
-                        previewWindow.Show();
-                    };
-
-                    messageContent.Children.Add(image);
-                }
-
-                // --- 本文をバブルに設定 ---
-                bubble.Child = messageContent;
-                messageContainer.Children.Add(bubble);
-
-                ChatMessagesPanel.Children.Add(messageContainer);
-
-                // 自動スクロール
-                ChatScrollViewer.ScrollToEnd();
-
-                // 最後のメッセージ情報を更新
-                UpdateLastMessageInfo(MessageType.System);
+                var image = DecodeBase64Image(imageBase64);
+                Messages.Add(new ChatMessage(
+                    ChatMessageKind.System,
+                    string.Empty,
+                    "[視覚キャプチャ画像]",
+                    DateTime.Now,
+                    new List<BitmapSource> { image }));
+                ScrollChatToEnd();
             }
             catch (Exception ex)
             {
@@ -727,13 +244,86 @@ namespace CocoroConsole.Controls
             }
         }
 
-
         /// <summary>
         /// チャット履歴をクリア
         /// </summary>
         public void ClearChat()
         {
-            ChatMessagesPanel.Children.Clear();
+            Messages.Clear();
+        }
+
+        private void AppendToMessage(ChatMessage message, string additionalText)
+        {
+            message.Text += additionalText;
+            message.Timestamp = DateTime.Now;
+            ScrollChatToEnd();
+        }
+
+        private ChatMessage? TryGetContinuousAiMessage(string displayName)
+        {
+            if (Messages.Count == 0)
+            {
+                return null;
+            }
+
+            var last = Messages[Messages.Count - 1];
+            if (last.Kind != ChatMessageKind.AI)
+            {
+                return null;
+            }
+
+            if (!string.Equals(last.DisplayName, displayName, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            if (DateTime.Now - last.Timestamp > _continuousMessageThreshold)
+            {
+                return null;
+            }
+
+            return last;
+        }
+
+        private static string RequireAiDisplayName(string displayName)
+        {
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                throw new ArgumentException("人格設定のプリセット名が未設定です。", nameof(displayName));
+            }
+
+            return displayName.Trim();
+        }
+
+        /// <summary>
+        /// 表情タグを削除
+        /// </summary>
+        private static string RemoveFaceTags(string message)
+        {
+            return Regex.Replace(message, @"\[face:[^\]]+\]", "").Trim();
+        }
+
+        private static BitmapSource DecodeBase64Image(string imageBase64)
+        {
+            var imageBytes = Convert.FromBase64String(imageBase64);
+            using (var stream = new MemoryStream(imageBytes))
+            {
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.StreamSource = stream;
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.EndInit();
+                bitmap.Freeze();
+                return bitmap;
+            }
+        }
+
+        private void ScrollChatToEnd()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                ChatScrollViewer.ScrollToEnd();
+            }));
         }
 
         /// <summary>
@@ -1193,177 +783,62 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// 人格設定名とAIバルーンを同じ左寄せの列にまとめます。
+        /// 吹き出しを右クリックしたとき、本文をコピーする。
         /// </summary>
-        private StackPanel CreateAiMessageElement(string displayName, Border bubble)
+        private async void Bubble_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
-            var displayNameText = new TextBlock
+            if (sender is not FrameworkElement element || element.DataContext is not ChatMessage message)
             {
-                Style = (Style)Resources["AiDisplayNameTextStyle"],
-                Text = displayName
-            };
-            var aiMessage = new StackPanel
-            {
-                HorizontalAlignment = HorizontalAlignment.Left
-            };
-            bubble.HorizontalAlignment = HorizontalAlignment.Left;
-            aiMessage.Children.Add(displayNameText);
-            aiMessage.Children.Add(bubble);
-            return aiMessage;
-        }
-
-        /// <summary>
-        /// メッセージ行（メッセージ表示＋時刻）を作成
-        /// </summary>
-        /// <param name="messageElement">メッセージ表示</param>
-        /// <param name="timestampText">時刻表示</param>
-        /// <param name="isUser">ユーザーメッセージかどうか</param>
-        /// <returns>メッセージ行のGrid</returns>
-        private Grid CreateMessageRowWithTimestamp(
-            FrameworkElement messageElement,
-            TextBlock timestampText,
-            bool isUser)
-        {
-            // --- LINE風：時刻はバブルの外側（隣） ---
-            var grid = new Grid();
-
-            // --- チャット全体の左右余白＋上下余白 ---
-            grid.Margin = new Thickness(10, 5, 10, 5);
-
-            // --- ユーザーは右寄せ（* / 時刻 / バブル） ---
-            if (isUser)
-            {
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-                messageElement.VerticalAlignment = VerticalAlignment.Bottom;
-                Grid.SetColumn(timestampText, 1);
-                Grid.SetColumn(messageElement, 2);
-            }
-            // --- AIは左寄せ（バブル / 時刻 / *） ---
-            else
-            {
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-                messageElement.VerticalAlignment = VerticalAlignment.Bottom;
-                Grid.SetColumn(messageElement, 0);
-                Grid.SetColumn(timestampText, 1);
+                return;
             }
 
-            grid.Children.Add(messageElement);
-            grid.Children.Add(timestampText);
-
-            return grid;
-        }
-
-        /// <summary>
-        /// 時刻表示用TextBlockを作成
-        /// </summary>
-        /// <param name="timestamp">表示する時刻</param>
-        /// <param name="styleKey">適用するスタイルキー</param>
-        private TextBlock CreateTimestampTextBlock(DateTime timestamp, string styleKey)
-        {
-            // --- 表示フォーマットはLINE風にHH:mm ---
-            var textBlock = new TextBlock
+            try
             {
-                Text = timestamp.ToString("HH:mm"),
-                Tag = TimestampTag
-            };
+                e.Handled = true;
 
-            // --- StyleはXAMLのResourcesから取得 ---
-            textBlock.Style = (Style)Resources[styleKey];
-
-            return textBlock;
-        }
-
-        /// <summary>
-        /// メッセージ行内の時刻表示を更新
-        /// </summary>
-        /// <param name="container">メッセージ行</param>
-        /// <param name="timestamp">新しい時刻</param>
-        private void UpdateMessageTimestamp(DependencyObject container, DateTime timestamp)
-        {
-            var timestampText = GetMessageTimestampTextBlock(container);
-            if (timestampText == null) return;
-
-            timestampText.Text = timestamp.ToString("HH:mm");
-        }
-
-        /// <summary>
-        /// メッセージ行内の時刻TextBlockを取得
-        /// </summary>
-        private TextBlock? GetMessageTimestampTextBlock(DependencyObject container)
-        {
-            foreach (var textBlock in FindVisualChildren<TextBlock>(container))
-            {
-                if (Equals(textBlock.Tag, TimestampTag))
+                if (string.IsNullOrWhiteSpace(message.Text))
                 {
-                    return textBlock;
+                    ShowTransientTooltip(element, "コピーするテキストがありません");
+                    return;
+                }
+
+                var copyResult = await ClipboardPasteOverride.SetTextAsync(message.Text);
+                if (copyResult == ClipboardPasteOverride.CopyResult.Copied)
+                {
+                    ShowTransientTooltip(element, "コピーしました");
+                }
+                else if (copyResult == ClipboardPasteOverride.CopyResult.Failed)
+                {
+                    ShowTransientTooltip(element, "コピーに失敗しました");
                 }
             }
-
-            return null;
-        }
-    }
-}
-
-namespace CocoroConsole.Controls
-{
-    public partial class ChatControl
-    {
-        /// <summary>
-        /// バブルに右クリックコピーのハンドラを付与
-        /// </summary>
-        private void AttachCopyOnRightClick(Border bubble)
-        {
-            bubble.MouseRightButtonUp += async (s, e) =>
+            catch (Exception ex)
             {
-                try
-                {
-                    e.Handled = true;
-
-                    string text = CollectTextFromBubble(bubble);
-                    if (string.IsNullOrWhiteSpace(text))
-                    {
-                        ShowTransientTooltip(bubble, "コピーするテキストがありません");
-                        return;
-                    }
-
-                    var copyResult = await ClipboardPasteOverride.SetTextAsync(text);
-                    if (copyResult == ClipboardPasteOverride.CopyResult.Copied)
-                    {
-                        ShowTransientTooltip(bubble, "コピーしました");
-                    }
-                    else if (copyResult == ClipboardPasteOverride.CopyResult.Failed)
-                    {
-                        ShowTransientTooltip(bubble, "コピーに失敗しました");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Clipboard copy failed: {ex}");
-                    ShowTransientTooltip(bubble, "コピーに失敗しました");
-                }
-            };
-        }
-
-        /// <summary>
-        /// バブル内の TextBox からテキストを収集し連結
-        /// </summary>
-        private string CollectTextFromBubble(Border bubble)
-        {
-            var parts = new List<string>();
-            foreach (var tb in FindVisualChildren<TextBox>(bubble))
-            {
-                if (tb.Visibility == Visibility.Visible && !string.IsNullOrWhiteSpace(tb.Text))
-                {
-                    parts.Add(tb.Text);
-                }
+                Debug.WriteLine($"Clipboard copy failed: {ex}");
+                ShowTransientTooltip(element, "コピーに失敗しました");
             }
-            return string.Join(Environment.NewLine, parts.Where(p => !string.IsNullOrWhiteSpace(p)));
+        }
+
+        private void ChatImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            BitmapSource? source = null;
+            if (sender is Image image && image.Source is BitmapSource imageSource)
+            {
+                source = imageSource;
+            }
+            else if (sender is Border border && border.Child is Image child && child.Source is BitmapSource childSource)
+            {
+                source = childSource;
+            }
+
+            if (source == null)
+            {
+                return;
+            }
+
+            e.Handled = true;
+            var previewWindow = new ImagePreviewWindow(source);
+            previewWindow.Show();
         }
 
         /// <summary>
@@ -1389,32 +864,9 @@ namespace CocoroConsole.Controls
             {
                 timer.Stop();
                 tooltip.IsOpen = false;
-                // ToolTipは明示破棄不要だが念のため親から切り離す
                 tooltip.PlacementTarget = null;
             };
             timer.Start();
-        }
-
-        /// <summary>
-        /// ビジュアルツリーを走査して子孫要素を列挙
-        /// </summary>
-        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
-        {
-            if (depObj == null) yield break;
-
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
-            {
-                var child = VisualTreeHelper.GetChild(depObj, i);
-                if (child is T tChild)
-                {
-                    yield return tChild;
-                }
-
-                foreach (var childOfChild in FindVisualChildren<T>(child))
-                {
-                    yield return childOfChild;
-                }
-            }
         }
     }
 }
