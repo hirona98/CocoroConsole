@@ -1,4 +1,4 @@
-using CocoroConsole.Communication;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using System;
 using System.Collections.Generic;
@@ -22,8 +22,7 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// アニメーション設定を保存するためのリスト
         /// </summary>
-        private List<AnimationSetting> _animationSettings = new List<AnimationSetting>();
-        private List<AnimationSetting> _originalAnimationSettings = new List<AnimationSetting>();
+        private List<OtomeKairoConsoleAnimationSet> _animationSettings = new List<OtomeKairoConsoleAnimationSet>();
 
         /// <summary>
         /// 読み込み完了フラグ
@@ -72,13 +71,10 @@ namespace CocoroConsole.Controls
         {
             try
             {
-                var appSettings = AppSettings.Instance;
-
-                // 現在の設定をコピー
-                _animationSettings = new List<AnimationSetting>(appSettings.AnimationSettings);
-
-                // 元の設定を保存
-                SaveOriginalAnimationSettings();
+                var motion = AppSettings.Instance.ConsoleClient.Motion;
+                _animationSettings = motion.AnimationSets
+                    .Select(AppSettings.CloneDocument)
+                    .ToList();
 
                 UpdateAnimationUI();
 
@@ -92,37 +88,6 @@ namespace CocoroConsole.Controls
         }
 
         /// <summary>
-        /// 元のアニメーション設定を保存
-        /// </summary>
-        private void SaveOriginalAnimationSettings()
-        {
-            _originalAnimationSettings = new List<AnimationSetting>();
-            foreach (var animSetting in AppSettings.Instance.AnimationSettings)
-            {
-                var newAnimSetting = new AnimationSetting
-                {
-                    animationSetId = animSetting.animationSetId,
-                    animeSetName = animSetting.animeSetName,
-                    postureChangeLoopCountStanding = animSetting.postureChangeLoopCountStanding,
-                    postureChangeLoopCountSittingFloor = animSetting.postureChangeLoopCountSittingFloor,
-                    animations = new List<AnimationConfig>()
-                };
-
-                foreach (var animation in animSetting.animations)
-                {
-                    newAnimSetting.animations.Add(new AnimationConfig
-                    {
-                        displayName = animation.displayName,
-                        animationType = animation.animationType,
-                        animationName = animation.animationName,
-                        isEnabled = animation.isEnabled
-                    });
-                }
-                _originalAnimationSettings.Add(newAnimSetting);
-            }
-        }
-
-        /// <summary>
         /// アニメーションUIを更新
         /// </summary>
         private void UpdateAnimationUI()
@@ -132,7 +97,9 @@ namespace CocoroConsole.Controls
 
             if (_animationSettings.Count > 0)
             {
-                var animationIndex = AppSettings.Instance.CurrentAnimationSettingIndex;
+                var selectedId = AppSettings.Instance.ConsoleClient.Motion.SelectedAnimationSetId;
+                var animationIndex = _animationSettings.FindIndex(animationSet =>
+                    animationSet.AnimationSetId == selectedId);
 
                 if (animationIndex >= 0 && animationIndex < _animationSettings.Count)
                 {
@@ -140,14 +107,14 @@ namespace CocoroConsole.Controls
                     var animSetting = _animationSettings[animationIndex];
                     if (animSetting != null)
                     {
-                        UpdateAnimationListPanel(animSetting.animations);
+                        UpdateAnimationListPanel(animSetting.Animations);
                     }
                 }
                 else
                 {
                     // インデックスが無効な場合は最初の項目を選択
                     AnimationSetComboBox.SelectedIndex = 0;
-                    UpdateAnimationListPanel(_animationSettings[0].animations);
+                    UpdateAnimationListPanel(_animationSettings[0].Animations);
                 }
             }
 
@@ -159,21 +126,21 @@ namespace CocoroConsole.Controls
             if (_animationSettings.Count > 0 && AnimationSetComboBox.SelectedIndex >= 0)
             {
                 var currentSetting = _animationSettings[AnimationSetComboBox.SelectedIndex];
-                AnimationSetNameTextBox.Text = currentSetting.animeSetName;
-                PostureChangeLoopCountStandingTextBox.Text = currentSetting.postureChangeLoopCountStanding.ToString();
-                PostureChangeLoopCountSittingFloorTextBox.Text = currentSetting.postureChangeLoopCountSittingFloor.ToString();
+                AnimationSetNameTextBox.Text = currentSetting.DisplayName;
+                PostureChangeLoopCountStandingTextBox.Text = currentSetting.PostureChangeLoopCountStanding.ToString();
+                PostureChangeLoopCountSittingFloorTextBox.Text = currentSetting.PostureChangeLoopCountSittingFloor.ToString();
             }
         }
 
         /// <summary>
         /// アニメーションリストパネルを更新
         /// </summary>
-        private void UpdateAnimationListPanel(List<AnimationConfig> animations)
+        private void UpdateAnimationListPanel(List<OtomeKairoConsoleAnimation> Animations)
         {
             AnimationListPanel.Children.Clear();
 
-            // animationTypeでグループ化
-            var groupedAnimations = animations.GroupBy(a => a.animationType).OrderBy(g => g.Key);
+            // AnimationTypeでグループ化
+            var groupedAnimations = Animations.GroupBy(a => a.AnimationType).OrderBy(g => g.Key);
 
             foreach (var group in groupedAnimations)
             {
@@ -212,8 +179,8 @@ namespace CocoroConsole.Controls
                     // チェックボックス
                     var checkBox = new CheckBox
                     {
-                        Content = animation.displayName,
-                        IsChecked = animation.isEnabled,
+                        Content = animation.DisplayName,
+                        IsChecked = animation.Enabled,
                         Tag = animation,
                         Margin = new Thickness(0, 0, 0, 0),
                         VerticalAlignment = VerticalAlignment.Center,
@@ -237,9 +204,9 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// アニメーションタイプの表示名を取得
         /// </summary>
-        private string GetAnimationTypeDisplayName(int animationType)
+        private string GetAnimationTypeDisplayName(int AnimationType)
         {
-            switch (animationType)
+            switch (AnimationType)
             {
                 case 0:
                     return "立ち姿勢モーション ON/OFF";
@@ -257,9 +224,9 @@ namespace CocoroConsole.Controls
         /// </summary>
         private void AnimationCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox && checkBox.Tag is AnimationConfig animation)
+            if (sender is CheckBox checkBox && checkBox.Tag is OtomeKairoConsoleAnimation animation)
             {
-                animation.isEnabled = true;
+                animation.Enabled = true;
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
         }
@@ -269,9 +236,9 @@ namespace CocoroConsole.Controls
         /// </summary>
         private void AnimationCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox && checkBox.Tag is AnimationConfig animation)
+            if (sender is CheckBox checkBox && checkBox.Tag is OtomeKairoConsoleAnimation animation)
             {
-                animation.isEnabled = false;
+                animation.Enabled = false;
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
         }
@@ -281,14 +248,14 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async void PlayAnimationButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.Tag is AnimationConfig animation)
+            if (sender is Button button && button.Tag is OtomeKairoConsoleAnimation animation)
             {
                 if (_communicationService != null)
                 {
                     try
                     {
                         // CocoroShellにアニメーション再生指示を送信
-                        await _communicationService.SendAnimationToShellAsync(animation.animationName);
+                        await _communicationService.SendAnimationToShellAsync(animation.AnimationName);
                     }
                     catch (Exception ex)
                     {
@@ -318,11 +285,11 @@ namespace CocoroConsole.Controls
             if (animSetting != null)
             {
                 // 名前とループ回数を更新
-                AnimationSetNameTextBox.Text = animSetting.animeSetName;
-                PostureChangeLoopCountStandingTextBox.Text = animSetting.postureChangeLoopCountStanding.ToString();
-                PostureChangeLoopCountSittingFloorTextBox.Text = animSetting.postureChangeLoopCountSittingFloor.ToString();
+                AnimationSetNameTextBox.Text = animSetting.DisplayName;
+                PostureChangeLoopCountStandingTextBox.Text = animSetting.PostureChangeLoopCountStanding.ToString();
+                PostureChangeLoopCountSittingFloorTextBox.Text = animSetting.PostureChangeLoopCountSittingFloor.ToString();
 
-                UpdateAnimationListPanel(animSetting.animations);
+                UpdateAnimationListPanel(animSetting.Animations);
             }
         }
 
@@ -365,7 +332,7 @@ namespace CocoroConsole.Controls
                     var currentSelectedIndex = selectedIndex;
 
                     // アニメーション設定の名前を更新
-                    _animationSettings[selectedIndex].animeSetName = newName;
+                    _animationSettings[selectedIndex].DisplayName = newName;
 
                     // ComboBoxのItemsSourceを一時的に無効にしてSelectionChangedイベントを防ぐ
                     AnimationSetComboBox.SelectionChanged -= AnimationSetComboBox_SelectionChanged;
@@ -399,7 +366,7 @@ namespace CocoroConsole.Controls
                 var newName = AnimationSetNameTextBox.Text;
                 if (!string.IsNullOrWhiteSpace(newName))
                 {
-                    _animationSettings[selectedIndex].animeSetName = newName;
+                    _animationSettings[selectedIndex].DisplayName = newName;
 
                     // ComboBoxのItemsSourceを更新
                     AnimationSetComboBox.ItemsSource = null;
@@ -419,7 +386,7 @@ namespace CocoroConsole.Controls
             try
             {
                 // 現在選択されているアニメーションセットをベースに新しいセットを作成
-                AnimationSetting? sourceSet = null;
+                OtomeKairoConsoleAnimationSet? sourceSet = null;
                 if (AnimationSetComboBox.SelectedIndex >= 0 && AnimationSetComboBox.SelectedIndex < _animationSettings.Count)
                 {
                     sourceSet = _animationSettings[AnimationSetComboBox.SelectedIndex];
@@ -429,30 +396,30 @@ namespace CocoroConsole.Controls
                     sourceSet = _animationSettings[0];
                 }
 
-                var newAnimationSet = new AnimationSetting
+                var newAnimationSet = new OtomeKairoConsoleAnimationSet
                 {
-                    animationSetId = $"animation_set:{Guid.NewGuid():N}",
-                    animeSetName = $"New Animation Set {_animationSettings.Count + 1}",
-                    animations = new List<AnimationConfig>()
+                    AnimationSetId = $"animation_set:{Guid.NewGuid():N}",
+                    DisplayName = $"New Animation Set {_animationSettings.Count + 1}",
+                    Animations = new List<OtomeKairoConsoleAnimation>()
                 };
 
                 // 既存のアニメーションセットからアニメーションをコピーして（全て有効にする）
                 if (sourceSet != null)
                 {
-                    foreach (var animation in sourceSet.animations)
+                    foreach (var animation in sourceSet.Animations)
                     {
-                        newAnimationSet.animations.Add(new AnimationConfig
+                        newAnimationSet.Animations.Add(new OtomeKairoConsoleAnimation
                         {
-                            displayName = animation.displayName,
-                            animationType = animation.animationType,
-                            animationName = animation.animationName,
-                            isEnabled = true  // デフォルトでは全て有効
+                            DisplayName = animation.DisplayName,
+                            AnimationType = animation.AnimationType,
+                            AnimationName = animation.AnimationName,
+                            Enabled = true  // デフォルトでは全て有効
                         });
                     }
 
                     // 姿勢変更ループ回数はデフォルト値30を設定
-                    newAnimationSet.postureChangeLoopCountStanding = 30;
-                    newAnimationSet.postureChangeLoopCountSittingFloor = 30;
+                    newAnimationSet.PostureChangeLoopCountStanding = 30;
+                    newAnimationSet.PostureChangeLoopCountSittingFloor = 30;
                 }
 
                 _animationSettings.Add(newAnimationSet);
@@ -462,11 +429,11 @@ namespace CocoroConsole.Controls
                 AnimationSetComboBox.ItemsSource = _animationSettings;
                 AnimationSetComboBox.SelectedIndex = _animationSettings.Count - 1;
 
-                UpdateAnimationListPanel(newAnimationSet.animations);
+                UpdateAnimationListPanel(newAnimationSet.Animations);
 
                 // 姿勢変更ループ回数のテキストボックスも更新
-                PostureChangeLoopCountStandingTextBox.Text = newAnimationSet.postureChangeLoopCountStanding.ToString();
-                PostureChangeLoopCountSittingFloorTextBox.Text = newAnimationSet.postureChangeLoopCountSittingFloor.ToString();
+                PostureChangeLoopCountStandingTextBox.Text = newAnimationSet.PostureChangeLoopCountStanding.ToString();
+                PostureChangeLoopCountSittingFloorTextBox.Text = newAnimationSet.PostureChangeLoopCountSittingFloor.ToString();
 
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
@@ -490,34 +457,34 @@ namespace CocoroConsole.Controls
                 var sourceSet = _animationSettings[AnimationSetComboBox.SelectedIndex];
 
                 // 複製するアニメーションセットの名前を生成
-                var newName = sourceSet.animeSetName + "_copy";
+                var newName = sourceSet.DisplayName + "_copy";
 
                 // 同名のアニメーションセットが既に存在する場合は番号を付ける
                 int copyNumber = 1;
-                while (_animationSettings.Any(s => s.animeSetName == newName))
+                while (_animationSettings.Any(s => s.DisplayName == newName))
                 {
-                    newName = $"{sourceSet.animeSetName}_copy{copyNumber}";
+                    newName = $"{sourceSet.DisplayName}_copy{copyNumber}";
                     copyNumber++;
                 }
 
-                var newAnimationSet = new AnimationSetting
+                var newAnimationSet = new OtomeKairoConsoleAnimationSet
                 {
-                    animationSetId = $"animation_set:{Guid.NewGuid():N}",
-                    animeSetName = newName,
-                    animations = new List<AnimationConfig>(),
-                    postureChangeLoopCountStanding = sourceSet.postureChangeLoopCountStanding,
-                    postureChangeLoopCountSittingFloor = sourceSet.postureChangeLoopCountSittingFloor
+                    AnimationSetId = $"animation_set:{Guid.NewGuid():N}",
+                    DisplayName = newName,
+                    Animations = new List<OtomeKairoConsoleAnimation>(),
+                    PostureChangeLoopCountStanding = sourceSet.PostureChangeLoopCountStanding,
+                    PostureChangeLoopCountSittingFloor = sourceSet.PostureChangeLoopCountSittingFloor
                 };
 
                 // アニメーションをコピー
-                foreach (var animation in sourceSet.animations)
+                foreach (var animation in sourceSet.Animations)
                 {
-                    newAnimationSet.animations.Add(new AnimationConfig
+                    newAnimationSet.Animations.Add(new OtomeKairoConsoleAnimation
                     {
-                        displayName = animation.displayName,
-                        animationType = animation.animationType,
-                        animationName = animation.animationName,
-                        isEnabled = animation.isEnabled
+                        DisplayName = animation.DisplayName,
+                        AnimationType = animation.AnimationType,
+                        AnimationName = animation.AnimationName,
+                        Enabled = animation.Enabled
                     });
                 }
 
@@ -528,12 +495,12 @@ namespace CocoroConsole.Controls
                 AnimationSetComboBox.ItemsSource = _animationSettings;
                 AnimationSetComboBox.SelectedIndex = _animationSettings.Count - 1;
 
-                UpdateAnimationListPanel(newAnimationSet.animations);
+                UpdateAnimationListPanel(newAnimationSet.Animations);
 
                 // 名前と姿勢変更ループ回数のテキストボックスも更新
-                AnimationSetNameTextBox.Text = newAnimationSet.animeSetName;
-                PostureChangeLoopCountStandingTextBox.Text = newAnimationSet.postureChangeLoopCountStanding.ToString();
-                PostureChangeLoopCountSittingFloorTextBox.Text = newAnimationSet.postureChangeLoopCountSittingFloor.ToString();
+                AnimationSetNameTextBox.Text = newAnimationSet.DisplayName;
+                PostureChangeLoopCountStandingTextBox.Text = newAnimationSet.PostureChangeLoopCountStanding.ToString();
+                PostureChangeLoopCountSittingFloorTextBox.Text = newAnimationSet.PostureChangeLoopCountSittingFloor.ToString();
 
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
@@ -568,7 +535,7 @@ namespace CocoroConsole.Controls
                 {
                     var newIndex = Math.Min(selectedIndex, _animationSettings.Count - 1);
                     AnimationSetComboBox.SelectedIndex = newIndex;
-                    UpdateAnimationListPanel(_animationSettings[newIndex].animations);
+                    UpdateAnimationListPanel(_animationSettings[newIndex].Animations);
                 }
                 else
                 {
@@ -594,7 +561,7 @@ namespace CocoroConsole.Controls
 
             if (int.TryParse(PostureChangeLoopCountStandingTextBox.Text, out int value))
             {
-                _animationSettings[AnimationSetComboBox.SelectedIndex].postureChangeLoopCountStanding = value;
+                _animationSettings[AnimationSetComboBox.SelectedIndex].PostureChangeLoopCountStanding = value;
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
         }
@@ -609,7 +576,7 @@ namespace CocoroConsole.Controls
 
             if (int.TryParse(PostureChangeLoopCountSittingFloorTextBox.Text, out int value))
             {
-                _animationSettings[AnimationSetComboBox.SelectedIndex].postureChangeLoopCountSittingFloor = value;
+                _animationSettings[AnimationSetComboBox.SelectedIndex].PostureChangeLoopCountSittingFloor = value;
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
         }
@@ -617,9 +584,9 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// 現在のアニメーション設定を取得
         /// </summary>
-        public List<AnimationSetting> GetAnimationSettings()
+        public List<OtomeKairoConsoleAnimationSet> GetAnimationSettings()
         {
-            return new List<AnimationSetting>(_animationSettings);
+            return new List<OtomeKairoConsoleAnimationSet>(_animationSettings);
         }
 
         /// <summary>

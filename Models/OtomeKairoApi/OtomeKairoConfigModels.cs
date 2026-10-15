@@ -221,6 +221,11 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 
     public class OtomeKairoAvatarSpeechDefinition

@@ -50,8 +50,8 @@ namespace CocoroConsole.Utilities
 
             // 保存済み位置を適用する。
             window.WindowStartupLocation = WindowStartupLocation.Manual;
-            window.Left = placement.left;
-            window.Top = placement.top;
+            window.Left = placement.Left;
+            window.Top = placement.Top;
             return true;
         }
 

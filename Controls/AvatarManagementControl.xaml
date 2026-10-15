@@ -22,8 +22,8 @@
                               Grid.Column="0"
                               Margin="0,5,10,5"
                               SelectionChanged="AvatarSelectComboBox_SelectionChanged"
-                              DisplayMemberPath="modelName"
-                              SelectedValuePath="modelName"/>
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="DisplayName"/>
 
                     <Button x:Name="AddAvatarButton"
                             Grid.Column="1"

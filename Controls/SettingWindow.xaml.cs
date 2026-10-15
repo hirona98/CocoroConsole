@@ -1,10 +1,10 @@
-using CocoroConsole.Communication;
 using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using CocoroConsole.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,7 +18,9 @@ namespace CocoroConsole.Controls
     public partial class SettingWindow : Window
     {
         private Dictionary<string, object> _originalDisplaySettings = new Dictionary<string, object>();
-        private List<AvatarSettings> _originalAvatarList = new List<AvatarSettings>();
+        private OtomeKairoAvatarSpeechEditorState _originalAvatarSpeech = new OtomeKairoAvatarSpeechEditorState();
+        private List<OtomeKairoConsoleAvatarPresentation> _originalAvatarPresentations = new List<OtomeKairoConsoleAvatarPresentation>();
+        private OtomeKairoConsoleMotionSettings _originalMotion = new OtomeKairoConsoleMotionSettings();
 
         private ICommunicationService? _communicationService;
         private OtomeKairoApiClient? _apiClient;
@@ -146,11 +148,12 @@ namespace CocoroConsole.Controls
             DisplaySettingsControl.SaveToSnapshot();
             _originalDisplaySettings = DisplaySettingsControl.GetSnapshot();
 
-            _originalAvatarList.Clear();
-            foreach (var avatar in AppSettings.Instance.AvatarList)
-            {
-                _originalAvatarList.Add(DeepCopyAvatarSettings(avatar));
-            }
+            var appSettings = AppSettings.Instance;
+            _originalAvatarSpeech = AppSettings.CloneDocument(appSettings.AvatarSpeech);
+            _originalAvatarPresentations = appSettings.ConsoleClient.AvatarPresentations
+                .Select(AppSettings.CloneDocument)
+                .ToList();
+            _originalMotion = AppSettings.CloneDocument(appSettings.ConsoleClient.Motion);
         }
 
         private void MarkSettingsChanged()
@@ -262,11 +265,7 @@ namespace CocoroConsole.Controls
                 var displaySnapshot = DisplaySettingsControl.GetSnapshot();
                 DisplaySettingsControl.ApplySnapshotToAppSettings(displaySnapshot);
 
-                AppSettings.Instance.MicrophoneSettings =
-                    SystemSettingsControl.GetMicrophoneSettings().DeepCopy();
-                AppSettings.Instance.AudioOutputSettings =
-                    SystemSettingsControl.GetAudioOutputSettings().DeepCopy();
-
+                SystemSettingsControl.ApplyToAppSettings();
                 UpdateAvatarAndAnimationAppSettings();
                 AppSettings.Instance.SaveAppSettings();
 
@@ -296,11 +295,13 @@ namespace CocoroConsole.Controls
 
             try
             {
+                AppSettings.Instance.PrepareAvatarSpeechForSave();
+                AppSettings.Instance.PrepareConsoleClientForSave();
                 _loadedAvatarSpeechEditorState = await _apiClient.ReplaceAvatarSpeechEditorStateAsync(
-                    AppSettings.Instance.BuildAvatarSpeechEditorState());
+                    AppSettings.Instance.AvatarSpeech);
                 _loadedConsoleClientEditorState = await _apiClient.ReplaceConsoleClientEditorStateAsync(
                     AppSettings.Instance.ClientId,
-                    AppSettings.Instance.BuildConsoleClientSettings());
+                    AppSettings.Instance.ConsoleClient);
                 Debug.WriteLine("[SettingWindow] 端末設定とアバター音声設定を OtomeKairo API に保存しました");
             }
             catch (Exception ex)
@@ -315,97 +316,29 @@ namespace CocoroConsole.Controls
             DisplaySettingsControl.ApplySnapshotToAppSettings(_originalDisplaySettings);
             DisplaySettingsControl.InitializeFromAppSettings();
 
-            AppSettings.Instance.AvatarList.Clear();
-            foreach (var avatar in _originalAvatarList)
-            {
-                AppSettings.Instance.AvatarList.Add(DeepCopyAvatarSettings(avatar));
-            }
+            var appSettings = AppSettings.Instance;
+            appSettings.AvatarSpeech = AppSettings.CloneDocument(_originalAvatarSpeech);
+            appSettings.ConsoleClient.AvatarPresentations = _originalAvatarPresentations
+                .Select(AppSettings.CloneDocument)
+                .ToList();
+            appSettings.ConsoleClient.Motion = AppSettings.CloneDocument(_originalMotion);
 
             AvatarManagementControl.RefreshAvatarList();
+            AnimationSettingsControl.Initialize();
             SystemSettingsControl.ReloadFromAppSettings();
         }
 
         private void UpdateAvatarAndAnimationAppSettings()
         {
-            var appSettings = AppSettings.Instance;
+            var motion = AppSettings.Instance.ConsoleClient.Motion;
             AvatarManagementControl.SyncCurrentAvatarFromUi();
-            appSettings.CurrentAvatarIndex = AvatarManagementControl.GetCurrentAvatarIndex();
-            appSettings.CurrentAnimationSettingIndex = AnimationSettingsControl.GetCurrentAnimationSettingIndex();
-            appSettings.AnimationSettings = AnimationSettingsControl.GetAnimationSettings();
-        }
-
-        private AvatarSettings DeepCopyAvatarSettings(AvatarSettings source)
-        {
-            return new AvatarSettings
+            var animationSets = AnimationSettingsControl.GetAnimationSettings();
+            motion.AnimationSets = animationSets;
+            var index = AnimationSettingsControl.GetCurrentAnimationSettingIndex();
+            if (index >= 0 && index < animationSets.Count)
             {
-                avatarId = source.avatarId,
-                modelName = source.modelName,
-                vrmFilePath = source.vrmFilePath,
-                isUseTTS = source.isUseTTS,
-                ttsType = source.ttsType,
-                voicevoxConfig = new VoicevoxConfig
-                {
-                    endpointUrl = source.voicevoxConfig.endpointUrl,
-                    secondaryEndpointUrl = source.voicevoxConfig.secondaryEndpointUrl,
-                    speakerId = source.voicevoxConfig.speakerId,
-                    speedScale = source.voicevoxConfig.speedScale,
-                    pitchScale = source.voicevoxConfig.pitchScale,
-                    intonationScale = source.voicevoxConfig.intonationScale,
-                    volumeScale = source.voicevoxConfig.volumeScale,
-                    prePhonemeLength = source.voicevoxConfig.prePhonemeLength,
-                    postPhonemeLength = source.voicevoxConfig.postPhonemeLength,
-                    outputSamplingRate = source.voicevoxConfig.outputSamplingRate,
-                    outputStereo = source.voicevoxConfig.outputStereo
-                },
-                styleBertVits2Config = new StyleBertVits2Config
-                {
-                    endpointUrl = source.styleBertVits2Config.endpointUrl,
-                    modelName = source.styleBertVits2Config.modelName,
-                    modelId = source.styleBertVits2Config.modelId,
-                    speakerName = source.styleBertVits2Config.speakerName,
-                    speakerId = source.styleBertVits2Config.speakerId,
-                    style = source.styleBertVits2Config.style,
-                    styleWeight = source.styleBertVits2Config.styleWeight,
-                    language = source.styleBertVits2Config.language,
-                    sdpRatio = source.styleBertVits2Config.sdpRatio,
-                    noise = source.styleBertVits2Config.noise,
-                    noiseW = source.styleBertVits2Config.noiseW,
-                    length = source.styleBertVits2Config.length,
-                    autoSplit = source.styleBertVits2Config.autoSplit,
-                    splitInterval = source.styleBertVits2Config.splitInterval,
-                    assistText = source.styleBertVits2Config.assistText,
-                    assistTextWeight = source.styleBertVits2Config.assistTextWeight,
-                    referenceAudioPath = source.styleBertVits2Config.referenceAudioPath
-                },
-                aivisCloudConfig = new AivisCloudConfig
-                {
-                    apiKey = source.aivisCloudConfig.apiKey,
-                    endpointUrl = source.aivisCloudConfig.endpointUrl,
-                    modelUuid = source.aivisCloudConfig.modelUuid,
-                    speakerUuid = source.aivisCloudConfig.speakerUuid,
-                    styleId = source.aivisCloudConfig.styleId,
-                    styleName = source.aivisCloudConfig.styleName,
-                    useSSML = source.aivisCloudConfig.useSSML,
-                    language = source.aivisCloudConfig.language,
-                    speakingRate = source.aivisCloudConfig.speakingRate,
-                    emotionalIntensity = source.aivisCloudConfig.emotionalIntensity,
-                    tempoDynamics = source.aivisCloudConfig.tempoDynamics,
-                    pitch = source.aivisCloudConfig.pitch,
-                    volume = source.aivisCloudConfig.volume,
-                    outputFormat = source.aivisCloudConfig.outputFormat,
-                    outputBitrate = source.aivisCloudConfig.outputBitrate,
-                    outputSamplingRate = source.aivisCloudConfig.outputSamplingRate,
-                    outputAudioChannels = source.aivisCloudConfig.outputAudioChannels
-                },
-                isUseSTT = source.isUseSTT,
-                sttEngine = source.sttEngine,
-                sttProfileId = source.sttProfileId,
-                sttApiKey = source.sttApiKey,
-                isConvertMToon = source.isConvertMToon,
-                isEnableShadowOff = source.isEnableShadowOff,
-                shadowOffMesh = source.shadowOffMesh,
-                isReadOnly = source.isReadOnly
-            };
+                motion.SelectedAnimationSetId = animationSets[index].AnimationSetId;
+            }
         }
 
         protected override void OnClosed(EventArgs e)

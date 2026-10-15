@@ -252,8 +252,9 @@ namespace CocoroConsole.Communication
                     return;
                 }
 
-                var previousX = _appSettings.WindowPositionX;
-                var previousY = _appSettings.WindowPositionY;
+                var display = _appSettings.ConsoleClient.Display;
+                var previousX = display.AvatarPositionX;
+                var previousY = display.AvatarPositionY;
                 try
                 {
                     var request = await context.Request.ReadFromJsonAsync<ShellAvatarPositionRequest>();
@@ -266,8 +267,8 @@ namespace CocoroConsole.Communication
                         throw new ArgumentException("位置は有限数値で指定してください。");
                     }
 
-                    _appSettings.WindowPositionX = request.x;
-                    _appSettings.WindowPositionY = request.y;
+                    display.AvatarPositionX = request.x;
+                    display.AvatarPositionY = request.y;
 
                     await _saveConsoleClientSettingsAsync(context.RequestAborted);
                     await context.Response.WriteAsJsonAsync(new StandardResponse
@@ -278,8 +279,8 @@ namespace CocoroConsole.Communication
                 }
                 catch (ArgumentException ex)
                 {
-                    _appSettings.WindowPositionX = previousX;
-                    _appSettings.WindowPositionY = previousY;
+                    display.AvatarPositionX = previousX;
+                    display.AvatarPositionY = previousY;
                     context.Response.StatusCode = StatusCodes.Status400BadRequest;
                     await context.Response.WriteAsJsonAsync(new ErrorResponse
                     {
@@ -289,8 +290,8 @@ namespace CocoroConsole.Communication
                 }
                 catch (JsonException)
                 {
-                    _appSettings.WindowPositionX = previousX;
-                    _appSettings.WindowPositionY = previousY;
+                    display.AvatarPositionX = previousX;
+                    display.AvatarPositionY = previousY;
                     context.Response.StatusCode = StatusCodes.Status400BadRequest;
                     await context.Response.WriteAsJsonAsync(new ErrorResponse
                     {
@@ -300,8 +301,8 @@ namespace CocoroConsole.Communication
                 }
                 catch (Exception ex)
                 {
-                    _appSettings.WindowPositionX = previousX;
-                    _appSettings.WindowPositionY = previousY;
+                    display.AvatarPositionX = previousX;
+                    display.AvatarPositionY = previousY;
                     Debug.WriteLine($"アバター位置保存エラー: {ex.Message}");
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                     await context.Response.WriteAsJsonAsync(new ErrorResponse

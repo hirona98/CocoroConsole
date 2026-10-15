@@ -209,15 +209,15 @@ namespace CocoroConsole
         /// </summary>
         private void InitializeButtonStates()
         {
-            _isDesktopWatchEnabled = _appSettings.ScreenshotSettings.enabled;
+            _isDesktopWatchEnabled = _appSettings.ConsoleClient.DesktopCapture.Enabled;
             UpdateDesktopWatchButtonState();
 
             // 現在のキャラクターの設定を反映
             var currentAvatar = GetStoredAvatarSetting();
             if (currentAvatar != null)
             {
-                UpdateMicrophoneButtonState(currentAvatar.isUseSTT);
-                UpdateTtsButtonState(currentAvatar.isUseTTS);
+                UpdateMicrophoneButtonState(currentAvatar.Stt.Enabled);
+                UpdateTtsButtonState(currentAvatar.Tts.Enabled);
             }
         }
 
@@ -615,8 +615,8 @@ namespace CocoroConsole
                 var currentAvatar = GetStoredAvatarSetting();
                 if (currentAvatar != null)
                 {
-                    currentAvatar.isUseSTT = state.SttEnabled;
-                    currentAvatar.isUseTTS = state.TtsEnabled;
+                    currentAvatar.Stt.Enabled = state.SttEnabled;
+                    currentAvatar.Tts.Enabled = state.TtsEnabled;
                 }
                 UpdateMicrophoneButtonState(state.SttEnabled);
                 UpdateTtsButtonState(state.TtsEnabled);
@@ -1263,7 +1263,7 @@ namespace CocoroConsole
         /// <summary>
         /// 保存済みの現在のキャラクター設定を取得（AppSettingsから直接読み取り）
         /// </summary>
-        private AvatarSettings? GetStoredAvatarSetting()
+        private OtomeKairoAvatarSpeechDefinition? GetStoredAvatarSetting()
         {
             return _appSettings.GetCurrentAvatar();
         }
@@ -1300,16 +1300,16 @@ namespace CocoroConsole
                 return;
             }
 
-            var previousEnabled = currentAvatar.isUseSTT;
+            var previousEnabled = currentAvatar.Stt.Enabled;
             MicButton.IsEnabled = false;
             try
             {
                 await _communicationService.SetSttEnabledAsync(!previousEnabled);
-                UpdateMicrophoneButtonState(currentAvatar.isUseSTT);
+                UpdateMicrophoneButtonState(currentAvatar.Stt.Enabled);
             }
             catch (Exception ex)
             {
-                currentAvatar.isUseSTT = previousEnabled;
+                currentAvatar.Stt.Enabled = previousEnabled;
                 UpdateMicrophoneButtonState(previousEnabled);
                 UIHelper.ShowError("マイク設定エラー", ex.Message);
             }
@@ -1330,7 +1330,7 @@ namespace CocoroConsole
             }
 
             await _communicationService.SetDesktopWatchEnabledAsync(!_isDesktopWatchEnabled);
-            _isDesktopWatchEnabled = _appSettings.ScreenshotSettings.enabled;
+            _isDesktopWatchEnabled = _appSettings.ConsoleClient.DesktopCapture.Enabled;
             UpdateDesktopWatchButtonState();
         }
 
@@ -1373,16 +1373,16 @@ namespace CocoroConsole
                 return;
             }
 
-            var previousEnabled = currentAvatar.isUseTTS;
+            var previousEnabled = currentAvatar.Tts.Enabled;
             MuteButton.IsEnabled = false;
             try
             {
                 await _communicationService.SetTtsEnabledAsync(!previousEnabled);
-                UpdateTtsButtonState(currentAvatar.isUseTTS);
+                UpdateTtsButtonState(currentAvatar.Tts.Enabled);
             }
             catch (Exception ex)
             {
-                currentAvatar.isUseTTS = previousEnabled;
+                currentAvatar.Tts.Enabled = previousEnabled;
                 UpdateTtsButtonState(previousEnabled);
                 UIHelper.ShowError("音声合成設定エラー", ex.Message);
             }

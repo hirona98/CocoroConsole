@@ -1,4 +1,4 @@
-using CocoroConsole.Communication;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using System;
 using System.Collections.Generic;
@@ -56,14 +56,14 @@ namespace CocoroConsole.Controls
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public EscapePosition ToEscapePosition()
+        public OtomeKairoConsoleEscapePosition ToEscapePosition()
         {
-            return new EscapePosition { x = X, y = Y, enabled = Enabled };
+            return new OtomeKairoConsoleEscapePosition { X = X, Y = Y, Enabled = Enabled };
         }
 
-        public static EscapePositionViewModel FromEscapePosition(EscapePosition position)
+        public static EscapePositionViewModel FromEscapePosition(OtomeKairoConsoleEscapePosition position)
         {
-            return new EscapePositionViewModel { X = position.x, Y = position.y, Enabled = position.enabled };
+            return new EscapePositionViewModel { X = position.X, Y = position.Y, Enabled = position.Enabled };
         }
     }
 
@@ -125,7 +125,7 @@ namespace CocoroConsole.Controls
             EscapePositionsCollection.Clear();
 
             var appSettings = AppSettings.Instance;
-            foreach (var position in appSettings.EscapePositions)
+            foreach (var position in appSettings.ConsoleClient.Display.EscapePositions)
             {
                 EscapePositionsCollection.Add(EscapePositionViewModel.FromEscapePosition(position));
             }
@@ -134,9 +134,9 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// 現在の移動先座標を取得
         /// </summary>
-        public List<EscapePosition> GetEscapePositions()
+        public List<OtomeKairoConsoleEscapePosition> GetEscapePositions()
         {
-            var escapePositions = new List<EscapePosition>();
+            var escapePositions = new List<OtomeKairoConsoleEscapePosition>();
             foreach (var position in EscapePositionsCollection)
             {
                 if (position.Enabled || position.X != 0 || position.Y != 0)
@@ -150,7 +150,7 @@ namespace CocoroConsole.Controls
         /// <summary>
         /// 移動先座標を設定
         /// </summary>
-        public void SetEscapePositions(List<EscapePosition> positions)
+        public void SetEscapePositions(List<OtomeKairoConsoleEscapePosition> positions)
         {
             EscapePositionsCollection.Clear();
             foreach (var position in positions)

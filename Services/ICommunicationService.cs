@@ -67,7 +67,6 @@ namespace CocoroConsole.Services
         Task StartServerAsync();
         Task PrepareShellRuntimeAsync();
         Task StopServerAsync();
-        ConfigSettings GetCurrentConfig();
         Task SendConversationInputToOtomeKairoAsync(
             string messageId,
             string message,
@@ -80,7 +79,6 @@ namespace CocoroConsole.Services
         Task StopLogStreamAsync();
         void OpenLogViewer();
         Task<PositionResponse> GetShellPositionAsync();
-        void RefreshSettingsCache();
         Task RefreshOtomeKairoCurrentSettingsAsync();
         Task SetDesktopWatchEnabledAsync(bool enabled);
 

@@ -62,15 +62,8 @@ namespace CocoroConsole.Utilities
 
         private static bool HasDisplayableAvatar(IAppSettings appSettings)
         {
-            if (appSettings.AvatarList.Count == 0 ||
-                appSettings.CurrentAvatarIndex < 0 ||
-                appSettings.CurrentAvatarIndex >= appSettings.AvatarList.Count)
-            {
-                return false;
-            }
-
-            var currentAvatar = appSettings.AvatarList[appSettings.CurrentAvatarIndex];
-            return !string.IsNullOrWhiteSpace(currentAvatar.vrmFilePath) || currentAvatar.isReadOnly == true;
+            var presentation = appSettings.GetCurrentAvatarPresentation();
+            return presentation != null && !string.IsNullOrWhiteSpace(presentation.Model);
         }
     }
 }

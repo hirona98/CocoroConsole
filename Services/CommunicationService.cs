@@ -75,7 +75,9 @@ namespace CocoroConsole.Services
         private int _conversationInputBusy = 0;
 
         // 設定キャッシュ（SettingsSaved で更新し、差分に応じてランタイム反映）
-        private ConfigSettings? _cachedConfigSettings;
+        private string _observedServerUrl = string.Empty;
+        private string _observedBearerToken = string.Empty;
+        private int _observedShellPort;
 
         // memory_id キャッシュ（発話を UI へ戻す際に付与）
         private string _cachedMemoryId = "memory";
@@ -83,18 +85,10 @@ namespace CocoroConsole.Services
         // OtomeKairo が Normal になった後、現在設定と event stream を初期化済みかを表す。
         private bool _initialSettingsFetched = false;
 
-        private static bool IsVrmDisplayEnabled(AvatarSettings? currentAvatar)
+        private bool ShouldForwardToShell()
         {
-            // MainWindow.LaunchCocoroShell と同じ判定: パスがあれば有効 / readOnlyキャラは常に有効
-            return currentAvatar != null &&
-                   (!string.IsNullOrWhiteSpace(currentAvatar.vrmFilePath) || currentAvatar.isReadOnly == true);
-        }
-
-        private bool ShouldForwardToShell(AvatarSettings? currentAvatar = null)
-        {
-            // 呼び出し元がアバターを渡していない場合はキャッシュから解決
-            currentAvatar ??= GetStoredAvatarSetting();
-            return IsVrmDisplayEnabled(currentAvatar);
+            var presentation = _appSettings.GetCurrentAvatarPresentation();
+            return presentation != null && !string.IsNullOrWhiteSpace(presentation.Model);
         }
 
         private static bool IsCocoroShellProcessRunning()
@@ -165,8 +159,7 @@ namespace CocoroConsole.Services
             var baseUrl = _appSettings.GetOtomeKairoBaseUrl();
             _otomeKairoApiClient = new OtomeKairoApiClient(baseUrl, bearerToken);
 
-            // 設定キャッシュを初期化
-            RefreshSettingsCache();
+            CaptureObservedConnection();
 
             // ステータスポーリングサービスの初期化
             _statusPollingService = new StatusPollingService(_appSettings.GetOtomeKairoBaseUrl());
@@ -360,27 +353,19 @@ namespace CocoroConsole.Services
         /// <summary>
         /// 現在の設定を取得
         /// </summary>
-        public ConfigSettings GetCurrentConfig()
-        {
-            return _appSettings.GetConfigSettings();
-        }
-
-        /// <summary>
-        /// 設定キャッシュを更新
-        /// </summary>
-        public void RefreshSettingsCache()
-        {
-            _cachedConfigSettings = _appSettings.GetConfigSettings();
-        }
-
         /// <summary>
         /// AppSettings保存イベントハンドラー
         /// </summary>
         private void OnSettingsSaved(object? sender, EventArgs e)
         {
-            var previousSettings = _cachedConfigSettings;
-            RefreshSettingsCache();
-            ApplyRuntimeSettingsChanges(previousSettings, _cachedConfigSettings);
+            ApplyRuntimeSettingsChanges();
+        }
+
+        private void CaptureObservedConnection()
+        {
+            _observedServerUrl = _appSettings.ServerUrl ?? string.Empty;
+            _observedBearerToken = _appSettings.OtomeKairoBearerToken ?? string.Empty;
+            _observedShellPort = _appSettings.CocoroShellPort;
         }
 
         private CocoroConsoleApiServer CreateApiServer(int port)
@@ -399,47 +384,44 @@ namespace CocoroConsole.Services
             return server;
         }
 
-        private void ApplyRuntimeSettingsChanges(ConfigSettings? previousSettings, ConfigSettings? currentSettings)
+        private void ApplyRuntimeSettingsChanges()
         {
-            if (previousSettings == null || currentSettings == null)
-            {
-                return;
-            }
-
-            bool shellPortChanged = previousSettings.cocoroShellPort != currentSettings.cocoroShellPort;
-            bool otomeKairoPortChanged = previousSettings.otomeKairoPort != currentSettings.otomeKairoPort;
-            bool otomeKairoHostChanged = !string.Equals(
-                previousSettings.otomeKairoHost ?? string.Empty,
-                currentSettings.otomeKairoHost ?? string.Empty,
+            var serverUrl = _appSettings.ServerUrl ?? string.Empty;
+            var bearerToken = _appSettings.OtomeKairoBearerToken ?? string.Empty;
+            var shellPort = _appSettings.CocoroShellPort;
+            var shellPortChanged = _observedShellPort != shellPort;
+            var endpointChanged = !string.Equals(
+                _observedServerUrl,
+                serverUrl,
                 StringComparison.OrdinalIgnoreCase);
-            bool useExternalOtomeKairoChanged =
-                (previousSettings.useExternalOtomeKairo ?? false) !=
-                (currentSettings.useExternalOtomeKairo ?? false);
-            bool otomeKairoEndpointChanged = otomeKairoPortChanged || otomeKairoHostChanged || useExternalOtomeKairoChanged;
-            bool bearerTokenChanged = !string.Equals(previousSettings.otomeKairoBearerToken ?? string.Empty,
-                currentSettings.otomeKairoBearerToken ?? string.Empty, StringComparison.Ordinal);
+            var bearerTokenChanged = !string.Equals(
+                _observedBearerToken,
+                bearerToken,
+                StringComparison.Ordinal);
 
             if (shellPortChanged)
             {
                 _shellClient?.Dispose();
-                _shellClient = new CocoroShellClient(currentSettings.cocoroShellPort, () => _appSettings.ShellSessionToken);
+                _shellClient = new CocoroShellClient(shellPort, () => _appSettings.ShellSessionToken);
             }
 
-            if (otomeKairoEndpointChanged)
+            if (endpointChanged)
             {
                 _remoteSettingsApplied = false;
                 ResetStatusPollingService();
             }
 
-            if (otomeKairoEndpointChanged || bearerTokenChanged)
+            if (endpointChanged || bearerTokenChanged)
             {
                 _ = StopConsoleMicrophoneStreamAsync();
-                UpdateOtomeKairoApiClient(currentSettings);
+                UpdateOtomeKairoApiClient();
                 _initialSettingsFetched = false;
 
                 _ = StopEventsStreamAsync();
                 _ = StopLogStreamAsync();
             }
+
+            CaptureObservedConnection();
         }
 
         private void ResetStatusPollingService()
@@ -452,13 +434,12 @@ namespace CocoroConsole.Services
             _statusPollingService.Start();
         }
 
-        private void UpdateOtomeKairoApiClient(ConfigSettings settings)
+        private void UpdateOtomeKairoApiClient()
         {
-            // 変更（ポート/トークン）に追従するため、既存クライアントは破棄して作り直す
             _otomeKairoApiClient?.Dispose();
             _otomeKairoApiClient = null;
 
-            var bearerToken = settings.otomeKairoBearerToken ?? string.Empty;
+            var bearerToken = _appSettings.OtomeKairoBearerToken ?? string.Empty;
             var baseUrl = _appSettings.GetOtomeKairoBaseUrl();
             _otomeKairoApiClient = new OtomeKairoApiClient(baseUrl, bearerToken);
         }
@@ -891,10 +872,10 @@ namespace CocoroConsole.Services
                 return;
             }
 
-            var previousEnabled = _appSettings.ScreenshotSettings.enabled;
+            var previousEnabled = _appSettings.ConsoleClient.DesktopCapture.Enabled;
             try
             {
-                _appSettings.ScreenshotSettings.enabled = enabled;
+                _appSettings.ConsoleClient.DesktopCapture.Enabled = enabled;
                 await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
                 await StartEventsStreamAsync().ConfigureAwait(false);
                 var configResponse = await _otomeKairoApiClient
@@ -916,10 +897,11 @@ namespace CocoroConsole.Services
                         DesktopWakePolicyHelper.BuildDesktopVisionSourceId(_appSettings.ClientId),
                         paused: !enabled)
                     .ConfigureAwait(false);
+                _appSettings.PrepareConsoleClientForSave();
                 await _otomeKairoApiClient
                     .ReplaceConsoleClientEditorStateAsync(
                         _appSettings.ClientId,
-                        _appSettings.BuildConsoleClientSettings())
+                        _appSettings.ConsoleClient)
                     .ConfigureAwait(false);
 
                 _appSettings.SaveAppSettings();
@@ -927,7 +909,7 @@ namespace CocoroConsole.Services
             }
             catch (Exception ex)
             {
-                _appSettings.ScreenshotSettings.enabled = previousEnabled;
+                _appSettings.ConsoleClient.DesktopCapture.Enabled = previousEnabled;
                 Debug.WriteLine($"[DesktopWatch] 切り替え失敗: {ex.Message}");
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"デスクトップウォッチ設定変更に失敗しました: {ex.Message}"));
             }
@@ -941,8 +923,9 @@ namespace CocoroConsole.Services
             }
 
             await EnsureOtomeKairoReadyAsync().ConfigureAwait(false);
+            _appSettings.PrepareAvatarSpeechForSave();
             await _otomeKairoApiClient
-                .ReplaceAvatarSpeechEditorStateAsync(_appSettings.BuildAvatarSpeechEditorState())
+                .ReplaceAvatarSpeechEditorStateAsync(_appSettings.AvatarSpeech)
                 .ConfigureAwait(false);
             _appSettings.SaveAppSettings();
         }
@@ -961,7 +944,7 @@ namespace CocoroConsole.Services
             var currentAvatar = _appSettings.GetCurrentAvatar();
             if (currentAvatar != null)
             {
-                currentAvatar.isUseSTT = result.Enabled;
+                currentAvatar.Stt.Enabled = result.Enabled;
             }
             _appSettings.SaveAppSettings();
         }
@@ -980,7 +963,7 @@ namespace CocoroConsole.Services
             var currentAvatar = _appSettings.GetCurrentAvatar();
             if (currentAvatar != null)
             {
-                currentAvatar.isUseTTS = result.Enabled;
+                currentAvatar.Tts.Enabled = result.Enabled;
             }
             _appSettings.SaveAppSettings();
         }
@@ -993,10 +976,11 @@ namespace CocoroConsole.Services
             }
 
             await EnsureOtomeKairoReadyAsync(cancellationToken).ConfigureAwait(false);
+            _appSettings.PrepareConsoleClientForSave();
             await _otomeKairoApiClient
                 .ReplaceConsoleClientEditorStateAsync(
                     _appSettings.ClientId,
-                    _appSettings.BuildConsoleClientSettings(),
+                    _appSettings.ConsoleClient,
                     cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -1031,22 +1015,6 @@ namespace CocoroConsole.Services
                 Debug.WriteLine($"アニメーションコマンド送信エラー: {ex.Message}");
                 StatusUpdateRequested?.Invoke(this, new StatusUpdateEventArgs(false, $"アニメーション制御エラー: {ex.Message}"));
             }
-        }
-
-        /// <summary>
-        /// 保存済みの現在のアバター設定を取得（キャッシュ使用）
-        /// </summary>
-        private AvatarSettings? GetStoredAvatarSetting()
-        {
-            // キャッシュされた設定を使用
-            var config = _cachedConfigSettings;
-            if (config?.avatarList != null &&
-                config.currentAvatarIndex >= 0 &&
-                config.currentAvatarIndex < config.avatarList.Count)
-            {
-                return config.avatarList[config.currentAvatarIndex];
-            }
-            return null;
         }
 
         /// <summary>
@@ -1525,13 +1493,14 @@ namespace CocoroConsole.Services
         private async Task<(string? DataUri, string? WindowTitle, string? Error)> CaptureDesktopStillAsync(CancellationToken cancellationToken)
         {
             using var service = new ScreenshotService();
-            service.CaptureActiveWindowOnly = _appSettings.ScreenshotSettings.captureActiveWindowOnly;
+            var desktopCapture = _appSettings.ConsoleClient.DesktopCapture;
+            service.CaptureActiveWindowOnly = desktopCapture.CaptureActiveWindowOnly;
 
             // 視覚キャプチャのアイドルタイムアウト（分）を反映（0 は無効）
-            service.IdleTimeoutMinutes = _appSettings.ScreenshotSettings.idleTimeoutMinutes;
+            service.IdleTimeoutMinutes = desktopCapture.IdleTimeoutMinutes;
 
             // スクショ除外（ウィンドウタイトル正規表現）を反映
-            service.SetExcludePatterns(_appSettings.ScreenshotSettings.excludePatterns);
+            service.SetExcludePatterns(desktopCapture.ExcludePatterns);
             ScreenshotData? screenshot = service.CaptureActiveWindowOnly
                 ? await service.CaptureActiveWindowAsync().WaitAsync(cancellationToken)
                 : await service.CaptureFullScreenAsync().WaitAsync(cancellationToken);
@@ -1573,7 +1542,7 @@ namespace CocoroConsole.Services
                 await _otomeKairoApiClient
                     .PatchVisionCaptureStateAsync(
                         DesktopWakePolicyHelper.BuildDesktopVisionSourceId(_appSettings.ClientId),
-                        paused: !_appSettings.ScreenshotSettings.enabled)
+                        paused: !_appSettings.ConsoleClient.DesktopCapture.Enabled)
                     .ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -1601,7 +1570,7 @@ namespace CocoroConsole.Services
 
         private IReadOnlyList<OtomeKairoVisionSourceOffer> BuildVisionSources()
         {
-            var useActiveWindow = _appSettings.ScreenshotSettings.captureActiveWindowOnly;
+            var useActiveWindow = _appSettings.ConsoleClient.DesktopCapture.CaptureActiveWindowOnly;
             var label = useActiveWindow ? "アクティブウィンドウ" : "メイン画面";
             var aliases = useActiveWindow
                 ? new[] { "画面", "デスクトップ", "アクティブウィンドウ", "前景ウィンドウ" }

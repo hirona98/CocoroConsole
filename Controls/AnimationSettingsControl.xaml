@@ -46,8 +46,8 @@
                               Margin="0,5,10,5"
 
                               IsEditable="False"
-                              DisplayMemberPath="animeSetName"
-                              SelectedValuePath="animeSetName"/>
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="DisplayName"/>
 
                     <Button Grid.Column="1"
                             x:Name="AddAnimationSetButton"

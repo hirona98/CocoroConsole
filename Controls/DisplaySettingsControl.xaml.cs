@@ -1,3 +1,4 @@
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using CocoroConsole.Communication;
 using CocoroConsole.Utilities;
@@ -94,30 +95,30 @@ namespace CocoroConsole.Controls
 
         public void InitializeFromAppSettings()
         {
-            var appSettings = AppSettings.Instance;
-            RestoreWindowPositionCheckBox.IsChecked = appSettings.IsRestoreWindowPosition;
-            TopMostCheckBox.IsChecked = appSettings.IsTopmost;
-            EscapeCursorCheckBox.IsChecked = appSettings.IsEscapeCursor;
-            InputVirtualKeyCheckBox.IsChecked = appSettings.IsInputVirtualKey;
-            VirtualKeyStringTextBox.Text = appSettings.VirtualKeyString;
-            AutoMoveCheckBox.IsChecked = appSettings.IsAutoMove;
-            ShowMessageWindowCheckBox.IsChecked = appSettings.ShowMessageWindow;
+            var display = AppSettings.Instance.ConsoleClient.Display;
+            var messageWindow = display.MessageWindow;
+            RestoreWindowPositionCheckBox.IsChecked = display.RestoreWindowPosition;
+            TopMostCheckBox.IsChecked = display.Topmost;
+            EscapeCursorCheckBox.IsChecked = display.EscapeCursor;
+            InputVirtualKeyCheckBox.IsChecked = display.TouchVirtualKeyEnabled;
+            VirtualKeyStringTextBox.Text = display.VirtualKey;
+            AutoMoveCheckBox.IsChecked = display.AutoMove;
+            ShowMessageWindowCheckBox.IsChecked = display.ShowMessageWindow;
 
-            // メッセージウィンドウ設定の初期化
-            MaxMessageCountTextBox.Text = appSettings.MessageWindowSettings.maxMessageCount.ToString();
-            MaxTotalAvatarsTextBox.Text = appSettings.MessageWindowSettings.maxTotalAvatars.ToString();
-            MinWindowSizeTextBox.Text = appSettings.MessageWindowSettings.minWindowSize.ToString();
-            MaxWindowSizeTextBox.Text = appSettings.MessageWindowSettings.maxWindowSize.ToString();
-            FontSizeTextBox.Text = appSettings.MessageWindowSettings.fontSize.ToString();
-            HorizontalOffsetTextBox.Text = appSettings.MessageWindowSettings.horizontalOffset.ToString();
-            VerticalOffsetTextBox.Text = appSettings.MessageWindowSettings.verticalOffset.ToString();
-            AmbientOcclusionCheckBox.IsChecked = appSettings.IsEnableAmbientOcclusion;
+            MaxMessageCountTextBox.Text = messageWindow.MaxMessageCount.ToString();
+            MaxTotalAvatarsTextBox.Text = messageWindow.MaxTotalCharacters.ToString();
+            MinWindowSizeTextBox.Text = messageWindow.MinWindowSize.ToString();
+            MaxWindowSizeTextBox.Text = messageWindow.MaxWindowSize.ToString();
+            FontSizeTextBox.Text = messageWindow.FontSize.ToString();
+            HorizontalOffsetTextBox.Text = messageWindow.HorizontalOffset.ToString();
+            VerticalOffsetTextBox.Text = messageWindow.VerticalOffset.ToString();
+            AmbientOcclusionCheckBox.IsChecked = display.AmbientOcclusionEnabled;
 
             foreach (ComboBoxItem item in MSAAComboBox.Items)
             {
                 if (item.Tag != null &&
                     int.TryParse(item.Tag.ToString(), out int value) &&
-                    value == appSettings.MsaaLevel)
+                    value == display.MsaaLevel)
                 {
                     MSAAComboBox.SelectedItem = item;
                     break;
@@ -127,7 +128,7 @@ namespace CocoroConsole.Controls
             {
                 if (item.Tag != null &&
                     int.TryParse(item.Tag.ToString(), out int value) &&
-                    value == appSettings.AvatarShadow)
+                    value == display.AvatarShadowMode)
                 {
                     AvatarShadowComboBox.SelectedItem = item;
                     break;
@@ -137,7 +138,7 @@ namespace CocoroConsole.Controls
             {
                 if (item.Tag != null &&
                     int.TryParse(item.Tag.ToString(), out int value) &&
-                    value == appSettings.AvatarShadowResolution)
+                    value == display.AvatarShadowResolution)
                 {
                     AvatarShadowResolutionComboBox.SelectedItem = item;
                     break;
@@ -147,7 +148,7 @@ namespace CocoroConsole.Controls
             {
                 if (item.Tag != null &&
                     int.TryParse(item.Tag.ToString(), out int value) &&
-                    value == appSettings.BackgroundShadow)
+                    value == display.BackgroundShadowMode)
                 {
                     BackgroundShadowComboBox.SelectedItem = item;
                     break;
@@ -157,13 +158,13 @@ namespace CocoroConsole.Controls
             {
                 if (item.Tag != null &&
                     int.TryParse(item.Tag.ToString(), out int value) &&
-                    value == appSettings.BackgroundShadowResolution)
+                    value == display.BackgroundShadowResolution)
                 {
                     BackgroundShadowResolutionComboBox.SelectedItem = item;
                     break;
                 }
             }
-            WindowSizeSlider.Value = appSettings.WindowSize;
+            WindowSizeSlider.Value = display.AvatarWindowSize;
         }
 
         public void SaveToSnapshot()
@@ -229,45 +230,45 @@ namespace CocoroConsole.Controls
 
         public void ApplySnapshotToAppSettings(Dictionary<string, object> snapshot)
         {
-            var appSettings = AppSettings.Instance;
-            appSettings.IsRestoreWindowPosition = (bool)snapshot["RestoreWindowPosition"];
-            appSettings.IsTopmost = (bool)snapshot["TopMost"];
-            appSettings.IsEscapeCursor = (bool)snapshot["EscapeCursor"];
+            var display = AppSettings.Instance.ConsoleClient.Display;
+            display.RestoreWindowPosition = (bool)snapshot["RestoreWindowPosition"];
+            display.Topmost = (bool)snapshot["TopMost"];
+            display.EscapeCursor = (bool)snapshot["EscapeCursor"];
             if (snapshot.ContainsKey("EscapePositions"))
             {
-                appSettings.EscapePositions = (System.Collections.Generic.List<EscapePosition>)snapshot["EscapePositions"];
-                EscapePositionControl.SetEscapePositions(appSettings.EscapePositions);
+                display.EscapePositions = (System.Collections.Generic.List<OtomeKairoConsoleEscapePosition>)snapshot["EscapePositions"];
+                EscapePositionControl.SetEscapePositions(display.EscapePositions);
             }
-            appSettings.IsInputVirtualKey = (bool)snapshot["InputVirtualKey"];
-            appSettings.VirtualKeyString = (string)snapshot["VirtualKeyString"];
-            appSettings.IsAutoMove = (bool)snapshot["AutoMove"];
-            appSettings.ShowMessageWindow = (bool)snapshot["ShowMessageWindow"];
+            display.TouchVirtualKeyEnabled = (bool)snapshot["InputVirtualKey"];
+            display.VirtualKey = (string)snapshot["VirtualKeyString"];
+            display.AutoMove = (bool)snapshot["AutoMove"];
+            display.ShowMessageWindow = (bool)snapshot["ShowMessageWindow"];
 
-            // メッセージウィンドウ設定の適用
             if (snapshot.ContainsKey("MessageWindowSettings") && snapshot["MessageWindowSettings"] is Dictionary<string, object> msgSettings)
             {
+                var messageWindow = display.MessageWindow;
                 if (msgSettings.ContainsKey("maxMessageCount"))
-                    appSettings.MessageWindowSettings.maxMessageCount = Convert.ToInt32(msgSettings["maxMessageCount"]);
+                    messageWindow.MaxMessageCount = Convert.ToInt32(msgSettings["maxMessageCount"]);
                 if (msgSettings.ContainsKey("maxTotalAvatars"))
-                    appSettings.MessageWindowSettings.maxTotalAvatars = Convert.ToInt32(msgSettings["maxTotalAvatars"]);
+                    messageWindow.MaxTotalCharacters = Convert.ToInt32(msgSettings["maxTotalAvatars"]);
                 if (msgSettings.ContainsKey("minWindowSize"))
-                    appSettings.MessageWindowSettings.minWindowSize = Convert.ToSingle(msgSettings["minWindowSize"]);
+                    messageWindow.MinWindowSize = Convert.ToSingle(msgSettings["minWindowSize"]);
                 if (msgSettings.ContainsKey("maxWindowSize"))
-                    appSettings.MessageWindowSettings.maxWindowSize = Convert.ToSingle(msgSettings["maxWindowSize"]);
+                    messageWindow.MaxWindowSize = Convert.ToSingle(msgSettings["maxWindowSize"]);
                 if (msgSettings.ContainsKey("fontSize"))
-                    appSettings.MessageWindowSettings.fontSize = Convert.ToSingle(msgSettings["fontSize"]);
+                    messageWindow.FontSize = Convert.ToSingle(msgSettings["fontSize"]);
                 if (msgSettings.ContainsKey("horizontalOffset"))
-                    appSettings.MessageWindowSettings.horizontalOffset = Convert.ToSingle(msgSettings["horizontalOffset"]);
+                    messageWindow.HorizontalOffset = Convert.ToSingle(msgSettings["horizontalOffset"]);
                 if (msgSettings.ContainsKey("verticalOffset"))
-                    appSettings.MessageWindowSettings.verticalOffset = Convert.ToSingle(msgSettings["verticalOffset"]);
+                    messageWindow.VerticalOffset = Convert.ToSingle(msgSettings["verticalOffset"]);
             }
-            appSettings.IsEnableAmbientOcclusion = (bool)snapshot["IsEnableAmbientOcclusion"];
-            appSettings.MsaaLevel = (int)snapshot["MsaaLevel"];
-            appSettings.AvatarShadow = (int)snapshot["AvatarShadow"];
-            appSettings.AvatarShadowResolution = (int)snapshot["AvatarShadowResolution"];
-            appSettings.BackgroundShadow = (int)snapshot["BackgroundShadow"];
-            appSettings.BackgroundShadowResolution = (int)snapshot["BackgroundShadowResolution"];
-            appSettings.WindowSize = (double)snapshot["WindowSize"] > 0 ? (int)(double)snapshot["WindowSize"] : 650;
+            display.AmbientOcclusionEnabled = (bool)snapshot["IsEnableAmbientOcclusion"];
+            display.MsaaLevel = (int)snapshot["MsaaLevel"];
+            display.AvatarShadowMode = (int)snapshot["AvatarShadow"];
+            display.AvatarShadowResolution = (int)snapshot["AvatarShadowResolution"];
+            display.BackgroundShadowMode = (int)snapshot["BackgroundShadow"];
+            display.BackgroundShadowResolution = (int)snapshot["BackgroundShadowResolution"];
+            display.AvatarWindowSize = (double)snapshot["WindowSize"] > 0 ? (int)(double)snapshot["WindowSize"] : 650;
         }
 
         private void CaptureKeyButton_Click(object sender, RoutedEventArgs e)
@@ -383,10 +384,10 @@ namespace CocoroConsole.Controls
         {
             try
             {
-                var appSettings = AppSettings.Instance;
-                appSettings.WindowPositionX = float.MinValue;
-                appSettings.WindowPositionY = float.MinValue;
-                appSettings.IsRestoreWindowPosition = false;
+                var display = AppSettings.Instance.ConsoleClient.Display;
+                display.AvatarPositionX = float.MinValue;
+                display.AvatarPositionY = float.MinValue;
+                display.RestoreWindowPosition = false;
                 RestoreWindowPositionCheckBox.IsChecked = false;
             }
             catch (Exception ex)

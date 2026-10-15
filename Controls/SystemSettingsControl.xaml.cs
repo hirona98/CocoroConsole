@@ -1,4 +1,4 @@
-using CocoroConsole.Communication;
+using CocoroConsole.Models.OtomeKairoApi;
 using CocoroConsole.Services;
 using NAudio.CoreAudioApi;
 using System;
@@ -18,7 +18,7 @@ namespace CocoroConsole.Controls
         public event EventHandler? SettingsChanged;
 
         private bool _isInitialized;
-        private List<ConsoleMicrophoneInputDevice> _consoleInputDevices = new List<ConsoleMicrophoneInputDevice>();
+        private List<OtomeKairoConsoleMicrophoneInputDevice> _consoleInputDevices = new List<OtomeKairoConsoleMicrophoneInputDevice>();
 
         public SystemSettingsControl()
         {
@@ -51,38 +51,38 @@ namespace CocoroConsole.Controls
 
         private void ApplyAppSettingsToControls(AppSettings appSettings)
         {
-            var microphoneSettings = appSettings.MicrophoneSettings;
-            SelectMicrophoneInputSource(microphoneSettings.inputSource);
-            if (microphoneSettings.console != null &&
-                !string.Equals(microphoneSettings.console.clientId, appSettings.ClientId, StringComparison.Ordinal))
+            var microphoneSettings = appSettings.AvatarSpeech.MicrophoneSettings;
+            SelectMicrophoneInputSource(microphoneSettings.InputSource);
+            if (microphoneSettings.Console != null &&
+                !string.Equals(microphoneSettings.Console.ClientId, appSettings.ClientId, StringComparison.Ordinal))
             {
                 SelectConfiguredConsoleAudioInputDevice(null);
                 ConsoleInputDeviceStatusText.Text =
-                    $"別のCocoroConsole（{microphoneSettings.console.clientId}）が設定されています。";
+                    $"別のCocoroConsole（{microphoneSettings.Console.ClientId}）が設定されています。";
             }
             else
             {
-                SelectConfiguredConsoleAudioInputDevice(microphoneSettings.console?.inputDevice);
+                SelectConfiguredConsoleAudioInputDevice(microphoneSettings.Console?.InputDevice);
             }
-            var audioOutput = appSettings.AudioOutputSettings;
+            var audioOutput = appSettings.AvatarSpeech.AudioOutputSettings;
             AudioOutputDestinationComboBox.SelectedItem = AudioOutputDestinationComboBox.Items
                 .OfType<ComboBoxItem>()
-                .Single(item => string.Equals(item.Tag as string, audioOutput.destination, StringComparison.Ordinal));
+                .Single(item => string.Equals(item.Tag as string, audioOutput.Destination, StringComparison.Ordinal));
         }
 
         private void LoadConsoleAudioInputDevices()
         {
             using var enumerator = new MMDeviceEnumerator();
             var endpoints = enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active);
-            _consoleInputDevices = new List<ConsoleMicrophoneInputDevice>();
+            _consoleInputDevices = new List<OtomeKairoConsoleMicrophoneInputDevice>();
             foreach (var endpoint in endpoints)
             {
                 using (endpoint)
                 {
-                    _consoleInputDevices.Add(new ConsoleMicrophoneInputDevice
+                    _consoleInputDevices.Add(new OtomeKairoConsoleMicrophoneInputDevice
                     {
-                        deviceId = endpoint.ID,
-                        name = endpoint.FriendlyName,
+                        DeviceId = endpoint.ID,
+                        Name = endpoint.FriendlyName,
                     });
                 }
             }
@@ -98,7 +98,7 @@ namespace CocoroConsole.Controls
             MicrophoneInputSourceComboBox.SelectedItem = selected;
         }
 
-        private void SelectConfiguredConsoleAudioInputDevice(ConsoleMicrophoneInputDevice? configuredDevice)
+        private void SelectConfiguredConsoleAudioInputDevice(OtomeKairoConsoleMicrophoneInputDevice? configuredDevice)
         {
             if (configuredDevice == null)
             {
@@ -107,10 +107,14 @@ namespace CocoroConsole.Controls
             }
 
             var selectedDevice = _consoleInputDevices.FirstOrDefault(device =>
-                string.Equals(device.deviceId, configuredDevice.deviceId, StringComparison.Ordinal));
+                string.Equals(device.DeviceId, configuredDevice.DeviceId, StringComparison.Ordinal));
             if (selectedDevice == null)
             {
-                selectedDevice = configuredDevice.DeepCopy();
+                selectedDevice = new OtomeKairoConsoleMicrophoneInputDevice
+                {
+                    DeviceId = configuredDevice.DeviceId,
+                    Name = configuredDevice.Name,
+                };
                 _consoleInputDevices = new[] { selectedDevice }
                     .Concat(_consoleInputDevices)
                     .ToList();
@@ -142,55 +146,43 @@ namespace CocoroConsole.Controls
         /// UI で編集する入力元と Console デバイスだけを反映し、
         /// OtomeKairo 側デバイス・VAD・話者しきい値は既存値を保持する。
         /// </summary>
-        public MicrophoneSettings GetMicrophoneSettings()
+        public void ApplyToAppSettings()
         {
-            var current = AppSettings.Instance.MicrophoneSettings;
+            var speech = AppSettings.Instance.AvatarSpeech;
+            var current = speech.MicrophoneSettings;
             var sourceItem = MicrophoneInputSourceComboBox.SelectedItem as ComboBoxItem
                 ?? throw new InvalidOperationException("通常のマイク入力元を選択してください。");
             var inputSource = sourceItem.Tag as string
                 ?? throw new InvalidOperationException("通常のマイク入力元が不正です。");
-            var selectedConsoleDevice = ConsoleInputDeviceComboBox.SelectedItem as ConsoleMicrophoneInputDevice;
+            var selectedConsoleDevice = ConsoleInputDeviceComboBox.SelectedItem as OtomeKairoConsoleMicrophoneInputDevice;
             if (string.Equals(inputSource, "console_microphone", StringComparison.Ordinal) &&
                 selectedConsoleDevice == null)
             {
                 throw new InvalidOperationException("CocoroConsoleの入力デバイスを選択してください。");
             }
 
-            return new MicrophoneSettings
-            {
-                inputSource = inputSource,
-                localInputDevice = current.localInputDevice?.DeepCopy(),
-                console = selectedConsoleDevice == null
-                    ? current.console?.DeepCopy()
-                        ?? new ConsoleMicrophoneSettings
-                        {
-                            clientId = AppSettings.Instance.ClientId,
-                            inputDevice = null,
-                        }
-                    : new ConsoleMicrophoneSettings
+            current.InputSource = inputSource;
+            current.Console = selectedConsoleDevice == null
+                ? current.Console ?? new OtomeKairoConsoleMicrophoneSettings
+                {
+                    ClientId = AppSettings.Instance.ClientId,
+                    InputDevice = null,
+                }
+                : new OtomeKairoConsoleMicrophoneSettings
+                {
+                    ClientId = AppSettings.Instance.ClientId,
+                    InputDevice = new OtomeKairoConsoleMicrophoneInputDevice
                     {
-                        clientId = AppSettings.Instance.ClientId,
-                        inputDevice = selectedConsoleDevice.DeepCopy(),
+                        DeviceId = selectedConsoleDevice.DeviceId,
+                        Name = selectedConsoleDevice.Name,
                     },
-                vadProbabilityThreshold = current.vadProbabilityThreshold,
-                speakerRecognitionThreshold = current.speakerRecognitionThreshold,
-            };
-        }
+                };
 
-        /// <summary>
-        /// UI で編集する出力先だけを反映し、OtomeKairo 側出力デバイスは既存値を保持する。
-        /// </summary>
-        public AudioOutputSettings GetAudioOutputSettings()
-        {
             var destinationItem = AudioOutputDestinationComboBox.SelectedItem as ComboBoxItem
                 ?? throw new InvalidOperationException("音声出力先を選択してください。");
             var destination = destinationItem.Tag as string
                 ?? throw new InvalidOperationException("音声出力先が不正です。");
-            return new AudioOutputSettings
-            {
-                destination = destination,
-                localOutputDevice = AppSettings.Instance.AudioOutputSettings.localOutputDevice?.DeepCopy(),
-            };
+            speech.AudioOutputSettings.Destination = destination;
         }
     }
 }
