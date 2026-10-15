@@ -261,6 +261,7 @@ namespace CocoroConsole
             communicationService.ControlCommandReceived += OnControlCommandReceived;
             communicationService.ErrorOccurred += OnErrorOccurred;
             communicationService.StatusChanged += OnOtomeKairoStatusChanged;
+            communicationService.SettingsLoadErrorChanged += OnSettingsLoadErrorChanged;
             communicationService.AudioRuntimeStateChanged += OnAudioRuntimeStateChanged;
             communicationService.EventsStreamConnectionChanged += OnEventsStreamConnectionChanged;
         }
@@ -277,6 +278,7 @@ namespace CocoroConsole
             communicationService.ControlCommandReceived -= OnControlCommandReceived;
             communicationService.ErrorOccurred -= OnErrorOccurred;
             communicationService.StatusChanged -= OnOtomeKairoStatusChanged;
+            communicationService.SettingsLoadErrorChanged -= OnSettingsLoadErrorChanged;
             communicationService.AudioRuntimeStateChanged -= OnAudioRuntimeStateChanged;
             communicationService.EventsStreamConnectionChanged -= OnEventsStreamConnectionChanged;
         }
@@ -583,6 +585,14 @@ namespace CocoroConsole
         /// <summary>
         /// OtomeKairoステータス変更時のハンドラ
         /// </summary>
+        private void OnSettingsLoadErrorChanged(object? sender, string? message)
+        {
+            UIHelper.RunOnUIThread(() =>
+            {
+                RenderStatusBarText(BuildOtomeKairoStatusBarText(_latestOtomeKairoStatus));
+            });
+        }
+
         private void OnOtomeKairoStatusChanged(object? sender, OtomeKairoStatus status)
         {
             UIHelper.RunOnUIThread(() =>
@@ -1081,8 +1091,9 @@ namespace CocoroConsole
         /// <param name="overrideText">ステータスバーに表示するテキスト（例: "状態: VoiceRecognition 〜"）</param>
         private void SetStatusBarOverride(string overrideText)
         {
-            // --- OtomeKairo起動待ちは最優先表示（上書きしない） ---
-            if (_latestOtomeKairoStatus == OtomeKairoStatus.WaitingForStartup)
+            // --- 接続初期化の失敗と起動待ちは最優先表示（上書きしない） ---
+            if (_communicationService?.SettingsLoadError != null
+                || _latestOtomeKairoStatus == OtomeKairoStatus.WaitingForStartup)
             {
                 return;
             }
@@ -1128,9 +1139,12 @@ namespace CocoroConsole
         {
             // --- OtomeKairo起動待ちは最優先表示 ---
             // 起動待ち中にログが流れても、ユーザーが状況を誤認しないよう「起動待ち」を固定で出す。
-            var textToShow = _latestOtomeKairoStatus == OtomeKairoStatus.WaitingForStartup
-                ? BuildOtomeKairoStatusBarText(OtomeKairoStatus.WaitingForStartup)
-                : (_statusBarOverrideText ?? normalStatusText);
+            var settingsLoadError = _communicationService?.SettingsLoadError;
+            var textToShow = settingsLoadError != null
+                ? $"状態: {settingsLoadError}"
+                : _latestOtomeKairoStatus == OtomeKairoStatus.WaitingForStartup
+                    ? BuildOtomeKairoStatusBarText(OtomeKairoStatus.WaitingForStartup)
+                    : (_statusBarOverrideText ?? normalStatusText);
 
             // --- UI要素が未生成の場合は何もしない（初期化順による） ---
             if (ConnectionStatusText == null) return;

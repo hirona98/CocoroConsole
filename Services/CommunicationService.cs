@@ -120,6 +120,7 @@ namespace CocoroConsole.Services
         public event EventHandler<string>? ErrorOccurred;
         public event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
         public event EventHandler<OtomeKairoStatus>? StatusChanged;
+        public event EventHandler<string?>? SettingsLoadErrorChanged;
         public event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
         public event EventHandler<bool>? LogStreamConnectionChanged;
         public event EventHandler<string>? LogStreamError;
@@ -138,6 +139,7 @@ namespace CocoroConsole.Services
         /// 対話入力送信中かどうか
         /// </summary>
         public bool IsConversationInputBusy => Volatile.Read(ref _conversationInputBusy) == 1;
+        public string? SettingsLoadError { get; private set; }
 
         /// <summary>
         /// コンストラクタ
@@ -498,7 +500,7 @@ namespace CocoroConsole.Services
         {
             if (_otomeKairoApiClient == null)
             {
-                Debug.WriteLine("[CommunicationService] APIクライアントが初期化されていないため、現在設定の取得をスキップ");
+                FailConnectionInitialization("OtomeKairo APIクライアントが初期化されていません。");
                 return;
             }
 
@@ -531,13 +533,39 @@ namespace CocoroConsole.Services
                 await StartEventsStreamAsync().ConfigureAwait(false);
                 await StartConsoleMicrophoneStreamAsync().ConfigureAwait(false);
                 await SyncDesktopWatchCapabilityStateAsync().ConfigureAwait(false);
+                SetSettingsLoadError(null);
             }
             catch (Exception ex)
             {
-                _initialSettingsFetched = false;
-                _remoteSettingsApplied = false;
-                _statusPollingService.SetWaitingForStartup();
-                Debug.WriteLine($"[CommunicationService] OtomeKairo 現在設定の取得に失敗: {ex.Message}");
+                FailConnectionInitialization(ex.Message);
+            }
+        }
+
+        private void FailConnectionInitialization(string message)
+        {
+            _initialSettingsFetched = false;
+            _remoteSettingsApplied = false;
+            var displayMessage = $"接続初期化に失敗しました。{message}";
+            Debug.WriteLine($"[CommunicationService] {displayMessage}");
+            SetSettingsLoadError(displayMessage);
+            _statusPollingService.SetWaitingForStartup();
+        }
+
+        private void SetSettingsLoadError(string? message)
+        {
+            if (string.Equals(SettingsLoadError, message, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            SettingsLoadError = message;
+            try
+            {
+                SettingsLoadErrorChanged?.Invoke(this, message);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CommunicationService] SettingsLoadErrorChanged handler error: {ex.Message}");
             }
         }
 

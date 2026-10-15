@@ -51,6 +51,7 @@ namespace CocoroConsole.Services
         event EventHandler<bool>? ConversationInputBusyChanged;
         event EventHandler<StatusUpdateEventArgs>? StatusUpdateRequested;
         event EventHandler<OtomeKairoStatus>? StatusChanged;
+        event EventHandler<string?>? SettingsLoadErrorChanged;
         event EventHandler<IReadOnlyList<LogMessage>>? LogMessagesReceived;
         event EventHandler<bool>? LogStreamConnectionChanged;
         event EventHandler<string>? LogStreamError;
@@ -61,6 +62,7 @@ namespace CocoroConsole.Services
         bool IsServerRunning { get; }
         OtomeKairoStatus CurrentStatus { get; }
         bool IsConversationInputBusy { get; }
+        string? SettingsLoadError { get; }
 
         Task StartServerAsync();
         Task PrepareShellRuntimeAsync();
