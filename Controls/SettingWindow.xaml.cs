@@ -267,13 +267,16 @@ namespace CocoroConsole.Controls
 
                 SystemSettingsControl.ApplyToAppSettings();
                 UpdateAvatarAndAnimationAppSettings();
-                AppSettings.Instance.SaveAppSettings();
 
                 await SaveAllSettingsToApiAsync();
 
                 if (_communicationService != null)
                 {
                     await _communicationService.RefreshOtomeKairoCurrentSettingsAsync();
+                }
+                else
+                {
+                    AppSettings.Instance.SaveAppSettings();
                 }
             }
             catch (System.Exception ex)

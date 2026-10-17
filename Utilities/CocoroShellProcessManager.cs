@@ -1,7 +1,9 @@
+using CocoroConsole.Communication;
 using CocoroConsole.Services;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace CocoroConsole.Utilities
 {
@@ -25,7 +27,7 @@ namespace CocoroConsole.Utilities
             }
         }
 
-        public static void Apply(IAppSettings appSettings, ProcessOperation operation = ProcessOperation.RestartIfRunning)
+        public static async Task ApplyAsync(IAppSettings appSettings, ProcessOperation operation = ProcessOperation.RestartIfRunning)
         {
             ArgumentNullException.ThrowIfNull(appSettings);
 
@@ -38,7 +40,7 @@ namespace CocoroConsole.Utilities
                     [ConsoleApiUrlEnvironmentVariable] =
                         $"http://127.0.0.1:{appSettings.CocoroConsolePort}",
                 };
-                ProcessHelper.LaunchExternalApplication(
+                await ProcessHelper.LaunchExternalApplicationAsync(
                     "CocoroShell.exe",
                     "CocoroShell",
                     operation,
@@ -52,11 +54,20 @@ namespace CocoroConsole.Utilities
                 return;
             }
 
-            ProcessHelper.LaunchExternalApplication("CocoroShell.exe", "CocoroShell", ProcessOperation.Terminate, true);
+            await ProcessHelper.LaunchExternalApplicationAsync("CocoroShell.exe", "CocoroShell", ProcessOperation.Terminate, true);
             appSettings.ShellSessionToken = string.Empty;
 #else
-            _ = appSettings;
-            _ = operation;
+            // Debug版は起動済みのEditorに設定の再取得とシーンの再読み込みを要求する。
+            using var shellClient = new CocoroShellClient(appSettings.CocoroShellPort, () => appSettings.ShellSessionToken);
+            if (await shellClient.IsRunningAsync())
+            {
+                await shellClient.SendControlCommandAsync(new ShellControlRequest
+                {
+                    action = operation == ProcessOperation.Terminate || !HasDisplayableAvatar(appSettings)
+                        ? "shutdown"
+                        : "reload"
+                });
+            }
 #endif
         }
 

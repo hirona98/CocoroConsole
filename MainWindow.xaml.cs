@@ -69,6 +69,7 @@ namespace CocoroConsole
         // UI が固まることがあるため、明示的終了時はキャンセルしない判定に使う。
         private int _isShutdownInProgress;
         private readonly SemaphoreSlim _connectionSwitchSemaphore = new(1, 1);
+        private readonly SemaphoreSlim _shellSettingsApplySemaphore = new(1, 1);
 
         public MainWindow()
         {
@@ -451,12 +452,28 @@ namespace CocoroConsole
             {
                 try
                 {
-                    // Shell が設定取得を開始する前に、Console API の待受を確定する。
-                    await communicationService!.PrepareShellRuntimeAsync();
+                    await _shellSettingsApplySemaphore.WaitAsync();
+                    try
+                    {
+                        // 再起動要求を直列化し、設定取得用APIの待受後にShellへ反映する。
+                        await communicationService!.PrepareShellRuntimeAsync();
+                        if (ReferenceEquals(_communicationService, communicationService) &&
+                            _appSettings.HasRemoteSettings &&
+                            communicationService.CurrentStatus != OtomeKairoStatus.WaitingForStartup)
+                        {
+                            await CocoroShellProcessManager.ApplyAsync(_appSettings);
+                        }
+                    }
+                    finally
+                    {
+                        _shellSettingsApplySemaphore.Release();
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"CocoroShell実行設定APIの準備に失敗しました: {ex.Message}");
+                    Debug.WriteLine($"CocoroShellへの設定反映に失敗しました: {ex.Message}");
+                    UIHelper.RunOnUIThread(() => ChatControlInstance.AddSystemErrorMessage(
+                        $"CocoroShellへの設定反映に失敗しました: {ex.Message}"));
                     return;
                 }
             }
@@ -470,7 +487,6 @@ namespace CocoroConsole
                     communicationService!.CurrentStatus != OtomeKairoStatus.WaitingForStartup;
                 if (canApplyCurrentSettings)
                 {
-                    LaunchCocoroShell();
                     WindowPlacementManager.RestorePosition(this, MainWindowPlacementKey, _appSettings);
                 }
                 // 設定変更後のボタン状態を反映
@@ -1389,16 +1405,6 @@ namespace CocoroConsole
             {
                 MuteButton.IsEnabled = true;
             }
-        }
-
-
-        /// <summary>
-        /// CocoroShell.exeを起動する（既に起動している場合は終了してから再起動）
-        /// </summary>
-        /// <param name="operation">プロセス操作の種類（デフォルトは再起動）</param>
-        private void LaunchCocoroShell(ProcessOperation operation = ProcessOperation.RestartIfRunning)
-        {
-            CocoroShellProcessManager.Apply(_appSettings, operation);
         }
 
 
