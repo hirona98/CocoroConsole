@@ -436,21 +436,38 @@
 
 
                 <!-- チャット表示エリア -->
-                <ScrollViewer x:Name="ChatScrollViewer"
+                <ItemsControl x:Name="ChatMessages"
                               Grid.Row="0"
                               Margin="5"
                               Background="#FAFAFA"
-                              VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding Messages, RelativeSource={RelativeSource AncestorType=local:ChatControl}}"
-                                      ItemTemplateSelector="{StaticResource ChatMessageTemplateSelector}">
-                                <ItemsControl.ItemContainerStyle>
-                                        <Style TargetType="ContentPresenter">
-                                                <Setter Property="HorizontalAlignment"
-                                                        Value="Stretch"/>
-                                        </Style>
-                                </ItemsControl.ItemContainerStyle>
-                        </ItemsControl>
-                </ScrollViewer>
+                              ItemsSource="{Binding Messages, RelativeSource={RelativeSource AncestorType=local:ChatControl}}"
+                              ItemTemplateSelector="{StaticResource ChatMessageTemplateSelector}"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              VirtualizingPanel.VirtualizationMode="Recycling"
+                              VirtualizingPanel.ScrollUnit="Pixel">
+                        <ItemsControl.Template>
+                                <ControlTemplate TargetType="ItemsControl">
+                                        <ScrollViewer x:Name="ChatScrollViewer"
+                                                      Background="{TemplateBinding Background}"
+                                                      CanContentScroll="True"
+                                                      HorizontalScrollBarVisibility="Disabled"
+                                                      VerticalScrollBarVisibility="Auto">
+                                                <ItemsPresenter/>
+                                        </ScrollViewer>
+                                </ControlTemplate>
+                        </ItemsControl.Template>
+                        <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel/>
+                                </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                        <Setter Property="HorizontalAlignment"
+                                                Value="Stretch"/>
+                                </Style>
+                        </ItemsControl.ItemContainerStyle>
+                </ItemsControl>
 
                 <!-- 入力エリア -->
                 <Grid Grid.Row="1"

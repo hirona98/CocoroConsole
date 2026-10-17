@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -229,7 +229,7 @@ namespace CocoroConsole.Communication
 
             while (ws.State == WebSocketState.Open && !token.IsCancellationRequested)
             {
-                var messageBuffer = new List<byte>();
+                using var messageBuffer = new MemoryStream();
                 WebSocketReceiveResult result;
                 WebSocketMessageType? messageType = null;
 
@@ -247,22 +247,21 @@ namespace CocoroConsole.Communication
                     {
                         throw new InvalidOperationException("一つのWebSocket message内でmessage typeが変化しました。");
                     }
-                    messageBuffer.AddRange(buffer.AsSpan(0, result.Count).ToArray());
+                    messageBuffer.Write(buffer, 0, result.Count);
                 } while (!result.EndOfMessage);
 
-                if (messageBuffer.Count == 0)
+                if (messageBuffer.Length == 0)
                 {
                     continue;
                 }
 
-                var payload = messageBuffer.ToArray();
                 if (messageType == WebSocketMessageType.Text)
                 {
-                    HandleTextMessage(Encoding.UTF8.GetString(payload));
+                    HandleTextMessage(Encoding.UTF8.GetString(messageBuffer.GetBuffer(), 0, (int)messageBuffer.Length));
                 }
                 else if (messageType == WebSocketMessageType.Binary)
                 {
-                    HandleBinaryMessage(payload);
+                    HandleBinaryMessage(messageBuffer.ToArray());
                 }
             }
 
