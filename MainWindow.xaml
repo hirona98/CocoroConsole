@@ -155,22 +155,11 @@
                                                           ShadowDepth="0"
                                                           Opacity="0.5"/>
                                 </Border.Effect>
-                                <StackPanel HorizontalAlignment="Center">
-                                        <ProgressBar IsIndeterminate="True"
-                                                     Height="4"
-                                                     Width="200"
-                                                     Margin="0,0,0,20"/>
-                                        <TextBlock Text="シャットダウン中..."
-                                                   FontSize="16"
-                                                   Foreground="#222222"
-                                                   HorizontalAlignment="Center"
-                                                   Margin="0,0,0,10"/>
-                                        <TextBlock x:Name="MemoryCleanupText"
-                                                   Text="記憶を整理しています"
-                                                   FontSize="12"
-                                                   Foreground="#222222"
-                                                   HorizontalAlignment="Center"/>
-                                </StackPanel>
+                                <TextBlock Text="シャットダウン中..."
+                                           FontSize="16"
+                                           Foreground="#222222"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,10"/>
                         </Border>
                 </Grid>
         </Grid>
