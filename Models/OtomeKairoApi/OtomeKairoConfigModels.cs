@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 
 namespace CocoroConsole.Models.OtomeKairoApi
@@ -228,13 +229,30 @@ namespace CocoroConsole.Models.OtomeKairoApi
         }
     }
 
-    public class OtomeKairoAvatarSpeechDefinition
+    public class OtomeKairoAvatarSpeechDefinition : INotifyPropertyChanged
     {
+        private string _displayName = string.Empty;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
         [JsonPropertyName("avatar_id")]
         public string AvatarId { get; set; } = string.Empty;
 
         [JsonPropertyName("display_name")]
-        public string DisplayName { get; set; } = string.Empty;
+        public string DisplayName
+        {
+            get => _displayName;
+            set
+            {
+                if (_displayName == value)
+                {
+                    return;
+                }
+
+                _displayName = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayName)));
+            }
+        }
 
         [JsonPropertyName("stt")]
         public OtomeKairoSttSettings Stt { get; set; } = new OtomeKairoSttSettings();

@@ -49,9 +49,8 @@ namespace CocoroConsole.Controls
             InitializeAvatarSettings();
             SystemSettingsControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
             SystemSettingsControl.Initialize();
-            _ = InitializeRemoteSettingsAsync();
-
             BackupSettings();
+            _ = InitializeRemoteSettingsAsync();
         }
 
         protected override void OnSourceInitialized(System.EventArgs e)
@@ -97,6 +96,10 @@ namespace CocoroConsole.Controls
         /// </summary>
         private async Task InitializeRemoteSettingsAsync()
         {
+            SettingsContentHost.IsEnabled = false;
+            OkButton.IsEnabled = false;
+            ApplyButton.IsEnabled = false;
+
             if (_apiClient == null)
             {
                 return;
@@ -104,24 +107,41 @@ namespace CocoroConsole.Controls
 
             try
             {
-                _loadedConsoleClientEditorState = await _apiClient.ConnectConsoleClientAsync(
+                var consoleClientEditorState = await _apiClient.ConnectConsoleClientAsync(
                     AppSettings.Instance.ClientId);
-                _loadedAvatarSpeechEditorState = await _apiClient.GetAvatarSpeechEditorStateAsync();
+                var avatarSpeechEditorState = await _apiClient.GetAvatarSpeechEditorStateAsync();
                 var currentSettings = (await _apiClient.GetOtomeKairoConfigAsync()).SettingsSnapshot;
+                var conversationDisplayNames = await _apiClient.GetConversationDisplayNamesAsync();
+                if (IsClosed)
+                {
+                    return;
+                }
+
                 AppSettings.Instance.ApplyRemoteSettings(
-                    _loadedConsoleClientEditorState.Settings,
+                    consoleClientEditorState.Settings,
                     currentSettings,
-                    (await _apiClient.GetConversationDisplayNamesAsync()).ConversationDisplayNames,
-                    _loadedAvatarSpeechEditorState);
+                    conversationDisplayNames.ConversationDisplayNames,
+                    avatarSpeechEditorState);
+                _loadedConsoleClientEditorState = consoleClientEditorState;
+                _loadedAvatarSpeechEditorState = avatarSpeechEditorState;
 
                 DisplaySettingsControl.InitializeFromAppSettings();
                 AvatarManagementControl.RefreshAvatarList();
                 AnimationSettingsControl.Initialize();
                 SystemSettingsControl.ReloadFromAppSettings();
+                BackupSettings();
+                SettingsContentHost.IsEnabled = true;
+                OkButton.IsEnabled = true;
+                ApplyButton.IsEnabled = false;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"端末設定初期化エラー: {ex.Message}");
+                if (!IsClosed)
+                {
+                    MessageBox.Show($"設定の読み込みに失敗しました: {ex.Message}", "エラー",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -129,11 +149,6 @@ namespace CocoroConsole.Controls
         {
             AvatarManagementControl.Initialize();
             AvatarManagementControl.SettingsChanged += (sender, args) => MarkSettingsChanged();
-
-            AvatarManagementControl.AvatarChanged += (sender, args) =>
-            {
-                AnimationSettingsControl.Initialize();
-            };
 
             if (_communicationService != null)
             {
@@ -248,7 +263,25 @@ namespace CocoroConsole.Controls
                     "OtomeKairoの通常設定を取得していません。トレイの「接続先設定」で接続し直してください。");
             }
 
-            await SaveAllSettingsAsync();
+            SettingsContentHost.IsEnabled = false;
+            OkButton.IsEnabled = false;
+            ApplyButton.IsEnabled = false;
+            CancelButton.IsEnabled = false;
+            try
+            {
+                await SaveAllSettingsAsync();
+            }
+            catch
+            {
+                ApplyButton.IsEnabled = true;
+                throw;
+            }
+            finally
+            {
+                SettingsContentHost.IsEnabled = true;
+                OkButton.IsEnabled = true;
+                CancelButton.IsEnabled = true;
+            }
         }
 
         private bool AreRemoteSettingsLoaded()
@@ -278,6 +311,8 @@ namespace CocoroConsole.Controls
                 {
                     AppSettings.Instance.SaveAppSettings();
                 }
+
+                AvatarManagementControl.RefreshAvatarList();
             }
             catch (System.Exception ex)
             {

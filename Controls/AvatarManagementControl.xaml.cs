@@ -10,7 +10,6 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading;
 
 namespace CocoroConsole.Controls
 {
@@ -20,35 +19,17 @@ namespace CocoroConsole.Controls
     public partial class AvatarManagementControl : UserControl
     {
         public event EventHandler? SettingsChanged;
-        public event EventHandler? AvatarChanged;
-
-        private int _currentAvatarIndex = -1;
         private bool _isInitialized = false;
         private bool _isUpdatingUi = false;
-        private DispatcherTimer? _avatarNameChangeTimer;
-        private const int CHARACTER_NAME_DEBOUNCE_DELAY_MS = 200;
 
         public AvatarManagementControl()
         {
             InitializeComponent();
-
-            _avatarNameChangeTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(CHARACTER_NAME_DEBOUNCE_DELAY_MS)
-            };
-            _avatarNameChangeTimer.Tick += AvatarNameChangeTimer_Tick;
         }
 
         public void Initialize()
         {
-            LoadAvatarList();
-
-            if (AvatarSelectComboBox.SelectedIndex >= 0)
-            {
-                _currentAvatarIndex = AvatarSelectComboBox.SelectedIndex;
-                UpdateAvatarUI();
-            }
-
+            RefreshAvatarList();
             _isInitialized = true;
         }
 
@@ -61,30 +42,18 @@ namespace CocoroConsole.Controls
                 .FirstOrDefault(presentation => presentation.AvatarId == avatarId);
         }
 
-        private void LoadAvatarList()
-        {
-            var avatars = Avatars;
-            AvatarSelectComboBox.ItemsSource = avatars;
-            var selectedIndex = avatars.FindIndex(avatar =>
-                avatar.AvatarId == AppSettings.Instance.AvatarSpeech.SelectedAvatarId);
-            if (selectedIndex >= 0)
-            {
-                AvatarSelectComboBox.SelectedIndex = selectedIndex;
-            }
-        }
-
         /// <summary>
         /// UI 上の VRM / 表示 / TTS 関連を AppSettings へ同期する。
         /// STT など UI に無い項目は既存値を保持する。
         /// </summary>
         public void SyncCurrentAvatarFromUi()
         {
-            if (_currentAvatarIndex < 0 || _currentAvatarIndex >= Avatars.Count)
+            var avatar = AppSettings.Instance.GetCurrentAvatar();
+            if (avatar == null)
             {
                 return;
             }
 
-            var avatar = Avatars[_currentAvatarIndex];
             avatar.DisplayName = AvatarNameTextBox.Text;
             var tts = avatar.Tts;
             tts.Enabled = IsUseTTSCheckBox.IsChecked ?? false;
@@ -192,7 +161,6 @@ namespace CocoroConsole.Controls
             }
 
             SyncPresentationFromUi(avatar.AvatarId);
-            AppSettings.Instance.AvatarSpeech.SelectedAvatarId = avatar.AvatarId;
         }
 
         private void SyncPresentationFromUi(string avatarId)
@@ -254,27 +222,24 @@ namespace CocoroConsole.Controls
             return value.ToString("R", CultureInfo.InvariantCulture);
         }
 
-        public int GetCurrentAvatarIndex()
-        {
-            return _currentAvatarIndex;
-        }
-
         private void AvatarSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!_isInitialized || AvatarSelectComboBox.SelectedIndex < 0)
+            if (!_isInitialized || _isUpdatingUi ||
+                AvatarSelectComboBox.SelectedItem is not OtomeKairoAvatarSpeechDefinition selectedAvatar)
             {
                 return;
             }
 
             SyncCurrentAvatarFromUi();
-            _currentAvatarIndex = AvatarSelectComboBox.SelectedIndex;
+            AppSettings.Instance.AvatarSpeech.SelectedAvatarId = selectedAvatar.AvatarId;
             UpdateAvatarUI();
-            AvatarChanged?.Invoke(this, EventArgs.Empty);
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void UpdateAvatarUI()
         {
-            if (_currentAvatarIndex < 0 || _currentAvatarIndex >= Avatars.Count)
+            var avatar = AppSettings.Instance.GetCurrentAvatar();
+            if (avatar == null)
             {
                 return;
             }
@@ -282,7 +247,6 @@ namespace CocoroConsole.Controls
             _isUpdatingUi = true;
             try
             {
-                var avatar = Avatars[_currentAvatarIndex];
                 var presentation = FindPresentation(avatar.AvatarId);
                 var isReadOnly = AppSettings.IsBuiltInAvatar(presentation);
                 var tts = avatar.Tts;
@@ -382,9 +346,8 @@ namespace CocoroConsole.Controls
                 var newAvatar = AppSettings.Instance.CreateAvatarFromDefaults(newName);
                 Avatars.Add(newAvatar);
 
-                AvatarSelectComboBox.ItemsSource = null;
-                AvatarSelectComboBox.ItemsSource = Avatars;
-                AvatarSelectComboBox.SelectedIndex = Avatars.Count - 1;
+                AppSettings.Instance.AvatarSpeech.SelectedAvatarId = newAvatar.AvatarId;
+                RefreshAvatarList();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
@@ -398,13 +361,13 @@ namespace CocoroConsole.Controls
         {
             try
             {
-                if (_currentAvatarIndex < 0 || _currentAvatarIndex >= Avatars.Count)
+                var avatar = AppSettings.Instance.GetCurrentAvatar();
+                if (avatar == null)
                 {
                     return;
                 }
 
                 SyncCurrentAvatarFromUi();
-                var avatar = Avatars[_currentAvatarIndex];
                 var presentation = FindPresentation(avatar.AvatarId);
                 if (AppSettings.IsBuiltInAvatar(presentation))
                 {
@@ -415,16 +378,11 @@ namespace CocoroConsole.Controls
                 {
                     AppSettings.Instance.ConsoleClient.AvatarPresentations.Remove(presentation);
                 }
-                Avatars.RemoveAt(_currentAvatarIndex);
-                _currentAvatarIndex = -1;
-
-                AvatarSelectComboBox.ItemsSource = null;
-                AvatarSelectComboBox.ItemsSource = Avatars;
-                if (Avatars.Count > 0)
-                {
-                    AvatarSelectComboBox.SelectedIndex = 0;
-                }
-
+                Avatars.Remove(avatar);
+                AppSettings.Instance.AvatarSpeech.SelectedAvatarId = Avatars.Count > 0
+                    ? Avatars[0].AvatarId
+                    : string.Empty;
+                RefreshAvatarList();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
@@ -438,13 +396,13 @@ namespace CocoroConsole.Controls
         {
             try
             {
-                if (_currentAvatarIndex < 0 || _currentAvatarIndex >= Avatars.Count)
+                var sourceAvatar = AppSettings.Instance.GetCurrentAvatar();
+                if (sourceAvatar == null)
                 {
                     return;
                 }
 
                 SyncCurrentAvatarFromUi();
-                var sourceAvatar = Avatars[_currentAvatarIndex];
 
                 var newName = sourceAvatar.DisplayName + "_copy";
                 int copyNumber = 1;
@@ -467,9 +425,8 @@ namespace CocoroConsole.Controls
 
                 Avatars.Add(newAvatar);
 
-                AvatarSelectComboBox.ItemsSource = null;
-                AvatarSelectComboBox.ItemsSource = Avatars;
-                AvatarSelectComboBox.SelectedIndex = Avatars.Count - 1;
+                AppSettings.Instance.AvatarSpeech.SelectedAvatarId = newAvatar.AvatarId;
+                RefreshAvatarList();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
 
                 Debug.WriteLine($"アバター複製: {sourceAvatar.DisplayName} -> {newName}");
@@ -531,7 +488,7 @@ namespace CocoroConsole.Controls
 
         private void OnAvatarPresentationChanged(object sender, RoutedEventArgs e)
         {
-            if (_isInitialized)
+            if (_isInitialized && !_isUpdatingUi)
             {
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
@@ -625,45 +582,18 @@ namespace CocoroConsole.Controls
 
         private void AvatarNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (!_isInitialized || _currentAvatarIndex < 0)
+            if (!_isInitialized || _isUpdatingUi)
             {
                 return;
             }
 
-            if (_avatarNameChangeTimer != null)
-            {
-                _avatarNameChangeTimer.Stop();
-                _avatarNameChangeTimer.Start();
-            }
-        }
-
-        private void AvatarNameChangeTimer_Tick(object? sender, EventArgs e)
-        {
-            if (_avatarNameChangeTimer != null)
-            {
-                _avatarNameChangeTimer.Stop();
-            }
-
-            if (!_isInitialized || _currentAvatarIndex < 0 || _currentAvatarIndex >= Avatars.Count)
+            var avatar = AppSettings.Instance.GetCurrentAvatar();
+            if (avatar == null)
             {
                 return;
             }
 
-            var newName = AvatarNameTextBox.Text;
-            if (string.IsNullOrWhiteSpace(newName))
-            {
-                return;
-            }
-
-            var currentSelectedIndex = _currentAvatarIndex;
-            Avatars[_currentAvatarIndex].DisplayName = newName;
-
-            AvatarSelectComboBox.SelectionChanged -= AvatarSelectComboBox_SelectionChanged;
-            AvatarSelectComboBox.ItemsSource = null;
-            AvatarSelectComboBox.ItemsSource = Avatars;
-            AvatarSelectComboBox.SelectedIndex = currentSelectedIndex;
-            AvatarSelectComboBox.SelectionChanged += AvatarSelectComboBox_SelectionChanged;
-
+            avatar.DisplayName = AvatarNameTextBox.Text;
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
@@ -675,21 +605,13 @@ namespace CocoroConsole.Controls
                 AvatarSelectComboBox.ItemsSource = null;
                 AvatarSelectComboBox.ItemsSource = Avatars;
 
-                if (Avatars.Count > 0)
+                AvatarSelectComboBox.SelectedValue = AppSettings.Instance.AvatarSpeech.SelectedAvatarId;
+                if (AppSettings.Instance.GetCurrentAvatar() != null)
                 {
-                    int indexToSelect = Math.Min(_currentAvatarIndex, Avatars.Count - 1);
-                    if (indexToSelect < 0)
-                    {
-                        indexToSelect = 0;
-                    }
-
-                    _currentAvatarIndex = indexToSelect;
-                    AvatarSelectComboBox.SelectedIndex = indexToSelect;
                     UpdateAvatarUI();
                 }
                 else
                 {
-                    _currentAvatarIndex = -1;
                     AvatarNameTextBox.Text = string.Empty;
                     VRMFilePathTextBox.Text = string.Empty;
                 }
