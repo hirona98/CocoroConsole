@@ -65,7 +65,8 @@ namespace CocoroConsole.Services
         string? SettingsLoadError { get; }
 
         Task StartServerAsync();
-        Task PrepareShellRuntimeAsync();
+        Task PrepareShellRuntimeAsync(CancellationToken cancellationToken = default);
+        Task SetCocoroShellEnabledAsync(bool enabled, CancellationToken cancellationToken = default);
         Task StopServerAsync();
         Task SendConversationInputToOtomeKairoAsync(
             string messageId,

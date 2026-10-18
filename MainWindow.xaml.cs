@@ -70,6 +70,13 @@ namespace CocoroConsole
         private int _isShutdownInProgress;
         private readonly SemaphoreSlim _connectionSwitchSemaphore = new(1, 1);
         private readonly SemaphoreSlim _shellSettingsApplySemaphore = new(1, 1);
+        private readonly CocoroShellProcessManager _shellProcessManager;
+        private readonly DispatcherTimer _shellMonitorTimer;
+        private CancellationTokenSource _shellLifetimeCancellation = new();
+        private bool _hasAppliedInitialShellState;
+        private bool _isShellOperationInProgress;
+        private bool _isShellConnectionChanging;
+        private string? _shellOperationError;
 
         public MainWindow()
         {
@@ -80,6 +87,11 @@ namespace CocoroConsole
 
             // 設定サービスの取得
             _appSettings = AppSettings.Instance;
+            _shellProcessManager = new CocoroShellProcessManager(_appSettings);
+            _shellProcessManager.StateChanged += OnShellStateChanged;
+            _shellMonitorTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _shellMonitorTimer.Tick += OnShellMonitorTick;
+            _shellMonitorTimer.Start();
 
             // メインウィンドウ位置を復元し、以降の移動を記録する
             WindowPlacementManager.AttachAndRestore(this, MainWindowPlacementKey, _appSettings);
@@ -209,6 +221,7 @@ namespace CocoroConsole
         /// </summary>
         private void InitializeButtonStates()
         {
+            UpdateShellButtonState();
             _isDesktopWatchEnabled = _appSettings.ConsoleClient.DesktopCapture.Enabled;
             UpdateDesktopWatchButtonState();
 
@@ -235,6 +248,103 @@ namespace CocoroConsole
             {
                 PauseScreenshotButton.ToolTip = isPaused ? "デスクトップウォッチを有効にする" : "デスクトップウォッチを無効にする";
                 PauseScreenshotButton.Opacity = isPaused ? 0.6 : 1.0;
+            }
+        }
+
+        private void OnShellStateChanged(object? sender, EventArgs e)
+        {
+            UpdateShellButtonState();
+        }
+
+        private void OnShellMonitorTick(object? sender, EventArgs e)
+        {
+            _shellProcessManager.RefreshState();
+        }
+
+        private void UpdateShellButtonState()
+        {
+            var running = _shellProcessManager.IsRunning;
+            var busy = _isShellOperationInProgress || _shellProcessManager.IsBusy;
+            var presentation = _appSettings.GetCurrentAvatarPresentation();
+            var hasAvatar = presentation != null && !string.IsNullOrWhiteSpace(presentation.Model);
+            ShellButtonImage.Source = new Uri(running
+                ? "pack://application:,,,/Resource/icon/AvatarON.svg"
+                : "pack://application:,,,/Resource/icon/AvatarOFF.svg", UriKind.Absolute);
+            ShellButton.Opacity = running ? 1.0 : 0.6;
+            var action = running ? "CocoroShellを終了" : "CocoroShellを起動";
+            var error = _shellOperationError ?? _shellProcessManager.Error;
+            var description = busy
+                ? $"CocoroShell: {(_shellProcessManager.IsBusy ? _shellProcessManager.Operation : "設定を保存中")}..."
+                : !running && !hasAvatar ? "表示するアバターが設定されていません" : action;
+            ShellButton.ToolTip = !busy && error != null ? $"{action}（前回の操作に失敗: {error}）" : description;
+            System.Windows.Automation.AutomationProperties.SetName(ShellButton, (string)ShellButton.ToolTip);
+            ShellButton.IsEnabled = !busy && !_isShellConnectionChanging &&
+                _isShutdownInProgress == 0 && IsOtomeKairoOperational() && (running || hasAvatar);
+        }
+
+        private async Task RunShellOperationAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken)
+        {
+            await _shellSettingsApplySemaphore.WaitAsync(cancellationToken);
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                _isShellOperationInProgress = true;
+                _shellOperationError = null;
+                UpdateShellButtonState();
+                await operation(cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _shellOperationError = ex.Message;
+                throw;
+            }
+            finally
+            {
+                _isShellOperationInProgress = false;
+                UpdateShellButtonState();
+                _shellSettingsApplySemaphore.Release();
+            }
+        }
+
+        private async void ShellButton_Click(object sender, RoutedEventArgs e)
+        {
+            var service = _communicationService;
+            if (service == null || !ShellButton.IsEnabled)
+            {
+                return;
+            }
+
+            var enabled = !_shellProcessManager.IsRunning;
+            var cancellationToken = _shellLifetimeCancellation.Token;
+            try
+            {
+                await RunShellOperationAsync(async token =>
+                {
+                    using var saveTimeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+                    saveTimeout.CancelAfter(TimeSpan.FromSeconds(10));
+                    await service.SetCocoroShellEnabledAsync(enabled, saveTimeout.Token);
+                    token.ThrowIfCancellationRequested();
+                    if (enabled)
+                    {
+                        await service.PrepareShellRuntimeAsync(token);
+                        token.ThrowIfCancellationRequested();
+                        await _shellProcessManager.StartAsync(token);
+                    }
+                    else
+                    {
+                        await _shellProcessManager.StopAsync(token);
+                    }
+                }, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // 接続先変更・Console終了時は後続の停止処理へ引き継ぐ。
+            }
+            catch (Exception ex)
+            {
+                _shellOperationError = ex is OperationCanceledException ? "端末設定の保存がタイムアウトしました。" : ex.Message;
+                UpdateShellButtonState();
+                ChatControlInstance.AddSystemErrorMessage($"CocoroShellの切り替えに失敗しました: {_shellOperationError}");
             }
         }
 
@@ -356,6 +466,7 @@ namespace CocoroConsole
             MuteButton.IsEnabled = isOperational;
             PauseScreenshotButton.IsEnabled = isOperational;
             AdminButton.IsEnabled = isOperational;
+            UpdateShellButtonState();
             if (CocoroAiTitleText.ContextMenu != null)
             {
                 CocoroAiTitleText.ContextMenu.IsEnabled = isOperational;
@@ -444,58 +555,49 @@ namespace CocoroConsole
         /// </summary>
         private async void OnSettingsSaved(object? sender, EventArgs e)
         {
-            var communicationService = _communicationService;
-            var canApplyRemoteSettings = _appSettings.HasRemoteSettings &&
-                communicationService != null &&
-                communicationService.CurrentStatus != OtomeKairoStatus.WaitingForStartup;
-            if (canApplyRemoteSettings)
+            if (!Dispatcher.CheckAccess())
             {
-                try
-                {
-                    await _shellSettingsApplySemaphore.WaitAsync();
-                    try
-                    {
-                        // 再起動要求を直列化し、設定取得用APIの待受後にShellへ反映する。
-                        await communicationService!.PrepareShellRuntimeAsync();
-                        if (ReferenceEquals(_communicationService, communicationService) &&
-                            _appSettings.HasRemoteSettings &&
-                            communicationService.CurrentStatus != OtomeKairoStatus.WaitingForStartup)
-                        {
-                            await CocoroShellProcessManager.ApplyAsync(_appSettings);
-                        }
-                    }
-                    finally
-                    {
-                        _shellSettingsApplySemaphore.Release();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"CocoroShellへの設定反映に失敗しました: {ex.Message}");
-                    UIHelper.RunOnUIThread(() => ChatControlInstance.AddSystemErrorMessage(
-                        $"CocoroShellへの設定反映に失敗しました: {ex.Message}"));
-                    return;
-                }
+                await Dispatcher.InvokeAsync(() => OnSettingsSaved(sender, e));
+                return;
+            }
+            if (_isShutdownInProgress != 0 || _isShellConnectionChanging)
+            {
+                return;
             }
 
-            // UI側の設定反映（ボタン状態とLLM表示）
-            UIHelper.RunOnUIThread(() =>
+            var service = _communicationService;
+            var cancellationToken = _shellLifetimeCancellation.Token;
+            try
             {
-                var canApplyCurrentSettings = canApplyRemoteSettings &&
-                    ReferenceEquals(_communicationService, communicationService) &&
-                    _appSettings.HasRemoteSettings &&
-                    communicationService!.CurrentStatus != OtomeKairoStatus.WaitingForStartup;
-                if (canApplyCurrentSettings)
+                if (IsOtomeKairoOperational() && service != null)
                 {
+                    await RunShellOperationAsync(async token =>
+                    {
+                        if (!ReferenceEquals(_communicationService, service) || !IsOtomeKairoOperational())
+                        {
+                            return;
+                        }
+                        var initialConnection = !_hasAppliedInitialShellState;
+                        _hasAppliedInitialShellState = true;
+                        await service.PrepareShellRuntimeAsync(token);
+                        token.ThrowIfCancellationRequested();
+                        await _shellProcessManager.ApplyAsync(initialConnection, token);
+                    }, cancellationToken);
                     WindowPlacementManager.RestorePosition(this, MainWindowPlacementKey, _appSettings);
                 }
-                // 設定変更後のボタン状態を反映
-                InitializeButtonStates();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"CocoroShellへの設定反映に失敗しました: {ex.Message}");
+                ChatControlInstance.AddSystemErrorMessage($"CocoroShellへの設定反映に失敗しました: {ex.Message}");
+            }
 
-                // LLM有効/無効の表示を即時更新
-                var currentStatus = _communicationService?.CurrentStatus ?? OtomeKairoStatus.WaitingForStartup;
-                UpdateOtomeKairoStatusDisplay(currentStatus);
-            });
+            InitializeButtonStates();
+            UpdateOtomeKairoStatusDisplay(_communicationService?.CurrentStatus ?? OtomeKairoStatus.WaitingForStartup);
         }
 
         #endregion
@@ -889,7 +991,14 @@ namespace CocoroConsole
             await _connectionSwitchSemaphore.WaitAsync();
             try
             {
+                if (_isShutdownInProgress != 0)
+                {
+                    return;
+                }
+                _isShellConnectionChanging = true;
+                UpdateShellButtonState();
                 await StopCocoroShellForConnectionSwitchAsync();
+                _hasAppliedInitialShellState = false;
 
                 var previousCommunicationService = _communicationService;
                 _communicationService = null;
@@ -928,6 +1037,13 @@ namespace CocoroConsole
             }
             finally
             {
+                if (_shellLifetimeCancellation.IsCancellationRequested && _isShutdownInProgress == 0)
+                {
+                    _shellLifetimeCancellation.Dispose();
+                    _shellLifetimeCancellation = new CancellationTokenSource();
+                }
+                _isShellConnectionChanging = false;
+                UpdateShellButtonState();
                 _connectionSwitchSemaphore.Release();
             }
         }
@@ -947,17 +1063,17 @@ namespace CocoroConsole
             }
         }
 
-        private static async Task StopCocoroShellForConnectionSwitchAsync()
+        private async Task StopCocoroShellForConnectionSwitchAsync()
         {
+            _shellLifetimeCancellation.Cancel();
+            await _shellSettingsApplySemaphore.WaitAsync();
             try
             {
-                await ProcessHelper
-                    .ExitProcessAsync("CocoroShell", ProcessOperation.Terminate)
-                    .WaitAsync(TimeSpan.FromSeconds(5));
+                await _shellProcessManager.StopAsync(CancellationToken.None);
             }
-            catch (TimeoutException)
+            finally
             {
-                Debug.WriteLine("接続先変更時のCocoroShell終了確認がタイムアウトしました。");
+                _shellSettingsApplySemaphore.Release();
             }
         }
 
@@ -1196,6 +1312,11 @@ namespace CocoroConsole
             {
                 // イベントハンドラの購読解除
                 AppSettings.SettingsSaved -= OnSettingsSaved;
+                _shellLifetimeCancellation.Cancel();
+                _shellMonitorTimer.Stop();
+                _shellMonitorTimer.Tick -= OnShellMonitorTick;
+                _shellProcessManager.StateChanged -= OnShellStateChanged;
+                _shellProcessManager.Dispose();
 
                 // ステータスバー上書きタイマーの停止（閉じた後にTickで触らないようにする）
                 _statusBarOverrideTimer?.Stop();
@@ -1465,6 +1586,9 @@ namespace CocoroConsole
                     return;
                 }
 
+                _shellLifetimeCancellation.Cancel();
+                UpdateShellButtonState();
+
                 // ウィンドウを最前面に表示
                 this.Show();
                 if (WindowState == WindowState.Minimized)
@@ -1490,6 +1614,17 @@ namespace CocoroConsole
                 // シャットダウンオーバーレイを表示
                 ShutdownOverlay.Visibility = Visibility.Visible;
 
+                // 接続先変更・切り替え操作の完了後に、所有するShellだけを停止する。
+                await _connectionSwitchSemaphore.WaitAsync();
+                try
+                {
+                    await StopCocoroShellForConnectionSwitchAsync();
+                }
+                finally
+                {
+                    _connectionSwitchSemaphore.Release();
+                }
+
                 // 保存の接続確認を含めて期限を設け、UIスレッドを待機で止めない。
                 if (_communicationService != null)
                 {
@@ -1502,22 +1637,6 @@ namespace CocoroConsole
                     {
                         Debug.WriteLine($"終了時の端末設定保存に失敗しました: {ex.Message}");
                     }
-                }
-
-                Debug.WriteLine("CocoroShell に終了要求を送信中...");
-                var shutdownTasks = new List<Task>
-                {
-                    Task.Run(() => ProcessHelper.ExitProcess("CocoroShell", ProcessOperation.Terminate))
-                };
-
-                // すべてのシャットダウン要求の完了を待つ（最大5秒）
-                try
-                {
-                    await Task.WhenAll(shutdownTasks).WaitAsync(TimeSpan.FromSeconds(5));
-                }
-                catch (TimeoutException)
-                {
-                    Debug.WriteLine("一部のシャットダウン要求がタイムアウトしました。");
                 }
 
                 // オーバーレイを非表示

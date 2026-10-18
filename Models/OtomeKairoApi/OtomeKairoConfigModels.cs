@@ -477,6 +477,9 @@ namespace CocoroConsole.Models.OtomeKairoApi
 
     public class OtomeKairoConsoleProcessSettings
     {
+        [JsonPropertyName("cocoro_shell_enabled")]
+        public bool CocoroShellEnabled { get; set; } = true;
+
         [JsonPropertyName("console_api_port")]
         public int ConsoleApiPort { get; set; }
 

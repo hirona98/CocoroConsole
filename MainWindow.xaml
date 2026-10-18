@@ -51,8 +51,9 @@
                                         <Run Text="CocoroAI"
                                              FontSize="24"
                                              FontWeight="SemiBold"/>
-                                        <Run Text="  Powered by OtomeKairo"
-                                             FontSize="12"
+                                        <LineBreak/>
+                                        <Run Text="Powered by OtomeKairo"
+                                             FontSize="10"
                                              FontWeight="Normal"
                                              BaselineAlignment="Baseline"
                                              Foreground="#D9F5F5F5"/>
@@ -62,6 +63,23 @@
                                             Orientation="Horizontal"
                                             Margin="0,0,20,0"
                                             VerticalAlignment="Center">
+                                        <Button x:Name="ShellButton"
+                                                ToolTip="CocoroShellを起動"
+                                                AutomationProperties.Name="CocoroShellを起動"
+                                                ToolTipService.ShowOnDisabled="True"
+                                                Margin="0,0,10,0"
+                                                Padding="8"
+                                                Background="#4873CF"
+                                                BorderThickness="0"
+                                                Click="ShellButton_Click"
+                                                Width="40"
+                                                Height="40">
+                                                <svgc:SvgViewbox x:Name="ShellButtonImage"
+                                                                 Source="pack://application:,,,/Resource/icon/AvatarOFF.svg"
+                                                                 Width="24"
+                                                                 Height="24"/>
+                                        </Button>
+
                                         <Button x:Name="MicButton"
                                                 ToolTip="マイク"
                                                 Margin="0,0,10,0"

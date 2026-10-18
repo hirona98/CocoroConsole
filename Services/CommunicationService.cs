@@ -88,7 +88,8 @@ namespace CocoroConsole.Services
         private bool ShouldForwardToShell()
         {
             var presentation = _appSettings.GetCurrentAvatarPresentation();
-            return presentation != null && !string.IsNullOrWhiteSpace(presentation.Model);
+            return _appSettings.ConsoleClient.Process.CocoroShellEnabled &&
+                presentation != null && !string.IsNullOrWhiteSpace(presentation.Model);
         }
 
         private static bool IsCocoroShellProcessRunning()
@@ -288,7 +289,7 @@ namespace CocoroConsole.Services
         /// <summary>
         /// CocoroShell を起動する前に、最新設定のポートでローカルAPIを待受状態にする。
         /// </summary>
-        public async Task PrepareShellRuntimeAsync()
+        public async Task PrepareShellRuntimeAsync(CancellationToken cancellationToken = default)
         {
             if (!_remoteSettingsApplied)
             {
@@ -297,12 +298,12 @@ namespace CocoroConsole.Services
 
             // Unity Editorも同じ認証境界を使えるよう、API待受前に一時トークンを用意する。
             CocoroShellProcessManager.PrepareSessionToken(_appSettings, false);
-            await EnsureLocalApiServerReadyAsync().ConfigureAwait(false);
+            await EnsureLocalApiServerReadyAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task EnsureLocalApiServerReadyAsync()
+        private async Task EnsureLocalApiServerReadyAsync(CancellationToken cancellationToken = default)
         {
-            await _apiServerLifecycleSemaphore.WaitAsync().ConfigureAwait(false);
+            await _apiServerLifecycleSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 if (_apiServerPort != _appSettings.CocoroConsolePort)
@@ -506,6 +507,8 @@ namespace CocoroConsole.Services
                     config.ConversationDisplayNames,
                     avatarSpeech);
                 _remoteSettingsApplied = true;
+                // 現行の端末設定を保存してから、Shellの起動状態を復元する。
+                await SaveConsoleClientSettingsAsync().ConfigureAwait(false);
                 if (_apiServerStartRequested)
                 {
                     await PrepareShellRuntimeAsync().ConfigureAwait(false);
@@ -960,6 +963,21 @@ namespace CocoroConsole.Services
             _appSettings.SaveAppSettings();
         }
 
+        public async Task SetCocoroShellEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+        {
+            if (_otomeKairoApiClient == null)
+            {
+                throw new InvalidOperationException("OtomeKairo APIクライアントが初期化されていません。");
+            }
+
+            await EnsureOtomeKairoReadyAsync(cancellationToken).ConfigureAwait(false);
+            var process = AppSettings.CloneDocument(_appSettings.ConsoleClient.Process);
+            process.CocoroShellEnabled = enabled;
+            var result = await _otomeKairoApiClient.PatchConsoleClientProcessSettingsAsync(
+                _appSettings.ClientId, process, cancellationToken).ConfigureAwait(false);
+            _appSettings.ConsoleClient.Process = result.Settings.Process;
+        }
+
         public async Task SaveConsoleClientSettingsAsync(CancellationToken cancellationToken = default)
         {
             if (_otomeKairoApiClient == null)
@@ -1362,8 +1380,8 @@ namespace CocoroConsole.Services
             {
                 // 通常版はprocess存在を正とし、Unity Editor実行時はloopback APIで判定する。
                 var shellProcessRunning = IsCocoroShellProcessRunning();
-                if (!shellProcessRunning &&
-                    !await _shellClient.IsRunningAsync().ConfigureAwait(false))
+                if (!_appSettings.ConsoleClient.Process.CocoroShellEnabled ||
+                    (!shellProcessRunning && !await _shellClient.IsRunningAsync().ConfigureAwait(false)))
                 {
                     await _directAudioPlaybackService
                         .PlayAsync(args.AudioBytes)

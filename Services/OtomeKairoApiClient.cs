@@ -213,6 +213,17 @@ namespace CocoroConsole.Services
                 cancellationToken);
         }
 
+        public Task<OtomeKairoConsoleClientEditorState> PatchConsoleClientProcessSettingsAsync(
+            string clientId,
+            OtomeKairoConsoleProcessSettings process,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            var path = BuildConfigResourcePath("/api/config/console-clients", clientId);
+            return SendOtomeKairoAsync<OtomeKairoConsoleClientEditorState>(
+                HttpMethod.Patch, path, new { process }, cancellationToken);
+        }
+
         public Task<OtomeKairoAudioInputDevicesResponse> GetAudioInputDevicesAsync(
             CancellationToken cancellationToken = default)
         {
