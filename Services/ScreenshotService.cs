@@ -2,46 +2,32 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
-using System.Collections.Generic;
-using System.Linq;
+using CocoroConsole.Models.OtomeKairoApi;
 
 namespace CocoroAI.Services
 {
     /// <summary>
-    /// スクリーンショット取得がスキップされた理由
+    /// スクリーンショット取得がスキップされた理由。
     /// </summary>
     public enum ScreenshotSkipReason
     {
-        /// <summary>
-        /// スキップしていない（取得成功、または未実行）
-        /// </summary>
         None = 0,
-
-        /// <summary>
-        /// ユーザーがアイドル状態のためスキップ
-        /// </summary>
         Idle = 1,
-
-        /// <summary>
-        /// 除外パターンにマッチしたためスキップ
-        /// </summary>
         ExcludedWindowTitle = 2,
-
-        /// <summary>
-        /// ウィンドウ矩形が無効なためスキップ
-        /// </summary>
         InvalidWindowBounds = 3
     }
 
     /// <summary>
-    /// スクリーンショット取得サービス
+    /// OtomeKairo の要求に含まれる撮影方針で画面を取得する。
     /// </summary>
-    public class ScreenshotService : IDisposable
+    public class ScreenshotService
     {
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
@@ -50,7 +36,7 @@ namespace CocoroAI.Services
         private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
         [DllImport("user32.dll")]
-        private static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
+        private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
 
         [DllImport("user32.dll")]
         private static extern int GetWindowTextLength(IntPtr hWnd);
@@ -72,119 +58,35 @@ namespace CocoroAI.Services
             public int Top;
             public int Right;
             public int Bottom;
-
-            public int Width => Right - Left;
-            public int Height => Bottom - Top;
         }
 
-        private bool _isDisposed;
-        private int _idleTimeoutMinutes = 10; // OtomeKairo の端末設定を受け取るまでの初期値
-        private List<Regex>? _compiledExcludePatterns;
+        public ScreenshotSkipReason LastSkipReason { get; private set; }
 
-
-        public bool CaptureActiveWindowOnly { get; set; }
-
-        /// <summary>
-        /// 直近のキャプチャでスキップした理由（スキップしていない場合は None）
-        /// </summary>
-        public ScreenshotSkipReason LastSkipReason { get; private set; } = ScreenshotSkipReason.None;
-
-        public int IdleTimeoutMinutes
+        public Task<ScreenshotData?> CaptureAsync(
+            OtomeKairoDesktopCaptureSettings settings,
+            CancellationToken cancellationToken = default)
         {
-            get => _idleTimeoutMinutes;
-            set => _idleTimeoutMinutes = value >= 0 ? value : 10;
-        }
-
-        public ScreenshotService()
-        {
-            CaptureActiveWindowOnly = true;
-        }
-
-        /// <summary>
-        /// 除外パターンを設定
-        /// </summary>
-        /// <param name="patterns">正規表現パターンのリスト</param>
-        public void SetExcludePatterns(IEnumerable<string> patterns)
-        {
-            if (patterns == null || !patterns.Any())
+            ArgumentNullException.ThrowIfNull(settings);
+            var captureTarget = settings.CaptureTarget;
+            if (captureTarget != "active_window" && captureTarget != "primary_screen")
             {
-                _compiledExcludePatterns = null;
-                return;
+                throw new ArgumentException("取得範囲が不正です。", nameof(settings));
             }
-
-            try
+            var idleTimeoutMinutes = settings.IdleTimeoutMinutes;
+            if (idleTimeoutMinutes < 0 || settings.ExcludePatterns == null || settings.ExcludePatterns.Any(pattern => pattern == null))
             {
-                _compiledExcludePatterns = patterns
-                    .Where(p => !string.IsNullOrWhiteSpace(p))
-                    .Select(pattern =>
-                    {
-                        try
-                        {
-                            return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-                        }
-                        catch (ArgumentException ex)
-                        {
-                            Debug.WriteLine($"無効な正規表現パターンをスキップ: {pattern} - {ex.Message}");
-                            return null;
-                        }
-                    })
-                    .Where(regex => regex != null)
-                    .Cast<Regex>()
-                    .ToList();
-
-                Debug.WriteLine($"除外パターンを設定: {_compiledExcludePatterns.Count}個");
+                throw new ArgumentException("撮影方針が不正です。", nameof(settings));
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"除外パターン設定エラー: {ex.Message}");
-                _compiledExcludePatterns = null;
-            }
-        }
+            // 正規表現の不正や実行タイムアウトは呼び出し側へ失敗として返す。
+            var excludePatterns = settings.ExcludePatterns
+                .Select(pattern => new Regex(pattern, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1)))
+                .ToArray();
 
-        /// <summary>
-        /// ウィンドウタイトルが除外パターンにマッチするかを判定（最初にマッチしたRegexを返す）
-        /// </summary>
-        /// <param name="windowTitle">ウィンドウタイトル</param>
-        private Regex? FindMatchedExcludePattern(string windowTitle)
-        {
-            if (_compiledExcludePatterns == null || _compiledExcludePatterns.Count == 0)
-                return null;
-
-            if (string.IsNullOrWhiteSpace(windowTitle))
-                return null;
-
-            try
+            return Task.Run<ScreenshotData?>(() =>
             {
-                foreach (var regex in _compiledExcludePatterns)
-                {
-                    if (regex.IsMatch(windowTitle))
-                    {
-                        Debug.WriteLine($"除外パターンマッチ: '{windowTitle}' - パターン: {regex}");
-                        return regex;
-                    }
-                }
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"フィルタリング判定エラー: {ex.Message}");
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// アクティブウィンドウのスクリーンショットを取得
-        /// </summary>
-        /// <returns>除外パターンにマッチした場合はnull（スキップ扱い）</returns>
-        public async Task<ScreenshotData?> CaptureActiveWindowAsync()
-        {
-            return await Task.Run<ScreenshotData?>(() =>
-            {
-                // 直近の結果を初期化
+                cancellationToken.ThrowIfCancellationRequested();
                 LastSkipReason = ScreenshotSkipReason.None;
-
-                // アイドルチェック（0 は無効）
-                if (IsUserIdle())
+                if (IsUserIdle(idleTimeoutMinutes))
                 {
                     LastSkipReason = ScreenshotSkipReason.Idle;
                     return null;
@@ -193,153 +95,85 @@ namespace CocoroAI.Services
                 var hwnd = GetForegroundWindow();
                 if (hwnd == IntPtr.Zero)
                 {
-                    throw new InvalidOperationException("アクティブウィンドウが見つかりません");
+                    throw new InvalidOperationException("アクティブウィンドウが見つかりません。");
                 }
-
-                // ウィンドウタイトルを取得
-                var titleLength = GetWindowTextLength(hwnd);
-                var titleBuilder = new System.Text.StringBuilder(titleLength + 1);
+                var titleBuilder = new StringBuilder(GetWindowTextLength(hwnd) + 1);
                 GetWindowText(hwnd, titleBuilder, titleBuilder.Capacity);
                 var windowTitle = titleBuilder.ToString();
-
-                // フィルタリング判定
-                var matched = FindMatchedExcludePattern(windowTitle);
-                if (matched != null)
+                if (excludePatterns.Any(pattern => pattern.IsMatch(windowTitle)))
                 {
-                    // フィルタ一致は例外ではなく通常フローとして扱う（呼び出し側でスキップ処理）
                     LastSkipReason = ScreenshotSkipReason.ExcludedWindowTitle;
                     return null;
                 }
 
-                // ウィンドウの位置とサイズを取得
-                if (!GetWindowRect(hwnd, out RECT rect))
+                var isActiveWindow = captureTarget == "active_window";
+                Rectangle bounds;
+                if (isActiveWindow)
                 {
-                    throw new InvalidOperationException("ウィンドウの情報を取得できません");
+                    if (!GetWindowRect(hwnd, out var rect))
+                    {
+                        throw new InvalidOperationException("ウィンドウの情報を取得できません。");
+                    }
+                    bounds = Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom);
+                    if (bounds.Width <= 0 || bounds.Height <= 0)
+                    {
+                        LastSkipReason = ScreenshotSkipReason.InvalidWindowBounds;
+                        return null;
+                    }
+                }
+                else
+                {
+                    var screen = Screen.PrimaryScreen
+                        ?? throw new InvalidOperationException("プライマリモニターを取得できません。");
+                    bounds = screen.Bounds;
+                    if (bounds.Width <= 0 || bounds.Height <= 0)
+                    {
+                        throw new InvalidOperationException("プライマリモニターの範囲が不正です。");
+                    }
                 }
 
-                if (rect.Width <= 0 || rect.Height <= 0)
-                {
-                    LastSkipReason = ScreenshotSkipReason.InvalidWindowBounds;
-                    return null;
-                }
-
-                // スクリーンショットを撮影
-                using var bitmap = new Bitmap(rect.Width, rect.Height);
-                using (var graphics = Graphics.FromImage(bitmap))
-                {
-                    graphics.CopyFromScreen(
-                        rect.Left,
-                        rect.Top,
-                        0,
-                        0,
-                        new Size(rect.Width, rect.Height),
-                        CopyPixelOperation.SourceCopy
-                    );
-                }
-
-                // Base64エンコード
-                using var ms = new MemoryStream();
-                bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                var imageBytes = ms.ToArray();
-                var base64String = Convert.ToBase64String(imageBytes);
-
-                return new ScreenshotData
-                {
-                    ImageBase64 = base64String,
-                    WindowTitle = windowTitle,
-                    CaptureTime = DateTime.Now,
-                    IsActiveWindow = true,
-                    Width = rect.Width,
-                    Height = rect.Height
-                };
-            });
-        }
-
-        /// <summary>
-        /// 全画面のスクリーンショットを取得
-        /// </summary>
-        public async Task<ScreenshotData> CaptureFullScreenAsync()
-        {
-            return await Task.Run(() =>
-            {
-                var bounds = Screen.PrimaryScreen?.Bounds ?? new Rectangle(0, 0, 1920, 1080);
-
+                cancellationToken.ThrowIfCancellationRequested();
                 using var bitmap = new Bitmap(bounds.Width, bounds.Height);
                 using (var graphics = Graphics.FromImage(bitmap))
                 {
-                    graphics.CopyFromScreen(
-                        bounds.X,
-                        bounds.Y,
-                        0,
-                        0,
-                        bounds.Size,
-                        CopyPixelOperation.SourceCopy
-                    );
+                    graphics.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size, CopyPixelOperation.SourceCopy);
                 }
-
-                // Base64エンコード
-                using var ms = new MemoryStream();
-                bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                var imageBytes = ms.ToArray();
-                var base64String = Convert.ToBase64String(imageBytes);
-
+                cancellationToken.ThrowIfCancellationRequested();
+                using var stream = new MemoryStream();
+                bitmap.Save(stream, ImageFormat.Png);
                 return new ScreenshotData
                 {
-                    ImageBase64 = base64String,
-                    WindowTitle = "全画面",
+                    ImageBase64 = Convert.ToBase64String(stream.ToArray()),
+                    WindowTitle = isActiveWindow ? windowTitle : "プライマリモニター全体",
                     CaptureTime = DateTime.Now,
-                    IsActiveWindow = false,
+                    IsActiveWindow = isActiveWindow,
                     Width = bounds.Width,
                     Height = bounds.Height
                 };
-            });
+            }, cancellationToken);
         }
 
-        /// <summary>
-        /// ユーザーがアイドル状態かどうかを判定
-        /// </summary>
-        private bool IsUserIdle()
+        private static bool IsUserIdle(int timeoutMinutes)
         {
-            try
+            if (timeoutMinutes == 0)
             {
-                // 0 は無効（常にアイドルではない）
-                if (_idleTimeoutMinutes <= 0)
-                {
-                    return false;
-                }
-
-                var lastInputInfo = new LASTINPUTINFO();
-                lastInputInfo.cbSize = (uint)Marshal.SizeOf(lastInputInfo);
-
-                if (GetLastInputInfo(ref lastInputInfo))
-                {
-                    // 最終入力からの経過時間を計算（ミリ秒）
-                    var idleTime = Environment.TickCount - lastInputInfo.dwTime;
-
-                    // アイドルタイムアウト時間（ミリ秒）と比較
-                    var idleTimeoutMs = _idleTimeoutMinutes * 60 * 1000;
-
-                    return idleTime > idleTimeoutMs;
-                }
+                return false;
             }
-            catch (Exception ex)
+            var lastInputInfo = new LASTINPUTINFO
             {
-                Debug.WriteLine($"アイドル時間の取得エラー: {ex.Message}");
+                cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>()
+            };
+            if (!GetLastInputInfo(ref lastInputInfo))
+            {
+                throw new InvalidOperationException("最終入力時刻を取得できません。");
             }
-
-            // エラーが発生した場合はアイドルとみなす
-            return true;
-        }
-
-        public void Dispose()
-        {
-            if (_isDisposed) return;
-            _isDisposed = true;
+            var idleMilliseconds = unchecked((uint)Environment.TickCount - lastInputInfo.dwTime);
+            return idleMilliseconds > (long)timeoutMinutes * 60 * 1000;
         }
     }
 
     /// <summary>
-    /// スクリーンショットデータ
+    /// スクリーンショットデータ。
     /// </summary>
     public class ScreenshotData
     {

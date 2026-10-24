@@ -269,6 +269,18 @@ namespace CocoroConsole.Communication
                             .ToList();
                     }
                     data.Mode = dataElement.TryGetProperty("mode", out var mode) ? mode.GetString() : null;
+                    if (dataElement.TryGetProperty("desktop_capture", out var desktopCapture))
+                    {
+                        try
+                        {
+                            data.DesktopCapture = JsonSerializer.Deserialize<OtomeKairoDesktopCaptureSettings>(desktopCapture.GetRawText());
+                        }
+                        catch (JsonException)
+                        {
+                            // 撮影方針の不正は要求を捨てず、画像なしの失敗として返す。
+                            data.DesktopCaptureError = "invalid desktop_capture settings";
+                        }
+                    }
                     data.TimeoutMs = dataElement.TryGetProperty("timeout_ms", out var timeoutMs) && timeoutMs.TryGetInt32(out var timeoutValue)
                         ? timeoutValue
                         : null;
@@ -335,6 +347,8 @@ namespace CocoroConsole.Communication
         public int? UtteranceSeq { get; set; }
         public List<string>? RecipientPersonRefs { get; set; }
         public string? Mode { get; set; }
+        public OtomeKairoDesktopCaptureSettings? DesktopCapture { get; set; }
+        public string? DesktopCaptureError { get; set; }
         public int? TimeoutMs { get; set; }
         public OtomeKairoAudioRuntimeState? AudioRuntimeState { get; set; }
     }

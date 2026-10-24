@@ -1461,10 +1461,14 @@ namespace CocoroConsole.Services
                 {
                     response.Result.Error = $"unsupported vision_source_id: {ev.Data.VisionSourceId}";
                 }
+                else if (ev.Data.DesktopCaptureError != null || ev.Data.DesktopCapture == null)
+                {
+                    response.Result.Error = ev.Data.DesktopCaptureError ?? "desktop_capture settings are required";
+                }
                 else
                 {
                     _statusPollingService.SetProcessingStatus(OtomeKairoStatus.ProcessingImage);
-                    var (dataUri, windowTitle, captureError) = await CaptureDesktopStillAsync(cts.Token);
+                    var (dataUri, windowTitle, captureError) = await CaptureDesktopStillAsync(ev.Data.DesktopCapture, cts.Token);
 
                     if (!string.IsNullOrWhiteSpace(windowTitle))
                     {
@@ -1500,20 +1504,12 @@ namespace CocoroConsole.Services
             }
         }
 
-        private async Task<(string? DataUri, string? WindowTitle, string? Error)> CaptureDesktopStillAsync(CancellationToken cancellationToken)
+        private async Task<(string? DataUri, string? WindowTitle, string? Error)> CaptureDesktopStillAsync(
+            OtomeKairoDesktopCaptureSettings settings,
+            CancellationToken cancellationToken)
         {
-            using var service = new ScreenshotService();
-            var desktopCapture = _appSettings.ConsoleClient.DesktopCapture;
-            service.CaptureActiveWindowOnly = desktopCapture.CaptureActiveWindowOnly;
-
-            // 視覚キャプチャのアイドルタイムアウト（分）を反映（0 は無効）
-            service.IdleTimeoutMinutes = desktopCapture.IdleTimeoutMinutes;
-
-            // スクショ除外（ウィンドウタイトル正規表現）を反映
-            service.SetExcludePatterns(desktopCapture.ExcludePatterns);
-            ScreenshotData? screenshot = service.CaptureActiveWindowOnly
-                ? await service.CaptureActiveWindowAsync().WaitAsync(cancellationToken)
-                : await service.CaptureFullScreenAsync().WaitAsync(cancellationToken);
+            var service = new ScreenshotService();
+            ScreenshotData? screenshot = await service.CaptureAsync(settings, cancellationToken);
             if (screenshot == null)
             {
                 return service.LastSkipReason switch
@@ -1580,19 +1576,14 @@ namespace CocoroConsole.Services
 
         private IReadOnlyList<OtomeKairoVisionSourceOffer> BuildVisionSources()
         {
-            var useActiveWindow = _appSettings.ConsoleClient.DesktopCapture.CaptureActiveWindowOnly;
-            var label = useActiveWindow ? "アクティブウィンドウ" : "メイン画面";
-            var aliases = useActiveWindow
-                ? new[] { "画面", "デスクトップ", "アクティブウィンドウ", "前景ウィンドウ" }
-                : new[] { "画面", "デスクトップ", "メイン画面", "フルスクリーン" };
             return new[]
             {
                 new OtomeKairoVisionSourceOffer(
                     DesktopWakePolicyHelper.BuildDesktopVisionSourceId(_appSettings.ClientId),
                     "vision.capture",
                     "desktop",
-                    label,
-                    aliases,
+                    "デスクトップ",
+                    new[] { "画面", "デスクトップ" },
                     new[] { "visual", "desktop" },
                     new[] { "observe_desktop" })
             };

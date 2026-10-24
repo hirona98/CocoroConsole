@@ -596,13 +596,23 @@ namespace CocoroConsole.Models.OtomeKairoApi
     {
         [JsonPropertyName("enabled")]
         public bool Enabled { get; set; }
+    }
 
-        [JsonPropertyName("capture_active_window_only")]
-        public bool CaptureActiveWindowOnly { get; set; }
+    /// <summary>
+    /// キャプチャ要求で受け取る全端末共通の撮影方針。
+    /// </summary>
+    [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+    public sealed class OtomeKairoDesktopCaptureSettings
+    {
+        [JsonRequired]
+        [JsonPropertyName("capture_target")]
+        public string CaptureTarget { get; set; } = string.Empty;
 
+        [JsonRequired]
         [JsonPropertyName("idle_timeout_minutes")]
         public int IdleTimeoutMinutes { get; set; }
 
+        [JsonRequired]
         [JsonPropertyName("exclude_patterns")]
         public List<string> ExcludePatterns { get; set; } = new List<string>();
     }
