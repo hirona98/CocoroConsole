@@ -821,6 +821,9 @@ namespace CocoroConsole.Services
 
     public class VisionCaptureCapabilityResult
     {
+        [JsonPropertyName("captured_at")]
+        public string? CapturedAt { get; set; }
+
         [JsonPropertyName("images")]
         public List<string> Images { get; set; } = new List<string>();
 

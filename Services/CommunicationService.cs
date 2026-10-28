@@ -1477,6 +1477,7 @@ namespace CocoroConsole.Services
 
                     if (!string.IsNullOrWhiteSpace(dataUri))
                     {
+                        response.Result.CapturedAt = DateTimeOffset.Now.ToString("o");
                         response.Result.Images.Add(dataUri);
                     }
                     else
