@@ -822,6 +822,7 @@ namespace CocoroConsole.Services
     public class VisionCaptureCapabilityResult
     {
         [JsonPropertyName("captured_at")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         public string? CapturedAt { get; set; }
 
         [JsonPropertyName("images")]
